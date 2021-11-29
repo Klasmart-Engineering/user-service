@@ -47,6 +47,7 @@ import { subcategoryConnectionNodeFields } from '../../src/pagination/subcategor
 import { createInputLengthAPIError } from '../../src/utils/resolvers'
 import { NIL_UUID } from '../utils/database'
 import { config } from '../../src/config/config'
+import { buildPermissionError } from '../utils/errors'
 
 type NoUpdateProp = 'name' | 'subcategories' | 'both'
 use(chaiAsPromised)
@@ -198,11 +199,12 @@ describe('subcategory', () => {
             })
         }
 
-        const buildPermissionError = (user: User, org: Organization) => {
-            const createSubcategoryPermission =
-                PermissionName.create_subjects_20227
-
-            return `User(${user.user_id}) does not have Permission(${createSubcategoryPermission}) in Organization(${org.organization_id})`
+        const getPermErrorMessage = (user: User, orgs?: Organization[]) => {
+            return buildPermissionError(
+                PermissionName.create_subjects_20227,
+                user,
+                orgs
+            )
         }
 
         beforeEach(async () => {
@@ -301,14 +303,14 @@ describe('subcategory', () => {
             context(
                 'when non admin tries to create subcategories in an organization which does not belong',
                 () => {
-                    it('throws an error', async () => {
+                    it('throws a permission error', async () => {
                         const result = createSubcategoriesFromResolver(
                             userWithPermission,
                             generateInput(2, org2)
                         )
 
                         await expect(result).to.be.rejectedWith(
-                            buildPermissionError(userWithPermission, org2)
+                            getPermErrorMessage(userWithPermission, [org2])
                         )
                     })
                 }
@@ -317,14 +319,14 @@ describe('subcategory', () => {
             context(
                 'when a user without permission tries to create subcategories in the organization which belongs',
                 () => {
-                    it('throws an error', async () => {
+                    it('throws a permission error', async () => {
                         const result = createSubcategoriesFromResolver(
                             userWithoutPermission,
                             generateInput(2, org1)
                         )
 
                         await expect(result).to.be.rejectedWith(
-                            buildPermissionError(userWithoutPermission, org1)
+                            getPermErrorMessage(userWithoutPermission, [org1])
                         )
                     })
                 }
@@ -333,14 +335,14 @@ describe('subcategory', () => {
             context(
                 'when non member tries to create categories in any organization',
                 () => {
-                    it('throws an error', async () => {
+                    it('throws a permission error', async () => {
                         let result = createSubcategoriesFromResolver(
                             userWithoutMembership,
                             generateInput(2, org1)
                         )
 
                         await expect(result).to.be.rejectedWith(
-                            buildPermissionError(userWithoutMembership, org1)
+                            getPermErrorMessage(userWithoutMembership, [org1])
                         )
 
                         result = createSubcategoriesFromResolver(
@@ -349,7 +351,7 @@ describe('subcategory', () => {
                         )
 
                         await expect(result).to.be.rejectedWith(
-                            buildPermissionError(userWithoutMembership, org2)
+                            getPermErrorMessage(userWithoutMembership, [org2])
                         )
                     })
                 }
@@ -725,6 +727,23 @@ describe('subcategory', () => {
             expect(error.max).to.eq(expectedError.max)
         }
 
+        const expectPermissionError = async (
+            user: User,
+            subcategoriesToUpdate: Subcategory[],
+            expectedOrgs?: Organization[]
+        ) => {
+            const errorMessage = buildPermissionError(
+                PermissionName.edit_subjects_20337,
+                user,
+                expectedOrgs
+            )
+            const input = buildUpdateSubcategoryInputArray(
+                subcategoriesToUpdate.map((c) => c.id)
+            )
+            const operation = updateSubcategoriesFromResolver(user, input)
+            await expect(operation).to.be.rejectedWith(errorMessage)
+        }
+
         const expectErrorCollectionFromInput = async (
             user: User,
             input: UpdateSubcategoryInput[],
@@ -821,24 +840,12 @@ describe('subcategory', () => {
             context('error handling', () => {
                 context('when user has permission', () => {
                     context('and tries to update system subcategories', () => {
-                        it('should throw an ErrorCollection', async () => {
+                        it('should throw a permission error', async () => {
                             const subcatsToUpdate = systemSubcategories
-                            const expectedErrors = Array.from(
-                                subcatsToUpdate,
-                                (_, index) =>
-                                    createSubcategoryAPIError(
-                                        'unauthorized',
-                                        index,
-                                        subcatsToUpdate[index].id
-                                    )
-                            )
-
-                            await expectErrorCollectionFromSubcategories(
+                            await expectPermissionError(
                                 userWithPermission,
-                                subcatsToUpdate,
-                                expectedErrors
+                                subcatsToUpdate
                             )
-
                             await expectNoChangesMade(subcatsToUpdate)
                         })
                     })
@@ -846,24 +853,12 @@ describe('subcategory', () => {
                     context(
                         'and tries to update subcategories in a non belonging organization',
                         () => {
-                            it('should throw an ErrorCollection', async () => {
+                            it('should throw a permission error', async () => {
                                 const subcatsToUpdate = subcategoriesOrg2
-                                const expectedErrors = Array.from(
-                                    subcatsToUpdate,
-                                    (_, index) =>
-                                        createSubcategoryAPIError(
-                                            'unauthorized',
-                                            index,
-                                            subcatsToUpdate[index].id
-                                        )
-                                )
-
-                                await expectErrorCollectionFromSubcategories(
+                                await expectPermissionError(
                                     userWithPermission,
-                                    subcatsToUpdate,
-                                    expectedErrors
+                                    subcatsToUpdate
                                 )
-
                                 await expectNoChangesMade(subcatsToUpdate)
                             })
                         }
@@ -875,24 +870,12 @@ describe('subcategory', () => {
                         context(
                             'and tries to update subcategories in its organization',
                             () => {
-                                it('should throw an ErrorCollection', async () => {
+                                it('should throw a permission error', async () => {
                                     const subcatsToUpdate = subcategoriesOrg1
-                                    const expectedErrors = Array.from(
-                                        subcatsToUpdate,
-                                        (_, index) =>
-                                            createSubcategoryAPIError(
-                                                'unauthorized',
-                                                index,
-                                                subcatsToUpdate[index].id
-                                            )
-                                    )
-
-                                    await expectErrorCollectionFromSubcategories(
+                                    await expectPermissionError(
                                         userWithoutPermission,
-                                        subcatsToUpdate,
-                                        expectedErrors
+                                        subcatsToUpdate
                                     )
-
                                     await expectNoChangesMade(subcatsToUpdate)
                                 })
                             }
@@ -907,23 +890,10 @@ describe('subcategory', () => {
                                     subcategoriesOrg1[0],
                                     subcategoriesOrg2[0],
                                 ]
-
-                                const expectedErrors = Array.from(
-                                    subcatsToUpdate,
-                                    (_, index) =>
-                                        createSubcategoryAPIError(
-                                            'unauthorized',
-                                            index,
-                                            subcatsToUpdate[index].id
-                                        )
-                                )
-
-                                await expectErrorCollectionFromSubcategories(
+                                await expectPermissionError(
                                     userWithoutMembership,
-                                    subcatsToUpdate,
-                                    expectedErrors
+                                    subcatsToUpdate
                                 )
-
                                 await expectNoChangesMade(subcatsToUpdate)
                             })
                         })

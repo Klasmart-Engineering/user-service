@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { createQueryBuilder, getManager, In } from 'typeorm'
+import { getManager, In } from 'typeorm'
 import { Model } from '../../src/model'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
@@ -93,12 +93,10 @@ import {
     UpdateUserInput,
     UserConnectionNode,
 } from '../../src/types/graphQL/user'
-import { equal } from 'joi'
 import { mapUserToUserConnectionNode } from '../../src/pagination/usersConnection'
 import clean from '../../src/utils/clean'
 import faker from 'faker'
 import { v4 as uuid_v4 } from 'uuid'
-import { userValidations } from '../../src/entities/validations/user'
 import { config } from '../../src/config/config'
 
 use(chaiAsPromised)
@@ -1786,13 +1784,11 @@ describe('user', () => {
                                     organization1,
                                     organization2,
                                     organization3,
-                                ].map((v) => v.organization_id)
+                                ].map((o) => o.organization_id)
                             ),
-                            user_id: In([
-                                user1.user_id,
-                                user2.user_id,
-                                user3.user_id,
-                            ]),
+                            user_id: In(
+                                [user1, user2, user3].map((u) => u.user_id)
+                            ),
                         },
                     })
                     memberships.forEach((m) => expect(m.roles).to.be.empty)
@@ -1837,8 +1833,8 @@ describe('user', () => {
                     it('makes the expected number of queries to the database', async () => {
                         connection.logger.reset()
                         await addOrgRoles()
-                        expect(connection.logger.count).to.be.eq(18)
-                        // 9 from permission check
+                        expect(connection.logger.count).to.be.eq(10)
+                        // 1 from permission check
                         // 4 from preloaded queries
                         // 5 from saving OrganizationMembership[] (1 per)
                     })
@@ -1918,11 +1914,10 @@ describe('user', () => {
                 })
 
                 context('and one of the memberships is inactive', async () => {
-                    beforeEach(async () =>
-                        (await user1.memberships)?.forEach(
-                            async (m) => await m.inactivate(getManager())
-                        )
-                    )
+                    beforeEach(async () => {
+                        const membs = (await user1.memberships) || []
+                        for (const m of membs) await m.inactivate(getManager())
+                    })
 
                     it('returns a nonexistent child error', async () => {
                         const res = await expect(addOrgRoles()).to.be.rejected
@@ -1948,9 +1943,8 @@ describe('user', () => {
 
                 context('and multiple attributes are inactive', async () => {
                     beforeEach(async () => {
-                        ;(await user3.memberships)?.forEach(
-                            async (m) => await m.inactivate(getManager())
-                        )
+                        const membs = (await user3.memberships) || []
+                        for (const m of membs) await m.inactivate(getManager())
                         await Promise.all([
                             user1.inactivate(getManager()),
                             role1.inactivate(getManager()),
@@ -2024,11 +2018,21 @@ describe('user', () => {
                     })
 
                     it('returns a permission error', async () => {
+                        const rejectedOrgIds = [
+                            organization2.organization_id,
+                            organization3.organization_id,
+                        ].toString()
                         await expect(
                             addOrgRoles(nonAdminUser)
                         ).to.be.rejectedWith(
-                            `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.edit_users_40330}) in Organization(${organization2.organization_id})`
+                            `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.edit_users_40330}) in Organizations(${rejectedOrgIds})`
                         )
+                    })
+
+                    it('makes the expected number of queries to the database', async () => {
+                        connection.logger.reset()
+                        await expect(addOrgRoles(nonAdminUser)).to.be.rejected
+                        expect(connection.logger.count).to.be.eq(2) // 1 for user check, 1 for org permission check
                     })
 
                     await checkNoChangesMade(false)

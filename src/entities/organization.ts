@@ -97,7 +97,7 @@ export class Organization extends CustomBaseEntity {
             const membership = await getRepository(
                 OrganizationMembership
             ).findOneOrFail({
-                where: { user_id, organization_id: this.organization_id },
+                where: { user_id, organization_ids: [this.organization_id] },
             })
             return membership
         } catch (e) {
@@ -122,7 +122,7 @@ export class Organization extends CustomBaseEntity {
                 { system_role: true, organization: { organization_id: null } },
                 {
                     system_role: false,
-                    organization: { organization_id: this.organization_id },
+                    organization: { organization_ids: [this.organization_id] },
                 },
             ],
         })
@@ -143,18 +143,18 @@ export class Organization extends CustomBaseEntity {
     ): Promise<Class[]> {
         const userId = context.permissions.getUserId()
 
-        const permisionContext = {
-            organization_id: this.organization_id,
+        const permissionContext = {
+            organization_ids: [this.organization_id],
             user_id: userId,
         }
 
         const viewOrgClasses = await context.permissions.allowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_classes_20114
         )
 
         const viewSchoolClasses = await context.permissions.allowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_school_classes_20117
         )
 
@@ -194,9 +194,9 @@ export class Organization extends CustomBaseEntity {
         context: Context,
         info: Record<string, unknown>
     ): Promise<AgeRange[]> {
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_age_range_20112
         )
 
@@ -216,9 +216,9 @@ export class Organization extends CustomBaseEntity {
         context: Context,
         info: Record<string, unknown>
     ): Promise<Grade[]> {
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_grades_20113
         )
 
@@ -238,9 +238,9 @@ export class Organization extends CustomBaseEntity {
         context: Context,
         info: Record<string, unknown>
     ): Promise<Category[]> {
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_subjects_20115
         )
 
@@ -260,9 +260,9 @@ export class Organization extends CustomBaseEntity {
         context: Context,
         info: Record<string, unknown>
     ): Promise<Subcategory[]> {
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_subjects_20115
         )
 
@@ -282,9 +282,9 @@ export class Organization extends CustomBaseEntity {
         context: Context,
         info: Record<string, unknown>
     ): Promise<Subject[]> {
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_subjects_20115
         )
 
@@ -304,9 +304,9 @@ export class Organization extends CustomBaseEntity {
         context: Context,
         info: Record<string, unknown>
     ): Promise<Program[]> {
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_program_20111
         )
 
@@ -339,9 +339,9 @@ export class Organization extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_an_organization_details_5
         )
 
@@ -430,9 +430,9 @@ export class Organization extends CustomBaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_users_40110
         )
 
@@ -475,9 +475,9 @@ export class Organization extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_an_organization_details_5
         )
 
@@ -504,9 +504,9 @@ export class Organization extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.send_invitation_40882
         )
 
@@ -556,14 +556,13 @@ export class Organization extends CustomBaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const user_id = context.permissions.getUserId()
         const restricted = !(await context.permissions.allowed(
-            { organization_id: this.organization_id, user_id },
+            { organization_ids: [this.organization_id] },
             PermissionName.send_invitation_40882
         ))
         if (restricted) {
             await context.permissions.rejectIfNotAllowed(
-                { organization_id: this.organization_id, user_id },
+                { organization_ids: [this.organization_id] },
                 PermissionName.join_organization_10881
             )
         }
@@ -761,7 +760,7 @@ export class Organization extends CustomBaseEntity {
         info: GraphQLResolveInfo
     ) {
         await context.permissions.rejectIfNotAllowed(
-            this,
+            { organization_ids: [this.organization_id] },
             PermissionName.edit_users_40330
         )
 
@@ -1122,9 +1121,9 @@ export class Organization extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.create_role_with_permissions_30222
         )
 
@@ -1161,9 +1160,9 @@ export class Organization extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.create_class_20224
         )
 
@@ -1201,9 +1200,9 @@ export class Organization extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.create_school_20220
         )
 
@@ -1242,7 +1241,7 @@ export class Organization extends CustomBaseEntity {
         let checkUpdatePermission = false
         let checkCreatePermission = false
         let checkAdminPermission = false
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
 
         const ageRanges = []
 
@@ -1287,14 +1286,14 @@ export class Organization extends CustomBaseEntity {
 
         if (checkCreatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.create_age_range_20222
             )
         }
 
         if (checkUpdatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.edit_age_range_20332
             )
         }
@@ -1320,7 +1319,7 @@ export class Organization extends CustomBaseEntity {
         let checkUpdatePermission = false
         let checkCreatePermission = false
         let checkAdminPermission = false
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
 
         const dbGrades = []
 
@@ -1365,14 +1364,14 @@ export class Organization extends CustomBaseEntity {
 
         if (checkCreatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.create_grade_20223
             )
         }
 
         if (checkUpdatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.edit_grade_20333
             )
         }
@@ -1397,7 +1396,7 @@ export class Organization extends CustomBaseEntity {
         let checkUpdatePermission = false
         let checkCreatePermission = false
         let checkAdminPermission = false
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
 
         const dbSubcategories = []
 
@@ -1433,14 +1432,14 @@ export class Organization extends CustomBaseEntity {
 
         if (checkCreatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.create_subjects_20227
             )
         }
 
         if (checkUpdatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.edit_subjects_20337
             )
         }
@@ -1466,7 +1465,7 @@ export class Organization extends CustomBaseEntity {
         let checkUpdatePermission = false
         let checkCreatePermission = false
         let checkAdminPermission = false
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
 
         const dbCategories = []
 
@@ -1508,14 +1507,14 @@ export class Organization extends CustomBaseEntity {
 
         if (checkCreatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.create_subjects_20227
             )
         }
 
         if (checkUpdatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.edit_subjects_20337
             )
         }
@@ -1541,7 +1540,7 @@ export class Organization extends CustomBaseEntity {
         let checkUpdatePermission = false
         let checkCreatePermission = false
         let checkAdminPermission = false
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
 
         const dbSubjects = []
 
@@ -1582,14 +1581,14 @@ export class Organization extends CustomBaseEntity {
 
         if (checkCreatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.create_subjects_20227
             )
         }
 
         if (checkUpdatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.edit_subjects_20337
             )
         }
@@ -1665,7 +1664,7 @@ export class Organization extends CustomBaseEntity {
         let checkUpdatePermission = false
         let checkCreatePermission = false
         let checkAdminPermission = false
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         const dbPrograms = []
 
         for (const programDetail of programs) {
@@ -1714,14 +1713,14 @@ export class Organization extends CustomBaseEntity {
 
         if (checkCreatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.create_program_20221
             )
         }
 
         if (checkUpdatePermission) {
             await context.permissions.rejectIfNotAllowed(
-                permisionContext,
+                permissionContext,
                 PermissionName.edit_program_20331
             )
         }
@@ -1742,9 +1741,9 @@ export class Organization extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: this.organization_id }
+        const permissionContext = { organization_ids: [this.organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_organization_10440
         )
 

@@ -1,10 +1,11 @@
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
 import { Request } from 'express'
-import { School } from '../../src/entities/school'
 import { Model } from '../../src/model'
 import { PermissionName } from '../../src/permissions/permissionNames'
-import { UserPermissions } from '../../src/permissions/userPermissions'
+import {
+    PermissionContext,
+    UserPermissions,
+} from '../../src/permissions/userPermissions'
 import { superAdminRole } from '../../src/permissions/superAdmin'
 import { checkToken, TokenPayload } from '../../src/token'
 import { createServer } from '../../src/utils/createServer'
@@ -24,12 +25,8 @@ import {
     addSchoolToUser,
     userToPayload,
 } from '../utils/operations/userOps'
-import {
-    getNonAdminAuthToken,
-    getAdminAuthToken,
-    generateToken,
-} from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { getNonAdminAuthToken, getAdminAuthToken } from '../utils/testConfig'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
 import { grantPermission } from '../utils/operations/roleOps'
@@ -47,12 +44,13 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { Organization } from '../../src/entities/organization'
 import { studentRole } from '../../src/permissions/student'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { School } from '../../src/entities/school'
+import { buildPermissionError } from '../utils/errors'
 chai.use(chaiAsPromised)
 
 describe('userPermissions', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
-    let originalAdmins: string[]
     const req = {
         headers: {},
     } as Request
@@ -96,68 +94,43 @@ describe('userPermissions', () => {
         })
     })
 
-    describe('rejectIfNotAllowed', () => {
+    describe('allowed', () => {
+        let user: User
+        let org1: Organization
+        let org2: Organization
+        let orgRole: Role
         let userPermissions: UserPermissions
-        let schoolId: string
-        let organizationId: string
-        let userId: string
-        let testOrgRoleId: string
-        let testSchoolRoleId: string
         let token
+        const perm = PermissionName.edit_class_20334
 
         beforeEach(async () => {
             const orgOwner = await createAdminUser(testClient)
-            const user = await createNonAdminUser(testClient)
-            userId = user.user_id
-            const organization = await createOrganizationAndValidate(
+            user = await createNonAdminUser(testClient)
+            org1 = await createOrganizationAndValidate(
                 testClient,
                 orgOwner.user_id
             )
-            organizationId = organization.organization_id
+            org2 = await createOrganization().save()
             await addUserToOrganizationAndValidate(
                 testClient,
                 user.user_id,
-                organizationId,
+                org1.organization_id,
                 { authorization: getAdminAuthToken() }
             )
-            const school = await createSchool(
+            orgRole = await createRole(
                 testClient,
-                organizationId,
-                'my school',
-                undefined,
-                { authorization: getAdminAuthToken() }
-            )
-            schoolId = school.school_id
-            await addUserToSchool(testClient, userId, schoolId, {
-                authorization: getAdminAuthToken(),
-            })
-            const testOrgRole = await createRole(
-                testClient,
-                organizationId,
+                org1.organization_id,
                 'test_role'
             )
-            testOrgRoleId = testOrgRole.role_id
             await addRoleToOrganizationMembership(
                 testClient,
-                userId,
-                organizationId,
-                testOrgRoleId
-            )
-            const testSchoolRole = await createRole(
-                testClient,
-                organizationId,
-                'test_role'
-            )
-            testSchoolRoleId = testSchoolRole.role_id
-            await addRoleToSchoolMembership(
-                testClient,
-                userId,
-                schoolId,
-                testSchoolRoleId
+                user.user_id,
+                org1.organization_id,
+                orgRole.role_id
             )
         })
 
-        context("when user role doesn't include specified permission", () => {
+        context('when user is not a super admin', () => {
             beforeEach(async () => {
                 const encodedToken = getNonAdminAuthToken()
                 req.headers = { authorization: encodedToken }
@@ -165,144 +138,34 @@ describe('userPermissions', () => {
                 userPermissions = new UserPermissions(token)
             })
 
-            it('should throw error when school ID array is provided', async () => {
-                const permissionContext = {
-                    school_id: undefined,
-                    school_ids: [schoolId],
-                    organization_id: undefined,
-                }
-                await expect(
-                    userPermissions.rejectIfNotAllowed(
-                        permissionContext,
-                        PermissionName.edit_class_20334
-                    )
-                ).to.be.rejected
-            })
-
-            it('should throw error when organization ID is provided', async () => {
-                const permissionContext = {
-                    school_id: undefined,
-                    school_ids: undefined,
-                    organization_id: organizationId,
-                }
-                await expect(
-                    userPermissions.rejectIfNotAllowed(
-                        permissionContext,
-                        PermissionName.edit_class_20334
-                    )
-                ).to.be.rejected
-            })
-        })
-
-        context('when user role does include specified permission', () => {
-            beforeEach(async () => {
-                const encodedToken = getNonAdminAuthToken()
-                req.headers = { authorization: encodedToken }
-                token = await checkToken(req)
-                userPermissions = new UserPermissions(token)
-            })
-
-            context('and the role is active', () => {
-                it('should not throw error when school ID array is provided', async () => {
-                    await grantPermission(
-                        testClient,
-                        testSchoolRoleId,
-                        PermissionName.edit_class_20334,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    const permissionContext = {
-                        school_id: undefined,
-                        school_ids: [schoolId],
-                        organization_id: undefined,
-                    }
-                    await expect(
-                        userPermissions.rejectIfNotAllowed(
-                            permissionContext,
-                            PermissionName.edit_class_20334
-                        )
-                    ).to.be.fulfilled
-                })
-
-                it('should not throw error when organization ID is provided', async () => {
-                    await grantPermission(
-                        testClient,
-                        testOrgRoleId,
-                        PermissionName.edit_class_20334,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    const permissionContext = {
-                        school_id: undefined,
-                        school_ids: undefined,
-                        organization_id: organizationId,
-                    }
-                    await expect(
-                        userPermissions.rejectIfNotAllowed(
-                            permissionContext,
-                            PermissionName.edit_class_20334
-                        )
-                    ).to.be.fulfilled
-                })
-
-                it("should not throw error when user dosn't have organization permission, but does have permission for at least one school", async () => {
-                    await grantPermission(
-                        testClient,
-                        testSchoolRoleId,
-                        PermissionName.edit_class_20334,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    const permissionContext = {
-                        school_id: undefined,
-                        school_ids: [schoolId],
-                        organization_id: organizationId,
-                    }
-                    await expect(
-                        userPermissions.rejectIfNotAllowed(
-                            permissionContext,
-                            PermissionName.edit_class_20334
-                        )
-                    ).to.be.fulfilled
-                })
-            })
-
-            context('and the user is inactive', () => {
+            context('and has permission in an organization', () => {
                 beforeEach(async () => {
-                    const dbUser = await User.findOneOrFail(userId)
-                    if (dbUser) {
-                        dbUser.status = Status.INACTIVE
-                        await connection.manager.save(dbUser)
-                    }
-                })
-                it('should throw error when school ID array is provided', async () => {
-                    const permissionContext = {
-                        school_id: undefined,
-                        school_ids: [schoolId],
-                        organization_id: undefined,
-                    }
-                    await expect(
-                        userPermissions.rejectIfNotAllowed(
-                            permissionContext,
-                            PermissionName.edit_class_20334
-                        )
-                    ).to.be.rejected
+                    await grantPermission(testClient, orgRole.role_id, perm, {
+                        authorization: getAdminAuthToken(),
+                    })
                 })
 
-                it('should throw error when organization ID is provided', async () => {
+                it('permission should be validated in the organization', async () => {
                     const permissionContext = {
-                        school_id: undefined,
-                        school_ids: undefined,
-                        organization_id: organizationId,
+                        organization_ids: [org1.organization_id],
                     }
-                    await expect(
-                        userPermissions.rejectIfNotAllowed(
-                            permissionContext,
-                            PermissionName.edit_class_20334
-                        )
-                    ).to.be.rejected
+                    expect(
+                        await userPermissions.allowed(permissionContext, perm)
+                    ).to.be.true
+                })
+
+                it('permission should not be validated in another organization', async () => {
+                    const permissionContext = {
+                        organization_ids: [org2.organization_id],
+                    }
+                    expect(
+                        await userPermissions.allowed(permissionContext, perm)
+                    ).to.be.false
                 })
             })
         })
 
-        context('when the user is super admin', () => {
+        context('when the user is a super admin', () => {
             beforeEach(async () => {
                 const encodedToken = getAdminAuthToken()
                 req.headers = {
@@ -312,7 +175,442 @@ describe('userPermissions', () => {
                 userPermissions = new UserPermissions(token)
             })
 
-            const permissionContext = {}
+            it('allows all the actions of a super admin', async () => {
+                for (const permission of superAdminRole.permissions) {
+                    expect(await userPermissions.allowed({}, permission)).to.be
+                        .true
+                }
+            })
+        })
+    })
+
+    describe('rejectIfNotAllowed', () => {
+        let userPermissions: UserPermissions
+        let org1: Organization
+        let org2: Organization
+        let school1: School
+        let school2: School
+        let school3: School
+        let user: User
+        let testOrgRoleId: string
+        let testSchoolRoleId: string
+        let token
+        let permissionContext: PermissionContext
+        const perm = PermissionName.edit_class_20334
+
+        const permError = (
+            usr: User,
+            params?: {
+                orgs?: Organization[]
+                schools?: School[]
+                isDeleted?: boolean
+            }
+        ): string => {
+            return buildPermissionError(
+                perm,
+                usr,
+                params?.orgs,
+                params?.schools,
+                params?.isDeleted
+            )
+        }
+
+        beforeEach(async () => {
+            // Create Users
+            const orgOwner = await createAdminUser(testClient)
+            user = await createNonAdminUser(testClient)
+            // Create Organizations
+            org1 = await createOrganizationAndValidate(
+                testClient,
+                orgOwner.user_id
+            )
+            await addUserToOrganizationAndValidate(
+                testClient,
+                user.user_id,
+                org1.organization_id,
+                { authorization: getAdminAuthToken() }
+            )
+            org2 = await createOrganization().save()
+            await addUserToOrganizationAndValidate(
+                testClient,
+                user.user_id,
+                org2.organization_id,
+                { authorization: getAdminAuthToken() }
+            )
+            // Create Schools
+            school1 = await createSchool(
+                testClient,
+                org1.organization_id,
+                'my school',
+                undefined,
+                { authorization: getAdminAuthToken() }
+            )
+            await addUserToSchool(testClient, user.user_id, school1.school_id, {
+                authorization: getAdminAuthToken(),
+            })
+            school2 = await createSchool(
+                testClient,
+                org1.organization_id,
+                'my second school',
+                undefined,
+                { authorization: getAdminAuthToken() }
+            )
+            school3 = await createSchool(
+                testClient,
+                org2.organization_id,
+                'my third school',
+                undefined,
+                { authorization: getAdminAuthToken() }
+            )
+            await addUserToSchool(testClient, user.user_id, school2.school_id, {
+                authorization: getAdminAuthToken(),
+            })
+            // Create Roles
+            const testOrgRole = await createRole(
+                testClient,
+                org1.organization_id,
+                'test_role'
+            )
+            testOrgRoleId = testOrgRole.role_id
+            await addRoleToOrganizationMembership(
+                testClient,
+                user.user_id,
+                org1.organization_id,
+                testOrgRoleId
+            )
+            const testSchoolRole = await createRole(
+                testClient,
+                org1.organization_id,
+                'test_role'
+            )
+            testSchoolRoleId = testSchoolRole.role_id
+            await addRoleToSchoolMembership(
+                testClient,
+                user.user_id,
+                school1.school_id,
+                testSchoolRoleId
+            )
+        })
+
+        context('when user is not a super admin', () => {
+            beforeEach(async () => {
+                const encodedToken = getNonAdminAuthToken()
+                req.headers = { authorization: encodedToken }
+                token = await checkToken(req)
+                userPermissions = new UserPermissions(token)
+            })
+
+            context('and has no permissions', () => {
+                it('should throw error when school ID array is provided', async () => {
+                    permissionContext = {
+                        school_ids: [school1.school_id],
+                        organization_ids: undefined,
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.rejectedWith(
+                        permError(user, { schools: [school1] })
+                    )
+                })
+
+                it('should throw error when organization ID is provided', async () => {
+                    permissionContext = {
+                        school_ids: undefined,
+                        organization_ids: [org1.organization_id],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.rejectedWith(permError(user, { orgs: [org1] }))
+                })
+
+                it('should throw an error when nothing is provided', async () => {
+                    await expect(
+                        userPermissions.rejectIfNotAllowed({}, perm)
+                    ).to.be.rejectedWith(permError(user))
+                })
+            })
+
+            context('and is inactive', () => {
+                beforeEach(async () => {
+                    const dbUser = await User.findOneOrFail(user.user_id)
+                    if (dbUser) {
+                        dbUser.status = Status.INACTIVE
+                        await connection.manager.save(dbUser)
+                    }
+                })
+                it('should throw error when school ID array is provided', async () => {
+                    permissionContext = {
+                        school_ids: [school1.school_id],
+                        organization_ids: undefined,
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.rejectedWith(permError(user, { isDeleted: true }))
+                })
+
+                it('should throw error when organization ID is provided', async () => {
+                    permissionContext = {
+                        school_ids: undefined,
+                        organization_ids: [org1.organization_id],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.rejected
+                })
+
+                it('should make exactly 1 database call', async () => {
+                    connection.logger.reset()
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.rejected
+                    expect(connection.logger.count).to.be.eq(1)
+                    // 1 to get user
+                })
+            })
+
+            context('and has permissions for one of the orgs', () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, testOrgRoleId, perm, {
+                        authorization: getAdminAuthToken(),
+                    })
+                })
+
+                context(
+                    'and checks for permission against that organization',
+                    () => {
+                        beforeEach(() => {
+                            permissionContext = {
+                                school_ids: undefined,
+                                organization_ids: [org1.organization_id],
+                            }
+                        })
+                        it('passes permission check', async () => {
+                            await expect(
+                                userPermissions.rejectIfNotAllowed(
+                                    permissionContext,
+                                    perm
+                                )
+                            ).to.be.fulfilled
+                        })
+                        it('should make exactly 2 database calls', async () => {
+                            connection.logger.reset()
+                            await userPermissions.rejectIfNotAllowed(
+                                permissionContext,
+                                perm
+                            )
+                            expect(connection.logger.count).to.be.eq(2) // 1 to get user, 1 to get org permission
+                        })
+                    }
+                )
+
+                it('passes when some empty strings are passed along with that organization', async () => {
+                    permissionContext = {
+                        school_ids: ['', ''],
+                        organization_ids: ['', org1.organization_id, ''],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.fulfilled
+                })
+
+                context(
+                    "and checks for permission against that org and schools which don't belong to it",
+                    () => {
+                        beforeEach(() => {
+                            permissionContext = {
+                                school_ids: [
+                                    school1.school_id,
+                                    school2.school_id,
+                                    school3.school_id,
+                                ],
+                                organization_ids: [org1.organization_id],
+                            }
+                        })
+                        it('throws permission error', async () => {
+                            await expect(
+                                userPermissions.rejectIfNotAllowed(
+                                    permissionContext,
+                                    perm
+                                )
+                            ).to.be.rejectedWith(
+                                permError(user, { schools: [school3] })
+                            )
+                        })
+                        it('should make exactly 3 database calls', async () => {
+                            connection.logger.reset()
+                            await expect(
+                                userPermissions.rejectIfNotAllowed(
+                                    permissionContext,
+                                    perm
+                                )
+                            ).to.be.rejected
+                            expect(connection.logger.count).to.be.eq(4) // 1 to get user, 1 to check org perms, 2 to check school perms
+                        })
+                    }
+                )
+
+                it('passes with that org and schools which belong to it', async () => {
+                    permissionContext = {
+                        school_ids: [school1.school_id, school2.school_id],
+                        organization_ids: [org1.organization_id],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.fulfilled
+                })
+
+                it('errors with organizations where the user does not have permission', async () => {
+                    permissionContext = {
+                        school_ids: undefined,
+                        organization_ids: [
+                            org1.organization_id,
+                            org2.organization_id,
+                        ],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.rejectedWith(permError(user, { orgs: [org2] }))
+                })
+            })
+
+            context('and has permissions for one of the schools', () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, testSchoolRoleId, perm, {
+                        authorization: getAdminAuthToken(),
+                    })
+                })
+
+                context(
+                    'and checks for permissions against that school',
+                    () => {
+                        beforeEach(() => {
+                            permissionContext = {
+                                school_ids: [school1.school_id],
+                                organization_ids: undefined,
+                            }
+                        })
+                        it('passes permission check', async () => {
+                            await expect(
+                                userPermissions.rejectIfNotAllowed(
+                                    permissionContext,
+                                    perm
+                                )
+                            ).to.be.fulfilled
+                        })
+                        it('should make exactly 2 database calls', async () => {
+                            connection.logger.reset()
+                            await userPermissions.rejectIfNotAllowed(
+                                permissionContext,
+                                perm
+                            )
+                            expect(connection.logger.count).to.be.eq(2) // 1 to get user, 1 to get school perm
+                        })
+                    }
+                )
+
+                it('passes when some empty strings are passed along with that school', async () => {
+                    permissionContext = {
+                        school_ids: ['', school1.school_id, ''],
+                        organization_ids: ['', ''],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.fulfilled
+                })
+
+                it('passes with that school and an org which it belongs to', async () => {
+                    permissionContext = {
+                        school_ids: [school1.school_id],
+                        organization_ids: [org1.organization_id],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.fulfilled
+                })
+
+                it('errors with that school and an org which it does not belong to', async () => {
+                    permissionContext = {
+                        school_ids: [school1.school_id],
+                        organization_ids: [org2.organization_id],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.rejectedWith(permError(user, { orgs: [org2] }))
+                })
+
+                it('errors with schools and orgs where the user does not have permission', async () => {
+                    const org3 = await createOrganization().save()
+                    permissionContext = {
+                        school_ids: [
+                            school1.school_id,
+                            school2.school_id,
+                            school3.school_id,
+                        ],
+                        organization_ids: [
+                            org1.organization_id,
+                            org2.organization_id,
+                            org3.organization_id,
+                        ],
+                    }
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            perm
+                        )
+                    ).to.be.rejectedWith(
+                        permError(user, {
+                            orgs: [org1, org2, org3],
+                            schools: [school2, school3],
+                        })
+                    )
+                })
+            })
+        })
+
+        context('when the user is a super admin', () => {
+            beforeEach(async () => {
+                const encodedToken = getAdminAuthToken()
+                req.headers = {
+                    authorization: encodedToken,
+                }
+                token = await checkToken(req)
+                userPermissions = new UserPermissions(token)
+            })
+
+            permissionContext = {}
 
             it('allows all the actions of a super admin', async () => {
                 for (const permission of superAdminRole.permissions) {
@@ -324,146 +622,15 @@ describe('userPermissions', () => {
                     ).to.be.fulfilled
                 }
             })
-        })
-    })
 
-    describe('allowedInOrganizations', () => {
-        let userWithRoleAndPermissionInOrg1: User
-        let userWithoutRole: User
-        let userWithRoleWithoutPermission: User
-        let inactiveUser: User
-        let org1: Organization
-        let org2: Organization
-        let roleWithPermission: Role
-        let roleWithoutPermission: Role
-        let userPermissions: UserPermissions
-        let token: TokenPayload
-
-        beforeEach(async () => {
-            userWithRoleAndPermissionInOrg1 = await createUser().save()
-            userWithoutRole = await createUser().save()
-            userWithRoleWithoutPermission = await createUser().save()
-            inactiveUser = createUser()
-            inactiveUser.status = Status.INACTIVE
-            await inactiveUser.save()
-            org1 = await createOrganization().save()
-            org2 = await createOrganization().save()
-            roleWithPermission = await createRoleFactory(
-                'role_with_permission',
-                org1,
-                {
-                    permissions: [PermissionName.delete_subjects_20447],
-                }
-            ).save()
-            await createOrganizationMembership({
-                user: userWithRoleAndPermissionInOrg1,
-                organization: org1,
-                roles: [roleWithPermission],
-            }).save()
-            await createOrganizationMembership({
-                user: userWithRoleAndPermissionInOrg1,
-                organization: org2,
-                roles: [],
-            }).save()
-            await createOrganizationMembership({
-                user: userWithoutRole,
-                organization: org1,
-            }).save()
-            roleWithoutPermission = await createRoleFactory(
-                'role_without_permission',
-                org1,
-                {
-                    permissions: [],
-                }
-            ).save()
-            await createOrganizationMembership({
-                user: userWithRoleWithoutPermission,
-                organization: org1,
-                roles: [roleWithoutPermission],
-            }).save()
-        })
-
-        context(
-            'when the user has not the role with the included permission',
-            () => {
-                beforeEach(async () => {
-                    req.headers = {
-                        authorization: generateToken(
-                            userToPayload(userWithRoleAndPermissionInOrg1)
-                        ),
-                    }
-                    token = await checkToken(req)
-                    userPermissions = new UserPermissions(token)
-                })
-                it('should return all the organizations ids that allow it and not the other', async () => {
-                    const result = await userPermissions.organizationsWhereItIsAllowed(
-                        [org1.organization_id, org2.organization_id],
-                        PermissionName.delete_subjects_20447
-                    )
-                    expect(result).to.have.lengthOf(1)
-                    expect(result[0]).to.equal(org1.organization_id)
-                })
-            }
-        )
-
-        context(
-            'when the user has not the role with the included permission',
-            () => {
-                beforeEach(async () => {
-                    req.headers = {
-                        authorization: generateToken(
-                            userToPayload(userWithoutRole)
-                        ),
-                    }
-                    token = await checkToken(req)
-                    userPermissions = new UserPermissions(token)
-                })
-                it('should return an empty array', async () => {
-                    const result = await userPermissions.organizationsWhereItIsAllowed(
-                        [org1.organization_id],
-                        PermissionName.delete_subjects_20447
-                    )
-                    expect(result).to.be.have.lengthOf(0)
-                })
-            }
-        )
-
-        context(
-            'when the user has a role that does not include the permission',
-            () => {
-                beforeEach(async () => {
-                    req.headers = {
-                        authorization: generateToken(
-                            userToPayload(userWithRoleWithoutPermission)
-                        ),
-                    }
-                    token = await checkToken(req)
-                    userPermissions = new UserPermissions(token)
-                })
-                it('should return an empty array', async () => {
-                    const result = await userPermissions.organizationsWhereItIsAllowed(
-                        [org1.organization_id],
-                        PermissionName.delete_subjects_20447
-                    )
-                    expect(result).to.be.have.lengthOf(0)
-                })
-            }
-        )
-
-        context('when the user is inactive', () => {
-            beforeEach(async () => {
-                req.headers = {
-                    authorization: generateToken(userToPayload(inactiveUser)),
-                }
-                token = await checkToken(req)
-                userPermissions = new UserPermissions(token)
-            })
-            it('should return an empty array', async () => {
-                const result = await userPermissions.organizationsWhereItIsAllowed(
-                    [org1.organization_id],
-                    PermissionName.delete_subjects_20447
+            it('should make exactly 1 database call', async () => {
+                connection.logger.reset()
+                await userPermissions.rejectIfNotAllowed(
+                    permissionContext,
+                    superAdminRole.permissions[0]
                 )
-                expect(result).to.be.have.lengthOf(0)
+                expect(connection.logger.count).to.be.eq(1)
+                // 1 to get user
             })
         })
     })

@@ -56,6 +56,7 @@ import { Context } from '../../src/main'
 import faker from 'faker'
 import CategoriesInitializer from '../../src/initializers/categories'
 import { buildDeleteCategoryInputArray } from '../utils/operations/categoryOps'
+import { buildPermissionError } from '../utils/errors'
 
 interface CategoryAndSubcategories {
     id: string
@@ -72,6 +73,11 @@ const buildContext = async (permissions: UserPermissions) => {
     return {
         permissions,
     }
+}
+
+const permErrorMeta = (permission: string) => {
+    return (usr: User, orgs?: Organization[]): string =>
+        buildPermissionError(permission, usr, orgs)
 }
 
 const expectAPIErrorCollection = async (
@@ -340,23 +346,23 @@ describe('category', () => {
         })
 
         context('error handling', () => {
-            const createCategoriesPermissionName =
+            const permError = permErrorMeta(
                 PermissionName.create_subjects_20227
+            )
 
             context(
                 'when non admin tries to create categories in an organization which does not belong',
                 () => {
-                    it('throws an error', async () => {
+                    it('throws a permission error', async () => {
                         const user = userWithPermission
-                        const org = org2
-                        const input = generateInput(2, org, true)
+                        const input = generateInput(2, org2, true)
                         const operation = createCategoriesFromResolver(
                             user,
                             input
                         )
 
                         await expect(operation).to.be.rejectedWith(
-                            `User(${user.user_id}) does not have Permission(${createCategoriesPermissionName}) in Organization(${org.organization_id})`
+                            permError(user, [org2])
                         )
 
                         await expectCategories(0)
@@ -367,17 +373,16 @@ describe('category', () => {
             context(
                 'when a user without permission tries to create categories in the organization which belongs',
                 () => {
-                    it('throws an ErrorCollection', async () => {
+                    it('throws a permission error', async () => {
                         const user = userWithoutMembership
-                        const org = org1
-                        const input = generateInput(2, org, true)
+                        const input = generateInput(2, org1, true)
                         const operation = createCategoriesFromResolver(
                             user,
                             input
                         )
 
                         await expect(operation).to.be.rejectedWith(
-                            `User(${user.user_id}) does not have Permission(${createCategoriesPermissionName}) in Organization(${org.organization_id})`
+                            permError(user, [org1])
                         )
 
                         await expectCategories(0)
@@ -388,9 +393,8 @@ describe('category', () => {
             context(
                 'when non member tries to create categories in any organization',
                 () => {
-                    it('throws an ErrorCollection', async () => {
+                    it('throws a permission error', async () => {
                         const user = userWithoutMembership
-                        const org = org1
                         const input = [
                             ...generateInput(1, org1, true),
                             ...generateInput(1, org2, true),
@@ -402,7 +406,7 @@ describe('category', () => {
                         )
 
                         await expect(operation).to.be.rejectedWith(
-                            `User(${user.user_id}) does not have Permission(${createCategoriesPermissionName}) in Organization(${org.organization_id})`
+                            permError(user, [org1, org2])
                         )
 
                         await expectCategories(0)
@@ -857,11 +861,13 @@ describe('category', () => {
             })
 
             context('error handling', () => {
-                const updateCategoriesPermissionName =
+                const permError = permErrorMeta(
                     PermissionName.edit_subjects_20337
+                )
+
                 context('when user has permission', () => {
                     context('and tries to update system categories', () => {
-                        it('should throw an ErrorCollection', async () => {
+                        it('throws a permission error', async () => {
                             const user = userWithPermission
                             const catsToUpdate = systemCategories
                             const input = buildUpdateCategoryInputArray(
@@ -875,7 +881,7 @@ describe('category', () => {
                             )
 
                             await expect(operation).to.be.rejectedWith(
-                                `User(${user.user_id}) does not have Permission(${updateCategoriesPermissionName})`
+                                permError(user)
                             )
 
                             await expectNoChangesMade(catsToUpdate)
@@ -885,9 +891,8 @@ describe('category', () => {
                     context(
                         'and tries to update categories in a non belonging organization',
                         () => {
-                            it('should throw an ErrorCollection', async () => {
+                            it('throws a permission error', async () => {
                                 const user = userWithPermission
-                                const org = org2
                                 const catsToUpdate = org2Categories
                                 const input = buildUpdateCategoryInputArray(
                                     catsToUpdate.map((c) => c.id),
@@ -900,7 +905,7 @@ describe('category', () => {
                                 )
 
                                 await expect(operation).to.be.rejectedWith(
-                                    `User(${user.user_id}) does not have Permission(${updateCategoriesPermissionName}) in Organization(${org.organization_id})`
+                                    permError(user, [org2])
                                 )
 
                                 await expectNoChangesMade(catsToUpdate)
@@ -914,9 +919,8 @@ describe('category', () => {
                         context(
                             'and tries to update categories in its organization',
                             () => {
-                                it('should throw an ErrorCollection', async () => {
+                                it('throws a permission error', async () => {
                                     const user = userWithoutPermission
-                                    const org = org1
                                     const catsToUpdate = org1Categories
                                     const input = buildUpdateCategoryInputArray(
                                         catsToUpdate.map((c) => c.id),
@@ -929,7 +933,7 @@ describe('category', () => {
                                     )
 
                                     await expect(operation).to.be.rejectedWith(
-                                        `User(${user.user_id}) does not have Permission(${updateCategoriesPermissionName}) in Organization(${org.organization_id})`
+                                        permError(user, [org1])
                                     )
 
                                     await expectNoChangesMade(catsToUpdate)
@@ -940,7 +944,7 @@ describe('category', () => {
 
                     context('neither has membership', () => {
                         context('and tries to update any categories', () => {
-                            it('should throw an ErrorCollection', async () => {
+                            it('throws a permission error', async () => {
                                 const user = userWithoutMembership
                                 const catsToUpdate = [
                                     systemCategories[0],
@@ -959,7 +963,7 @@ describe('category', () => {
                                 )
 
                                 await expect(operation).to.be.rejectedWith(
-                                    `User(${user.user_id}) does not have Permission(${updateCategoriesPermissionName})`
+                                    permError(user)
                                 )
 
                                 await expectNoChangesMade(catsToUpdate)
@@ -1407,8 +1411,9 @@ describe('category', () => {
 
             context('error handling', () => {
                 let user: User
-                const deleteCategoriesPermissionName =
+                const permError = permErrorMeta(
                     PermissionName.delete_subjects_20447
+                )
 
                 context('when user is not admin', () => {
                     context('but has permission', () => {
@@ -1417,7 +1422,7 @@ describe('category', () => {
                         })
 
                         context('and tries to update system categories', () => {
-                            it('should throw an error', async () => {
+                            it('throws a permission error', async () => {
                                 const catsToDelete = systemCategories
                                 const input = buildDeleteCategoryInputArray(
                                     catsToDelete
@@ -1429,7 +1434,7 @@ describe('category', () => {
                                 )
 
                                 await expect(operation).to.be.rejectedWith(
-                                    `User(${user.user_id}) does not have Permission(${deleteCategoriesPermissionName})`
+                                    permError(user)
                                 )
 
                                 await expectCategories(categoriesTotalCount)
@@ -1437,8 +1442,7 @@ describe('category', () => {
                         })
 
                         context('and tries to update system categories', () => {
-                            it('should throw an error', async () => {
-                                const org = org2
+                            it('throws a permission error', async () => {
                                 const catsToDelete = org2Categories
                                 const input = buildDeleteCategoryInputArray(
                                     catsToDelete
@@ -1450,7 +1454,7 @@ describe('category', () => {
                                 )
 
                                 await expect(operation).to.be.rejectedWith(
-                                    `User(${user.user_id}) does not have Permission(${deleteCategoriesPermissionName}) in Organization(${org.organization_id})`
+                                    permError(user, [org2])
                                 )
 
                                 await expectCategories(categoriesTotalCount)
@@ -1467,8 +1471,7 @@ describe('category', () => {
                             context(
                                 'and tries to delete categories in its organization',
                                 () => {
-                                    it('should throw an error', async () => {
-                                        const org = org1
+                                    it('throws a permission error', async () => {
                                         const catsToDelete = org1Categories
                                         const input = buildDeleteCategoryInputArray(
                                             catsToDelete
@@ -1482,7 +1485,7 @@ describe('category', () => {
                                         await expect(
                                             operation
                                         ).to.be.rejectedWith(
-                                            `User(${user.user_id}) does not have Permission(${deleteCategoriesPermissionName}) in Organization(${org.organization_id})`
+                                            permError(user, [org1])
                                         )
 
                                         await expectCategories(
@@ -1501,7 +1504,7 @@ describe('category', () => {
                             context(
                                 'and tries to delete any categories',
                                 () => {
-                                    it('should throw an error', async () => {
+                                    it('throws a permission error', async () => {
                                         const catsToDelete = [
                                             systemCategories[0],
                                             org1Categories[0],
@@ -1519,9 +1522,7 @@ describe('category', () => {
 
                                         await expect(
                                             operation
-                                        ).to.be.rejectedWith(
-                                            `User(${user.user_id}) does not have Permission(${deleteCategoriesPermissionName})`
-                                        )
+                                        ).to.be.rejectedWith(permError(user))
 
                                         await expectCategories(
                                             categoriesTotalCount

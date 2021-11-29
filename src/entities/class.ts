@@ -80,9 +80,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_class_20334
         )
 
@@ -195,13 +195,13 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.add_teachers_to_class_20226
         )
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_teacher_from_class_20446
         )
 
@@ -260,9 +260,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.add_teachers_to_class_20226
         )
 
@@ -293,12 +293,12 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = {
-            organization_id: organization_id,
+        const permissionContext = {
+            organization_ids: [organization_id],
             school_ids: (await this.schools)?.map((x) => x.school_id),
         }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_teacher_from_class_20446
         )
 
@@ -331,13 +331,13 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.add_students_to_class_20225
         )
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_student_from_class_roster_20445
         )
 
@@ -396,9 +396,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.add_students_to_class_20225
         )
 
@@ -429,12 +429,12 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = {
-            organization_id: organization_id,
+        const permissionContext = {
+            organization_ids: [organization_id],
             school_ids: (await this.schools)?.map((x) => x.school_id),
         }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_student_from_class_roster_20445
         )
 
@@ -467,13 +467,13 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_school_20330
         )
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_class_20334
         )
 
@@ -532,9 +532,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_school_20330
         )
 
@@ -567,12 +567,12 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = {
-            organization_id: organization_id,
+        const permissionContext = {
+            organization_ids: [organization_id],
             school_ids: (await this.schools)?.map((x) => x.school_id),
         }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_class_20334
         )
 
@@ -607,9 +607,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_class_20334
         )
 
@@ -635,9 +635,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_class_20334
         )
 
@@ -665,9 +665,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_class_20334
         )
 
@@ -693,9 +693,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_class_20334
         )
 
@@ -761,9 +761,9 @@ export class Class extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_class_20444
         )
 

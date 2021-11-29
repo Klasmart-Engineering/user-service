@@ -55,20 +55,6 @@ export function createNonExistentOrInactiveEntityAPIError(
     })
 }
 
-export function createUnauthorizedOrganizationAPIError(
-    index: number,
-    organizationId: string
-) {
-    return new APIError({
-        code: customErrors.unauthorized.code,
-        message: customErrors.unauthorized.message,
-        variables: ['organizationId'],
-        entity: 'Organization',
-        entityName: organizationId,
-        index,
-    })
-}
-
 export function createInputRequiresAtLeastOne(
     index: number,
     entity: string,
@@ -175,3 +161,5 @@ export function createEntityAPIError(
 
     return new APIError(errorDetails)
 }
+
+// TODO: standardise error handling for permissions

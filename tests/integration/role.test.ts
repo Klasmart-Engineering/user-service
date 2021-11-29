@@ -1368,7 +1368,7 @@ describe('role', () => {
                 await expect(
                     delRole(getNonAdminAuthToken())
                 ).to.be.rejectedWith(
-                    `User(${userId}) does not have Permission(${PermissionName.delete_role_30440}) in Organization(${organizationId})`
+                    `User(${userId}) does not have Permission(${PermissionName.delete_role_30440}) in Organizations(${organizationId})`
                 )
                 await checkRoleRemoved(false)
             })

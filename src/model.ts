@@ -459,7 +459,7 @@ export class Model {
     ) {
         const user_id = context.permissions.getUserId()
         await context.permissions.rejectIfNotAllowed(
-            { organization_id, user_id },
+            { organization_ids: [organization_id], user_id },
             PermissionName.edit_users_40330
         )
 

@@ -54,9 +54,11 @@ export class Grade extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = {
+            organization_ids: organization_id ? [organization_id] : undefined,
+        }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_grade_20443
         )
 

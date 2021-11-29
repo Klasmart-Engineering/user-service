@@ -63,9 +63,9 @@ export class Role extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_role_and_permissions_30332
         )
 
@@ -100,9 +100,9 @@ export class Role extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_role_permissions_30112
         )
 
@@ -130,9 +130,9 @@ export class Role extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_role_and_permissions_30332
         )
 
@@ -171,9 +171,9 @@ export class Role extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_role_and_permissions_30332
         )
 
@@ -208,9 +208,9 @@ export class Role extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_role_and_permissions_30332
         )
 
@@ -244,9 +244,9 @@ export class Role extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_role_and_permissions_30332
         )
 
@@ -282,9 +282,11 @@ export class Role extends CustomBaseEntity {
     ) {
         const organization_id = (await this.organization)?.organization_id
         if (this.system_role) context.permissions.rejectIfNotAdmin()
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = {
+            organization_ids: organization_id ? [organization_id] : undefined,
+        }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_role_30440
         )
 

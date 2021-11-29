@@ -80,7 +80,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     // is the user authorized to upload to this org?
     try {
         await userPermissions.rejectIfNotAllowed(
-            { organization_id: org.organization_id },
+            { organization_ids: [org.organization_id] },
             PermissionName.upload_users_40880
         )
     } catch (e) {

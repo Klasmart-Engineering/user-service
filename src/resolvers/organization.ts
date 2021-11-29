@@ -23,16 +23,16 @@ export async function addUsersToOrganizations(
     context: Pick<Context, 'permissions'>
 ): Promise<OrganizationsMutationResult> {
     // Initial validations
-    if (args.input.length === 0)
+    if (args.input.length === 0) {
         throw createInputLengthAPIError('Organization', 'min')
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
-        throw createInputLengthAPIError('Organization', 'max')
-    for (const val of args.input) {
-        await context.permissions.rejectIfNotAllowed(
-            { organization_id: val.organizationId },
-            PermissionName.send_invitation_40882
-        )
     }
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
+        throw createInputLengthAPIError('Organization', 'max')
+    }
+    await context.permissions.rejectIfNotAllowed(
+        { organization_ids: args.input.map((i) => i.organizationId) },
+        PermissionName.send_invitation_40882
+    )
 
     // Preloading
     const preloadedOrgArray = Organization.findByIds(
@@ -113,7 +113,7 @@ export async function addUsersToOrganizations(
             if (role) roles.push(role)
             else missingRoleIds.push(val)
         })
-        if (missingRoleIds.length)
+        if (missingRoleIds.length) {
             errors.push(
                 new APIError({
                     code: customErrors.nonexistent_or_inactive.code,
@@ -125,11 +125,12 @@ export async function addUsersToOrganizations(
                     index,
                 })
             )
+        }
 
         // Create org memberships for each user, including all roles
         for (const userId of userIds) {
             const user = preloadedUsers.get(userId)
-            if (!user)
+            if (!user) {
                 errors.push(
                     new APIError({
                         code: customErrors.nonexistent_or_inactive.code,
@@ -141,6 +142,7 @@ export async function addUsersToOrganizations(
                         index,
                     })
                 )
+            }
 
             if (!organization || !user) continue
             if (preloadedMemberships.has([organizationId, userId].toString())) {
