@@ -1,17 +1,28 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { Context } from '../main'
-import { createCategories, updateCategories } from '../resolvers/category'
+import {
+    createCategories,
+    deleteCategories,
+    updateCategories,
+    addSubcategoriesToCategories,
+} from '../resolvers/category'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { addSubcategoriesToCategories } from '../resolvers/category'
 
 const typeDefs = gql`
     extend type Mutation {
-        category(id: ID!): Category @isAdmin(entity: "category")
+        category(id: ID!): Category
+            @isAdmin(entity: "category")
+            @deprecated(
+                reason: "Sunset Date: 24/02/2022 Details: [https://calmisland.atlassian.net/l/c/RKcPTt1p, https://calmisland.atlassian.net/l/c/mTni58mA]"
+            )
         uploadCategoriesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         createCategories(
             input: [CreateCategoryInput!]!
+        ): CategoriesMutationResult
+        deleteCategories(
+            input: [DeleteCategoryInput!]!
         ): CategoriesMutationResult
         updateCategories(
             input: [UpdateCategoryInput!]!
@@ -62,6 +73,10 @@ const typeDefs = gql`
         subcategories: [ID!]
     }
 
+    input DeleteCategoryInput {
+        id: ID!
+    }
+
     input UpdateCategoryInput {
         id: ID!
         name: String
@@ -106,6 +121,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 22/02/2022 Details: https://calmisland.atlassian.net/l/c/U107XwHS"
             )
         delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 24/02/2022 Details: https://calmisland.atlassian.net/l/c/mTni58mA"
+            )
     }
 
     input CategoryDetail {
@@ -130,6 +148,8 @@ export default function getDefault(
                     model.uploadCategoriesFromCSV(args, ctx, info),
                 createCategories: (_parent, args, ctx, _info) =>
                     createCategories(args, ctx),
+                deleteCategories: (_parent, args, ctx, _info) =>
+                    deleteCategories(args, ctx),
                 updateCategories: (_parent, args, ctx, _info) =>
                     updateCategories(args, ctx),
                 addSubcategoriesToCategories: (_parent, args, ctx, info) =>

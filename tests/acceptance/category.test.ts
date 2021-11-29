@@ -2,12 +2,12 @@ import { expect, use } from 'chai'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Category } from '../../src/entities/category'
-import { Organization } from '../../src/entities/organization'
 import CategoriesInitializer from '../../src/initializers/categories'
 import {
     CategoryConnectionNode,
     UpdateCategoryInput,
     CreateCategoryInput,
+    DeleteCategoryInput,
 } from '../../src/types/graphQL/category'
 import { loadFixtures } from '../utils/fixtures'
 import {
@@ -24,13 +24,6 @@ import {
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
-import {
-    buildUpdateCategoryInputArray,
-    CATEGORY_NODE,
-    CREATE_CATEGORIES,
-    UPDATE_CATEGORIES,
-} from '../utils/operations/categoryOps'
-import { createCategory } from '../factories/category.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { makeRequest } from './utils'
 import { User } from '../../src/entities/user'
@@ -41,6 +34,16 @@ import { PermissionName } from '../../src/permissions/permissionNames'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { userToPayload } from '../utils/operations/userOps'
 import { NIL_UUID } from '../utils/database'
+import {
+    CATEGORY_NODE,
+    CREATE_CATEGORIES,
+    DELETE_CATEGORIES,
+    buildUpdateCategoryInputArray,
+    UPDATE_CATEGORIES,
+} from '../utils/operations/categoryOps'
+import { createCategory } from '../factories/category.factory'
+import { Organization } from '../../src/entities/organization'
+import { Status } from '../../src/entities/status'
 
 use(deepEqualInAnyOrder)
 
@@ -137,9 +140,7 @@ describe('acceptance.category', () => {
     context('categoriesConnection', () => {
         it('queries paginated categories', async () => {
             const pageSize = 5
-
             const response = await makeQuery(pageSize)
-
             const categoriesConnection = response.body.data.categoriesConnection
 
             expect(response.status).to.eq(200)
@@ -304,6 +305,63 @@ describe('acceptance.category', () => {
 
                 expect(response.status).to.eq(200)
                 expect(categoriesUpdated).to.be.null
+                expect(errors).to.exist
+            })
+        })
+    })
+
+    context('deleteCategories', () => {
+        const makeDeleteCategoriesMutation = async (
+            input: DeleteCategoryInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(DELETE_CATEGORIES),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        context('when input is sent in a correct way', () => {
+            it('should respond succesfully', async () => {
+                const input = Array.from(categoryIds.slice(0, 2), (id) => {
+                    return { id }
+                })
+
+                const response = await makeDeleteCategoriesMutation(input)
+                const categories =
+                    response.body.data.deleteCategories.categories
+                expect(response.status).to.eq(200)
+                expect(categories).to.exist
+                expect(categories).to.be.an('array')
+                expect(categories.length).to.eq(input.length)
+                const categoryDeletedIds = categories.map(
+                    (cd: CategoryConnectionNode) => cd.id
+                )
+
+                const inputIds = input.map((i) => i.id)
+
+                expect(categoryDeletedIds).to.deep.equalInAnyOrder(inputIds)
+
+                categories.forEach((c: CategoryConnectionNode) => {
+                    expect(c.status).to.eq(Status.INACTIVE)
+                })
+            })
+        })
+
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                const input = Array.from(categoryIds.slice(0, 2), (id) => {
+                    return { id }
+                })
+                input.push({ id: NIL_UUID })
+
+                const response = await makeDeleteCategoriesMutation(input)
+                const categoriesDeleted = response.body.data.deleteCategories
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(categoriesDeleted).to.be.null
                 expect(errors).to.exist
             })
         })
