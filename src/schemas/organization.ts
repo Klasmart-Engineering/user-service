@@ -1,15 +1,9 @@
-import Dataloader from 'dataloader'
 import gql from 'graphql-tag'
 import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { IDataLoaders } from '../loaders/setup'
-import {
-    orgsForUsers,
-    rolesForUsers,
-    schoolsForUsers,
-} from '../loaders/usersConnection'
 import { Context } from '../main'
 import { Model } from '../model'
 import { addUsersToOrganizations } from '../resolvers/organization'
@@ -500,17 +494,6 @@ export default function getDefault(
                     ctx: Context,
                     info
                 ) => {
-                    // Add dataloaders for the usersConnection
-                    // TODO remove once corresponding child connections have been created
-                    ctx.loaders.usersConnection = {
-                        organizations: new Dataloader((keys) =>
-                            orgsForUsers(keys)
-                        ),
-                        schools: new Dataloader((keys) =>
-                            schoolsForUsers(keys)
-                        ),
-                        roles: new Dataloader((keys) => rolesForUsers(keys)),
-                    }
                     return model.organizationsConnection(ctx, info, args)
                 },
                 organizationNode: (_parent, args, ctx: Context) => {

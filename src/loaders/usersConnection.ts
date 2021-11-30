@@ -8,11 +8,12 @@ import { OrganizationSummaryNode } from '../types/graphQL/organization'
 import { SchoolSummaryNode } from '../types/graphQL/school'
 import DataLoader from 'dataloader'
 import { RoleSummaryNode } from '../types/graphQL/role'
+import { GraphQLResolveInfo } from 'graphql/type/definition'
 
 export interface IUsersConnectionLoaders {
-    organizations?: DataLoader<string, OrganizationSummaryNode[]>
-    schools?: DataLoader<string, SchoolSummaryNode[]>
-    roles?: DataLoader<string, RoleSummaryNode[]>
+    organizations: DataLoader<string, OrganizationSummaryNode[]>
+    schools: DataLoader<string, SchoolSummaryNode[]>
+    roles: DataLoader<string, RoleSummaryNode[]>
 }
 
 export const orgsForUsers = async (
@@ -237,4 +238,16 @@ export const rolesForUsers = async (
             return roles
         })
     )
+}
+
+export function isUsersConnectionChild(info: GraphQLResolveInfo) {
+    // traverse the query upwards to check for a usersConnection parent
+    let parent = info.path.prev
+    while (parent) {
+        if (parent.key === 'usersConnection') {
+            return true
+        }
+        parent = parent.prev
+    }
+    return false
 }

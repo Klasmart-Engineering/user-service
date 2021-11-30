@@ -3,9 +3,11 @@ import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import { CoreUserConnectionNode } from '../pagination/usersConnection'
+import { OrganizationSummaryNode } from '../types/graphQL/organization'
+import { RoleSummaryNode } from '../types/graphQL/role'
+import { SchoolSummaryNode } from '../types/graphQL/school'
 import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
-import { IUsersConnectionLoaders } from './usersConnection'
 
 export interface IUsersLoaders {
     user: Lazy<DataLoader<string, User | Error>>
@@ -13,9 +15,11 @@ export interface IUsersLoaders {
     schoolMemberships: Lazy<DataLoader<string, SchoolMembership[]>>
 }
 
-export interface IUserNodeDataLoaders
-    extends Required<IUsersConnectionLoaders> {
+export interface IUserNodeDataLoaders {
     node: Lazy<NodeDataLoader<User, CoreUserConnectionNode>>
+    organizations: Lazy<DataLoader<string, OrganizationSummaryNode[]>>
+    schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
+    roles: Lazy<DataLoader<string, RoleSummaryNode[]>>
 }
 
 export const orgMembershipsForUsers = async (
