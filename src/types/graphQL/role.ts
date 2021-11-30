@@ -1,4 +1,6 @@
 import { Status } from '../../entities/status'
+import { IPaginatedResponse } from '../../utils/pagination/paginate';
+import { PermissionConnectionNode } from './permission';
 
 export interface RoleConnectionNode {
     id: string
@@ -6,6 +8,7 @@ export interface RoleConnectionNode {
     status: Status
     system: boolean
     description: string
+    permissionsConnection?: IPaginatedResponse<PermissionConnectionNode>
 }
 
 export interface RoleSummaryNode {

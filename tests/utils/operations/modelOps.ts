@@ -693,12 +693,23 @@ export const CATEGORIES_CONNECTION = `
     }`
 
 export const ROLE_FIELDS = gql`
+    ${PERMISSION_NODE_FIELDS}
+
     fragment roleFields on RoleConnectionNode {
         id
         name
         status
         system
         description
+        permissionsConnection(direction: FORWARD) {
+            totalCount
+            edges {
+                cursor
+                node {
+                    ...permissionFields
+                }
+            }
+        }
     }
 `
 

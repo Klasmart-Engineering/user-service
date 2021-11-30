@@ -2,6 +2,15 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { PermissionConnectionNode } from '../types/graphQL/permission'
+import {
+    IChildPaginationArgs,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
+import { GraphQLResolveInfo } from 'graphql'
+import { RoleConnectionNode } from '../types/graphQL/role'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { IDataLoaders } from '../loaders/setup'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -62,6 +71,12 @@ const typeDefs = gql`
         description: String!
         status: Status!
         system: Boolean!
+        permissionsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            sort: PermissionSortInput
+            filter: PermissionFilter
+        ): PermissionsConnectionResponse @isAdmin(entity: "permission")
     }
 
     extend type Query {
@@ -91,6 +106,9 @@ const typeDefs = gql`
         organization: Organization
         memberships: [OrganizationMembership]
         permissions: [Permission]
+            @deprecated(
+                reason: "Sunset Date: 26/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
         permission(permission_name: String!): Permission
 
         #mutations
@@ -108,6 +126,39 @@ const typeDefs = gql`
     }
 `
 
+export async function permissionsChildConnectionResolver(
+    role: Pick<RoleConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return permissionsChildConnection(
+        role,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+export async function permissionsChildConnection(
+    role: Pick<RoleConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.permissionsConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: role.id,
+            filterKey: 'roleId',
+            pivot: '"Role"."role_id"',
+        },
+        primaryColumn: 'permission_name',
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -115,6 +166,9 @@ export default function getDefault(
     return {
         typeDefs,
         resolvers: {
+            RoleConnectionNode: {
+                permissionsConnection: permissionsChildConnectionResolver,
+            },
             Mutation: {
                 roles: (_parent, _args, ctx) => model.getRoles(ctx),
                 role: (_parent, args, ctx, _info) => model.getRole(args, ctx),

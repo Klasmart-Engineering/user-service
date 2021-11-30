@@ -151,6 +151,8 @@ import {
 import {
     IPermissionNodeDataLoaders,
     mapPermissionToPermissionConnectionNode,
+    permissionConnectionQuery,
+    permissionConnectionSortingConfig,
     permissionSummaryNodeFields,
 } from '../pagination/permissionsConnection'
 import { PermissionConnectionNode } from '../types/graphQL/permission'
@@ -244,6 +246,12 @@ export interface IDataLoaders {
         DataLoader<
             ICompositeIdChildConnectionDataloaderKey<Role>,
             IPaginatedResponse<RoleConnectionNode>
+        >
+    >
+    permissionsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Permission>,
+            IPaginatedResponse<PermissionConnectionNode>
         >
     >
     categoryNode: ICategoryNodeDataLoader
@@ -368,6 +376,18 @@ export function createContextLazyLoaders(
                         mapRoleToRoleConnectionNode,
                         rolesConnectionSortingConfig,
                         { permissions, entity: 'role' }
+                    )
+                })
+        ),
+        permissionsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        permissionConnectionQuery,
+                        mapPermissionToPermissionConnectionNode,
+                        permissionConnectionSortingConfig,
+                        { permissions, entity: 'permission' }
                     )
                 })
         ),
