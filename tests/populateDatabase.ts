@@ -6,7 +6,7 @@
 import { ReadStream } from 'typeorm/platform/PlatformTools'
 import { OrganizationMembership } from '../src/entities/organizationMembership'
 import { User } from '../src/entities/user'
-import { UserPermissions } from '../src/permissions/userPermissions'
+import { generateToken } from './utils/testConfig'
 import { createOrganization } from './factories/organization.factory'
 import { createOrganizationMembership } from './factories/organizationMembership.factory'
 import { createSchool } from './factories/school.factory'
@@ -23,6 +23,8 @@ import {
 import { uploadUsers } from './utils/operations/csv/uploadUsers'
 import { createServer } from '../src/utils/createServer'
 import { Model } from '../src/model'
+import { userToPayload } from './utils/operations/userOps'
+import { Organization } from '../src/entities/organization'
 
 // creates numberOfSetsSchoolSets of sizeOfSchoolSets schools each with an increasing number of members
 // 301 schools with 1 member each
@@ -87,6 +89,7 @@ async function createFakeOrganizationWithUsers(
     numberOfUsers: number
 ) {
     const org = await createOrganization().save()
+    org.organization_name = 'Chrysalis Digital'
     const users: User[] = []
     const orgMemberships: OrganizationMembership[] = []
 
@@ -106,29 +109,39 @@ async function createFakeOrganizationWithUsers(
         )
     }
     await connection.manager.save(orgMemberships)
-    return
+    return org
 }
 
 async function uploadFakeUsersFromCSV(
     connection: TestConnection,
-    userPermissions: UserPermissions
+    clientOrg: Organization
 ) {
     let file: ReadStream
     let testClient: ApolloServerTestClient
     const mimetype = 'text/csv'
     const encoding = '7bit'
-    const filename = 'users_example.csv'
+    const filename = 'users100.csv'
 
     // Set up server and test client
     const server = await createServer(new Model(connection))
     testClient = await createTestClient(server)
 
-    // Set up user-specific context and input
-    const arbitraryUserToken = getNonAdminAuthToken()
+    // Fetch users CSV file
     file = fs.createReadStream(resolve(`tests/fixtures/${filename}`))
 
+    // Create user to be the uploading user - they must be part of the org
+    const clientUser = await createUser({
+        given_name: 'Chrysalis',
+        family_name: 'Frostmaker',
+    }).save()
+    await createOrganizationMembership({
+        user: clientUser,
+        organization: clientOrg,
+    }).save()
+
+    // Simulate uploading users CSV
     await uploadUsers(testClient, file, filename, mimetype, encoding, false, {
-        authorization: arbitraryUserToken,
+        authorization: generateToken(userToPayload(clientUser)),
     })
 }
 
@@ -136,7 +149,8 @@ async function populate() {
     const connection = await createTestConnection()
     // call whatever factory code you want to populate your test scenario
     // await makeSchoolsWithRangeOfMemberCounts(connection)
-    await createFakeOrganizationWithUsers(connection, 4000)
+    const clientOrg = await createFakeOrganizationWithUsers(connection, 4000)
+    await uploadFakeUsersFromCSV(connection, clientOrg)
 }
 
 void populate()
