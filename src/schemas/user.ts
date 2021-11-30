@@ -2,30 +2,32 @@ import Dataloader from 'dataloader'
 import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import { SelectQueryBuilder } from 'typeorm'
-import { GraphQLSchemaModule } from '../types/schemaModule'
+import { createEntityScope } from '../directives/isAdmin'
+import { OrganizationMembership } from '../entities/organizationMembership'
+import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { IDataLoaders } from '../loaders/setup'
 import {
     orgsForUsers,
-    rolesForUsers,
     schoolsForUsers,
+    rolesForUsers,
+    isUsersConnectionChild,
 } from '../loaders/usersConnection'
 import { Context } from '../main'
 import { Model } from '../model'
-import { createEntityScope } from '../directives/isAdmin'
 import { CoreUserConnectionNode } from '../pagination/usersConnection'
-import { UserConnectionNode } from '../types/graphQL/user'
-import { IChildPaginationArgs } from '../utils/pagination/paginate'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     addOrganizationRolesToUsers,
+    createUsers,
     removeOrganizationRolesFromUsers,
+    updateUsers,
 } from '../resolvers/user'
-import { createUsers } from '../resolvers/user'
-import { OrganizationMembership } from '../entities/organizationMembership'
-import { SchoolMembership } from '../entities/schoolMembership'
-import { updateUsers } from '../resolvers/user'
+import { UserConnectionNode } from '../types/graphQL/user'
+import { GraphQLSchemaModule } from '../types/schemaModule'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -173,10 +175,9 @@ const typeDefs = gql`
         avatar: String
         contactInfo: ContactInfo!
         alternateContactInfo: ContactInfo
-        organizations: [OrganizationSummaryNode!]
-            @deprecated(
-                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
-            )
+        status: Status!
+        dateOfBirth: String
+        gender: String
 
         organizationMembershipsConnection(
             count: PageSize
@@ -185,6 +186,14 @@ const typeDefs = gql`
             sort: OrganizationMembershipSortBy
             direction: ConnectionDirection
         ): OrganizationMembershipsConnectionResponse
+
+        schoolMembershipsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SchoolMembershipFilter
+            sort: SchoolMembershipSortInput
+        ): SchoolMembershipsConnectionResponse
 
         classesStudyingConnection(
             count: PageSize
@@ -203,18 +212,17 @@ const typeDefs = gql`
         ): ClassesConnectionResponse
 
         roles: [RoleSummaryNode!]
+            @deprecated(
+                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
+            )
         schools: [SchoolSummaryNode!]
-        status: Status!
-        dateOfBirth: String
-        gender: String
-
-        schoolMembershipsConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: SchoolMembershipFilter
-            sort: SchoolMembershipSortInput
-        ): SchoolMembershipsConnectionResponse
+            @deprecated(
+                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
+            )
+        organizations: [OrganizationSummaryNode!]
+            @deprecated(
+                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
+            )
     }
 
     type ContactInfo {
@@ -355,9 +363,11 @@ export default function getDefault(
                     ctx: Context,
                     info
                 ) => {
-                    return info.path.prev?.key === 'userNode'
-                        ? ctx.loaders.userNode.organizations.load(user.id)
-                        : ctx.loaders.usersConnection?.organizations?.load(
+                    return isUsersConnectionChild(info)
+                        ? ctx.loaders.usersConnection?.organizations?.load(
+                              user.id
+                          )
+                        : ctx.loaders.userNode.organizations.instance.load(
                               user.id
                           )
                 },
@@ -368,9 +378,9 @@ export default function getDefault(
                     ctx: Context,
                     info
                 ) => {
-                    return info.path.prev?.key === 'userNode'
-                        ? ctx.loaders.userNode.schools.load(user.id)
-                        : ctx.loaders.usersConnection?.schools?.load(user.id)
+                    return isUsersConnectionChild(info)
+                        ? ctx.loaders.usersConnection?.schools?.load(user.id)
+                        : ctx.loaders.userNode.schools.instance.load(user.id)
                 },
                 roles: async (
                     user: UserConnectionNode,
@@ -378,9 +388,9 @@ export default function getDefault(
                     ctx: Context,
                     info
                 ) => {
-                    return info.path.prev?.key === 'userNode'
-                        ? ctx.loaders.userNode.roles.load(user.id)
-                        : ctx.loaders.usersConnection?.roles?.load(user.id)
+                    return isUsersConnectionChild(info)
+                        ? ctx.loaders.usersConnection?.roles?.load(user.id)
+                        : ctx.loaders.userNode.roles.instance.load(user.id)
                 },
 
                 classesStudyingConnection: classesStudyingConnectionResolver,
@@ -423,9 +433,7 @@ export default function getDefault(
                 me: (_, _args, ctx: Context, _info) =>
                     model.getMyUser(ctx.token),
                 usersConnection: (_parent, args, ctx: Context, info) => {
-                    // Regenerate the loaders on every resolution, because the `args.filter`
-                    // may be different
-                    // In theory we could store `args.filter` and check for deep equality, but this is overcomplicating things
+                    // Create loaders specific to usersConnection to auto filter children
                     ctx.loaders.usersConnection = {
                         organizations: new Dataloader((keys) =>
                             orgsForUsers(keys, args.filter)

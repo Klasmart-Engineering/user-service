@@ -1,15 +1,8 @@
 import gql from 'graphql-tag'
-import Dataloader from 'dataloader'
 import { GraphQLResolveInfo } from 'graphql/type/definition'
-
-import { Model } from '../model'
-import { Context } from '../main'
-import {
-    orgsForUsers,
-    schoolsForUsers,
-    rolesForUsers,
-} from '../loaders/usersConnection'
 import { IDataLoaders } from '../loaders/setup'
+import { Context } from '../main'
+import { Model } from '../model'
 import { ClassConnectionNode } from '../types/graphQL/class'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
@@ -317,31 +310,9 @@ export default function getDefault(
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 classesConnection: (_parent, args, ctx: Context, info) => {
-                    // Add dataloaders for the usersConnection
-                    // TODO remove once corresponding child connections have been created
-                    ctx.loaders.usersConnection = {
-                        organizations: new Dataloader((keys) =>
-                            orgsForUsers(keys)
-                        ),
-                        schools: new Dataloader((keys) =>
-                            schoolsForUsers(keys)
-                        ),
-                        roles: new Dataloader((keys) => rolesForUsers(keys)),
-                    }
                     return model.classesConnection(info, args)
                 },
                 classNode: (_parent, args, ctx: Context) => {
-                    // Add dataloaders for the usersConnection
-                    // TODO remove once corresponding child connections have been created
-                    ctx.loaders.usersConnection = {
-                        organizations: new Dataloader((keys) =>
-                            orgsForUsers(keys)
-                        ),
-                        schools: new Dataloader((keys) =>
-                            schoolsForUsers(keys)
-                        ),
-                        roles: new Dataloader((keys) => rolesForUsers(keys)),
-                    }
                     return ctx.loaders.classNode.node.instance.load(args)
                 },
             },

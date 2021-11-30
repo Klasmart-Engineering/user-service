@@ -381,9 +381,15 @@ export function createContextLazyLoaders(
                         coreUserConnectionNodeFields
                     )
             ),
-            organizations: new DataLoader((keys) => orgsForUsers(keys)),
-            schools: new DataLoader((keys) => schoolsForUsers(keys)),
-            roles: new DataLoader((keys) => rolesForUsers(keys)),
+            organizations: new Lazy(
+                () => new DataLoader((keys) => orgsForUsers(keys))
+            ),
+            schools: new Lazy(
+                () => new DataLoader((keys) => schoolsForUsers(keys))
+            ),
+            roles: new Lazy(
+                () => new DataLoader((keys) => rolesForUsers(keys))
+            ),
         },
         subcategoryNode: {
             node: new Lazy<
