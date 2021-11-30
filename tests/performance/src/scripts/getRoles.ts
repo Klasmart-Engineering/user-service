@@ -1,6 +1,5 @@
 import { check } from 'k6';
 import http from 'k6/http';
-import { SchoolsPayload } from '../interfaces/schools';
 import { getOrganizationRoles } from '../queries/roles';
 
 const params = {

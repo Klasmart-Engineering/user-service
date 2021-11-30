@@ -1,4 +1,4 @@
-import landing from './scripts/landing';
+import landing from './scripts/landingV2';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
 
@@ -214,29 +214,6 @@ export const options: Options = {
         teacher09: {
             executor: 'ramping-vus',
             exec: 'teacher09',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                // Ramp up               
-                {
-                    duration: '20s',
-                    target: 2
-                },
-                // Hold
-                {
-                    duration: '2m',
-                    target: 4
-                },
-                // Ramp down
-                {
-                    duration: '20s',
-                    target: 0
-                },
-            ],
-        },
-        teacher10: {
-            executor: 'ramping-vus',
-            exec: 'teacher10',
             startTime: '0s',
             gracefulStop: '5s',
             stages: [

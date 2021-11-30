@@ -235,29 +235,6 @@ export const options: Options = {
                 },
             ],
         },
-        orgAdmin: {
-            executor: 'ramping-vus',
-            exec: 'orgAdmin',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                // Ramp up               
-                {
-                    duration: '20s',
-                    target: 2
-                },
-                // Hold
-                {
-                    duration: '30s',
-                    target: 4
-                },
-                // Ramp down
-                {
-                    duration: '20s',
-                    target: 0
-                },
-            ],
-        },
     }
 }
 

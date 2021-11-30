@@ -2,7 +2,7 @@
     "name": "kidsloop-user-service-performance-tests",
     "version": "1.0.0",
     "scripts": {
-      "build": "webpack",
+      "build": "webpack --mode development",
       "test:login:sequential": "k6 run ./dist/sequentialLogin.js",
       "test:login:parallel": "k6 run ./dist/parallelLogin.js",
       "test:create:user-basic": "k6 run ./dist/createUserBasic.js",
