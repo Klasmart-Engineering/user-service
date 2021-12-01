@@ -56,7 +56,22 @@ export async function permissionsConnectionResolver(
 ): Promise<IPaginatedResponse<PermissionConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    scope = await permissionConnectionQuery(scope, filter)
+    if (filter) {
+        // A non admin user has roles table joined since @isAdmin directive
+        if (filterHasProperty('roleId', filter) && permissions.isAdmin) {
+            scope.innerJoin('Permission.roles', 'Role')
+        }
+
+        scope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                name: 'Permission.permission_name',
+                allow: 'Permission.allow',
+                roleId: 'Role.role_id',
+            })
+        )
+    }
+
+    scope.select(permissionSummaryNodeFields)
 
     const data = await paginateData<Permission>({
         direction,
@@ -86,8 +101,6 @@ export async function permissionConnectionQuery(
     filter?: IEntityFilter
 ) {
     if (filter) {
-        // A non admin user has roles table joined since @isAdmin directive
-        // if (filterHasProperty('roleId', filter) && permissions.isAdmin) {
         if (filterHasProperty('roleId', filter)) {
             scope.innerJoin('Permission.roles', 'Role')
         }
