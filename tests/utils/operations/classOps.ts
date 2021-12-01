@@ -5,6 +5,10 @@ import { Program } from '../../../src/entities/program'
 import { School } from '../../../src/entities/school'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
+import {
+    DeleteClassInput,
+    ClassConnectionNode,
+} from '../../../src/types/graphQL/class'
 import { ApolloServerTestClient } from '../createTestClient'
 import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
@@ -250,6 +254,25 @@ export const DELETE_CLASS = `
     mutation myMutation($class_id: ID!) {
         class(class_id: $class_id) {
             delete
+        }
+    }
+`
+
+const CLASSES_MUTATION_RESULT = `classes {
+                id
+                name
+                status
+                shortCode
+                programs {
+                    name
+                }
+            }
+`
+
+export const DELETE_CLASSES = `
+    mutation myMutation($input: [DeleteClassInput!]!) {
+        deleteClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
         }
     }
 `

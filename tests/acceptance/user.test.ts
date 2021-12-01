@@ -44,7 +44,11 @@ import {
 } from '../../src/types/graphQL/user'
 import { Role } from '../../src/entities/role'
 import { CreateUserInput } from '../../src/types/graphQL/user'
-import { mapUserToUserConnectionNode } from '../../src/pagination/usersConnection'
+import {
+    CoreUserConnectionNode,
+    extractCoreUserConnectionNode,
+    mapUserToUserConnectionNode,
+} from '../../src/pagination/usersConnection'
 import faker from 'faker'
 import { config } from '../../src/config/config'
 
@@ -759,19 +763,18 @@ describe('acceptance.user', () => {
 
             expect(response.status).to.eq(200)
             expect(response.body.errors).to.equal(undefined)
-            const userConNodes: UserConnectionNode[] =
-                response.body.data.updateUsers.users
+            const userConNodes: CoreUserConnectionNode[] = response.body.data.updateUsers.users.map(
+                (u: UserConnectionNode) => extractCoreUserConnectionNode(u)
+            )
             expect(userConNodes.length).to.equal(updateUserInputs.length)
             const inputUserIds = updateUserInputs.map((uui) => uui.id)
             const currentUsers = await connection.manager
                 .createQueryBuilder(User, 'User')
                 .where('User.user_id IN (:...ids)', { ids: inputUserIds })
                 .getMany()
-            const currentUserNodes: UserConnectionNode[] = []
+            const currentUserNodes: CoreUserConnectionNode[] = []
             currentUsers.map((u) =>
-                currentUserNodes.push(
-                    mapUserToUserConnectionNode(u) as UserConnectionNode
-                )
+                currentUserNodes.push(mapUserToUserConnectionNode(u))
             )
             userConNodes.sort((a, b) =>
                 a.id < b.id ? -1 : a.id > b.id ? 1 : 0

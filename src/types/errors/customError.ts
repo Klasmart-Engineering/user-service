@@ -191,8 +191,8 @@ export const customErrors = {
     },
     missing_token: {
         code: 'UNAUTHORIZED',
-        message: `No authentication token provided. 
-                Please login to the hub to refresh the cookie, 
+        message: `No authentication token provided.
+                Please login to the hub to refresh the cookie,
                 or provide a token in the Authorization header.`,
     },
 
@@ -206,11 +206,6 @@ export const customErrors = {
     delete_rejected_entity_in_use: {
         code: 'ERR_DELETE_REJECTED_ENTITY_IN_USE',
         message: 'Cannot delete {entity} {entityName} since it is being used',
-    },
-
-    mutation_bad_input: {
-        code: 'MUTATION_BAD_INPUT',
-        message: 'Cannot set {entity} index {index} attribute {attribute}',
     },
 
     database_save_error: {

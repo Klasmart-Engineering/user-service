@@ -297,23 +297,10 @@ export const ADD_ORG_ROLES_TO_USERS = `
     `
 export const CREATE_USERS = `
     mutation CreateUsers($input:[CreateUserInput!]!){
-        createUsers(input:$input){
-            users{
-                id
-                givenName
-                familyName
-                gender
-                contactInfo{
-                    email
-                    phone
-                }
-                alternateContactInfo{
-                email
-                phone
-            }
+        createUsers(input:$input) {
+            ${USERS_MUTATION_RESULT}
         }
     }
-}
 `
 
 export const REMOVE_ORG_ROLES_FROM_USERS = `
@@ -327,23 +314,7 @@ export const REMOVE_ORG_ROLES_FROM_USERS = `
 export const UPDATE_USERS = `
    mutation UpdateUsers($input:[UpdateUserInput!]!){
         updateUsers(input:$input){
-            users{
-                id
-                givenName
-                familyName
-                gender
-                contactInfo{
-                    email
-                    phone
-                }
-                alternateContactInfo{
-                    email
-                    phone
-                }
-                avatar
-                dateOfBirth
-                status
-            }
+            ${USERS_MUTATION_RESULT}
         }
     }
 `

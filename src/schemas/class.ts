@@ -11,6 +11,7 @@ import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
+import { deleteClasses } from '../resolvers/class'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -18,6 +19,7 @@ const typeDefs = gql`
         class(class_id: ID!): Class
         uploadClassesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        deleteClasses(input: [DeleteClassInput!]!): ClassesMutationResult
     }
 
     # pagination extension types start here
@@ -165,8 +167,19 @@ const typeDefs = gql`
         removeSchool(school_id: ID!): Boolean
 
         delete(_: Int): Boolean
+            @deprecated(reason: "Use deleteClasses() method")
         # addSchedule(id: ID!, timestamp: Date): Boolean
         # removeSchedule(id: ID!): Boolean
+    }
+
+    # Mutation related definitions
+
+    input DeleteClassInput {
+        id: ID!
+    }
+
+    type ClassesMutationResult {
+        classes: [ClassConnectionNode!]!
     }
 `
 
@@ -301,6 +314,8 @@ export default function getDefault(
                 },
             },
             Mutation: {
+                deleteClasses: (_parent, args, ctx, _info) =>
+                    deleteClasses(args, ctx),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>
