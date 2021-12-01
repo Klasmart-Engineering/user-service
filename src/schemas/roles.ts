@@ -2,11 +2,7 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { PermissionConnectionNode } from '../types/graphQL/permission'
-import {
-    IChildPaginationArgs,
-    shouldIncludeTotalCount,
-} from '../utils/pagination/paginate'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { GraphQLResolveInfo } from 'graphql'
 import { RoleConnectionNode } from '../types/graphQL/role'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
@@ -125,7 +121,6 @@ const typeDefs = gql`
         delete_role(_: Int): Boolean
     }
 `
-
 
 export async function permissionsChildConnectionResolver(
     role: Pick<RoleConnectionNode, 'id'>,

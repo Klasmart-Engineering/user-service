@@ -1,6 +1,6 @@
 import { Status } from '../../entities/status'
-import { IPaginatedResponse } from '../../utils/pagination/paginate';
-import { PermissionConnectionNode } from './permission';
+import { IPaginatedResponse } from '../../utils/pagination/paginate'
+import { PermissionConnectionNode } from './permission'
 
 export interface RoleConnectionNode {
     id: string
