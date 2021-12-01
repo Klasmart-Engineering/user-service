@@ -20,3 +20,11 @@ export interface ClassConnectionNode {
     studentsConnection?: IPaginatedResponse<UserConnectionNode>
     teachersConnection?: IPaginatedResponse<UserConnectionNode>
 }
+
+export interface DeleteClassInput {
+    id: string
+}
+
+export interface ClassesMutationResult {
+    classes: ClassConnectionNode[]
+}

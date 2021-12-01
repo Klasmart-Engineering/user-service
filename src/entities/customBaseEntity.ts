@@ -30,14 +30,12 @@ export abstract class CustomBaseEntity extends BaseEntity {
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
 
-    public async inactivate(manager: EntityManager) {
-        if (this.status != Status.ACTIVE) {
-            return
-        }
+    public async inactivate(manager?: EntityManager) {
+        if (this.status === Status.INACTIVE) return
 
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 
-        await manager.save(this)
+        if (manager) await manager.save(this)
     }
 }

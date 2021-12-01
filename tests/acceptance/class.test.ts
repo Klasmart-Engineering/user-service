@@ -1,12 +1,15 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { Connection, In } from 'typeorm'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { Class } from '../../src/entities/class'
 import { Status } from '../../src/entities/status'
 import { User } from '../../src/entities/user'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
-import { ClassConnectionNode } from '../../src/types/graphQL/class'
+import {
+    ClassConnectionNode,
+    DeleteClassInput,
+} from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { ProgramSummaryNode } from '../../src/types/graphQL/program'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
@@ -27,7 +30,7 @@ import {
     IAgeRangeDetail,
     inviteUserToOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
-import { DELETE_CLASS } from '../utils/operations/classOps'
+import { DELETE_CLASS, DELETE_CLASSES } from '../utils/operations/classOps'
 import {
     CLASSES_CONNECTION,
     CLASS_NODE,
@@ -41,6 +44,7 @@ import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
+import { makeRequest } from './utils'
 
 interface IClassEdge {
     node: ClassConnectionNode
@@ -80,7 +84,7 @@ const ageRangeDetail: IAgeRangeDetail = {
     high_value_unit: AgeRangeUnit.YEAR,
 }
 
-async function createOrg(user_id: string, org_name: string, token: string) {
+async function createOrg(userId: string, orgName: string, token: string) {
     return await request
         .post('/user')
         .set({
@@ -90,8 +94,8 @@ async function createOrg(user_id: string, org_name: string, token: string) {
         .send({
             query: CREATE_ORGANIZATION,
             variables: {
-                user_id,
-                org_name,
+                user_id: userId,
+                org_name: orgName,
             },
         })
 }
@@ -647,8 +651,8 @@ describe('acceptance.class', () => {
             )
 
             classSchools.every((schools: SchoolSummaryNode[]) => {
-                const schoolIds = schools.map((school) => school.id)
-                expect(schoolIds).includes(schoolId)
+                const ids = schools.map((school) => school.id)
+                expect(ids).includes(schoolId)
             })
         })
 
@@ -1021,5 +1025,45 @@ describe('acceptance.class', () => {
                 })
             }
         )
+    })
+
+    context('deleteClasses', () => {
+        let input: DeleteClassInput[]
+        let activeClasses: Class[]
+
+        beforeEach(async () => {
+            activeClasses = await connection.manager.find(Class, {
+                where: { class_id: In(class1Ids), status: Status.ACTIVE },
+            })
+        })
+
+        context('when data is requested in a correct way', () => {
+            let response: Record<string, any>
+            beforeEach(async () => {
+                input = activeClasses.map((ac) => {
+                    return { id: ac.class_id }
+                })
+                response = await makeRequest(
+                    request,
+                    DELETE_CLASSES,
+                    { input },
+                    getAdminAuthToken()
+                )
+            })
+
+            it('should respond with status 200', async () => {
+                expect(response.status).to.eq(200)
+                expect(
+                    response.body.data.deleteClasses.classes.length
+                ).to.equal(input.length)
+            })
+
+            it('should set all classes as inactive', async () => {
+                const remainingClasses = await connection.manager.find(Class, {
+                    where: { class_id: In(class1Ids), status: Status.ACTIVE },
+                })
+                expect(remainingClasses.length).to.equal(0)
+            })
+        })
     })
 })

@@ -1,5 +1,4 @@
 import faker from 'faker'
-import { createOrganization } from './organization.factory'
 import { Class } from '../../src/entities/class'
 import { School } from '../../src/entities/school'
 import { Organization } from '../../src/entities/organization'
@@ -30,3 +29,8 @@ export function createClass(
 
     return cls
 }
+
+export const createClasses = (length: number) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createClass())

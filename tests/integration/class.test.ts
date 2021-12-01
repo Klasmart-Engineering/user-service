@@ -1,7 +1,7 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { getManager, In } from 'typeorm'
 import { Model } from '../../src/model'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
@@ -39,6 +39,7 @@ import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import { Organization } from '../../src/entities/organization'
 import { Program } from '../../src/entities/program'
 import { User } from '../../src/entities/user'
+import { deleteClasses as deleteClassesResolver } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
     createClass,
@@ -62,16 +63,33 @@ import chaiAsPromised from 'chai-as-promised'
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
 import { addUserToSchool } from '../utils/operations/schoolOps'
 import { createUserAndValidate } from '../utils/operations/modelOps'
+import { createOrganization } from '../factories/organization.factory'
+import {
+    createUser,
+    createAdminUser as adminUserFactory,
+} from '../factories/user.factory'
+import {
+    createClass as createClassFactory,
+    createClasses,
+} from '../factories/class.factory'
+import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
 import { createSubject } from '../factories/subject.factory'
 import { createProgram } from '../factories/program.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { Role } from '../../src/entities/role'
+import { DeleteClassInput } from '../../src/types/graphQL/class'
+import { expectAPIError } from '../utils/apiError'
+import { customErrors } from '../../src/types/errors/customError'
+import { formatMessage } from '../../src/types/errors/apiError'
+import { errorFormattingWrapper } from '../utils/errors'
+import { UserPermissions } from '../../src/permissions/userPermissions'
 
 use(chaiAsPromised)
 
 describe('class', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
@@ -1175,11 +1193,11 @@ describe('class', () => {
             )
 
             context('and the user has all the permissions', () => {
-                const userInfo = (user: User) => {
-                    return user.user_id
+                const userInfo = (u: User) => {
+                    return u.user_id
                 }
-                const classInfo = (cls: Class) => {
-                    return cls.class_id
+                const classInfo = (c: Class) => {
+                    return c.class_id
                 }
 
                 beforeEach(async () => {
@@ -1886,11 +1904,11 @@ describe('class', () => {
             )
 
             context('and the user has all the permissions', () => {
-                const userInfo = (user: User) => {
-                    return user.user_id
+                const userInfo = (u: User) => {
+                    return u.user_id
                 }
-                const classInfo = (cls: Class) => {
-                    return cls.class_id
+                const classInfo = (c: Class) => {
+                    return c.class_id
                 }
 
                 beforeEach(async () => {
@@ -2541,11 +2559,11 @@ describe('class', () => {
             })
 
             context('and the user has all the permissions', () => {
-                const schoolInfo = (school: School) => {
-                    return school.school_id
+                const schoolInfo = (s: School) => {
+                    return s.school_id
                 }
-                const classInfo = (cls: Class) => {
-                    return cls.class_id
+                const classInfo = (c: Class) => {
+                    return c.class_id
                 }
 
                 beforeEach(async () => {
@@ -3259,13 +3277,13 @@ describe('class', () => {
             return entity.id
         }
 
-        const programInfo = async (program: Program) => {
+        const programInfo = async (p: Program) => {
             return {
-                name: program.name,
-                age_ranges: ((await program.age_ranges) || []).map(entityInfo),
-                grades: ((await program.grades) || []).map(entityInfo),
-                subjects: ((await program.subjects) || []).map(entityInfo),
-                system: program.system,
+                name: p.name,
+                age_ranges: ((await p.age_ranges) || []).map(entityInfo),
+                grades: ((await p.grades) || []).map(entityInfo),
+                subjects: ((await p.subjects) || []).map(entityInfo),
+                system: p.system,
             }
         }
 
@@ -3321,8 +3339,8 @@ describe('class', () => {
         let organizationId: string
         let otherUserId: string
 
-        const programInfo = (program: any) => {
-            return program.id
+        const programInfo = (p: any) => {
+            return p.id
         }
 
         beforeEach(async () => {
@@ -3458,11 +3476,11 @@ describe('class', () => {
         let ageRange: AgeRange
         let program: Program
 
-        const ageRangeInfo = (ageRange: any) => {
+        const ageRangeInfo = (ar: any) => {
             return {
-                id: ageRange.id,
-                name: ageRange.name,
-                system: ageRange.system,
+                id: ar.id,
+                name: ar.name,
+                system: ar.system,
             }
         }
 
@@ -3559,11 +3577,11 @@ describe('class', () => {
         let grade: Grade
         let program: Program
 
-        const gradeInfo = (grade: any) => {
+        const gradeInfo = (g: any) => {
             return {
-                id: grade.id,
-                name: grade.name,
-                system: grade.system,
+                id: g.id,
+                name: g.name,
+                system: g.system,
             }
         }
 
@@ -3660,11 +3678,11 @@ describe('class', () => {
         let subject: Subject
         let program: Program
 
-        const subjectInfo = (subject: any) => {
+        const subjectInfo = (s: any) => {
             return {
-                id: subject.id,
-                name: subject.name,
-                system: subject.system,
+                id: s.id,
+                name: s.name,
+                system: s.system,
             }
         }
 
@@ -3760,8 +3778,8 @@ describe('class', () => {
         let ageRange: AgeRange
         let otherUserId: string
 
-        const ageRangeInfo = (ageRange: any) => {
-            return ageRange.id
+        const ageRangeInfo = (ar: any) => {
+            return ar.id
         }
 
         beforeEach(async () => {
@@ -3895,8 +3913,8 @@ describe('class', () => {
         let grade: Grade
         let otherUserId: string
 
-        const gradeInfo = (grade: any) => {
-            return grade.id
+        const gradeInfo = (g: any) => {
+            return g.id
         }
 
         beforeEach(async () => {
@@ -4027,8 +4045,8 @@ describe('class', () => {
         let subject: Subject
         let otherUserId: string
 
-        const subjectInfo = (subject: any) => {
-            return subject.id
+        const subjectInfo = (s: any) => {
+            return s.id
         }
 
         beforeEach(async () => {
@@ -4152,6 +4170,212 @@ describe('class', () => {
                         expect(dbSubjects).to.be.empty
                     })
                 })
+            })
+        })
+    })
+
+    describe('.deleteClasses', () => {
+        let org1: Organization
+        let org2: Organization
+        let class1: Class
+        let class2: Class
+        let user1: User
+        let role1: Role
+        let role2: Role
+        let input: DeleteClassInput[]
+
+        function deleteClasses(i: DeleteClassInput[], u = user1) {
+            return errorFormattingWrapper(
+                deleteClassesResolver(
+                    { input: i },
+                    {
+                        permissions: new UserPermissions({
+                            id: u.user_id,
+                            email: u.email,
+                            phone: u.phone,
+                        }),
+                    }
+                )
+            )
+        }
+
+        async function checkClassesDeleted(i: DeleteClassInput[]) {
+            const classIds = i.map((deleteClassInput) => deleteClassInput.id)
+            const classes = await Class.find({
+                where: {
+                    class_id: In(classIds),
+                    status: Status.INACTIVE,
+                },
+            })
+            expect(classIds.length).to.equal(classes.length)
+        }
+
+        async function checkNoChangesMade() {
+            expect(
+                await Class.find({
+                    where: {
+                        class_id: In(input.map((v) => v.id)),
+                        status: Status.INACTIVE,
+                    },
+                })
+            ).to.be.empty
+        }
+
+        beforeEach(async () => {
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            class1 = await createClassFactory(undefined, org1).save()
+            class2 = await createClassFactory(undefined, org2).save()
+            role1 = await createRoleFactory(undefined, org1, {
+                permissions: [PermissionName.delete_class_20444],
+            }).save()
+            role2 = await createRoleFactory(undefined, org2, {
+                permissions: [PermissionName.delete_class_20444],
+            }).save()
+            user1 = await createUser().save()
+
+            await createOrganizationMembership({
+                user: user1,
+                organization: org1,
+                roles: [role1],
+            }).save()
+
+            input = [{ id: class1.class_id }, { id: class2.class_id }]
+        })
+
+        it('returns invalid_array_max_length error when input length is more than 50', async () => {
+            const invalidInput = []
+            for (let index = 1; index < 52; index++) {
+                invalidInput.push({ id: 'id-' + index })
+            }
+            const expectedMessage = formatMessage(
+                customErrors.invalid_array_max_length.message,
+                { entity: 'User', attribute: 'input array', max: 50 }
+            )
+            await expect(deleteClasses(invalidInput)).to.be.rejectedWith(
+                expectedMessage
+            )
+        })
+
+        context('when user is admin', () => {
+            let adminUser: User
+
+            beforeEach(
+                async () => (adminUser = await adminUserFactory().save())
+            )
+
+            context('when deleting 1 class', () => {
+                it('deletes the class', async () => {
+                    const singleClass = await createClassFactory().save()
+                    const smallInput = [{ id: singleClass.class_id }]
+                    await expect(deleteClasses(smallInput, adminUser)).to.be
+                        .fulfilled
+                    await checkClassesDeleted(smallInput)
+                })
+            })
+
+            context('when deleting 1 class then 50 classes', () => {
+                const dbCallCount = 3 // preloading 1, permission: 1, save: 1
+
+                it('makes the same number of db calls', async () => {
+                    const singleClass = await createClassFactory().save()
+                    const smallInput = [{ id: singleClass.class_id }]
+                    connection.logger.reset()
+                    await deleteClasses(smallInput, adminUser)
+                    expect(connection.logger.count).to.equal(dbCallCount)
+
+                    const classes = await Class.save(createClasses(50))
+                    const bigInput = classes.map((c) => {
+                        return { id: c.class_id }
+                    })
+                    connection.logger.reset()
+                    await deleteClasses(bigInput, adminUser)
+                    expect(connection.logger.count).to.equal(dbCallCount)
+                })
+            })
+        })
+
+        context('when has permission for deleting classes', () => {
+            context("and user belongs to classes' organizations", () => {
+                beforeEach(async () => {
+                    await createOrganizationMembership({
+                        user: user1,
+                        organization: org2,
+                        roles: [role2],
+                    }).save()
+                })
+
+                it('deletes classes', async () => {
+                    await expect(deleteClasses(input)).to.be.fulfilled
+                    await checkClassesDeleted(input)
+                })
+
+                it('makes the expected number of database calls', async () => {
+                    connection.logger.reset()
+                    await deleteClasses(input)
+                    expect(connection.logger.count).to.equal(4) // preloading: 1, permissions: 2, save: 1
+                })
+
+                context('and a class is inactivated', () => {
+                    beforeEach(async () => {
+                        await class2.inactivate(getManager())
+                    })
+
+                    it('returns nonexistent_entity error when one of classes is not existed or inactive', async () => {
+                        const res = await expect(deleteClasses(input)).to.be
+                            .rejected
+                        expectAPIError.nonexistent_entity(
+                            res,
+                            {
+                                entity: 'Class',
+                                entityName: '',
+                                index: 1,
+                            },
+                            ['id'],
+                            0,
+                            1
+                        )
+                        expect(
+                            await Class.find({
+                                where: {
+                                    class_id: In([class1.class_id]),
+                                    status: Status.INACTIVE,
+                                },
+                            })
+                        ).to.be.empty
+                    })
+                })
+            })
+
+            context(
+                "and does not belong to at least one of classes' organizations",
+                () => {
+                    it('returns a permission error', async () => {
+                        const expectedMessage =
+                            `User(${user1.user_id}) does not have Permission` +
+                            `(${PermissionName.delete_class_20444}) in Organizations(${org2.organization_id})`
+                        await expect(deleteClasses(input)).to.be.rejectedWith(
+                            expectedMessage
+                        )
+                        await checkNoChangesMade()
+                    })
+                }
+            )
+        })
+
+        context('does not have permission for deleting classes', () => {
+            it('returns a permission error', async () => {
+                await createOrganizationMembership({
+                    user: user1,
+                    organization: org2,
+                }).save()
+                const expectedMessage =
+                    `User(${user1.user_id}) does not have Permission` +
+                    `(${PermissionName.delete_class_20444}) in Organizations(${org2.organization_id})`
+                await expect(deleteClasses(input)).to.be.rejectedWith(
+                    expectedMessage
+                )
+                await checkNoChangesMade()
             })
         })
     })

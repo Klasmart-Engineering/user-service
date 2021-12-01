@@ -169,6 +169,28 @@ export function mapUserToUserConnectionNode(
     }
 }
 
+export function extractCoreUserConnectionNode(
+    user: UserConnectionNode
+): CoreUserConnectionNode {
+    return {
+        id: user.id,
+        givenName: user.givenName,
+        familyName: user.familyName,
+        avatar: user.avatar,
+        status: user.status,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
+        contactInfo: {
+            email: user.contactInfo.email,
+            phone: user.contactInfo.phone,
+        },
+        alternateContactInfo: {
+            email: user.alternateContactInfo?.email,
+            phone: user.alternateContactInfo?.phone,
+        },
+    }
+}
+
 export const coreUserConnectionNodeFields = ([
     'user_id',
     'given_name',

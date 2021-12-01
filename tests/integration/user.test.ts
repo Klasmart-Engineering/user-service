@@ -24,8 +24,6 @@ import {
     addSchoolToUser,
     MergeUserResponse,
     userToCreateUserInput,
-    createGqlUsers,
-    updateGqlUsers,
     userToUpdateUserInput,
     randomChangeToUpdateUserInput,
 } from '../utils/operations/userOps'
@@ -72,7 +70,10 @@ import {
 } from '../factories/organization.factory'
 import { createSchool as schoolFactory } from '../factories/school.factory'
 import { createRole as roleFactory } from '../factories/role.factory'
-import { createUser, createUsers } from '../factories/user.factory'
+import {
+    createUser,
+    createUsers as userFactory,
+} from '../factories/user.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
@@ -81,6 +82,7 @@ import { expectIsNonNullable } from '../utils/assertions'
 import { expectAPIError } from '../utils/apiError'
 import {
     addOrganizationRolesToUsers,
+    createUsers,
     removeOrganizationRolesFromUsers,
     updateUsers,
 } from '../../src/resolvers/user'
@@ -1440,16 +1442,30 @@ describe('user', () => {
         let arbitraryUserToken: string
         let createUserInputs: CreateUserInput[]
         let adminToken: string
+
+        function createUsersResolver(input: CreateUserInput[], user: User) {
+            return createUsers(
+                { input },
+                {
+                    permissions: new UserPermissions({
+                        id: user.user_id,
+                        email: user.email,
+                        phone: user.phone,
+                    }),
+                }
+            )
+        }
+
         beforeEach(async () => {
-            idOfUserPerformingOperation = (await createNonAdminUser(testClient))
-                .user_id
+            nonAdminUser = await createNonAdminUser(testClient)
+            idOfUserPerformingOperation = nonAdminUser.user_id
             arbitraryUserToken = getNonAdminAuthToken()
-            const orgOwner = await createAdminUser(testClient)
+            adminUser = await createAdminUser(testClient)
             adminToken = getAdminAuthToken()
             organizationId = (
                 await createOrganizationAndValidate(
                     testClient,
-                    orgOwner.user_id
+                    adminUser.user_id
                 )
             ).organization_id
 
@@ -1464,9 +1480,7 @@ describe('user', () => {
                     .getRepository(User)
                     .count()
                 await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: arbitraryUserToken,
-                    })
+                    createUsersResolver(createUserInputs, nonAdminUser)
                 ).to.be.rejected
                 const currentUsers = await connection
                     .getRepository(User)
@@ -1479,12 +1493,11 @@ describe('user', () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                const gqlcreateUserResult = await createGqlUsers(
-                    testClient,
+                const createUsersResult = await createUsersResolver(
                     createUserInputs,
-                    { authorization: adminToken }
+                    adminUser
                 )
-                const userConNodes = gqlcreateUserResult.users
+                const userConNodes = createUsersResult.users
                 expect(userConNodes.length).to.equal(createUserInputs.length)
                 const currentUsers = await connection
                     .getRepository(User)
@@ -1526,12 +1539,11 @@ describe('user', () => {
                     .getRepository(User)
                     .count()
                 connection.logger.reset()
-                const gqlcreateUserResult = await createGqlUsers(
-                    testClient,
+                const createUsersResult = await createUsersResolver(
                     createUserInputs,
-                    { authorization: arbitraryUserToken }
+                    nonAdminUser
                 )
-                const userConNodes = gqlcreateUserResult.users
+                const userConNodes = createUsersResult.users
                 expect(connection.logger.count).to.equal(6)
                 expect(userConNodes.length).to.equal(createUserInputs.length)
                 const currentUsers = await connection
@@ -1550,11 +1562,8 @@ describe('user', () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
+                await expect(createUsersResolver(createUserInputs, adminUser))
+                    .to.be.rejected
                 const currentUsers = await connection
                     .getRepository(User)
                     .count()
@@ -1569,11 +1578,8 @@ describe('user', () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
+                await expect(createUsersResolver(createUserInputs, adminUser))
+                    .to.be.rejected
                 const currentUsers = await connection
                     .getRepository(User)
                     .count()
@@ -1588,11 +1594,8 @@ describe('user', () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
+                await expect(createUsersResolver(createUserInputs, adminUser))
+                    .to.be.rejected
                 const currentUsers = await connection
                     .getRepository(User)
                     .count()
@@ -1604,19 +1607,14 @@ describe('user', () => {
                 const oldInputs: CreateUserInput[] = []
                 oldInputs.push(createUserInputs[5])
                 oldInputs.push(createUserInputs[35])
-                await createGqlUsers(testClient, oldInputs, {
-                    authorization: adminToken,
-                })
+                await createUsersResolver(oldInputs, adminUser)
             })
             it('it fails to create users', async () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
+                await expect(createUsersResolver(createUserInputs, adminUser))
+                    .to.be.rejected
                 const currentUsers = await connection
                     .getRepository(User)
                     .count()
@@ -1629,11 +1627,8 @@ describe('user', () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                await expect(
-                    createGqlUsers(testClient, emptyInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
+                await expect(createUsersResolver(emptyInputs, adminUser)).to.be
+                    .rejected
                 const currentUsers = await connection
                     .getRepository(User)
                     .count()
@@ -1694,7 +1689,7 @@ describe('user', () => {
                 organization2,
                 organization3,
             ] = await Organization.save(createOrganizations(3))
-            ;[user1, user2, user3] = await User.save(createUsers(3))
+            ;[user1, user2, user3] = await User.save(userFactory(3))
             ;[role1, role2, role3] = await Role.save(
                 ['1', '2', '3'].map((num) => roleFactory(`Role ${num}`))
             )
@@ -1723,7 +1718,7 @@ describe('user', () => {
             function addOrgRoles(authUser = adminUser) {
                 return errorFormattingWrapper(
                     addOrganizationRolesToUsers(
-                        { input: input },
+                        { input },
                         {
                             permissions: new UserPermissions({
                                 id: authUser.user_id,
