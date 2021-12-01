@@ -12,7 +12,7 @@ import { createOrganizationMembership } from './factories/organizationMembership
 import { createSchool } from './factories/school.factory'
 import { createSchoolMembership } from './factories/schoolMembership.factory'
 import { createUser } from './factories/user.factory'
-import { getNonAdminAuthToken } from './utils/testConfig'
+import RoleInitializer from '../src/initializers/roles'
 import { createTestConnection, TestConnection } from './utils/testConnection'
 import fs from 'fs'
 import { resolve } from 'path'
@@ -30,6 +30,7 @@ import { PermissionName } from '../src/permissions/permissionNames'
 import { School } from '../src/entities/school'
 import { createClass } from './factories/class.factory'
 import { Class } from '../src/entities/class'
+import { truncateTables } from './utils/database'
 
 // creates numberOfSetsSchoolSets of sizeOfSchoolSets schools each with an increasing number of members
 // 301 schools with 1 member each
@@ -108,6 +109,9 @@ async function createFakeOrgWithUsersSchoolsClasses(
         users.push(createUser())
     }
     await connection.manager.save(users)
+
+    // Initialise standard roles and permissions
+    await RoleInitializer.run()
 
     const role = await createRole('GT Teacher', org, {
         permissions: [PermissionName.attend_live_class_as_a_teacher_186],
@@ -200,7 +204,13 @@ async function populate() {
         21,
         26
     )
+    // console.log('START LOGGING CALL COUNTS TO DB')
+    // connection.logger.reset()
     await uploadFakeUsersFromCSV(connection, clientOrg)
+    // console.log('END:')
+    // console.log(connection.logger.count)
+    // connection.logger.reset()
+    //await truncateTables(connection)
 }
 
 void populate()
