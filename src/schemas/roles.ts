@@ -69,7 +69,8 @@ const typeDefs = gql`
         system: Boolean!
         permissionsConnection(
             direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
+            count: PageSize
+            cursor: String
             sort: PermissionSortInput
             filter: PermissionFilter
         ): PermissionsConnectionResponse
