@@ -831,83 +831,9 @@ describe('rolesConnection', () => {
     })
 
     context('child connections', () => {
-        let ctx: { loaders: IDataLoaders }
         let org: Organization
-        let role1: Role
-        let permission1: Permission
-        let permission2: Permission
-        let filter: IEntityFilter
-        let user: User
-
         beforeEach(async () => {
             org = await createOrganization().save()
-            role1 = await createRole('role x', org).save()
-            permission1 = await createPermission(role1).save()
-            permission2 = await createPermission(role1).save()
-            ;(await role1.permissions)?.push(permission1)
-            ;(await role1.permissions)?.push(permission2)
-            await role1.save()
-
-            user = await createUser().save()
-            await createOrganizationMembership({
-                user,
-                organization: org,
-            }).save()
-
-            const token = { id: user.user_id }
-            const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
-            filter = {
-                name: {
-                    operator: 'eq',
-                    value: role1.role_name,
-                },
-            }
-        })
-
-        context('.permissionsConnection', async () => {
-            it('returns the nested permissions', async () => {
-                const result = await rolesConnection(
-                    testClient,
-                    'FORWARD',
-                    { count: pageSize },
-                    { authorization: getAdminAuthToken() },
-                    filter
-                )
-                expect(
-                    result.edges[0].node.permissionsConnection?.totalCount
-                ).to.equal(2)
-            })
-            context('permissions', () => {
-                it('can see roles and permissions from his org', async () => {
-                    const result = await rolesConnection(
-                        testClient,
-                        'FORWARD',
-                        { count: pageSize },
-                        { authorization: generateToken(userToPayload(user)) },
-                        filter
-                    )
-                    expect(result.totalCount).to.equal(1)
-                    expect(
-                        result.edges[0].node.permissionsConnection?.totalCount
-                    ).to.equal(2)
-                })
-                it('can not see roles and permissions from other org', async () => {
-                    const userWithoutOrg = await createUser().save()
-                    const result = await rolesConnection(
-                        testClient,
-                        'FORWARD',
-                        { count: pageSize },
-                        {
-                            authorization: generateToken(
-                                userToPayload(userWithoutOrg)
-                            ),
-                        },
-                        filter
-                    )
-                    expect(result.totalCount).to.equal(0)
-                })
-            })
         })
 
         it('dataloads child connections', async () => {

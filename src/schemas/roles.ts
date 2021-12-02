@@ -6,7 +6,8 @@ import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { GraphQLResolveInfo } from 'graphql'
 import { RoleConnectionNode } from '../types/graphQL/role'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { IDataLoaders } from '../loaders/setup'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { Permission } from '../entities/permission'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -130,30 +131,26 @@ export async function permissionsChildConnectionResolver(
     info: Pick<GraphQLResolveInfo, 'fieldNodes'>
 ) {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-    return permissionsChildConnection(
-        role,
-        args,
-        ctx.loaders,
-        includeTotalCount
-    )
+    return loadPermissionsForRole(ctx, role.id, args, includeTotalCount)
 }
 
-export async function permissionsChildConnection(
-    role: Pick<RoleConnectionNode, 'id'>,
-    args: IChildPaginationArgs,
-    loaders: IDataLoaders,
-    includeTotalCount: boolean
+export async function loadPermissionsForRole(
+    context: Pick<Context, 'loaders'>,
+    roleId: RoleConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
 ) {
-    return loaders.permissionsConnectionChild.instance.load({
+    const key: IChildConnectionDataloaderKey<Permission> = {
         args,
-        includeTotalCount: includeTotalCount,
+        includeTotalCount,
         parent: {
-            id: role.id,
+            id: roleId,
             filterKey: 'roleId',
             pivot: '"Role"."role_id"',
         },
         primaryColumn: 'permission_name',
-    })
+    }
+    return context.loaders.permissionsConnectionChild.instance.load(key)
 }
 
 export default function getDefault(

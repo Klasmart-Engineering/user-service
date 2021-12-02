@@ -36,6 +36,12 @@ import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { createRole } from '../../factories/role.factory'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { nonAdminPermissionScope } from '../../../src/directives/isAdmin'
+import { createPermission } from '../../factories/permission.factory'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import {
+    loadPermissionsForRole,
+    permissionsChildConnectionResolver,
+} from '../../../src/schemas/roles'
 
 type PermissionConnectionNodeKey = keyof Pick<
     PermissionConnectionNode,
@@ -491,6 +497,127 @@ describe('model', () => {
             })
 
             expect(connection.logger.count).to.be.eq(1)
+        })
+    })
+
+    context('permissionsConnectionChild', () => {
+        let ctx: Pick<Context, 'loaders'>
+        let fakeInfo: any
+
+        let org: Organization
+        let role1: Role
+        let role2: Role
+        let permissions: Permission[]
+        let permission1: Permission
+        let permission2: Permission
+        let filter: IEntityFilter
+        let user: User
+
+        beforeEach(async () => {
+            org = await createOrganization().save()
+            role1 = await createRole('role x', org).save()
+            permission1 = await createPermission(role1).save()
+            permission2 = await createPermission(role1).save()
+            permissions = [permission1, permission2]
+            ;(await role1.permissions)?.push(permission1)
+            ;(await role1.permissions)?.push(permission2)
+            await role1.save()
+
+            role2 = await createRole('role 2', org).save()
+            ;(await role2.permissions)?.push(permission1)
+            ;(await role2.permissions)?.push(permission2)
+            await role2.save()
+
+            user = await createUser().save()
+            await createOrganizationMembership({
+                user,
+                organization: org,
+            }).save()
+
+            const token = { id: user.user_id }
+            const userPermissions = new UserPermissions(token)
+            ctx = { loaders: createContextLazyLoaders(userPermissions) }
+            fakeInfo = {
+                fieldNodes: [
+                    {
+                        kind: 'Field',
+                        name: {
+                            kind: 'Name',
+                            value: 'permissionsConnection',
+                        },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [],
+                        },
+                    },
+                ],
+            }
+        })
+
+        context('as child of a role', () => {
+            it('returns permissions per role', async () => {
+                const result = await loadPermissionsForRole(ctx, role1.role_id)
+                expect(result.edges).to.have.lengthOf(permissions.length)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    permissions.map((p) => p.permission_id)
+                )
+            })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await permissionsChildConnectionResolver(
+                    { id: role1.role_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(permissions.length)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await permissionsChildConnectionResolver(
+                    { id: role1.role_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        it('uses exactly one dataloader when called with different parent', async () => {
+            connection.logger.reset()
+            const loaderResults = []
+            for (const role of [role1, role2]) {
+                loaderResults.push(
+                    loadPermissionsForRole(ctx, role.role_id, {}, false)
+                )
+            }
+            await Promise.all(loaderResults)
+            // one for roles query
+            // one for fetching permissions
+            expect(connection.logger.count).to.be.eq(2)
+        })
+        context('totalCount', () => {
+            it('returns total count', async () => {
+                const result = await loadPermissionsForRole(
+                    ctx,
+                    role1.role_id,
+                    {},
+                    true
+                )
+                expect(result.totalCount).to.eq(2)
+            })
+            it('does not return total count', async () => {
+                const result = await loadPermissionsForRole(
+                    ctx,
+                    role1.role_id,
+                    {},
+                    false
+                )
+                expect(result.totalCount).to.not.exist
+            })
         })
     })
 })
