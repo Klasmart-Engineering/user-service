@@ -1,15 +1,13 @@
-import landing from './scripts/landingV2';
+import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
-import { config } from './config/parallelLanding';
-
-const stageQty: number = !isNaN(parseInt(__ENV.STAGE_QTY, 10)) ? parseInt(__ENV.STAGE_QTY) : 2;
-const prefixLimit: number = !isNaN(parseInt(__ENV.PREFIX_LIMIT, 10)) ? parseInt(__ENV.PREFIX_LIMIT) : 9;
-export const options: Options = config(stageQty);
+import { sleep } from 'k6';
+import landingSchedule from './scripts/landingSchedule';
+import http from 'k6/http';
 
 export function setup() {
     let i = 0;
-    const l = prefixLimit <= 9 ? prefixLimit : 9;
+    const l = 1;
     let data = {};
 
     for (i; i < l; i++) {
@@ -40,12 +38,23 @@ export function setup() {
 
 
 export function teacher00(data: { [key: string]: { res: any, userId: string }}) {
-    landing(data.teacher00);
+    
+    const jar = http.cookieJar();
+    jar.set(process.env.SERVICE_URL as string, 'access', data.teacher00.res.cookies?.access[0].Value);
+    jar.set(process.env.SERVICE_URL as string, 'refresh', data.teacher00.res.cookies?.refresh[0].Value);
+
+    jar.set(process.env.LIVE_URL as string, 'access', data.teacher00.res.cookies?.access[0].Value);
+    jar.set(process.env.LIVE_URL as string, 'refresh', data.teacher00.res.cookies?.refresh[0].Value);
+    
+    //landingV2(data.teacher00);
+    sleep(5);
+    landingSchedule(data.teacher00);
+
 }
- export function teacher01(data: { [key: string]: { res: any, userId: string }}) {
+/* export function teacher01(data: { [key: string]: { res: any, userId: string }}) {
     landing(data.teacher01);
 }
-export function teacher02(data: { [key: string]: { res: any, userId: string }}) {
+/*export function teacher02(data: { [key: string]: { res: any, userId: string }}) {
     landing(data.teacher02);
 }
 export function teacher03(data: { [key: string]: { res: any, userId: string }}) {
@@ -59,7 +68,7 @@ export function teacher05(data: { [key: string]: { res: any, userId: string }}) 
 }
 export function teacher06(data: { [key: string]: { res: any, userId: string }}) {
     landing(data.teacher06);
-}/*
+}
 export function teacher07(data: { [key: string]: { res: any, userId: string }}) {
     landing(data.teacher07);
 }
