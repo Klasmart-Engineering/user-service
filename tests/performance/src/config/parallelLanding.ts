@@ -1,19 +1,5 @@
 import { Options } from 'k6/options';
-
-const generateStages = (stageAmount: number) => {
-    let i = 0;
-    const stages = [];
-
-    for (i; i < stageAmount; i++) {
-        stages.push({
-            duration: '30s',
-            target: (i + 1) * 5,
-        });
-    }
-
-    return stages;
-}
-
+import generateStages from '../utils/generateStages';
 
 export const config = (stages: number): Options => ({
     thresholds: {
