@@ -105,7 +105,7 @@ const typeDefs = gql`
         memberships: [OrganizationMembership]
         permissions: [Permission]
             @deprecated(
-                reason: "Sunset Date: 26/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+                reason: "Sunset Date: 26/02/2022 Details: https://calmisland.atlassian.net/l/c/1nEk2YHE"
             )
         permission(permission_name: String!): Permission
 
