@@ -1,6 +1,9 @@
-import landing from './scripts/landing';
+import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
+import { sleep } from 'k6';
+import landingSchedule from './scripts/landingSchedule';
+import http from 'k6/http';
 
 export const options: Options = {
     scenarios: {
@@ -13,12 +16,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
                     duration: '3m',
-                    target: 2
+                    target: 10
                 },
                 // Ramp down
                 {
@@ -27,7 +30,7 @@ export const options: Options = {
                 },
             ],
         },
-        teacher01: {
+        /* teacher01: {
             executor: 'ramping-vus',
             exec: 'teacher01',
             startTime: '0s',
@@ -165,7 +168,7 @@ export const options: Options = {
                 },
             ],
         },
-     /*   teacher07: {
+        teacher07: {
             executor: 'ramping-vus',
             exec: 'teacher07',
             startTime: '0s',
@@ -271,7 +274,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -294,7 +297,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -317,7 +320,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -340,7 +343,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -363,7 +366,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -386,7 +389,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -409,7 +412,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -432,7 +435,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -455,7 +458,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -478,7 +481,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -501,7 +504,7 @@ export const options: Options = {
                 // Hold
                 {
                     duration: '3m',
-                    target: 5
+                    target: 4
                 },
                 // Ramp down
                 {
@@ -510,12 +513,12 @@ export const options: Options = {
                 },
             ],
         },*/
-    },
+    } 
 }
 
 export function setup() {
     let i = 0;
-    const l = 5;
+    const l = 1;
     let data = {};
 
     for (i; i < l; i++) {
@@ -540,18 +543,26 @@ export function setup() {
             [`students${prefix}`]: studentLoginData
         };
     }
-
+    console.log(JSON.stringify(data));
     return data;
 }
 
 
 export function teacher00(data: { [key: string]: { res: any, userId: string }}) {
-    landing(data.teacher00);
+    
+    const jar = http.cookieJar();
+    jar.set(process.env.SERVICE_URL as string, 'access', data.teacher00.res.cookies?.access[0].Value);
+    jar.set(process.env.SERVICE_URL as string, 'refresh', data.teacher00.res.cookies?.refresh[0].Value);
+    
+    //landingV2(data.teacher00);
+    sleep(5);
+    landingSchedule(data.teacher00);
+
 }
- export function teacher01(data: { [key: string]: { res: any, userId: string }}) {
+/* export function teacher01(data: { [key: string]: { res: any, userId: string }}) {
     landing(data.teacher01);
 }
-export function teacher02(data: { [key: string]: { res: any, userId: string }}) {
+/*export function teacher02(data: { [key: string]: { res: any, userId: string }}) {
     landing(data.teacher02);
 }
 export function teacher03(data: { [key: string]: { res: any, userId: string }}) {
@@ -565,7 +576,7 @@ export function teacher05(data: { [key: string]: { res: any, userId: string }}) 
 }
 export function teacher06(data: { [key: string]: { res: any, userId: string }}) {
     landing(data.teacher06);
-}/*
+}
 export function teacher07(data: { [key: string]: { res: any, userId: string }}) {
     landing(data.teacher07);
 }
