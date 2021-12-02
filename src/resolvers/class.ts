@@ -10,7 +10,11 @@ import { customErrors } from '../types/errors/customError'
 import { Status } from '../entities/status'
 import { Class } from '../entities/class'
 import { PermissionName } from '../permissions/permissionNames'
-import { createInputLengthAPIError } from '../utils/resolvers'
+import {
+    createDuplicateInputAPIError,
+    createEntityAPIError,
+    createInputLengthAPIError,
+} from '../utils/resolvers'
 import { mapClassToClassConnectionNode } from '../pagination/classesConnection'
 import { config } from '../config/config'
 
@@ -32,9 +36,7 @@ export async function deleteClasses(
         .select(['Class.class_id', 'ClassOrganization.organization_id'])
         .leftJoin('Class.organization', 'ClassOrganization')
         .where('Class.class_id IN (:...classIds)', { classIds })
-        .andWhere('Class.status = :class_status', {
-            class_status: Status.ACTIVE,
-        })
+        .andWhere('Class.status = :status', { status: Status.ACTIVE })
         .getMany()
     const preloadedClasses = new Map(preloadedData.map((c) => [c.class_id, c]))
 
@@ -59,17 +61,19 @@ export async function deleteClasses(
     for (const [index, classId] of classIds.entries()) {
         const dbClass = preloadedClasses.get(classId)
 
-        // Class validation
+        // Validations
+        const inputIdIsDuplicate = classIds.some(
+            (item, findIndex) => item === classId && findIndex < index
+        )
+        if (inputIdIsDuplicate) {
+            errors.push(
+                createDuplicateInputAPIError(index, ['id'], 'DeleteClassInput')
+            )
+            continue
+        }
         if (!dbClass) {
             errors.push(
-                new APIError({
-                    code: customErrors.nonexistent_entity.code,
-                    message: customErrors.nonexistent_entity.message,
-                    variables: ['id'],
-                    entity: 'Class',
-                    entityName: '',
-                    index,
-                })
+                createEntityAPIError('inactive', index, 'Class', classId)
             )
             continue
         }

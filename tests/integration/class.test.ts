@@ -4243,20 +4243,6 @@ describe('class', () => {
             input = [{ id: class1.class_id }, { id: class2.class_id }]
         })
 
-        it('returns invalid_array_max_length error when input length is more than 50', async () => {
-            const invalidInput = []
-            for (let index = 1; index < 52; index++) {
-                invalidInput.push({ id: 'id-' + index })
-            }
-            const expectedMessage = formatMessage(
-                customErrors.invalid_array_max_length.message,
-                { entity: 'User', attribute: 'input array', max: 50 }
-            )
-            await expect(deleteClasses(invalidInput)).to.be.rejectedWith(
-                expectedMessage
-            )
-        })
-
         context('when user is admin', () => {
             let adminUser: User
 
@@ -4321,14 +4307,14 @@ describe('class', () => {
                         await class2.inactivate(getManager())
                     })
 
-                    it('returns nonexistent_entity error when one of classes is not existed or inactive', async () => {
+                    it('returns inactive_status error and does not inactivate the classes', async () => {
                         const res = await expect(deleteClasses(input)).to.be
                             .rejected
-                        expectAPIError.nonexistent_entity(
+                        expectAPIError.inactive_status(
                             res,
                             {
                                 entity: 'Class',
-                                entityName: '',
+                                entityName: class2.class_id,
                                 index: 1,
                             },
                             ['id'],
@@ -4339,6 +4325,39 @@ describe('class', () => {
                             await Class.find({
                                 where: {
                                     class_id: In([class1.class_id]),
+                                    status: Status.INACTIVE,
+                                },
+                            })
+                        ).to.be.empty
+                    })
+                })
+
+                context('and there is a duplicate class', () => {
+                    beforeEach(async () => {
+                        input.push({ id: class1.class_id })
+                    })
+
+                    it('returns duplicate_attribute_values error and does not inactivate the classes', async () => {
+                        const res = await expect(deleteClasses(input)).to.be
+                            .rejected
+                        expectAPIError.duplicate_attribute_values(
+                            res,
+                            {
+                                entity: 'DeleteClassInput',
+                                attribute: '(id)',
+                                index: 2,
+                            },
+                            ['id'],
+                            0,
+                            1
+                        )
+                        expect(
+                            await Class.find({
+                                where: {
+                                    class_id: In([
+                                        class1.class_id,
+                                        class2.class_id,
+                                    ]),
                                     status: Status.INACTIVE,
                                 },
                             })
