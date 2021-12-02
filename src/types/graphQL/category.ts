@@ -28,6 +28,11 @@ export interface AddSubcategoriesToCategoryInput {
     subcategoryIds: string[]
 }
 
+export interface RemoveSubcategoriesFromCategoryInput {
+    categoryId: string
+    subcategoryIds: string[]
+}
+
 export interface CategoriesMutationResult {
     categories: CategoryConnectionNode[]
 }

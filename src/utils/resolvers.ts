@@ -4,6 +4,7 @@ import { config } from '../config/config'
 
 type entityErrorType =
     | 'nonExistent'
+    | 'nonExistentChild'
     | 'inactive'
     | 'unauthorized'
     | 'duplicate'
@@ -115,13 +116,20 @@ export function createEntityAPIError(
     index: number,
     entity: string,
     name?: string,
-    orgId?: string
+    parentEntity?: string,
+    parentName?: string,
+    variables?: string[]
 ) {
     const errorValues = {
         nonExistent: {
             code: customErrors.nonexistent_entity.code,
             message: customErrors.nonexistent_entity.message,
             variables: ['id'],
+        },
+        nonExistentChild: {
+            code: customErrors.nonexistent_child.code,
+            message: customErrors.nonexistent_child.message,
+            variables: variables || [''],
         },
         inactive: {
             code: customErrors.inactive_status.code,
@@ -141,7 +149,7 @@ export function createEntityAPIError(
         duplicateChild: {
             code: customErrors.duplicate_child_entity.code,
             message: customErrors.duplicate_child_entity.message,
-            variables: ['organization_id', 'name'],
+            variables: variables || [''],
         },
     }
 
@@ -154,9 +162,9 @@ export function createEntityAPIError(
         index,
     }
 
-    if (errorType === 'duplicateChild') {
-        errorDetails.parentEntity = 'Organization'
-        errorDetails.parentName = orgId
+    if (['duplicateChild', 'nonExistentChild'].includes(errorType)) {
+        errorDetails.parentEntity = parentEntity
+        errorDetails.parentName = parentName
     }
 
     return new APIError(errorDetails)

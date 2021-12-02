@@ -2,7 +2,7 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { before } from 'mocha'
-import { Connection } from 'typeorm'
+import { In, Not } from 'typeorm'
 import { Category } from '../../src/entities/category'
 import { Organization } from '../../src/entities/organization'
 import { Role } from '../../src/entities/role'
@@ -18,6 +18,7 @@ import {
     addSubcategoriesToCategories,
     createCategories,
     deleteCategories,
+    removeSubcategoriesFromCategories,
     updateCategories,
 } from '../../src/resolvers/category'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
@@ -27,6 +28,7 @@ import {
     CategoryConnectionNode,
     CreateCategoryInput,
     DeleteCategoryInput,
+    RemoveSubcategoriesFromCategoryInput,
     UpdateCategoryInput,
 } from '../../src/types/graphQL/category'
 import { createServer } from '../../src/utils/createServer'
@@ -44,10 +46,12 @@ import { createRole } from '../factories/role.factory'
 import { createAdminUser, createUser } from '../factories/user.factory'
 import { NIL_UUID } from '../utils/database'
 import {
+    buildRemoveSubcategoriesFromCategoryInputArray,
+    buildSingleRemoveSubcategoriesFromCategoryInput,
     buildSingleUpdateCategoryInput,
     buildUpdateCategoryInputArray,
 } from '../utils/operations/categoryOps'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { userToPayload } from '../utils/operations/userOps'
 import { config } from '../../src/config/config'
 import { customErrors } from '../../src/types/errors/customError'
@@ -69,7 +73,7 @@ type NoUpdateProp = 'name' | 'subcategories' | 'both'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
-const buildContext = async (permissions: UserPermissions) => {
+const buildContext = (permissions: UserPermissions) => {
     return {
         permissions,
     }
@@ -115,7 +119,7 @@ const compareErrors = (error: APIError, expectedError: APIError) => {
 }
 
 describe('category', () => {
-    let connection: Connection
+    let connection: TestConnection
     let admin: User
     let userWithPermission: User
     let userWithoutPermission: User
@@ -228,7 +232,7 @@ describe('category', () => {
             input: CreateCategoryInput[]
         ) => {
             const permission = new UserPermissions(userToPayload(user))
-            const ctx = await buildContext(permission)
+            const ctx = buildContext(permission)
             const result = await createCategories({ input }, ctx)
 
             return result
@@ -575,7 +579,9 @@ describe('category', () => {
                             index,
                             'Category',
                             i.name,
-                            i.organizationId
+                            'Organization',
+                            i.organizationId,
+                            ['organization_id', 'name']
                         )
                     )
 
@@ -593,18 +599,14 @@ describe('category', () => {
     })
 
     context('updateCategories', () => {
-        let systemCategories: Category[]
-        let org1Categories: Category[]
-        let org2Categories: Category[]
         let subcategoriesForUpdate: Subcategory[]
-        const categoriesCount = 5
 
         const updateCategoriesFromResolver = async (
             user: User,
             input: UpdateCategoryInput[]
         ) => {
             const permission = new UserPermissions(userToPayload(user))
-            const ctx = await buildContext(permission)
+            const ctx = buildContext(permission)
             const result = await updateCategories({ input }, ctx)
             return result
         }
@@ -714,70 +716,6 @@ describe('category', () => {
             })
         }
 
-        const compareErrors = (error: APIError, expectedError: APIError) => {
-            expect(error.code).to.eq(expectedError.code)
-            expect(error.message).to.eq(expectedError.message)
-            expect(error.variables).to.deep.equalInAnyOrder(
-                expectedError.variables
-            )
-            expect(error.entity).to.eq(expectedError.entity)
-            expect(error.entityName).to.eq(expectedError.entityName)
-            expect(error.attribute).to.eq(expectedError.attribute)
-            expect(error.otherAttribute).to.eq(expectedError.otherAttribute)
-            expect(error.fields).to.eq(expectedError.fields)
-            expect(error.index).to.eq(expectedError.index)
-            expect(error.min).to.eq(expectedError.min)
-            expect(error.max).to.eq(expectedError.max)
-        }
-
-        const expectErrorCollectionFromInput = async (
-            user: User,
-            input: UpdateCategoryInput[],
-            expectedErrors: APIError[]
-        ) => {
-            const operation = updateCategoriesFromResolver(user, input)
-            const response = (await expect(operation).to.be
-                .rejected) as APIErrorCollection
-
-            const { errors } = response
-            expect(errors).to.exist
-            expect(errors).to.be.an('array')
-
-            errors.forEach((e, i) => {
-                compareErrors(e, expectedErrors[i])
-            })
-        }
-
-        const expectErrorCollectionFromCategories = async (
-            user: User,
-            categoriesToUpdate: Category[],
-            expectedErrors: APIError[]
-        ) => {
-            const input = buildUpdateCategoryInputArray(
-                categoriesToUpdate.map((c) => c.id),
-                subcategoriesForUpdate.map((s) => s.id)
-            )
-
-            await expectErrorCollectionFromInput(user, input, expectedErrors)
-        }
-
-        const expectAPIError = async (
-            user: User,
-            categoriesToUpdate: Category[],
-            expectedError: APIError
-        ) => {
-            const input = buildUpdateCategoryInputArray(
-                categoriesToUpdate.map((c) => c.id),
-                subcategoriesForUpdate.map((s) => s.id)
-            )
-
-            const operation = updateCategoriesFromResolver(user, input)
-            const error = (await expect(operation).to.be.rejected) as APIError
-
-            expect(error).to.exist
-            compareErrors(error, expectedError)
-        }
-
         const expectNoChangesMade = async (categoriesToFind: Category[]) => {
             const ids = categoriesToFind.map((c) => c.id)
             const categoriesDB = await Category.createQueryBuilder('Category')
@@ -815,21 +753,7 @@ describe('category', () => {
         }
 
         beforeEach(async () => {
-            await CategoriesInitializer.run()
-            systemCategories = await Category.find({ take: categoriesCount })
-
-            org1Categories = await Category.save(
-                Array.from(new Array(categoriesCount), () =>
-                    createCategory(org1, subcategoriesToAdd)
-                )
-            )
-
-            org2Categories = await Category.save(
-                Array.from(new Array(categoriesCount), () =>
-                    createCategory(org2, subcategoriesToAdd)
-                )
-            )
-
+            await createInitialCategories()
             subcategoriesForUpdate = await Subcategory.find({
                 take: 3,
                 order: { id: 'DESC' },
@@ -1038,7 +962,13 @@ describe('category', () => {
                             'min'
                         )
 
-                        await expectAPIError(admin, [], expectedError)
+                        const input = buildUpdateCategoryInputArray([])
+                        const operation = updateCategoriesFromResolver(
+                            admin,
+                            input
+                        )
+
+                        await expectAPIError(operation, expectedError)
                         // no expecting for no changes because nothing was sent
                     })
                 })
@@ -1061,12 +991,16 @@ describe('category', () => {
                                 'max'
                             )
 
-                            await expectAPIError(
-                                admin,
-                                catsToUpdate,
-                                expectedError
+                            const input = buildUpdateCategoryInputArray(
+                                catsToUpdate.map((c) => c.id)
                             )
 
+                            const operation = updateCategoriesFromResolver(
+                                admin,
+                                input
+                            )
+
+                            await expectAPIError(operation, expectedError)
                             await expectNoChangesMade([categoryToUpdate])
                         })
                     }
@@ -1096,10 +1030,14 @@ describe('category', () => {
                                 }
                             )
 
-                            await expectErrorCollectionFromInput(
+                            const operation = updateCategoriesFromResolver(
                                 admin,
-                                input,
-                                expectedErrors
+                                input
+                            )
+
+                            await expectAPIErrorCollection(
+                                operation,
+                                new APIErrorCollection(expectedErrors)
                             )
 
                             await expectNoChangesMade([categoryToRepeat])
@@ -1131,10 +1069,14 @@ describe('category', () => {
                                 }
                             )
 
-                            await expectErrorCollectionFromInput(
+                            const operation = updateCategoriesFromResolver(
                                 admin,
-                                input,
-                                expectedErrors
+                                input
+                            )
+
+                            await expectAPIErrorCollection(
+                                operation,
+                                new APIErrorCollection(expectedErrors)
                             )
 
                             await expectNoChangesMade(catsToUpdate)
@@ -1179,10 +1121,14 @@ describe('category', () => {
                                 ),
                             ]
 
-                            await expectErrorCollectionFromInput(
+                            const operation = updateCategoriesFromResolver(
                                 admin,
-                                input,
-                                expectedErrors
+                                input
+                            )
+
+                            await expectAPIErrorCollection(
+                                operation,
+                                new APIErrorCollection(expectedErrors)
                             )
 
                             await expectNoChangesMade(existentCatsToUpdate)
@@ -1213,10 +1159,18 @@ describe('category', () => {
                             }
                         )
 
-                        await expectErrorCollectionFromCategories(
+                        const input = buildUpdateCategoryInputArray(
+                            catsToUpdate.map((c) => c.id)
+                        )
+
+                        const operation = updateCategoriesFromResolver(
                             admin,
-                            catsToUpdate,
-                            expectedErrors
+                            input
+                        )
+
+                        await expectAPIErrorCollection(
+                            operation,
+                            new APIErrorCollection(expectedErrors)
                         )
 
                         await expectNoChangesMade(catsToUpdate)
@@ -1248,10 +1202,14 @@ describe('category', () => {
                                 }
                             )
 
-                            await expectErrorCollectionFromInput(
+                            const operation = updateCategoriesFromResolver(
                                 admin,
-                                input,
-                                expectedErrors
+                                input
+                            )
+
+                            await expectAPIErrorCollection(
+                                operation,
+                                new APIErrorCollection(expectedErrors)
                             )
 
                             await expectNoChangesMade(catsToUpdate)
@@ -1286,10 +1244,14 @@ describe('category', () => {
                                 }
                             )
 
-                            await expectErrorCollectionFromInput(
+                            const operation = updateCategoriesFromResolver(
                                 admin,
-                                input,
-                                expectedErrors
+                                input
+                            )
+
+                            await expectAPIErrorCollection(
+                                operation,
+                                new APIErrorCollection(expectedErrors)
                             )
 
                             await expectNoChangesMade(catsToUpdate)
@@ -1317,10 +1279,14 @@ describe('category', () => {
                                 }
                             )
 
-                            await expectErrorCollectionFromInput(
+                            const operation = updateCategoriesFromResolver(
                                 admin,
-                                input,
-                                expectedErrors
+                                input
+                            )
+
+                            await expectAPIErrorCollection(
+                                operation,
+                                new APIErrorCollection(expectedErrors)
                             )
 
                             await expectNoChangesMade(catsToUpdate)
@@ -1337,7 +1303,7 @@ describe('category', () => {
             input: DeleteCategoryInput[]
         ): Promise<CategoriesMutationResult> => {
             const permission = new UserPermissions(userToPayload(user))
-            const ctx = await buildContext(permission)
+            const ctx = buildContext(permission)
             const result = await deleteCategories({ input }, ctx)
             return result
         }
@@ -1775,7 +1741,7 @@ describe('category', () => {
             input: AddSubcategoriesToCategoryInput[]
         ) => {
             const permission = new UserPermissions(userToPayload(user))
-            const ctx = await buildContext(permission)
+            const ctx = buildContext(permission)
             const result = await addSubcategoriesToCategories(
                 { input },
                 ctx as Context
@@ -2380,6 +2346,624 @@ describe('category', () => {
                     expect(subcategories).to.have.lengthOf(2)
                     expect(subcategories?.map((s) => s.id)).to.include(
                         systemSubcategories[2].id
+                    )
+                })
+            })
+        })
+    })
+
+    context('removeSubcategoriesFromCategories', () => {
+        let subcategoriesToRemove: Subcategory[]
+
+        const removeSubcategoriesFromResolver = async (
+            user: User,
+            input: RemoveSubcategoriesFromCategoryInput[]
+        ) => {
+            const permission = new UserPermissions(userToPayload(user))
+            const ctx = buildContext(permission)
+            const result = await removeSubcategoriesFromCategories(
+                { input },
+                ctx
+            )
+
+            return result
+        }
+
+        const expectRemoveSubcategories = async (
+            user: User,
+            input: RemoveSubcategoriesFromCategoryInput[]
+        ) => {
+            const subcategoriesKeeped = new Map()
+
+            for (const i of input) {
+                const category = await Category.findOne(i.categoryId)
+                const subcategories = (await category?.subcategories) as Subcategory[]
+
+                for (const id of i.subcategoryIds) {
+                    const index = subcategories.findIndex((s) => s.id === id)
+                    subcategories.splice(index, 1)
+                }
+
+                subcategoriesKeeped.set(i.categoryId, subcategories)
+            }
+
+            const { categories } = await removeSubcategoriesFromResolver(
+                user,
+                input
+            )
+
+            const categoriesDB = await Category.findByIds(
+                input.map((i) => i.categoryId)
+            )
+
+            expect(categories).to.have.lengthOf(input.length)
+            expect(categoriesDB).to.have.lengthOf(input.length)
+            for (const [i, cdb] of categoriesDB.entries()) {
+                expect(categories[i].id).to.eq(input[i].categoryId)
+
+                const categoryRelated = categories.find((c) => c.id === cdb.id)
+                expect(categoryRelated).to.exist
+                expect(cdb.id).to.eq(categoryRelated?.id)
+                expect(cdb.name).to.eq(categoryRelated?.name)
+                expect(cdb.status).to.eq(categoryRelated?.status)
+                expect(cdb.system).to.eq(categoryRelated?.system)
+
+                const subcategories = await cdb?.subcategories
+                const subcategoriesRelated = subcategoriesKeeped.get(cdb.id)
+                expect(subcategories).to.have.lengthOf(
+                    subcategoriesRelated.length
+                )
+
+                expect(subcategories).to.deep.equalInAnyOrder(
+                    subcategoriesRelated
+                )
+            }
+        }
+
+        const buildDefaultInput = (categories: Category[]) => {
+            return buildRemoveSubcategoriesFromCategoryInputArray(
+                categories.map((c) => c.id),
+                subcategoriesToRemove.map((s) => s.id)
+            )
+        }
+
+        const expectNoRemoves = async (categories: Category[]) => {
+            const categoriesDB = await Category.findByIds(
+                categories.map((c) => c.id)
+            )
+
+            expect(categoriesDB).to.have.lengthOf(categories.length)
+            for (const cdb of categoriesDB) {
+                const category = categories.find((c) => c.id === cdb.id)
+                const subcategoriesDB = (await cdb.subcategories) as Subcategory[]
+                const subcategories = (await category?.subcategories) as Subcategory[]
+
+                expect(subcategoriesDB).to.have.lengthOf(subcategoriesDB.length)
+                expect(subcategoriesDB).to.deep.equalInAnyOrder(subcategories)
+            }
+        }
+
+        beforeEach(async () => {
+            await createInitialCategories()
+            subcategoriesToRemove = subcategoriesToAdd.slice(0, 2)
+        })
+
+        context('permissions', () => {
+            context('successful cases', () => {
+                context('when user is admin', () => {
+                    it('should remove subcategories from any category', async () => {
+                        const systemCat = systemCategories[0]
+                        const systemCatSubcats = (await systemCat.subcategories) as Subcategory[]
+
+                        await expectRemoveSubcategories(admin, [
+                            buildSingleRemoveSubcategoriesFromCategoryInput(
+                                systemCat.id,
+                                systemCatSubcats.slice(0, 1).map((s) => s.id)
+                            ),
+                            buildSingleRemoveSubcategoriesFromCategoryInput(
+                                org1Categories[0].id,
+                                subcategoriesToRemove.map((s) => s.id)
+                            ),
+                            buildSingleRemoveSubcategoriesFromCategoryInput(
+                                org2Categories[0].id,
+                                subcategoriesToRemove.map((s) => s.id)
+                            ),
+                        ])
+                    })
+                })
+
+                context('when user is not admin', () => {
+                    context('but has permission', () => {
+                        it('should remove subcategories from categories that belongs to its organization', async () => {
+                            await expectRemoveSubcategories(
+                                userWithPermission,
+                                buildDefaultInput(org1Categories)
+                            )
+                        })
+                    })
+                })
+            })
+
+            context('error handling', () => {
+                let user: User
+                const permError = permErrorMeta(
+                    PermissionName.edit_subjects_20337
+                )
+
+                context('when user is not admin', () => {
+                    context('but has permission', () => {
+                        beforeEach(() => {
+                            user = userWithPermission
+                        })
+
+                        context(
+                            'and tries to remove subcategories from system categories',
+                            () => {
+                                it('should throw a permission error', async () => {
+                                    const catsToEdit = systemCategories
+                                    const input = buildDefaultInput(catsToEdit)
+                                    const operation = removeSubcategoriesFromResolver(
+                                        user,
+                                        input
+                                    )
+
+                                    await expect(operation).to.be.rejectedWith(
+                                        permError(user)
+                                    )
+
+                                    await expectNoRemoves(catsToEdit)
+                                })
+                            }
+                        )
+
+                        context(
+                            'and tries to remove subcategories from categories that does not belong to its organization',
+                            () => {
+                                it('should throw a permission error', async () => {
+                                    const catsToEdit = org2Categories
+                                    const input = buildDefaultInput(catsToEdit)
+                                    const operation = removeSubcategoriesFromResolver(
+                                        user,
+                                        input
+                                    )
+
+                                    await expect(operation).to.be.rejectedWith(
+                                        permError(user, [org2])
+                                    )
+
+                                    await expectNoRemoves(catsToEdit)
+                                })
+                            }
+                        )
+                    })
+
+                    context('and has not permission', () => {
+                        context('but has membership', () => {
+                            beforeEach(() => {
+                                user = userWithoutPermission
+                            })
+
+                            context(
+                                'and tries to remove subcategories from categories in its organization',
+                                () => {
+                                    it('should throw a permission error', async () => {
+                                        const catsToEdit = org1Categories
+                                        const operation = removeSubcategoriesFromResolver(
+                                            user,
+                                            buildDefaultInput(catsToEdit)
+                                        )
+
+                                        await expect(
+                                            operation
+                                        ).to.be.rejectedWith(
+                                            permError(user, [org1])
+                                        )
+
+                                        await expectNoRemoves(catsToEdit)
+                                    })
+                                }
+                            )
+                        })
+
+                        context('neither has membership', () => {
+                            beforeEach(() => {
+                                user = userWithoutMembership
+                            })
+
+                            context(
+                                'and tries to remove subcategories from any category',
+                                () => {
+                                    it('should throw a permission error', async () => {
+                                        const catsToEdit = [
+                                            systemCategories[0],
+                                            org1Categories[0],
+                                            org2Categories[0],
+                                        ]
+
+                                        const systemCat = systemCategories[0]
+                                        const systemCatSubcats = (await systemCat.subcategories) as Subcategory[]
+
+                                        const input = Array.from(
+                                            catsToEdit,
+                                            (c, i) =>
+                                                buildSingleRemoveSubcategoriesFromCategoryInput(
+                                                    c.id,
+                                                    i
+                                                        ? subcategoriesToRemove.map(
+                                                              (s) => s.id
+                                                          )
+                                                        : systemCatSubcats
+                                                              .slice(0, 1)
+                                                              .map((s) => s.id)
+                                                )
+                                        )
+
+                                        const operation = removeSubcategoriesFromResolver(
+                                            user,
+                                            input
+                                        )
+
+                                        await expect(
+                                            operation
+                                        ).to.be.rejectedWith(
+                                            permError(user, [org1, org2])
+                                        )
+
+                                        await expectNoRemoves(catsToEdit)
+                                    })
+                                }
+                            )
+                        })
+                    })
+                })
+            })
+        })
+
+        context('inputs', () => {
+            context('error handling', () => {
+                context('when input provided is an empty array', () => {
+                    it('should throw an APIError', async () => {
+                        const expectedError = createInputLengthAPIError(
+                            'Category',
+                            'min'
+                        )
+
+                        const operation = removeSubcategoriesFromResolver(
+                            admin,
+                            []
+                        )
+
+                        await expectAPIError(operation, expectedError)
+                    })
+                })
+
+                context(
+                    `when input length is greater than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE}`,
+                    () => {
+                        it('should throw an APIError', async () => {
+                            const catToEdit = org1Categories[0]
+                            const cats = Array.from(
+                                new Array(
+                                    config.limits
+                                        .MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                                ),
+                                () => catToEdit
+                            )
+
+                            const input = buildDefaultInput(cats)
+                            const expectedError = createInputLengthAPIError(
+                                'Category',
+                                'max'
+                            )
+
+                            const operation = removeSubcategoriesFromResolver(
+                                admin,
+                                input
+                            )
+
+                            await expectAPIError(operation, expectedError)
+                            await expectNoRemoves([catToEdit])
+                        })
+                    }
+                )
+
+                context(
+                    "when input provided has duplicates in 'id' field",
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const catToEdit = org1Categories[0]
+                            const catsToEdit = Array.from(
+                                new Array(3),
+                                () => catToEdit
+                            )
+
+                            const input = buildDefaultInput(catsToEdit)
+
+                            const expectedErrors = Array.from(
+                                [input[1], input[2]],
+                                (_, index) => {
+                                    return createDuplicateInputAPIError(
+                                        index + 1,
+                                        ['categoryId'],
+                                        'RemoveSubcategoriesFromCategoryInput'
+                                    )
+                                }
+                            )
+
+                            await expectAPIErrorCollection(
+                                removeSubcategoriesFromResolver(admin, input),
+                                new APIErrorCollection(expectedErrors)
+                            )
+
+                            await expectNoRemoves([catToEdit])
+                        })
+                    }
+                )
+
+                context(
+                    'when a category with the received id does not exists',
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const catsToEdit = org1Categories
+                            const nonExistentCategoryId = NIL_UUID
+                            const input = buildDefaultInput(catsToEdit)
+
+                            input.push({
+                                categoryId: nonExistentCategoryId,
+                                subcategoryIds: subcategoriesToRemove.map(
+                                    (s) => s.id
+                                ),
+                            })
+
+                            const expectedErrors = [
+                                createEntityAPIError(
+                                    'nonExistent',
+                                    input.length - 1,
+                                    'Category',
+                                    nonExistentCategoryId
+                                ),
+                            ]
+
+                            await expectAPIErrorCollection(
+                                removeSubcategoriesFromResolver(admin, input),
+                                new APIErrorCollection(expectedErrors)
+                            )
+
+                            await expectNoRemoves(catsToEdit)
+                        })
+                    }
+                )
+
+                context('when the received category is inactive', () => {
+                    let inactiveCategory: Category
+
+                    beforeEach(async () => {
+                        inactiveCategory = org1Categories[0]
+                        inactiveCategory.status = Status.INACTIVE
+                        await inactiveCategory.save()
+                    })
+
+                    it('should throw an ErrorCollection', async () => {
+                        const catsToEdit = [inactiveCategory]
+                        const input = buildDefaultInput(catsToEdit)
+                        const expectedErrors = [
+                            createEntityAPIError(
+                                'inactive',
+                                0,
+                                'Category',
+                                inactiveCategory.id
+                            ),
+                        ]
+
+                        await expectAPIErrorCollection(
+                            removeSubcategoriesFromResolver(admin, input),
+                            new APIErrorCollection(expectedErrors)
+                        )
+
+                        await expectNoRemoves(catsToEdit)
+                    })
+                })
+
+                context(
+                    "when input 'subcategoryIds' has duplicate elements",
+                    () => {
+                        it('should throw an ErrorColection', async () => {
+                            const catsToEdit = org1Categories
+                            const input = buildRemoveSubcategoriesFromCategoryInputArray(
+                                catsToEdit.map((c) => c.id),
+                                Array.from(
+                                    new Array(2),
+                                    () => subcategoriesToRemove[0].id
+                                )
+                            )
+
+                            const expectedErrors = Array.from(
+                                input,
+                                (_, index) =>
+                                    createDuplicateInputAPIError(
+                                        index,
+                                        ['subcategoryIds'],
+                                        'RemoveSubcategoriesFromCategoryInput.subcategoryIds'
+                                    )
+                            )
+
+                            await expectAPIErrorCollection(
+                                removeSubcategoriesFromResolver(admin, input),
+                                new APIErrorCollection(expectedErrors)
+                            )
+
+                            await expectNoRemoves(catsToEdit)
+                        })
+                    }
+                )
+
+                context('when subcategory received does not exists', () => {
+                    it('should throw an ErrorCollection', async () => {
+                        const catsToEdit = org1Categories
+                        const nonExistentSubcategoryId = NIL_UUID
+                        const input = buildRemoveSubcategoriesFromCategoryInputArray(
+                            catsToEdit.map((c) => c.id),
+                            [
+                                ...subcategoriesToRemove.map((s) => s.id),
+                                nonExistentSubcategoryId,
+                            ]
+                        )
+
+                        const expectedErrors = Array.from(input, (_, index) =>
+                            createEntityAPIError(
+                                'nonExistent',
+                                index,
+                                'Subcategory',
+                                nonExistentSubcategoryId
+                            )
+                        )
+
+                        await expectAPIErrorCollection(
+                            removeSubcategoriesFromResolver(admin, input),
+                            new APIErrorCollection(expectedErrors)
+                        )
+
+                        await expectNoRemoves(catsToEdit)
+                    })
+                })
+
+                context('when subcategory received is inactive', () => {
+                    let inactiveSubcategory: Subcategory
+
+                    beforeEach(async () => {
+                        inactiveSubcategory = subcategoriesToRemove[0]
+                        inactiveSubcategory.status = Status.INACTIVE
+                        await inactiveSubcategory.save()
+                    })
+
+                    it('should throw an ErrorCollection', async () => {
+                        const catsToEdit = org1Categories
+                        const input = buildDefaultInput(catsToEdit)
+                        const expectedErrors = Array.from(input, (_, index) =>
+                            createEntityAPIError(
+                                'inactive',
+                                index,
+                                'Subcategory',
+                                inactiveSubcategory.id
+                            )
+                        )
+
+                        await expectAPIErrorCollection(
+                            removeSubcategoriesFromResolver(admin, input),
+                            new APIErrorCollection(expectedErrors)
+                        )
+
+                        await expectNoRemoves(catsToEdit)
+                    })
+                })
+
+                context('when subcategory does not exists in category', () => {
+                    it('should throw an ErrorCollection', async () => {
+                        const catsToEdit = org1Categories
+                        const notLinkedSubcategory = await Subcategory.findOneOrFail(
+                            {
+                                where: {
+                                    id: Not(
+                                        In(subcategoriesToAdd.map((s) => s.id))
+                                    ),
+                                },
+                            }
+                        )
+
+                        const input = buildRemoveSubcategoriesFromCategoryInputArray(
+                            catsToEdit.map((c) => c.id),
+                            [
+                                ...subcategoriesToRemove.map((s) => s.id),
+                                notLinkedSubcategory.id,
+                            ]
+                        )
+
+                        const expectedErrors = Array.from(input, (i, index) =>
+                            createEntityAPIError(
+                                'nonExistentChild',
+                                index,
+                                'Subcategory',
+                                notLinkedSubcategory.id,
+                                'Category',
+                                i.categoryId,
+                                ['categoryId', 'subcategoryIds']
+                            )
+                        )
+
+                        await expectAPIErrorCollection(
+                            removeSubcategoriesFromResolver(admin, input),
+                            new APIErrorCollection(expectedErrors)
+                        )
+
+                        await expectNoRemoves(catsToEdit)
+                    })
+                })
+            })
+        })
+
+        context('DB calls', () => {
+            context(
+                'when the categories belong to the same organization',
+                () => {
+                    it('should do 9 DB calls', async () => {
+                        const categories = org1Categories
+
+                        connection.logger.reset()
+                        await removeSubcategoriesFromResolver(
+                            admin,
+                            buildDefaultInput(categories)
+                        )
+
+                        const callsToDB = connection.logger.count
+                        expect(callsToDB).to.eq(
+                            9,
+                            '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 5 for save changes'
+                        )
+                    })
+                }
+            )
+
+            context(
+                'when the categories belong to different organizations',
+                () => {
+                    it('should do 9 DB calls', async () => {
+                        const categories = [
+                            ...org1Categories.slice(0, 3),
+                            ...org2Categories.slice(0, 3),
+                        ]
+
+                        connection.logger.reset()
+                        await removeSubcategoriesFromResolver(
+                            admin,
+                            buildDefaultInput(categories)
+                        )
+
+                        const callsToDB = connection.logger.count
+                        expect(callsToDB).to.eq(
+                            9,
+                            '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 5 for save changes'
+                        )
+                    })
+                }
+            )
+
+            context('when the categories are system', () => {
+                it('should do 10 DB calls', async () => {
+                    const systemCat = systemCategories[0]
+                    const systemCatSubcats = (await systemCat.subcategories) as Subcategory[]
+
+                    connection.logger.reset()
+                    await removeSubcategoriesFromResolver(admin, [
+                        buildSingleRemoveSubcategoriesFromCategoryInput(
+                            systemCat.id,
+                            systemCatSubcats.slice(0, 1).map((s) => s.id)
+                        ),
+                    ])
+
+                    const callsToDB = connection.logger.count
+                    expect(callsToDB).to.eq(
+                        10,
+                        '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 6 for save changes'
                     )
                 })
             })

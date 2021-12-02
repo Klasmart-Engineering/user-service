@@ -3,6 +3,7 @@ import { Model } from '../model'
 import { Context } from '../main'
 import {
     createCategories,
+    removeSubcategoriesFromCategories,
     deleteCategories,
     updateCategories,
     addSubcategoriesToCategories,
@@ -29,6 +30,9 @@ const typeDefs = gql`
         ): CategoriesMutationResult
         addSubcategoriesToCategories(
             input: [AddSubcategoriesToCategoryInput!]!
+        ): CategoriesMutationResult
+        removeSubcategoriesFromCategories(
+            input: [RemoveSubcategoriesFromCategoryInput!]!
         ): CategoriesMutationResult
     }
 
@@ -88,6 +92,11 @@ const typeDefs = gql`
     }
 
     input AddSubcategoriesToCategoryInput {
+        categoryId: ID!
+        subcategoryIds: [ID!]!
+    }
+
+    input RemoveSubcategoriesFromCategoryInput {
         categoryId: ID!
         subcategoryIds: [ID!]!
     }
@@ -152,8 +161,10 @@ export default function getDefault(
                     deleteCategories(args, ctx),
                 updateCategories: (_parent, args, ctx, _info) =>
                     updateCategories(args, ctx),
-                addSubcategoriesToCategories: (_parent, args, ctx, info) =>
+                addSubcategoriesToCategories: (_parent, args, ctx) =>
                     addSubcategoriesToCategories(args, ctx),
+                removeSubcategoriesFromCategories: (_parent, args, ctx) =>
+                    removeSubcategoriesFromCategories(args, ctx),
             },
             Query: {
                 category: (_parent, args, ctx, _info) =>
