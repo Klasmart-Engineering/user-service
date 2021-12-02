@@ -156,25 +156,6 @@ describe('acceptance.role', () => {
     })
 
     it('has permissionsConnection as a child', async () => {
-        const query = `
-        query {
-            rolesConnection(direction: FORWARD) {                   
-                edges {
-                    node {
-                        permissionsConnection(direction: FORWARD){
-                            totalCount                              
-                            edges {                                 
-                                node {
-                                    id
-                                }
-                            }
-                        }
-                    }
-                }
-    
-            }
-        }`
-
         const user = await createUser().save()
         const organization = await createOrganization(user).save()
         await createOrganizationMembership({
@@ -192,6 +173,25 @@ describe('acceptance.role', () => {
             email: user.email,
             iss: 'calmid-debug',
         })
+
+        const query = `
+        query {
+            rolesConnection(direction: FORWARD, filter: {name: {operator: eq, value: "${role.role_name}"}}) {                   
+                edges {
+                    node {
+                        permissionsConnection(direction: FORWARD){
+                            totalCount                              
+                            edges {                                 
+                                node {
+                                    id
+                                }
+                            }
+                        }
+                    }
+                }
+    
+            }
+        }`
 
         const response = await makeRequest(
             request,
