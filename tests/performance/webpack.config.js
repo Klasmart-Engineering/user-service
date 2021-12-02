@@ -12,12 +12,12 @@ module.exports = {
         createUsersAllRoles: `./createUsersAllRoles`,
         create1kUsers: `./create1kUsers`,
         createUsersParallel: `./createUsersParallel`,
-        parallelLanding: `./parallelLanding.ts`,
+        parallelLandingSchedule: `./parallelLandingSchedule.ts`,
         getPaginatedUsers: `./getPaginatedUsers.ts`,
         getPaginatedUsersCursor: `./getPaginatedUsersCursor.ts`,
         getPaginatedUsersFilter: `./getPaginatedUsersFilters.ts`,
         getPaginatedUsersMixed: `./getPaginatedUsersMixed.ts`,
-        scenario9ASchoolAdmin: `./Scenarios/Scenario 9/scenario9ASchoolAdmin.ts`
+        scenario9ASchoolAdmin: `./Scenarios/Scenario 9/scenario9ASchoolAdmin.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),
