@@ -9,6 +9,7 @@ import { Category } from '../../../src/entities/category'
 import {
     DeleteCategoryInput,
     UpdateCategoryInput,
+    RemoveSubcategoriesFromCategoryInput,
 } from '../../../src/types/graphQL/category'
 
 const DELETE_SUBCATEGORY = `
@@ -78,6 +79,20 @@ export const UPDATE_CATEGORIES = gql`
 
     mutation UpdateCategories($input: [UpdateCategoryInput!]!) {
         updateCategories(input: $input) {
+            categories {
+                ...categoryFields
+            }
+        }
+    }
+`
+
+export const REMOVE_SUBCATEGORIES_FROM_CATEGORIES = gql`
+    ${CATEGORY_FIELDS}
+
+    mutation RemoveSubcategoriesFromCategories(
+        $input: [RemoveSubcategoriesFromCategoryInput!]!
+    ) {
+        removeSubcategoriesFromCategories(input: $input) {
             categories {
                 ...categoryFields
             }
@@ -156,5 +171,24 @@ export function buildUpdateCategoryInputArray(
             avoidNames ? undefined : `Modified Category ${i + 1}`,
             subcategories
         )
+    )
+}
+
+export function buildSingleRemoveSubcategoriesFromCategoryInput(
+    categoryId: string,
+    subcategoryIds: string[]
+): RemoveSubcategoriesFromCategoryInput {
+    return {
+        categoryId,
+        subcategoryIds,
+    }
+}
+
+export function buildRemoveSubcategoriesFromCategoryInputArray(
+    categoryIds: string[],
+    subcategoryIds: string[]
+) {
+    return Array.from(categoryIds, (id) =>
+        buildSingleRemoveSubcategoriesFromCategoryInput(id, subcategoryIds)
     )
 }

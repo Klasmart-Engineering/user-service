@@ -15,6 +15,7 @@ import {
     CategorySubcategory,
     CategoryConnectionNode,
     AddSubcategoriesToCategoryInput,
+    RemoveSubcategoriesFromCategoryInput,
 } from '../types/graphQL/category'
 import {
     createDatabaseSaveAPIError,
@@ -376,7 +377,9 @@ export async function createCategories(
                     index,
                     'Category',
                     name,
-                    organizationId
+                    'Organization',
+                    organizationId,
+                    ['organization_id', 'name']
                 )
             )
         }
@@ -502,34 +505,17 @@ export async function addSubcategoriesToCategories(
         throw createInputLengthAPIError('Category', 'max')
 
     const errors: APIError[] = []
-    const categoryIds: string[] = args.input.map((val) => val.categoryId)
-    const subcategoryIds: string[] = args.input
-        .map((val) => val.subcategoryIds)
-        .flat()
     const categoryNodes: CategoryConnectionNode[] = []
     const isAdmin = context.permissions.isAdmin
 
-    const categories: Entity[] = await Category.createQueryBuilder()
-        .select([
-            ...categoryConnectionNodeFields,
-            `Organization.organization_id`,
-        ])
-        .leftJoin(`Category.organization`, `Organization`)
-        .where(`Category.id IN (:...categoryIds)`, {
-            categoryIds,
-        })
-        .getMany()
-
-    const subcategories: Entity[] = await Subcategory.createQueryBuilder()
-        .select([
-            ...subcategoryConnectionNodeFields,
-            `Organization.organization_id`,
-        ])
-        .leftJoin(`Subcategory.organization`, `Organization`)
-        .where(`Subcategory.id IN (:...subcategoryIds)`, {
-            subcategoryIds,
-        })
-        .getMany()
+    const {
+        categories,
+        subcategories,
+        preloadedCategories,
+        preloadedSubcategories,
+        preloadedCategoriesSubcategories,
+        categoriesWithExistentSubcategories,
+    } = await getCategoriesAndSubcategoriesData(args.input)
 
     const organizationsIds = [
         ...categories.map(
@@ -543,35 +529,6 @@ export async function addSubcategoriesToCategories(
         organizationsIds,
         PermissionName.edit_subjects_20337
     )
-
-    const allExistentSubcategories: (Entity &
-        CategorySubcategory)[] = await getConnection().query(
-        `SELECT "categoryId", "subcategoryId",
-        id, name, system, status, organization_id 
-        FROM category_subcategories_subcategory 
-        JOIN subcategory s ON id = "subcategoryId" 
-        WHERE "categoryId" IN (${"'" + (categoryIds.join("','") + "'")})`
-    )
-
-    const preloadedCategories = new Map(categories.map((i) => [i.id, i]))
-    const preloadedSubcategories = new Map(subcategories.map((i) => [i.id, i]))
-    const preloadedCategoriesSubcategories = new Map(
-        allExistentSubcategories.map((i) => [
-            [i.categoryId, i.subcategoryId].toString(),
-            i,
-        ])
-    )
-    const categoriesWithExistentSubcategories = new Map<string, Entity[]>(
-        categories.map((i) => [i.id, []])
-    )
-    for (const c of allExistentSubcategories) {
-        categoriesWithExistentSubcategories.get(c.categoryId)?.push({
-            id: c.id,
-            name: c.name,
-            system: c.system,
-            status: c.status,
-        })
-    }
 
     for (const [categoryIndex, subArgs] of args.input.entries()) {
         const { categoryId, subcategoryIds } = subArgs
@@ -638,6 +595,161 @@ export async function addSubcategoriesToCategories(
             variables: [message],
             entity: 'Category',
         })
+    }
+
+    return { categories: categoryNodes }
+}
+
+export async function removeSubcategoriesFromCategories(
+    args: { input: RemoveSubcategoriesFromCategoryInput[] },
+    context: Pick<Context, 'permissions'>
+): Promise<CategoriesMutationResult> {
+    // input length validations
+    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
+        throw createInputLengthAPIError('Category', 'min')
+
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
+        throw createInputLengthAPIError('Category', 'max')
+
+    const errors: APIError[] = []
+    const categoryNodes: CategoryConnectionNode[] = []
+
+    const {
+        categoryIds,
+        categories,
+        preloadedCategories,
+        preloadedSubcategories,
+        preloadedCategoriesSubcategories,
+        categoriesWithExistentSubcategories,
+    } = await getCategoriesAndSubcategoriesData(args.input)
+
+    const organizationIds = new Set(
+        categories.map((c) => c.__organization__?.organization_id || '')
+    )
+
+    await context.permissions.rejectIfNotAllowed(
+        { organization_ids: [...organizationIds] },
+        PermissionName.edit_subjects_20337
+    )
+
+    for (const [index, subArgs] of args.input.entries()) {
+        const { categoryId, subcategoryIds } = subArgs
+        const category = preloadedCategories.get(categoryId) as Category
+        if (!category) {
+            errors.push(
+                createEntityAPIError(
+                    'nonExistent',
+                    index,
+                    'Category',
+                    categoryId
+                )
+            )
+            continue
+        }
+
+        const inputIdIsDuplicate = categoryIds.some(
+            (item, findIndex) => item === category.id && findIndex < index
+        )
+
+        if (inputIdIsDuplicate) {
+            errors.push(
+                createDuplicateInputAPIError(
+                    index,
+                    ['categoryId'],
+                    'RemoveSubcategoriesFromCategoryInput'
+                )
+            )
+        }
+
+        if (category.status === Status.INACTIVE) {
+            errors.push(
+                createEntityAPIError('inactive', index, 'Category', category.id)
+            )
+        }
+
+        const uniqueSubcategoryIds = new Set(subcategoryIds)
+        const subcategoryIdsDuplicate =
+            uniqueSubcategoryIds.size < subcategoryIds.length
+
+        if (subcategoryIdsDuplicate) {
+            errors.push(
+                createDuplicateInputAPIError(
+                    index,
+                    ['subcategoryIds'],
+                    'RemoveSubcategoriesFromCategoryInput.subcategoryIds'
+                )
+            )
+            continue
+        }
+
+        const existentSubcategories = categoriesWithExistentSubcategories.get(
+            category.id
+        ) as Subcategory[]
+
+        for (const subcategoryId of subcategoryIds) {
+            const subcategory = preloadedSubcategories.get(subcategoryId)
+
+            if (!subcategory) {
+                errors.push(
+                    createEntityAPIError(
+                        'nonExistent',
+                        index,
+                        'Subcategory',
+                        subcategoryId
+                    )
+                )
+                continue
+            }
+
+            if (subcategory.status === Status.INACTIVE) {
+                errors.push(
+                    createEntityAPIError(
+                        'inactive',
+                        index,
+                        'Subcategory',
+                        subcategory.id
+                    )
+                )
+            }
+
+            const subcategoryExistInCategory = preloadedCategoriesSubcategories.has(
+                [category.id, subcategory.id].toString()
+            )
+
+            if (!subcategoryExistInCategory) {
+                errors.push(
+                    createEntityAPIError(
+                        'nonExistentChild',
+                        index,
+                        'Subcategory',
+                        subcategory.id,
+                        'Category',
+                        category.id,
+                        ['categoryId', 'subcategoryIds']
+                    )
+                )
+            }
+
+            const currentSubcategoryIndex = existentSubcategories.findIndex(
+                (s) => s.id === subcategory.id
+            )
+
+            if (currentSubcategoryIndex !== -1) {
+                existentSubcategories.splice(currentSubcategoryIndex, 1)
+            }
+        }
+
+        category.subcategories = Promise.resolve(existentSubcategories)
+        categoryNodes.push(mapCategoryToCategoryConnectionNode(category))
+    }
+
+    if (errors.length) throw new APIErrorCollection(errors)
+
+    try {
+        await getManager().save(categories)
+    } catch (e) {
+        const message = e instanceof Error ? e.message : 'Unknown Error'
+        throw createDatabaseSaveAPIError('Category', message)
     }
 
     return { categories: categoryNodes }
@@ -770,4 +882,84 @@ const extraValidationForSubcategory = (
         )
     }
     return errors
+}
+
+const getCategoriesAndSubcategoriesData = async (
+    input:
+        | AddSubcategoriesToCategoryInput[]
+        | RemoveSubcategoriesFromCategoryInput[]
+) => {
+    const categoryIds: string[] = input.map((val) => val.categoryId)
+    const subcategoryIds: string[] = input
+        .map((val) => val.subcategoryIds)
+        .flat()
+
+    const categoriesPromise: Promise<Entity[]> = Category.createQueryBuilder()
+        .select([
+            ...categoryConnectionNodeFields,
+            `Organization.organization_id`,
+        ])
+        .leftJoin(`Category.organization`, `Organization`)
+        .where(`Category.id IN (:...categoryIds)`, {
+            categoryIds,
+        })
+        .getMany()
+
+    const subcategoriesPromise: Promise<
+        Entity[]
+    > = Subcategory.createQueryBuilder()
+        .select([
+            ...subcategoryConnectionNodeFields,
+            `Organization.organization_id`,
+        ])
+        .leftJoin(`Subcategory.organization`, `Organization`)
+        .where(`Subcategory.id IN (:...subcategoryIds)`, {
+            subcategoryIds,
+        })
+        .getMany()
+
+    const allExistentSubcategoriesPromise: Promise<
+        (Entity & CategorySubcategory)[]
+    > = getConnection().query(
+        `SELECT "categoryId", "subcategoryId",
+            id, name, system, status, organization_id 
+            FROM category_subcategories_subcategory 
+            JOIN subcategory s ON id = "subcategoryId" 
+            WHERE "categoryId" IN (${"'" + (categoryIds.join("','") + "'")})`
+    )
+
+    const categories = await categoriesPromise
+    const subcategories = await subcategoriesPromise
+    const allExistentSubcategories = await allExistentSubcategoriesPromise
+    const preloadedCategories = new Map(categories.map((i) => [i.id, i]))
+    const preloadedSubcategories = new Map(subcategories.map((i) => [i.id, i]))
+    const preloadedCategoriesSubcategories = new Map(
+        allExistentSubcategories.map((i) => [
+            [i.categoryId, i.subcategoryId].toString(),
+            i,
+        ])
+    )
+    const categoriesWithExistentSubcategories = new Map<string, Entity[]>(
+        categories.map((i) => [i.id, []])
+    )
+    for (const c of allExistentSubcategories) {
+        categoriesWithExistentSubcategories.get(c.categoryId)?.push({
+            id: c.id,
+            name: c.name,
+            system: c.system,
+            status: c.status,
+        })
+    }
+
+    return {
+        categoryIds,
+        subcategoryIds,
+        categories,
+        subcategories,
+        allExistentSubcategories,
+        preloadedCategories,
+        preloadedSubcategories,
+        preloadedCategoriesSubcategories,
+        categoriesWithExistentSubcategories,
+    }
 }

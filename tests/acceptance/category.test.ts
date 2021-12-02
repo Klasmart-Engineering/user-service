@@ -7,6 +7,7 @@ import {
     CategoryConnectionNode,
     UpdateCategoryInput,
     CreateCategoryInput,
+    RemoveSubcategoriesFromCategoryInput,
     DeleteCategoryInput,
 } from '../../src/types/graphQL/category'
 import { loadFixtures } from '../utils/fixtures'
@@ -24,6 +25,16 @@ import {
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
+import {
+    buildRemoveSubcategoriesFromCategoryInputArray,
+    buildUpdateCategoryInputArray,
+    CATEGORY_NODE,
+    CREATE_CATEGORIES,
+    DELETE_CATEGORIES,
+    REMOVE_SUBCATEGORIES_FROM_CATEGORIES,
+    UPDATE_CATEGORIES,
+} from '../utils/operations/categoryOps'
+import { createCategory } from '../factories/category.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { makeRequest } from './utils'
 import { User } from '../../src/entities/user'
@@ -34,14 +45,8 @@ import { PermissionName } from '../../src/permissions/permissionNames'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { userToPayload } from '../utils/operations/userOps'
 import { NIL_UUID } from '../utils/database'
-import {
-    CATEGORY_NODE,
-    CREATE_CATEGORIES,
-    DELETE_CATEGORIES,
-    buildUpdateCategoryInputArray,
-    UPDATE_CATEGORIES,
-} from '../utils/operations/categoryOps'
-import { createCategory } from '../factories/category.factory'
+import { Subcategory } from '../../src/entities/subcategory'
+import { createSubcategory } from '../factories/subcategory.factory'
 import { Organization } from '../../src/entities/organization'
 import { Status } from '../../src/entities/status'
 
@@ -57,6 +62,7 @@ const request = supertest(url)
 const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
 const categoriesCount = 12
+const subcategoriesCount = 4
 
 async function makeQuery(pageSize: any) {
     return makeRequest(
@@ -82,6 +88,7 @@ const makeNodeQuery = async (id: string) => {
 describe('acceptance.category', () => {
     let connection: Connection
     let categoryIds: string[]
+    let subcategoryIds: string[]
     let orgId: string
 
     before(async () => {
@@ -124,13 +131,19 @@ describe('acceptance.category', () => {
 
         const org = await Organization.findOneOrFail(orgId)
 
+        const subcategories = await Subcategory.save(
+            Array.from(new Array(subcategoriesCount), () =>
+                createSubcategory(org)
+            )
+        )
         const categories = await Category.save(
             Array.from(new Array(categoriesCount), (_, i) =>
-                createCategory(org)
+                createCategory(org, subcategories)
             )
         )
 
         categoryIds = categories.map((c) => c.id)
+        subcategoryIds = subcategories.map((s) => s.id)
 
         systemcategoriesCount = await connection.manager.count(Category, {
             where: { system: true },
@@ -461,6 +474,73 @@ describe('acceptance.category', () => {
                 )
                 const errors = response.body.errors
                 expect(response.status).to.eq(200)
+                expect(errors).to.exist
+            })
+        })
+    })
+
+    context('removeSubcategoriesFromCategories', () => {
+        const makeRemoveSubcategoriesFromCategoriesMutation = async (
+            input: RemoveSubcategoriesFromCategoryInput[]
+        ) => {
+            return makeRequest(
+                request,
+                print(REMOVE_SUBCATEGORIES_FROM_CATEGORIES),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        context('when input is sent in a correct way', () => {
+            it('should respond with a succesfull response', async () => {
+                const input = buildRemoveSubcategoriesFromCategoryInputArray(
+                    categoryIds.slice(0, 2),
+                    subcategoryIds.slice(0, 2)
+                )
+
+                const response = await makeRemoveSubcategoriesFromCategoriesMutation(
+                    input
+                )
+
+                const {
+                    categories,
+                } = response.body.data.removeSubcategoriesFromCategories
+
+                expect(response.status).to.eq(200)
+                expect(categories).to.exist
+                expect(categories).to.be.an('array')
+                expect(categories.length).to.eq(input.length)
+
+                for (const [i, c] of categories.entries()) {
+                    expect(c.id).to.eq(input[i].categoryId)
+
+                    const category = await Category.findOneOrFail(c.id)
+                    const categorySubcategories = await category.subcategories
+
+                    expect(subcategoryIds.slice(2)).to.deep.equalInAnyOrder(
+                        categorySubcategories?.map((s) => s.id)
+                    )
+                }
+            })
+        })
+
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                const input = buildRemoveSubcategoriesFromCategoryInputArray(
+                    [categoryIds[0], categoryIds[0]],
+                    subcategoryIds.slice(0, 2)
+                )
+
+                const response = await makeRemoveSubcategoriesFromCategoriesMutation(
+                    input
+                )
+
+                const categoriesUpdated =
+                    response.body.data.removeSubcategoriesFromCategories
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(categoriesUpdated).to.be.null
                 expect(errors).to.exist
             })
         })
