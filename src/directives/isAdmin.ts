@@ -686,7 +686,7 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
     })
 
     if (orgMembership) {
-        scope.innerJoin('Permission.roles', 'UserRoles')
+        scope.innerJoin('Permission.roles', 'Role')
         return
     }
 
