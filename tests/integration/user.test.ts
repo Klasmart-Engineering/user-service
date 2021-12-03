@@ -2283,7 +2283,7 @@ describe('user', () => {
                 expect(inputAvatars).to.deep.equal(outputAvatars)
                 expect(inputAvatars).to.deep.equal(dbAvatars)
             })
-            it('updates users date_of_birth', async () => {
+            it('updates users date_of_birth and primary user flag', async () => {
                 connection.logger.reset()
                 for (const u of updateUserInputs) {
                     const month = faker.datatype.number({
@@ -2297,6 +2297,7 @@ describe('user', () => {
                         month +
                         '-' +
                         faker.datatype.number({ min: 1950, max: 2021 })
+                    u.primaryUser = faker.datatype.boolean()
                 }
                 const updateUserResult = await updateUsers(
                     { input: updateUserInputs },
@@ -2322,6 +2323,11 @@ describe('user', () => {
                     a.id < b.id ? -1 : a.id > b.id ? 1 : 0
                 )
                 const inputDobs = updateUserInputs.map((a) => a.dateOfBirth)
+
+                const inputPrimaries = updateUserInputs.map(
+                    (a) => a.primaryUser
+                )
+
                 userConNodes.sort((a, b) =>
                     a.id < b.id ? -1 : a.id > b.id ? 1 : 0
                 )
@@ -2329,9 +2335,11 @@ describe('user', () => {
                 currentUsers.sort((a, b) =>
                     a.user_id < b.user_id ? -1 : a.user_id > b.user_id ? 1 : 0
                 )
+                const dbPrimaries = currentUsers.map((a) => a.primary)
                 const dbDobs = currentUsers.map((a) => a.date_of_birth)
                 expect(inputDobs).to.deep.equal(outputDobs)
                 expect(inputDobs).to.deep.equal(dbDobs)
+                expect(inputPrimaries).to.deep.equal(dbPrimaries)
             })
         })
 
