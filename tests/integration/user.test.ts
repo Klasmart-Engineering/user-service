@@ -2283,6 +2283,56 @@ describe('user', () => {
                 expect(inputAvatars).to.deep.equal(outputAvatars)
                 expect(inputAvatars).to.deep.equal(dbAvatars)
             })
+            it('updates users date_of_birth', async () => {
+                connection.logger.reset()
+                for (const u of updateUserInputs) {
+                    const month = faker.datatype.number({
+                        min: 1,
+                        max: 12,
+                        precision: 1,
+                    })
+
+                    u.dateOfBirth =
+                        (month < 10 ? '0' : '') +
+                        month +
+                        '-' +
+                        faker.datatype.number({ min: 1950, max: 2021 })
+                }
+                const updateUserResult = await updateUsers(
+                    { input: updateUserInputs },
+                    {
+                        permissions: new UserPermissions({
+                            id: userPerformingOperation.user_id,
+                            email: userPerformingOperation.email,
+                            phone: userPerformingOperation.phone,
+                        }),
+                    }
+                )
+
+                const userConNodes = updateUserResult.users
+                expect(userConNodes.length).to.equal(updateUserInputs.length)
+                expect(connection.logger.count).to.equal(56)
+                const userIds = updateUserInputs.map((uui) => uui.id)
+                const currentUsers = await connection.manager
+                    .createQueryBuilder(User, 'User')
+                    .where('User.user_id IN (:...ids)', { ids: userIds })
+                    .getMany()
+
+                updateUserInputs.sort((a, b) =>
+                    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+                )
+                const inputDobs = updateUserInputs.map((a) => a.dateOfBirth)
+                userConNodes.sort((a, b) =>
+                    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+                )
+                const outputDobs = userConNodes.map((a) => a.dateOfBirth)
+                currentUsers.sort((a, b) =>
+                    a.user_id < b.user_id ? -1 : a.user_id > b.user_id ? 1 : 0
+                )
+                const dbDobs = currentUsers.map((a) => a.date_of_birth)
+                expect(inputDobs).to.deep.equal(outputDobs)
+                expect(inputDobs).to.deep.equal(dbDobs)
+            })
         })
 
         context('when there are too many input array members', () => {

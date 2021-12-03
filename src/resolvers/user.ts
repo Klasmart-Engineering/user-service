@@ -550,6 +550,7 @@ function buildListOfUpdatedUsers(
             updatedUser.phone = uui.phone ?? undefined
             updatedUser.gender = uui.gender ?? undefined
             updatedUser.username = uui.username
+            updatedUser.date_of_birth = uui.dateOfBirth ?? undefined
             updatedUser.alternate_email = uui.alternateEmail ?? undefined
             updatedUser.alternate_phone = uui.alternatePhone ?? undefined
             updatedUser.avatar = uui.avatar ?? undefined
