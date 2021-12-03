@@ -21,7 +21,7 @@ import {
     createTestConnection,
     TestConnection,
 } from '../../utils/testConnection'
-import { createAdminUser } from '../../utils/testEntities'
+import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 import { GraphQLResolveInfo } from 'graphql'
 import { getRepository, SelectQueryBuilder } from 'typeorm'
 import { rolesConnectionResolver } from '../../../src/pagination/rolesConnection'
@@ -47,6 +47,14 @@ import {
 import { createEntityScope } from '../../../src/directives/isAdmin'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import { createSchool } from '../../factories/school.factory'
+import {
+    generateToken,
+    getAdminAuthToken,
+    getNonAdminAuthToken,
+} from '../../utils/testConfig'
+import { rolesConnection, runQuery } from '../../utils/operations/modelOps'
+import { userToPayload } from '../../utils/operations/userOps'
+import { PermissionName } from '../../../src/permissions/permissionNames'
 
 use(chaiAsPromised)
 
@@ -819,6 +827,62 @@ describe('rolesConnection', () => {
                     expect(result.totalCount).to.eq(undefined)
                 })
             })
+        })
+    })
+
+    context('child connections', () => {
+        let org: Organization
+        beforeEach(async () => {
+            org = await createOrganization().save()
+        })
+
+        it('dataloads child connections', async () => {
+            const expectedCount = 3
+
+            const query = `
+            query {
+                rolesConnection(direction: FORWARD) {                   #1
+                    edges {
+                        node {
+                            permissionsConnection(direction: FORWARD){
+                                totalCount                              #2
+                                edges {                                 #3
+                                    node {
+                                        id
+                                    }
+                                }
+                            }
+                        }
+                    }
+        
+                }
+            }
+            `
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(expectedCount)
+
+            const nonAdmin = await createNonAdminUser(testClient)
+            const role = await createRole('role', org, {
+                permissions: [PermissionName.view_roles_and_permissions_30110],
+            }).save()
+            await createOrganizationMembership({
+                user: nonAdmin,
+                organization: org,
+                roles: [role],
+            }).save()
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getNonAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(
+                expectedCount + 2,
+                'two extra for permission checks (orgMemberships, schoolMemberships)'
+            )
         })
     })
 })

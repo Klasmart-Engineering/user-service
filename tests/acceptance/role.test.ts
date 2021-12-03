@@ -6,12 +6,16 @@ import { Role } from '../../src/entities/role'
 import { createOrganization } from '../factories/organization.factory'
 import { loadFixtures } from '../utils/fixtures'
 import { ROLES_CONNECTION, ROLE_NODE } from '../utils/operations/modelOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { createRole } from '../factories/role.factory'
 import { RoleConnectionNode } from '../../src/types/graphQL/role'
 import { NIL_UUID } from '../utils/database'
 import { print } from 'graphql'
+import { createUser } from '../factories/user.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { makeRequest } from './utils'
+import { createPermission } from '../factories/permission.factory'
 
 interface IRoleEdge {
     node: RoleConnectionNode
@@ -149,5 +153,58 @@ describe('acceptance.role', () => {
                 expect(errors).to.exist
             })
         })
+    })
+
+    it('has permissionsConnection as a child', async () => {
+        const user = await createUser().save()
+        const organization = await createOrganization(user).save()
+        await createOrganizationMembership({
+            user,
+            organization,
+        }).save()
+
+        const role = await createRole('role x', organization).save()
+        const permission = await createPermission(role).save()
+        ;(await role.permissions)?.push(permission)
+        await role.save()
+
+        const token = generateToken({
+            id: user.user_id,
+            email: user.email,
+            iss: 'calmid-debug',
+        })
+
+        const query = `
+        query {
+            rolesConnection(direction: FORWARD, filter: {name: {operator: eq, value: "${role.role_name}"}}) {                   
+                edges {
+                    node {
+                        permissionsConnection(direction: FORWARD){
+                            totalCount                              
+                            edges {                                 
+                                node {
+                                    id
+                                }
+                            }
+                        }
+                    }
+                }
+    
+            }
+        }`
+
+        const response = await makeRequest(
+            request,
+            query,
+            {
+                direction: 'FORWARD',
+            },
+            token
+        )
+        expect(response.status).to.eq(200)
+        expect(
+            response.body.data.rolesConnection.edges[0].node
+                .permissionsConnection.edges[0].node.id
+        ).to.eq(permission.permission_id)
     })
 })

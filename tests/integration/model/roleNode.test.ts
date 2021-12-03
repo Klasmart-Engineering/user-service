@@ -119,7 +119,7 @@ describe('roleNode', () => {
             await gqlTry(operation)
         }
 
-        it('makes just one call to the database', async () => {
+        it('makes just 3 call to the databases, 1 for the roleNodes 2 for their child permissionsConnections', async () => {
             connection.logger.reset()
 
             await role2Nodes(
@@ -128,7 +128,7 @@ describe('roleNode', () => {
                 roles[1].role_id
             )
 
-            expect(connection.logger.count).to.be.eq(1)
+            expect(connection.logger.count).to.be.eq(3)
         })
     })
 
