@@ -1,5 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { Permission } from '../entities/permission'
+import { Role } from '../entities/role'
 import { NodeDataLoader } from '../loaders/genericNode'
 import { UserPermissions } from '../permissions/userPermissions'
 import { PermissionConnectionNode } from '../types/graphQL/permission'
@@ -8,12 +10,26 @@ import { Lazy } from '../utils/lazyLoading'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+import { scopeHasJoin } from '../utils/typeorm'
+
+export const permissionConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'permission_name',
+    aliases: {
+        id: 'permission_id',
+        name: 'permission_name',
+        category: 'permission_category',
+        group: 'permission_group',
+        level: 'permission_level',
+    },
+}
 
 export interface IPermissionNodeDataLoaders {
     node: Lazy<NodeDataLoader<Permission, PermissionConnectionNode>>
@@ -42,36 +58,14 @@ export async function permissionsConnectionResolver(
 ): Promise<IPaginatedResponse<PermissionConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    if (filter) {
-        // A non admin user has roles table joined since @isAdmin directive
-        if (filterHasProperty('roleId', filter) && permissions.isAdmin) {
-            scope.innerJoin('Permission.roles', 'Role')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                name: 'Permission.permission_name',
-                allow: 'Permission.allow',
-                roleId: 'Role.role_id',
-            })
-        )
-    }
-
-    scope.select(permissionSummaryNodeFields)
+    scope = await permissionConnectionQuery(scope, filter)
 
     const data = await paginateData<Permission>({
         direction,
         directionArgs,
         scope,
         sort: {
-            primaryKey: 'permission_name',
-            aliases: {
-                id: 'permission_id',
-                name: 'permission_name',
-                category: 'permission_category',
-                group: 'permission_group',
-                level: 'permission_level',
-            },
+            ...permissionConnectionSortingConfig,
             sort,
         },
         includeTotalCount,
@@ -87,6 +81,29 @@ export async function permissionsConnectionResolver(
             }
         }),
     }
+}
+
+export async function permissionConnectionQuery(
+    scope: SelectQueryBuilder<Permission>,
+    filter?: IEntityFilter
+) {
+    if (filter) {
+        if (filterHasProperty('roleId', filter) && !scopeHasJoin(scope, Role)) {
+            scope.innerJoin('Permission.roles', 'Role')
+        }
+
+        scope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                name: 'Permission.permission_name',
+                allow: 'Permission.allow',
+                roleId: 'Role.role_id',
+            })
+        )
+    }
+
+    scope.select(permissionSummaryNodeFields)
+
+    return scope
 }
 
 export function mapPermissionToPermissionConnectionNode(
