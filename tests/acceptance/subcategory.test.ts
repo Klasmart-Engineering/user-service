@@ -395,4 +395,53 @@ describe('acceptance.subcategory', () => {
             })
         })
     })
+
+    context('subcategoriesConnection as a child', () => {
+        it('as a child of categories', async () => {
+            const query = `
+            query {
+                categoriesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: CategoryFilter, $sortArgs: CategorySortInput) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            subcategoriesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    filterArgs: {
+                        status: {
+                            operator: 'eq',
+                            value: 'active',
+                        },
+                    },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                getAdminAuthToken()
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.categoriesConnection.edges[0].node
+                    .subcategoriesConnection
+            ).to.have.length
+        })
+    })
 })

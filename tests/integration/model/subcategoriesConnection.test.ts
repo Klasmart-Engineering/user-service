@@ -36,6 +36,11 @@ import { SelectQueryBuilder } from 'typeorm'
 import { nonAdminSubcategoryScope } from '../../../src/directives/isAdmin'
 import { subcategoriesConnectionResolver } from '../../../src/pagination/subcategoriesConnection'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import {
+    loadSubcategoriesForCategory,
+    subcategoriesConnectionResolver as resolverForCategory,
+} from '../../../src/schemas/category'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
 
 type SubcategoryConnectionNodeKey = keyof SubcategoryConnectionNode
 
@@ -206,250 +211,402 @@ describe('subcategoriesConnection', () => {
         } as unknown) as GraphQLResolveInfo
     })
 
-    context('data', () => {
-        it('returns subcategories from all the list with its corresponding data', async () => {
-            const result = await subcategoriesConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-            })
+    // context('data', () => {
+    //     it('returns subcategories from all the list with its corresponding data', async () => {
+    //         const result = await subcategoriesConnectionResolver(info, ctx, {
+    //             direction: 'FORWARD',
+    //             directionArgs: { count: pageSize },
+    //             scope,
+    //         })
 
-            expect(result.totalCount).to.eql(subcategoriesCount)
+    //         expect(result.totalCount).to.eql(subcategoriesCount)
 
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
+    //         expect(result.pageInfo.hasNextPage).to.be.true
+    //         expect(result.pageInfo.hasPreviousPage).to.be.false
+    //         expect(result.pageInfo.startCursor).to.be.string
+    //         expect(result.pageInfo.endCursor).to.be.string
 
-            expect(result.edges.length).eq(pageSize)
-        })
-    })
+    //         expect(result.edges.length).eq(pageSize)
+    //     })
+    // })
 
-    context('sorting', () => {
-        it("returns subcategories sorted by 'id' in an ASCENDING order", async () => {
-            await expectSorting('id', 'ASC')
-        })
+    // context('sorting', () => {
+    //     it("returns subcategories sorted by 'id' in an ASCENDING order", async () => {
+    //         await expectSorting('id', 'ASC')
+    //     })
 
-        it("returns permissions sorted by 'id' in a DESCENDING order", async () => {
-            await expectSorting('id', 'DESC')
-        })
+    //     it("returns permissions sorted by 'id' in a DESCENDING order", async () => {
+    //         await expectSorting('id', 'DESC')
+    //     })
 
-        it("returns permissions sorted by 'name' in an ASCENDING order", async () => {
-            await expectSorting('name', 'ASC')
-        })
+    //     it("returns permissions sorted by 'name' in an ASCENDING order", async () => {
+    //         await expectSorting('name', 'ASC')
+    //     })
 
-        it("returns permissions sorted by 'name' in a DESCENDING order", async () => {
-            await expectSorting('name', 'DESC')
-        })
-    })
+    //     it("returns permissions sorted by 'name' in a DESCENDING order", async () => {
+    //         await expectSorting('name', 'DESC')
+    //     })
+    // })
 
-    context('filtering', () => {
+    // context('filtering', () => {
+    //     beforeEach(async () => {
+    //         const inactiveSubcategory = await Subcategory.findOneOrFail()
+    //         inactiveSubcategory.status = Status.INACTIVE
+    //         await connection.manager.save(inactiveSubcategory)
+    //     })
+
+    //     it('supports filtering by subcategory status', async () => {
+    //         const status = Status.INACTIVE
+    //         const filter: IEntityFilter = {
+    //             status: { operator: 'eq', value: status },
+    //         }
+
+    //         const result = await subcategoriesConnectionResolver(info, ctx, {
+    //             direction: 'FORWARD',
+    //             directionArgs: { count: pageSize },
+    //             scope,
+    //             filter,
+    //         })
+
+    //         expect(result.totalCount).to.eql(1)
+
+    //         result.edges.forEach((edge) => {
+    //             expect(edge.node.status).to.eql(status)
+    //         })
+    //     })
+
+    //     it('supports filtering by subcategory system', async () => {
+    //         const system = false
+    //         const filter: IEntityFilter = {
+    //             system: { operator: 'eq', value: system },
+    //         }
+
+    //         const result = await subcategoriesConnectionResolver(info, ctx, {
+    //             direction: 'FORWARD',
+    //             directionArgs: { count: pageSize },
+    //             scope,
+    //             filter,
+    //         })
+
+    //         expect(result.totalCount).to.eql(orgSubcategoriesCount * 2)
+
+    //         result.edges.forEach((edge) => {
+    //             expect(edge.node.system).to.eql(system)
+    //         })
+    //     })
+
+    //     it('supports filtering by organization ID', async () => {
+    //         const organizationId = organization1.organization_id
+    //         const filter: IEntityFilter = {
+    //             organizationId: { operator: 'eq', value: organizationId },
+    //         }
+
+    //         const result = await subcategoriesConnectionResolver(info, ctx, {
+    //             direction: 'FORWARD',
+    //             directionArgs: { count: pageSize },
+    //             scope,
+    //             filter,
+    //         })
+
+    //         expect(result.totalCount).to.eql(orgSubcategoriesCount)
+
+    //         subcategories1.sort((a, b) => {
+    //             if (a.id < b.id) {
+    //                 return -1
+    //             }
+
+    //             if (a.id > b.id) {
+    //                 return 1
+    //             }
+
+    //             return 0
+    //         })
+
+    //         result.edges.forEach((edge, i) => {
+    //             expect(edge.node.id).to.eql(subcategories1[i].id)
+    //             expect(edge.node.name).to.eql(subcategories1[i].name)
+    //             expect(edge.node.status).to.eql(subcategories1[i].status)
+    //             expect(edge.node.system).to.eql(subcategories1[i].system)
+    //         })
+    //     })
+
+    //     it('supports filtering by category ID', async () => {
+    //         const categoryId = categories1[0].id
+    //         const filter: IEntityFilter = {
+    //             categoryId: { operator: 'eq', value: categoryId },
+    //         }
+
+    //         const result = await subcategoriesConnectionResolver(info, ctx, {
+    //             direction: 'FORWARD',
+    //             directionArgs: { count: pageSize },
+    //             scope,
+    //             filter,
+    //         })
+
+    //         expect(result.totalCount).to.eql(
+    //             orgSubcategoriesCount / orgCategoriesCount
+    //         )
+
+    //         const categorySubcategories =
+    //             (await categories1[0].subcategories) || []
+
+    //         categorySubcategories.sort((a, b) => {
+    //             if (a.id < b.id) {
+    //                 return -1
+    //             }
+
+    //             if (a.id > b.id) {
+    //                 return 1
+    //             }
+
+    //             return 0
+    //         })
+
+    //         result.edges.forEach((edge, i) => {
+    //             expect(edge.node.id).to.eql(categorySubcategories[i].id)
+    //             expect(edge.node.name).to.eql(categorySubcategories[i].name)
+    //             expect(edge.node.status).to.eql(categorySubcategories[i].status)
+    //             expect(edge.node.system).to.eql(categorySubcategories[i].system)
+    //         })
+    //     })
+    // })
+
+    // context('when totalCount is not requested', () => {
+    //     beforeEach(() => {
+    //         info = ({
+    //             fieldNodes: [
+    //                 {
+    //                     selectionSet: {
+    //                         selections: [
+    //                             {
+    //                                 kind: 'Field',
+
+    //                                 name: {
+    //                                     value: 'edges',
+    //                                 },
+    //                             },
+    //                         ],
+    //                     },
+    //                 },
+    //             ],
+    //         } as unknown) as GraphQLResolveInfo
+    //     })
+
+    //     it('makes just one call to the database', async () => {
+    //         connection.logger.reset()
+
+    //         await subcategoriesConnectionResolver(info, ctx, {
+    //             direction: 'FORWARD',
+    //             directionArgs: { count: pageSize },
+    //             scope,
+    //         })
+
+    //         expect(connection.logger.count).to.be.eq(1)
+    //     })
+    // })
+
+    // context('permissions', () => {
+    //     let aliases: string[]
+    //     let conditions: string[]
+
+    //     context('when user is super admin', () => {
+    //         it('should have access to any subcategory', async () => {
+    //             aliases = scope.expressionMap.aliases.map((a) => a.name)
+    //             conditions = scope.expressionMap.wheres.map((w) => w.condition)
+
+    //             expect(aliases.length).to.eq(1)
+    //             expect(aliases).to.deep.equalInAnyOrder(['Subcategory'])
+    //             expect(conditions.length).to.eq(0)
+    //         })
+    //     })
+
+    //     context('when user is organization member', () => {
+    //         it('should have access to system and own subcategories', async () => {
+    //             await buildScopeAndContext(memberPermissions)
+    //             aliases = scope.expressionMap.aliases.map((a) => a.name)
+    //             conditions = scope.expressionMap.wheres.map((w) => w.condition)
+
+    //             expect(aliases.length).to.eq(2)
+    //             expect(aliases).to.deep.equalInAnyOrder([
+    //                 'Subcategory',
+    //                 'OrganizationMembership',
+    //             ])
+
+    //             expect(conditions.length).to.eq(1)
+    //             expect(conditions).to.deep.equalInAnyOrder([
+    //                 '(OrganizationMembership.user_id = :d_user_id OR Subcategory.system = :system)',
+    //             ])
+    //         })
+    //     })
+
+    //     context('when user has not any memebership', () => {
+    //         it('should have access just to system subcategories', async () => {
+    //             await buildScopeAndContext(noMemberPermissions)
+    //             aliases = scope.expressionMap.aliases.map((a) => a.name)
+    //             conditions = scope.expressionMap.wheres.map((w) => w.condition)
+
+    //             expect(aliases.length).to.eq(2)
+    //             expect(aliases).to.deep.equalInAnyOrder([
+    //                 'Subcategory',
+    //                 'OrganizationMembership',
+    //             ])
+
+    //             expect(conditions.length).to.eq(1)
+    //             expect(conditions).to.deep.equalInAnyOrder([
+    //                 '(OrganizationMembership.user_id = :d_user_id OR Subcategory.system = :system)',
+    //             ])
+    //         })
+    //     })
+    // })
+
+    context('subcategoriesConnectionChild', () => {
+        let ctx: Pick<Context, 'loaders'>
+        let fakeInfo: any
+
         beforeEach(async () => {
-            const inactiveSubcategory = await Subcategory.findOneOrFail()
-            inactiveSubcategory.status = Status.INACTIVE
-            await connection.manager.save(inactiveSubcategory)
-        })
+            // clientUser = await createUser().save()
 
-        it('supports filtering by subcategory status', async () => {
-            const status = Status.INACTIVE
-            const filter: IEntityFilter = {
-                status: { operator: 'eq', value: status },
-            }
-
-            const result = await subcategoriesConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-                filter,
-            })
-
-            expect(result.totalCount).to.eql(1)
-
-            result.edges.forEach((edge) => {
-                expect(edge.node.status).to.eql(status)
-            })
-        })
-
-        it('supports filtering by subcategory system', async () => {
-            const system = false
-            const filter: IEntityFilter = {
-                system: { operator: 'eq', value: system },
-            }
-
-            const result = await subcategoriesConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-                filter,
-            })
-
-            expect(result.totalCount).to.eql(orgSubcategoriesCount * 2)
-
-            result.edges.forEach((edge) => {
-                expect(edge.node.system).to.eql(system)
-            })
-        })
-
-        it('supports filtering by organization ID', async () => {
-            const organizationId = organization1.organization_id
-            const filter: IEntityFilter = {
-                organizationId: { operator: 'eq', value: organizationId },
-            }
-
-            const result = await subcategoriesConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-                filter,
-            })
-
-            expect(result.totalCount).to.eql(orgSubcategoriesCount)
-
-            subcategories1.sort((a, b) => {
-                if (a.id < b.id) {
-                    return -1
-                }
-
-                if (a.id > b.id) {
-                    return 1
-                }
-
-                return 0
-            })
-
-            result.edges.forEach((edge, i) => {
-                expect(edge.node.id).to.eql(subcategories1[i].id)
-                expect(edge.node.name).to.eql(subcategories1[i].name)
-                expect(edge.node.status).to.eql(subcategories1[i].status)
-                expect(edge.node.system).to.eql(subcategories1[i].system)
-            })
-        })
-
-        it('supports filtering by category ID', async () => {
-            const categoryId = categories1[0].id
-            const filter: IEntityFilter = {
-                categoryId: { operator: 'eq', value: categoryId },
-            }
-
-            const result = await subcategoriesConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-                filter,
-            })
-
-            expect(result.totalCount).to.eql(
-                orgSubcategoriesCount / orgCategoriesCount
-            )
-
-            const categorySubcategories =
-                (await categories1[0].subcategories) || []
-
-            categorySubcategories.sort((a, b) => {
-                if (a.id < b.id) {
-                    return -1
-                }
-
-                if (a.id > b.id) {
-                    return 1
-                }
-
-                return 0
-            })
-
-            result.edges.forEach((edge, i) => {
-                expect(edge.node.id).to.eql(categorySubcategories[i].id)
-                expect(edge.node.name).to.eql(categorySubcategories[i].name)
-                expect(edge.node.status).to.eql(categorySubcategories[i].status)
-                expect(edge.node.system).to.eql(categorySubcategories[i].system)
-            })
-        })
-    })
-
-    context('when totalCount is not requested', () => {
-        beforeEach(() => {
-            info = ({
+            const token = { id: organizationMember1.user_id }
+            const permissions = new UserPermissions(token)
+            ctx = { loaders: createContextLazyLoaders(permissions) }
+            fakeInfo = {
                 fieldNodes: [
                     {
+                        kind: 'Field',
+                        name: {
+                            kind: 'Name',
+                            value: 'organizationMembershipsConnection',
+                        },
                         selectionSet: {
-                            selections: [
-                                {
-                                    kind: 'Field',
-
-                                    name: {
-                                        value: 'edges',
-                                    },
-                                },
-                            ],
+                            kind: 'SelectionSet',
+                            selections: [],
                         },
                     },
                 ],
-            } as unknown) as GraphQLResolveInfo
+            }
         })
 
-        it('makes just one call to the database', async () => {
-            connection.logger.reset()
-
-            await subcategoriesConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
+        context('as child of a subcategory', () => {
+            it('returns subcategories per category', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id
+                )
+                expect(result.edges).to.have.lengthOf(3)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    [
+                        subcategories1[0],
+                        subcategories1[1],
+                        subcategories1[2],
+                    ].map((m) => m.id)
+                )
             })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await resolverForCategory(
+                    { id: categories1[0].id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(3)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await resolverForCategory(
+                    { id: categories1[0].id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        it('uses exactly one dataloader when called with different parent', async () => {
+            connection.logger.reset()
+            const loaderResults = []
+            for (const category of categories1) {
+                loaderResults.push(
+                    loadSubcategoriesForCategory(ctx, category.id, {}, false)
+                )
+            }
+            await Promise.all(loaderResults)
 
             expect(connection.logger.count).to.be.eq(1)
         })
-    })
-
-    context('permissions', () => {
-        let aliases: string[]
-        let conditions: string[]
-
-        context('when user is super admin', () => {
-            it('should have access to any subcategory', async () => {
-                aliases = scope.expressionMap.aliases.map((a) => a.name)
-                conditions = scope.expressionMap.wheres.map((w) => w.condition)
-
-                expect(aliases.length).to.eq(1)
-                expect(aliases).to.deep.equalInAnyOrder(['Subcategory'])
-                expect(conditions.length).to.eq(0)
+        context('sorting', () => {
+            let category1Subcategories: Subcategory[]
+            beforeEach(() => {
+                category1Subcategories = subcategories1.slice(0, 2)
+            })
+            it('sorts by id', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id,
+                    {
+                        sort: {
+                            field: 'id',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = [
+                    subcategories1[0],
+                    subcategories1[1],
+                    subcategories1[2],
+                ]
+                    .map((m) => m.id)
+                    .sort()
+                expect(result.edges.map((e) => e.node.id)).to.deep.equal(sorted)
+            })
+            it('sorts by name', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id,
+                    {
+                        sort: {
+                            field: 'name',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = [
+                    subcategories1[0],
+                    subcategories1[1],
+                    subcategories1[2],
+                ]
+                    .map((m) => m.name)
+                    .sort(function (a, b) {
+                        return (a as String).localeCompare(b as string)
+                    })
+                expect(result.edges.map((e) => e.node.name)).to.deep.equal(
+                    sorted
+                )
             })
         })
-
-        context('when user is organization member', () => {
-            it('should have access to system and own subcategories', async () => {
-                await buildScopeAndContext(memberPermissions)
-                aliases = scope.expressionMap.aliases.map((a) => a.name)
-                conditions = scope.expressionMap.wheres.map((w) => w.condition)
-
-                expect(aliases.length).to.eq(2)
-                expect(aliases).to.deep.equalInAnyOrder([
-                    'Subcategory',
-                    'OrganizationMembership',
-                ])
-
-                expect(conditions.length).to.eq(1)
-                expect(conditions).to.deep.equalInAnyOrder([
-                    '(OrganizationMembership.user_id = :d_user_id OR Subcategory.system = :system)',
-                ])
+        context('totalCount', () => {
+            it('returns total count', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id,
+                    {},
+                    true
+                )
+                expect(result.totalCount).to.eq(3)
             })
-        })
-
-        context('when user has not any memebership', () => {
-            it('should have access just to system subcategories', async () => {
-                await buildScopeAndContext(noMemberPermissions)
-                aliases = scope.expressionMap.aliases.map((a) => a.name)
-                conditions = scope.expressionMap.wheres.map((w) => w.condition)
-
-                expect(aliases.length).to.eq(2)
-                expect(aliases).to.deep.equalInAnyOrder([
-                    'Subcategory',
-                    'OrganizationMembership',
-                ])
-
-                expect(conditions.length).to.eq(1)
-                expect(conditions).to.deep.equalInAnyOrder([
-                    '(OrganizationMembership.user_id = :d_user_id OR Subcategory.system = :system)',
-                ])
+            it('does not return total count', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id,
+                    {},
+                    false
+                )
+                expect(result.totalCount).to.not.exist
             })
         })
     })

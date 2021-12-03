@@ -9,6 +9,12 @@ import {
     addSubcategoriesToCategories,
 } from '../resolvers/category'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { CategoryConnectionNode } from '../types/graphQL/category'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { GraphQLResolveInfo } from 'graphql'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { Subcategory } from '../entities/subcategory'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -69,6 +75,13 @@ const typeDefs = gql`
         name: String
         status: Status!
         system: Boolean!
+        subcategoriesConnection(
+            count: PageSize
+            cursor: String
+            filter: SubcategoryFilter
+            sort: SubcategorySortInput
+            direction: ConnectionDirection
+        ): SubcategoriesConnectionResponse
     }
 
     input CreateCategoryInput {
@@ -150,6 +163,9 @@ export default function getDefault(
     return {
         typeDefs,
         resolvers: {
+            CategoryConnectionNode: {
+                subcategoriesConnection: subcategoriesConnectionResolver,
+            },
             Mutation: {
                 category: (_parent, args, ctx, _info) =>
                     model.getCategory(args, ctx),
@@ -178,4 +194,39 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function subcategoriesConnectionResolver(
+    category: Pick<CategoryConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadSubcategoriesForCategory(
+        ctx,
+        category.id,
+        args,
+        includeTotalCount
+    )
+}
+
+export async function loadSubcategoriesForCategory(
+    context: Pick<Context, 'loaders'>,
+    categoryId: CategoryConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Subcategory> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: categoryId,
+            filterKey: 'categoryId',
+            pivot: '"Category_Subcategory"."categoryId"',
+        },
+        primaryColumn: 'id',
+    }
+    const subcats = await context.loaders.subcategoriesConnectionChild.instance.load(key)
+    return subcats
 }

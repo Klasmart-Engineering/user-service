@@ -546,7 +546,7 @@ export default function getDefault(
     }
 }
 
-export async function organizationMembershipsConnectionResolver(
+export function organizationMembershipsConnectionResolver(
     organization: Pick<OrganizationConnectionNode, 'id'>,
     args: IChildPaginationArgs,
     ctx: Pick<Context, 'loaders'>,
@@ -561,7 +561,7 @@ export async function organizationMembershipsConnectionResolver(
     )
 }
 
-export async function loadOrganizationMembershipsForOrganization(
+export function loadOrganizationMembershipsForOrganization(
     context: Pick<Context, 'loaders'>,
     organizationId: OrganizationConnectionNode['id'],
     args: IChildPaginationArgs = {},
