@@ -2254,7 +2254,37 @@ describe('user', () => {
                 )
                 expect(currentUserNodes).to.deep.equal(userConNodes)
             })
+            it('updates users avatars', async () => {
+                connection.logger.reset()
+                for (const u of updateUserInputs) {
+                    u.avatar = faker.internet.url()
+                }
+                const updateUserResult = await updateUsers(
+                    { input: updateUserInputs },
+                    {
+                        permissions: new UserPermissions({
+                            id: userPerformingOperation.user_id,
+                            email: userPerformingOperation.email,
+                            phone: userPerformingOperation.phone,
+                        }),
+                    }
+                )
+                const inputAvatars = updateUserInputs.map((a) => a.avatar)
+                const userConNodes = updateUserResult.users
+                const outputAvatars = userConNodes.map((a) => a.avatar)
+                expect(userConNodes.length).to.equal(updateUserInputs.length)
+                expect(connection.logger.count).to.equal(56)
+                const userIds = updateUserInputs.map((uui) => uui.id)
+                const currentUsers = await connection.manager
+                    .createQueryBuilder(User, 'User')
+                    .where('User.user_id IN (:...ids)', { ids: userIds })
+                    .getMany()
+                const dbAvatars = currentUsers.map((a) => a.avatar)
+                expect(inputAvatars).to.deep.equal(outputAvatars)
+                expect(inputAvatars).to.deep.equal(dbAvatars)
+            })
         })
+
         context('when there are too many input array members', () => {
             beforeEach(async () => {
                 const u = await createUser().save()
