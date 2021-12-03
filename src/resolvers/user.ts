@@ -548,6 +548,7 @@ function buildListOfUpdatedUsers(
             updatedUser.username = uui.username
             updatedUser.alternate_email = uui.alternateEmail ?? undefined
             updatedUser.alternate_phone = uui.alternatePhone ?? undefined
+            updatedUser.avatar = uui.avatar ?? undefined
             updatedUsers.push(updatedUser)
         }
     }
