@@ -599,6 +599,46 @@ describe('model', () => {
             // one for fetching permissions
             expect(connection.logger.count).to.be.eq(2)
         })
+        context('sorting', () => {
+            it('sorts by permissionId', async () => {
+                const result = await loadPermissionsForRole(
+                    ctx,
+                    role1.role_id,
+                    {
+                        sort: {
+                            field: 'id',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = [
+                    permissions[0].permission_id,
+                    permissions[1].permission_id,
+                ].sort()
+                expect(result.edges.map((e) => e.node.id)).to.deep.equal(sorted)
+            })
+            it('sorts by permissionName', async () => {
+                const result = await loadPermissionsForRole(
+                    ctx,
+                    role1.role_id,
+                    {
+                        sort: {
+                            field: 'name',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = [
+                    permissions[0].permission_name,
+                    permissions[1].permission_name,
+                ].sort()
+                expect(result.edges.map((e) => e.node.name)).to.deep.equal(
+                    sorted
+                )
+            })
+        })
         context('totalCount', () => {
             it('returns total count', async () => {
                 const result = await loadPermissionsForRole(
