@@ -398,8 +398,23 @@ describe('acceptance.subcategory', () => {
     })
 
     context('subcategoriesConnection as a child', () => {
+        let user: User
+        let organization: Organization
+        let token: string
         beforeEach(async () => {
             await CategoriesInitializer.run()
+            user = await createUser().save()
+            organization = await createOrganization(user).save()
+            await createOrganizationMembership({
+                user,
+                organization,
+            }).save()
+            await createSubcategory(organization).save()
+            token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
         })
         it('as a child of categories', async () => {
             const query = `
@@ -444,22 +459,10 @@ describe('acceptance.subcategory', () => {
             expect(response.status).to.eq(200)
             expect(
                 response.body.data.categoriesConnection.edges[0].node
-                    .subcategoriesConnection
-            ).to.have.length
+                    .subcategoriesConnection.totalCount
+            ).to.be.gte(1)
         })
         it('as a child of organizations', async () => {
-            const user = await createUser().save()
-            const organization = await createOrganization(user).save()
-            await createOrganizationMembership({
-                user,
-                organization,
-            }).save()
-            await createSubcategory(organization).save()
-            const token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
             const query = `
             query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
                 organizationsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
@@ -496,8 +499,8 @@ describe('acceptance.subcategory', () => {
             expect(response.status).to.eq(200)
             expect(
                 response.body.data.organizationsConnection.edges[0].node
-                    .subcategoriesConnection
-            ).to.have.length
+                    .subcategoriesConnection.totalCount
+            ).to.eq(1)
         })
     })
 })
