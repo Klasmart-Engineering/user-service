@@ -468,8 +468,6 @@ describe('subcategoriesConnection', () => {
         let fakeInfo: any
 
         beforeEach(async () => {
-            // clientUser = await createUser().save()
-
             const token = { id: organizationMember1.user_id }
             const permissions = new UserPermissions(token)
             ctx = { loaders: createContextLazyLoaders(permissions) }
