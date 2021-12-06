@@ -230,8 +230,5 @@ export async function loadSubcategoriesForCategory(
         },
         primaryColumn: 'id',
     }
-    const subcats = await context.loaders.subcategoriesConnectionChild.instance.load(
-        key
-    )
-    return subcats
+    return context.loaders.subcategoriesConnectionChild.instance.load(key)
 }
