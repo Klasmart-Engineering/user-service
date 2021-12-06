@@ -16,10 +16,6 @@ export function setup() {
 }   
 
 export default function(data: { res: any, userId: string }) {
-    const jar = http.cookieJar();
-    jar.set(process.env.SERVICE_URL as string, 'access', data.res.cookies?.access[0].Value);
-    jar.set(process.env.SERVICE_URL as string, 'refresh', data.res.cookies?.refresh[0].Value);
-
     meTest();
     sleep(1);
     meTest();

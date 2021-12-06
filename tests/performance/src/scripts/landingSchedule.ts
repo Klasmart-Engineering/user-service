@@ -7,14 +7,7 @@ import loginSetup from "../utils/loginSetup";
 import scheduleFilterProgram from "./scheduleFilterProgram";
 import scheduleFilterClass from "./scheduleFilterClass";
 
-export default function(data: { res: any, userId: string}) {
-    const jar = http.cookieJar();
-    jar.set(process.env.SERVICE_URL as string, 'access', data.res.cookies?.access[0].Value);
-    jar.set(process.env.SERVICE_URL as string, 'refresh', data.res.cookies?.refresh[0].Value);
-
-    jar.set(process.env.LIVE_URL as string, 'access', data.res.cookies?.access[0].Value);
-    jar.set(process.env.LIVE_URL as string, 'refresh', data.res.cookies?.refresh[0].Value);
-
+export default function() {
     schedulesTimeView();
 
     sleep(5);
