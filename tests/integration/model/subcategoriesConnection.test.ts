@@ -621,7 +621,7 @@ describe('subcategoriesConnection', () => {
                 ]
                     .map((m) => m.name)
                     .sort(function (a, b) {
-                        return (a as String).localeCompare(b as string)
+                        return (a as string).localeCompare(b as string)
                     })
                 expect(result.edges.map((e) => e.node.name)).to.deep.equal(
                     sorted
