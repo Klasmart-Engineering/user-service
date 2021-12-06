@@ -134,6 +134,9 @@ const typeDefs = gql`
         id: ID!
         name: String!
         subcategories: [Subcategory!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         system: Boolean!
         status: Status
 
@@ -227,6 +230,8 @@ export async function loadSubcategoriesForCategory(
         },
         primaryColumn: 'id',
     }
-    const subcats = await context.loaders.subcategoriesConnectionChild.instance.load(key)
+    const subcats = await context.loaders.subcategoriesConnectionChild.instance.load(
+        key
+    )
     return subcats
 }

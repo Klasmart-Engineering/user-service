@@ -443,5 +443,45 @@ describe('acceptance.subcategory', () => {
                     .subcategoriesConnection
             ).to.have.length
         })
+        it('as a child of organizations', async () => {
+            const query = `
+            query {
+                organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            subcategoriesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                getAdminAuthToken()
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .subcategoriesConnection
+            ).to.have.length
+        })
     })
 })
