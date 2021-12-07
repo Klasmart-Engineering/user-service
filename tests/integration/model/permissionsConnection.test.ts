@@ -630,10 +630,11 @@ describe('model', () => {
                     },
                     false
                 )
-                const sorted = [
-                    permissions[0].permission_name,
-                    permissions[1].permission_name,
-                ].sort()
+                const sorted = [permissions[0], permissions[1]]
+                    .map((m) => m.permission_name)
+                    .sort(function (a, b) {
+                        return (a as string).localeCompare(b as string)
+                    })
                 expect(result.edges.map((e) => e.node.name)).to.deep.equal(
                     sorted
                 )

@@ -3,6 +3,11 @@ import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Model } from '../model'
 import { Context } from '../main'
 import { SubjectConnectionNode } from '../types/graphQL/subject'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { GraphQLResolveInfo } from 'graphql'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { Category } from '../entities/category'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -58,6 +63,16 @@ const typeDefs = gql`
         status: Status!
         system: Boolean!
         categories: [CategoryConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
+        categoriesConnection(
+            count: PageSize
+            cursor: String
+            filter: CategoryFilter
+            sort: CategorySortInput
+            direction: ConnectionDirection
+        ): CategoriesConnectionResponse
     }
 
     extend type Query {
@@ -79,7 +94,13 @@ const typeDefs = gql`
         id: ID!
         name: String!
         categories: [Category!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         subcategories: [Subcategory!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         system: Boolean!
         status: Status
 
@@ -112,6 +133,7 @@ export default function getDefault(
                         subject.id
                     )
                 },
+                categoriesConnection: categoriesConnectionResolver,
             },
             Mutation: {
                 subject: (_parent, args, ctx, _info) =>
@@ -133,4 +155,33 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function categoriesConnectionResolver(
+    subject: Pick<SubjectConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadCategoriesForSubject(ctx, subject.id, args, includeTotalCount)
+}
+
+export async function loadCategoriesForSubject(
+    context: Pick<Context, 'loaders'>,
+    subjectId: SubjectConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Category> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: subjectId,
+            filterKey: 'subjectId',
+            pivot: '"Subject"."id"',
+        },
+        primaryColumn: 'id',
+    }
+    return context.loaders.categoriesConnectionChild.instance.load(key)
 }

@@ -17,7 +17,9 @@ import {
     mapAgeRangeToAgeRangeConnectionNode,
 } from '../pagination/ageRangesConnection'
 import {
+    categoriesConnectionSortingConfig,
     categoryConnectionNodeFields,
+    categoryConnectionQuery,
     mapCategoryToCategoryConnectionNode,
 } from '../pagination/categoriesConnection'
 import {
@@ -254,6 +256,12 @@ export interface IDataLoaders {
             IPaginatedResponse<PermissionConnectionNode>
         >
     >
+    categoriesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Category>,
+            IPaginatedResponse<CategoryConnectionNode>
+        >
+    >
     categoryNode: ICategoryNodeDataLoader
     schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
@@ -388,6 +396,18 @@ export function createContextLazyLoaders(
                         mapPermissionToPermissionConnectionNode,
                         permissionConnectionSortingConfig,
                         { permissions, entity: 'permission' }
+                    )
+                })
+        ),
+        categoriesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        categoryConnectionQuery,
+                        mapCategoryToCategoryConnectionNode,
+                        categoriesConnectionSortingConfig,
+                        { permissions, entity: 'category' }
                     )
                 })
         ),
