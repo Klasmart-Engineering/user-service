@@ -17,6 +17,7 @@ import {
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
 import { Category } from '../entities/category'
+import { Subcategory } from '../entities/subcategory'
 
 const typeDefs = gql`
     scalar HexColor
@@ -102,6 +103,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
             )
         subcategories: [Subcategory!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         subjects: [Subject!]
         programs: [Program!]
 
@@ -348,6 +352,14 @@ const typeDefs = gql`
             sort: CategorySortInput
             direction: ConnectionDirection
         ): CategoriesConnectionResponse
+
+        subcategoriesConnection(
+            count: PageSize
+            cursor: String
+            filter: SubcategoryFilter
+            sort: SubcategorySortInput
+            direction: ConnectionDirection
+        ): SubcategoriesConnectionResponse
     }
 `
 
@@ -479,6 +491,7 @@ export default function getDefault(
                 rolesConnection: rolesConnectionChildResolver,
                 classesConnection: classesChildConnectionResolver,
                 categoriesConnection: categoriesConnectionResolver,
+                subcategoriesConnection: subcategoriesConnectionResolver,
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
@@ -546,7 +559,7 @@ export default function getDefault(
     }
 }
 
-export async function organizationMembershipsConnectionResolver(
+export function organizationMembershipsConnectionResolver(
     organization: Pick<OrganizationConnectionNode, 'id'>,
     args: IChildPaginationArgs,
     ctx: Pick<Context, 'loaders'>,
@@ -561,7 +574,7 @@ export async function organizationMembershipsConnectionResolver(
     )
 }
 
-export async function loadOrganizationMembershipsForOrganization(
+export function loadOrganizationMembershipsForOrganization(
     context: Pick<Context, 'loaders'>,
     organizationId: OrganizationConnectionNode['id'],
     args: IChildPaginationArgs = {},
@@ -614,4 +627,38 @@ export async function loadCategoriesForOrganization(
         primaryColumn: 'id',
     }
     return context.loaders.categoriesConnectionChild.instance.load(key)
+}
+
+export async function subcategoriesConnectionResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadSubcategoriesForOrganization(
+        ctx,
+        organization.id,
+        args,
+        includeTotalCount
+    )
+}
+
+export async function loadSubcategoriesForOrganization(
+    context: Pick<Context, 'loaders'>,
+    organizationId: OrganizationConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Subcategory> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: organizationId,
+            filterKey: 'organizationId',
+            pivot: '"Organization"."organization_id"',
+        },
+        primaryColumn: 'id',
+    }
+    return context.loaders.subcategoriesConnectionChild.instance.load(key)
 }

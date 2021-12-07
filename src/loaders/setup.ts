@@ -55,6 +55,8 @@ import {
 import {
     mapSubcategoryToSubcategoryConnectionNode,
     subcategoryConnectionNodeFields,
+    subcategoryConnectionQuery,
+    subcategoriesConnectionSortingConfig,
 } from '../pagination/subcategoriesConnection'
 import {
     CoreUserConnectionNode,
@@ -262,6 +264,12 @@ export interface IDataLoaders {
             IPaginatedResponse<CategoryConnectionNode>
         >
     >
+    subcategoriesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Subcategory>,
+            IPaginatedResponse<SubcategoryConnectionNode>
+        >
+    >
     categoryNode: ICategoryNodeDataLoader
     schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
@@ -408,6 +416,18 @@ export function createContextLazyLoaders(
                         mapCategoryToCategoryConnectionNode,
                         categoriesConnectionSortingConfig,
                         { permissions, entity: 'category' }
+                    )
+                })
+        ),
+        subcategoriesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        subcategoryConnectionQuery,
+                        mapSubcategoryToSubcategoryConnectionNode,
+                        subcategoriesConnectionSortingConfig,
+                        { permissions, entity: 'subcategory' }
                     )
                 })
         ),

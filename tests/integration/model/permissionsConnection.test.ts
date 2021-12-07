@@ -618,7 +618,7 @@ describe('model', () => {
                 ].sort()
                 expect(result.edges.map((e) => e.node.id)).to.deep.equal(sorted)
             })
-            it('sorts by permissionName', async () => {
+            it('sorts by permission name', async () => {
                 const result = await loadPermissionsForRole(
                     ctx,
                     role1.role_id,
