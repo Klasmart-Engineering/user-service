@@ -1,3 +1,4 @@
+import { normalizePhoneNumber } from './phoneNumberCleaning'
 import { isEmail, isPhone } from './validations'
 
 export const uniqueAndTruthy = <T>(array: Array<T> | undefined): T[] => {
@@ -12,31 +13,73 @@ export function unswapEmailAndPhone(
     email?: string | null,
     phone?: string | null
 ): { email: string | undefined | null; phone: string | undefined | null } {
-    if (email !== null && !isEmail(email) && isPhone(email)) {
-        phone = email
+    let emailAsPhone
+    try {
+        emailAsPhone = cleanPhone(email)
+    } catch {
+        emailAsPhone = undefined
+    }
+
+    if (
+        email !== null &&
+        !isEmail(email) &&
+        emailAsPhone !== null &&
+        isPhone(emailAsPhone)
+    ) {
+        phone = emailAsPhone
         email = undefined
     } else if (phone !== null && !isPhone(phone) && isEmail(phone)) {
         email = phone
         phone = undefined
     }
-
     return { email, phone }
 }
 
+/*
+this function both cleans and validates
+and will throw errors for invalid numbers
+
+If you're already doing validation seperatly
+and don't want to throw more errors
+or you want invalid values to default to undefined
+call with `throwErrors=true`
+If your using this function to validate `value`
+or know that `value` is already valid
+call with `throwErrors=false`
+*/
+function cleanPhone(
+    value: string | undefined | null,
+    throwErrors = true
+): string | undefined | null {
+    value = contactInfo(value)
+
+    if (value === undefined || value === null) {
+        return value
+    }
+
+    try {
+        return normalizePhoneNumber(value)
+    } catch (e) {
+        if (throwErrors) {
+            throw e
+        } else {
+            return undefined
+        }
+    }
+}
+
+function contactInfo(value: string | null | undefined) {
+    if (value === null || value === '') return null
+    if (typeof value === 'undefined') return undefined
+    return normalizedLowercaseTrimmed(value)
+}
+
 export default {
-    contactInfo: function (value: string | null | undefined) {
-        if (value === null || value === '') return null
-        if (typeof value === 'undefined') return undefined
-        return normalizedLowercaseTrimmed(value)
-    },
-
     email: function <V extends string | null | undefined>(value: V) {
-        return this.contactInfo(value)
+        return contactInfo(value)
     },
+    phone: cleanPhone,
 
-    phone: function (value: string | null | undefined) {
-        return this.contactInfo(value)
-    },
     /**
      *
      * @param value unclean shortcode input

@@ -235,7 +235,9 @@ async function modifyOrganizationRoles(
 function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
     const ci: UserContactInfo = {
         email: clean.email(cui.contactInfo.email),
-        phone: clean.phone(cui.contactInfo.phone),
+        // don't throw errors as they will of already been
+        // found by validation but this code runs before we return them
+        phone: clean.phone(cui.contactInfo.phone, false),
     }
     const cleanCui: CreateUserInput = {
         givenName: cui.givenName,
@@ -245,7 +247,9 @@ function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
         username: cui.username,
         dateOfBirth: clean.dateOfBirth(cui.dateOfBirth),
         alternateEmail: clean.email(cui.alternateEmail),
-        alternatePhone: clean.phone(cui.alternatePhone),
+        // don't throw errors as they will of already been
+        // found by validation but this code runs before we return them
+        alternatePhone: clean.phone(cui.alternatePhone, false),
     }
     return cleanCui
 }
@@ -549,6 +553,8 @@ function buildListOfUpdatedUsers(
             updatedUser.alternate_email = uui.alternateEmail ?? undefined
             updatedUser.alternate_phone = uui.alternatePhone ?? undefined
             updatedUser.avatar = uui.avatar ?? undefined
+            updatedUser.date_of_birth = uui.dateOfBirth ?? undefined
+            updatedUser.primary = uui.primaryUser ?? updatedUser.primary
             updatedUsers.push(updatedUser)
         }
     }
@@ -559,14 +565,18 @@ function cleanUpdateUserInput(uui: UpdateUserInput): UpdateUserInput {
     const cleanUui: UpdateUserInput = {
         id: uui.id,
         email: clean.email(uui.email) || undefined,
-        phone: clean.phone(uui.phone) || undefined,
+        // don't throw errors as they will of already been
+        // found by validation but this code runs before we return them
+        phone: clean.phone(uui.phone, false) || undefined,
         givenName: uui.givenName,
         familyName: uui.familyName,
         gender: uui.gender,
         username: uui.username,
         dateOfBirth: clean.dateOfBirth(uui.dateOfBirth),
         alternateEmail: clean.email(uui.alternateEmail) || undefined,
-        alternatePhone: clean.phone(uui.alternatePhone) || undefined,
+        // don't throw errors as they will of already been
+        // found by validation but this code runs before we return them
+        alternatePhone: clean.phone(uui.alternatePhone, false) || undefined,
         avatar: uui.avatar,
         primaryUser: uui.primaryUser,
     }

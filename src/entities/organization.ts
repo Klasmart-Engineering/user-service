@@ -575,11 +575,10 @@ export class Organization extends CustomBaseEntity {
         }
 
         const unswapped = unswapEmailAndPhone(email, phone)
-
         email = clean.email(unswapped.email)
-        phone = clean.phone(unswapped.phone)
+        phone = unswapped.phone
         alternate_email = clean.email(alternate_email)
-        alternate_phone = clean.phone(alternate_phone)
+
         shortcode = clean.shortcode(shortcode)
         date_of_birth = clean.dateOfBirth(date_of_birth)
 
@@ -708,6 +707,12 @@ export class Organization extends CustomBaseEntity {
             throw new APIErrorCollection(errors)
         }
 
+        // we don't need to catch errors here
+        // as its already pass validation
+        // so the cleaning will succeed
+        alternate_phone = clean.phone(alternate_phone)
+        phone = clean.phone(phone)
+
         return getManager().transaction(async (manager) => {
             const user = await this.updateOrCreateUser({
                 user_id: existingUser?.user_id,
@@ -772,7 +777,6 @@ export class Organization extends CustomBaseEntity {
         }
 
         alternate_email = clean.email(alternate_email)
-        alternate_phone = clean.phone(alternate_phone)
         shortcode = clean.shortcode(shortcode)
         date_of_birth = clean.dateOfBirth(date_of_birth)
 
@@ -925,6 +929,11 @@ export class Organization extends CustomBaseEntity {
         if (errors.length > 0) {
             throw new APIErrorCollection(errors)
         }
+
+        // we don't need to catch errors here
+        // as its already pass validation
+        // so the cleaning will succeed
+        alternate_phone = clean.phone(alternate_phone)
 
         return getManager().transaction(async (manager) => {
             const updatedUser = Object.assign(user, {

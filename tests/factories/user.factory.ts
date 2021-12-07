@@ -1,5 +1,6 @@
 import faker from 'faker'
 import { User } from '../../src/entities/user'
+import clean from '../../src/utils/clean'
 
 const DEFAULT_GENDERS = ['Male', 'Female', 'Unspecified']
 
@@ -33,8 +34,9 @@ export function createUser({
 
     user.given_name = given_name ?? faker.name.firstName()
     user.family_name = family_name ?? faker.name.lastName()
-    user.email = email ?? faker.internet.email()
-    user.phone = phone ?? faker.phone.phoneNumber('+44#######')
+    user.email = email ?? (clean.email(faker.internet.email()) as string)
+    user.phone =
+        phone ?? (clean.phone(faker.phone.phoneNumber('+44#######')) as string)
     user.username = username ?? faker.name.firstName()
     user.date_of_birth = date_of_birth ?? '01-2018'
     user.gender = gender ?? faker.random.arrayElement(DEFAULT_GENDERS)

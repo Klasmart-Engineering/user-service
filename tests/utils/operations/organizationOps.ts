@@ -636,9 +636,11 @@ export async function inviteUser(
     if (email) {
         variables.email = email
     }
-    if (phone) {
+
+    if (phone !== undefined) {
         variables.phone = phone
     }
+
     if (given_name) {
         variables.given_name = given_name
     }
@@ -669,9 +671,10 @@ export async function inviteUser(
     if (alternate_email) {
         variables.alternate_email = alternate_email
     }
-    if (alternate_phone) {
+    if (alternate_phone !== undefined) {
         variables.alternate_phone = alternate_phone
     }
+
     const operation = () =>
         mutate({
             mutation: INVITE_USER,

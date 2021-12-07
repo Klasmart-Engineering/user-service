@@ -203,6 +203,7 @@ export class Model {
             }
         }
         if (phone) {
+            phone = clean.phone(phone, false) ?? undefined
             if (!isPhone(phone)) {
                 phone = undefined
             }
@@ -247,6 +248,7 @@ export class Model {
             }
         }
         if (phone) {
+            phone = clean.phone(phone, false) ?? undefined
             if (!isPhone(phone)) {
                 phone = undefined
             }
@@ -282,7 +284,12 @@ export class Model {
         }
 
         user.alternate_email = clean.email(alternate_email)
-        user.alternate_phone = clean.phone(alternate_phone)
+
+        alternate_phone = clean.phone(alternate_phone, false)
+        if (alternate_phone !== null && !isPhone(alternate_phone)) {
+            alternate_phone = undefined
+        }
+        user.alternate_phone = alternate_phone
 
         await this.manager.save(user)
         return user

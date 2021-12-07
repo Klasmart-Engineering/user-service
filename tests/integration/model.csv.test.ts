@@ -994,7 +994,6 @@ describe('model.csv', () => {
                         entity: 'User',
                         attribute: 'Phone',
                         name: 'phone',
-                        regex: {},
                         value: 'invalid_phone',
                         label: 'user_phone',
                         key: 'user_phone',

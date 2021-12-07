@@ -1483,9 +1483,17 @@ describe('organization', () => {
                     })
                 })
 
+                it('gets rid of 0 after country code', async () => {
+                    const result = await api({
+                        alternate_phone: '+8201071111111',
+                    })
+
+                    expect(result.user.alternate_phone).to.eq('+821071111111')
+                })
+
                 it('if valid is saved to the User entity', async () => {
                     const alternate_phone = faker.phone.phoneNumber(
-                        '+44#######'
+                        '+447######'
                     )
                     const { user } = await api({
                         alternate_phone,
@@ -1522,6 +1530,7 @@ describe('organization', () => {
                 ...defaultArguments,
                 ...overrideArguments,
             }
+
             return await inviteUser(
                 testClient,
                 organization_id ?? organizationId,
@@ -1634,6 +1643,22 @@ describe('organization', () => {
                     expect(user).to.exist
                     expect(user.phone).to.equal(phone)
                     expect(user?.email).to.be.null
+                })
+                it('gets rid of 0 after country code', async () => {
+                    const result = await inviteUserWithDefaults({
+                        phone: '+8201071111111',
+                    })
+
+                    expect(result.user.phone).to.eq('+821071111111')
+                })
+                ;[null, ''].forEach((phone) => {
+                    it(`if ${phone}, is normalised to null`, async () => {
+                        const { user } = await inviteUserWithDefaults({
+                            phone,
+                        })
+
+                        expect(user.phone).to.be.null
+                    })
                 })
             })
 
@@ -2050,6 +2075,7 @@ describe('organization', () => {
                 ...defaultArguments,
                 ...overrideArguments,
             }
+
             return await editMembership(
                 testClient,
                 organization_id ?? organization.organization_id,
