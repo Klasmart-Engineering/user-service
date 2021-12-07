@@ -453,7 +453,7 @@ describe('acceptance.subcategory', () => {
                     },
                     sortArgs: { order: 'ASC', field: 'name' },
                 },
-                getAdminAuthToken()
+                token
             )
 
             expect(response.status).to.eq(200)
