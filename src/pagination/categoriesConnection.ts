@@ -17,7 +17,7 @@ export async function categoriesConnectionResolver(
 
     if (filter) {
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 name: 'Category.name',
                 system: 'Category.system',
                 status: 'Category.status',

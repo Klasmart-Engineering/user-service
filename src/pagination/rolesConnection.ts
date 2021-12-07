@@ -80,7 +80,7 @@ export function roleConnectionQuery(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 name: 'Role.role_name',
                 system: 'Role.system_role',
                 status: 'Role.status',

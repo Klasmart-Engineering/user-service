@@ -32,7 +32,7 @@ export async function gradesConnectionResolver(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 id: 'Grade.id',
                 name: 'Grade.name',
                 system: 'Grade.system',

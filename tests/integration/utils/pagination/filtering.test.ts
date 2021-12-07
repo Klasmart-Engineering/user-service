@@ -10,6 +10,8 @@ import {
 import { AgeRange } from '../../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
 import { Program } from '../../../../src/entities/program'
+import { createOrganization } from '../../../factories/organization.factory'
+import { createOrganizationMembership } from '../../../factories/organizationMembership.factory'
 
 use(chaiAsPromised)
 
@@ -197,7 +199,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -211,7 +213,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -225,7 +227,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -240,7 +242,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -253,7 +255,7 @@ describe('filtering', () => {
                     value: '',
                 },
             }
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(2)
@@ -265,7 +267,7 @@ describe('filtering', () => {
                     value: userData.map((u) => u.email),
                 },
             }
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(2)
@@ -281,7 +283,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -297,7 +299,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -310,7 +312,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -323,7 +325,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -336,7 +338,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(2)
@@ -349,7 +351,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -362,7 +364,7 @@ describe('filtering', () => {
                 },
             }
 
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
 
             expect(data.length).to.equal(2)
@@ -370,6 +372,34 @@ describe('filtering', () => {
     })
 
     context('uuids', () => {
+        it('supports uuid.excludes', async () => {
+            const organization1 = await createOrganization().save()
+            const organization2 = await createOrganization().save()
+            for (const user of getUsers()) {
+                await createOrganizationMembership({
+                    user,
+                    organization: organization1,
+                }).save()
+            }
+            await createOrganizationMembership({
+                user: getUsers()[0],
+                organization: organization2,
+            }).save()
+
+            const filter: IEntityFilter = {
+                organization_id: {
+                    operator: 'excludes',
+                    value: organization2.organization_id,
+                },
+            }
+
+            scope.innerJoin('User.memberships', 'OrganizationMembership')
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
+            const data = await scope.getMany()
+
+            expect(data.length).to.equal(1)
+        })
+
         it('supports uuid.eq', async () => {
             const filter: IEntityFilter = {
                 userId: {
@@ -379,7 +409,7 @@ describe('filtering', () => {
             }
 
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     userId: "concat(User.user_id, '')",
                 })
             )
@@ -397,7 +427,7 @@ describe('filtering', () => {
             }
 
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     userId: "concat(User.user_id, '')",
                 })
             )
@@ -415,7 +445,7 @@ describe('filtering', () => {
             }
 
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     userId: "concat(User.user_id, '')",
                 })
             )
@@ -431,7 +461,7 @@ describe('filtering', () => {
             }
 
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     userId: 'User.user_id',
                 })
             )
@@ -445,7 +475,7 @@ describe('filtering', () => {
                     value: userData.map((u) => u.user_id),
                 },
             }
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(getWhereClauseFromFilter(scope, filter))
             const data = await scope.getMany()
             expect(data.length).to.equal(2)
         })
@@ -465,7 +495,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -494,7 +524,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -523,7 +553,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -552,7 +582,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -581,7 +611,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -610,7 +640,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -638,7 +668,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeUnitFrom: 'AgeRange.low_value_unit',
                 })
             )
@@ -657,7 +687,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeUnitTo: 'AgeRange.high_value_unit',
                 })
             )
@@ -676,7 +706,7 @@ describe('filtering', () => {
 
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeUnitTo: 'AgeRange.high_value_unit',
                 })
             )

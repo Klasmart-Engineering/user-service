@@ -70,6 +70,7 @@ const typeDefs = gql`
         eq
         neq
         isNull
+        excludes
     }
 
     enum NumberOrDateOperator {

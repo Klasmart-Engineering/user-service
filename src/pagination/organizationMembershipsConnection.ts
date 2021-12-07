@@ -27,7 +27,7 @@ export async function organizationMembershipConnectionQuery(
             scope.leftJoin('OrganizationMembership.roles', 'Role')
         }
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 userId: 'OrganizationMembership.user_id',
                 organizationId: 'OrganizationMembership.organization_id',
                 shortCode: 'OrganizationMembership.shortcode',

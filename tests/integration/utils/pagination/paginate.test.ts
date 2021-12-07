@@ -578,7 +578,7 @@ describe('paginate', () => {
                         },
                     }
 
-                    scope.andWhere(getWhereClauseFromFilter(filter))
+                    scope.andWhere(getWhereClauseFromFilter(scope, filter))
 
                     const directionArgs = {
                         count: 10,

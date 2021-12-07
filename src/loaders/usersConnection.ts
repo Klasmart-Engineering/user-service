@@ -44,7 +44,7 @@ export const orgsForUsers = async (
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 organizationId: 'OrganizationMembership.organization_id',
                 schoolId: '',
                 roleId: 'Roles.role_id',
@@ -106,7 +106,7 @@ export const schoolsForUsers = async (
 
     if (filter) {
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 organizationId: 'School.organization',
                 schoolId: '',
                 roleId: '',
@@ -169,7 +169,7 @@ export const rolesForUsers = async (
 
     if (filter) {
         orgScope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(orgScope, filter, {
                 organizationId: 'OrganizationMembership.organization_id',
                 schoolId: '',
                 roleId: '',
@@ -186,7 +186,7 @@ export const rolesForUsers = async (
         }
 
         schoolScope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(schoolScope, filter, {
                 organizationId: 'School.organization',
                 schoolId: 'SchoolMembership.school_id',
                 roleId: '',

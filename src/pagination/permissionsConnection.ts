@@ -93,7 +93,7 @@ export async function permissionConnectionQuery(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 name: 'Permission.permission_name',
                 allow: 'Permission.allow',
                 roleId: 'Role.role_id',

@@ -25,7 +25,7 @@ describe('getWhereClauseFromFilter', () => {
         const filter: IEntityFilter = {}
 
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
 
         expect(scope.getSql().indexOf('WHERE')).to.equal(-1)
     })
@@ -39,7 +39,7 @@ describe('getWhereClauseFromFilter', () => {
         }
 
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -61,7 +61,7 @@ describe('getWhereClauseFromFilter', () => {
         }
 
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -95,7 +95,7 @@ describe('getWhereClauseFromFilter', () => {
         }
 
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -131,7 +131,7 @@ describe('getWhereClauseFromFilter', () => {
         }
 
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -165,7 +165,7 @@ describe('getWhereClauseFromFilter', () => {
         }
 
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -215,7 +215,7 @@ describe('getWhereClauseFromFilter', () => {
         }
 
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -231,7 +231,7 @@ describe('getWhereClauseFromFilter', () => {
             OR: [],
         }
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
 
         expect(scope.getSql().indexOf('WHERE')).to.equal(-1)
     })
@@ -249,7 +249,7 @@ describe('getWhereClauseFromFilter', () => {
         }
 
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -265,7 +265,7 @@ describe('getWhereClauseFromFilter', () => {
             },
         }
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -286,7 +286,7 @@ describe('getWhereClauseFromFilter', () => {
             },
         }
         const scope = createQueryBuilder('user')
-        scope.andWhere(getWhereClauseFromFilter(filter))
+        scope.andWhere(getWhereClauseFromFilter(scope, filter))
         const whereClause = scope
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
@@ -305,7 +305,7 @@ describe('getWhereClauseFromFilter', () => {
 
             const scope = createQueryBuilder('user')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     asd: 'email',
                 })
             )
@@ -327,7 +327,7 @@ describe('getWhereClauseFromFilter', () => {
 
             const scope = createQueryBuilder('user')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     asd: {
                         operator: 'AND',
                         aliases: ['email', 'username'],
@@ -353,7 +353,7 @@ describe('getWhereClauseFromFilter', () => {
 
             const scope = createQueryBuilder('user')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     asd: {
                         operator: 'OR',
                         aliases: ['email', 'username'],
@@ -379,7 +379,7 @@ describe('getWhereClauseFromFilter', () => {
 
             const scope = createQueryBuilder('user')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     asd: '',
                 })
             )
@@ -406,7 +406,7 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('program')
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -442,7 +442,7 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('program')
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -476,7 +476,7 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('program')
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -512,7 +512,7 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('program')
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -548,7 +548,7 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('program')
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [
@@ -584,7 +584,7 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('program')
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
-                getWhereClauseFromFilter(filter, {
+                getWhereClauseFromFilter(scope, filter, {
                     ageRangeFrom: {
                         operator: 'AND',
                         aliases: [

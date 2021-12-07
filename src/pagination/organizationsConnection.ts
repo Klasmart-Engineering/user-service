@@ -95,7 +95,7 @@ export async function organizationsConnectionQuery(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 id: 'Organization.organization_id',
                 name: 'Organization.organization_name',
                 shortCode: 'Organization.shortCode',

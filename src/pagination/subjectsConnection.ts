@@ -38,7 +38,7 @@ export async function subjectsConnectionResolver(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 id: 'Subject.id',
                 name: 'Subject.name',
                 status: 'Subject.status',

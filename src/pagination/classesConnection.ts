@@ -112,7 +112,7 @@ export async function classesConnectionQuery(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 id: 'Class.class_id',
                 name: 'Class.class_name',
                 status: 'Class.status',

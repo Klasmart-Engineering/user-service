@@ -24,7 +24,7 @@ export async function ageRangesConnectionResolver(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 ageRangeValueFrom: 'AgeRange.low_value',
                 ageRangeUnitFrom: 'AgeRange.low_value_unit',
                 ageRangeValueTo: 'AgeRange.high_value',

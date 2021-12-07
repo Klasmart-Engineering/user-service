@@ -81,7 +81,7 @@ export async function schoolConnectionQuery(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 organizationId: 'School.organization',
                 // Could also refer to SchoolMembership.school_id
                 schoolId: 'School.school_id',

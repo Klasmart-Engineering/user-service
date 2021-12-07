@@ -37,7 +37,7 @@ export async function subcategoriesConnectionResolver(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 status: 'Subcategory.status',
                 system: 'Subcategory.system',
                 organizationId: 'Organization.organization_id',

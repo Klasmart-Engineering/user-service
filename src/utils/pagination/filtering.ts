@@ -1,5 +1,6 @@
-import { Brackets } from 'typeorm'
+import { Brackets, SelectQueryBuilder } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
+import { createEntityScope } from '../../directives/isAdmin'
 
 export interface IEntityFilter {
     [key: string]: IFilter | IEntityFilter[] | undefined
@@ -18,6 +19,7 @@ type FilteringOperator =
     | 'contains'
     | 'isNull'
     | 'in'
+    | 'excludes'
 
 interface IFilter {
     operator: FilteringOperator
@@ -65,6 +67,7 @@ export const AVOID_NONE_SPECIFIED_BRACKETS = new Brackets((qb) => {
 
 // generates a WHERE clause for a given query filter
 export function getWhereClauseFromFilter(
+    scope: SelectQueryBuilder<unknown>,
     filter: IEntityFilter,
     columnAliases?: ColumnAliases
 ): Brackets {
@@ -154,6 +157,7 @@ export function getWhereClauseFromFilter(
                     // parameter keys must be unique when using typeorm querybuilder
                     const uniqueId = uuid_v4()
                     const whereCondition = createWhereCondition(
+                        scope,
                         !!data.caseInsensitive,
                         alias,
                         sqlOperator,
@@ -178,6 +182,7 @@ export function getWhereClauseFromFilter(
                         // adding the first condition inside main condition
                         let uniqueId = uuid_v4()
                         let whereCondition = createWhereCondition(
+                            scope,
                             !!data.caseInsensitive,
                             aliases[0],
                             sqlOperator,
@@ -199,6 +204,7 @@ export function getWhereClauseFromFilter(
                             }
                             uniqueId = uuid_v4()
                             whereCondition = createWhereCondition(
+                                scope,
                                 !!data.caseInsensitive,
                                 aliases[i],
                                 sqlOperator,
@@ -223,11 +229,13 @@ export function getWhereClauseFromFilter(
         }
 
         if (filter.OR) {
-            qb.andWhere(logicalOperationFilter(filter.OR, 'OR', columnAliases))
+            qb.andWhere(
+                logicalOperationFilter(scope, filter.OR, 'OR', columnAliases)
+            )
         }
         if (filter.AND) {
             qb.andWhere(
-                logicalOperationFilter(filter.AND, 'AND', columnAliases)
+                logicalOperationFilter(scope, filter.AND, 'AND', columnAliases)
             )
         }
     })
@@ -258,21 +266,30 @@ export function filterHasProperty(
 }
 
 function logicalOperationFilter(
+    scope: SelectQueryBuilder<unknown>,
     filters: IEntityFilter[],
     operator: 'AND' | 'OR',
     columnAliases?: ColumnAliases
 ) {
     return new Brackets((qb) => {
         if (filters.length > 0) {
-            qb.where(getWhereClauseFromFilter(filters[0], columnAliases))
+            qb.where(getWhereClauseFromFilter(scope, filters[0], columnAliases))
             for (let i = 1; i < filters.length; i++) {
                 if (operator === 'AND') {
                     qb.andWhere(
-                        getWhereClauseFromFilter(filters[i], columnAliases)
+                        getWhereClauseFromFilter(
+                            scope,
+                            filters[i],
+                            columnAliases
+                        )
                     )
                 } else {
                     qb.orWhere(
-                        getWhereClauseFromFilter(filters[i], columnAliases)
+                        getWhereClauseFromFilter(
+                            scope,
+                            filters[i],
+                            columnAliases
+                        )
                     )
                 }
             }
@@ -292,6 +309,7 @@ function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
         contains: 'LIKE',
         isNull: 'IS NULL',
         in: 'IN',
+        excludes: 'NOT IN',
     }
 
     return operators[op]
@@ -338,8 +356,8 @@ export function setOperatorInComposedValue(
     }
 }
 
-// creates case insentive/sensitive condition
 function createWhereCondition(
+    scope: SelectQueryBuilder<unknown>,
     caseInsensitive: boolean,
     alias: string,
     sqlOperator: string,
@@ -350,6 +368,21 @@ function createWhereCondition(
     }
     if (sqlOperator === 'IN') {
         return `${alias} ${sqlOperator} (:...${uniqueId})`
+    }
+    if (sqlOperator === 'NOT IN') {
+        const table = scope.expressionMap.mainAlias?.name
+        const primaryKeys =
+            scope.expressionMap.mainAlias?.metadata.primaryColumns
+        if (!table || !primaryKeys || primaryKeys.length !== 1) {
+            throw new Error('Could not find table or primary keys')
+        }
+
+        const primaryKey = `"${table}"."${primaryKeys[0].databaseName}"`
+        return `${primaryKey} NOT IN (${scope
+            .clone()
+            .select(primaryKey)
+            .where(`${alias} = :${uniqueId}`)
+            .getQuery()})`
     }
     if (caseInsensitive) {
         return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`

@@ -120,7 +120,7 @@ export async function usersConnectionQuery(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 organizationId: 'OrganizationMembership.organization_id',
                 organizationUserStatus: 'OrganizationMembership.status',
                 userStatus: 'User.status',

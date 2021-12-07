@@ -50,7 +50,7 @@ export async function programsConnectionResolver(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(filter, {
+            getWhereClauseFromFilter(scope, filter, {
                 id: 'Program.id',
                 name: 'Program.name',
                 system: 'Program.system',
