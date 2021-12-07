@@ -103,6 +103,9 @@ const typeDefs = gql`
             )
         grades: [Grade!]
         categories: [Category!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         subcategories: [Subcategory!]
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
@@ -367,7 +370,18 @@ const typeDefs = gql`
             filter: AgeRangeFilter
             sort: AgeRangeSortInput
         ): AgeRangesConnectionResponse
+<<<<<<< HEAD
 >>>>>>> 23794f55 (feat(AD-1477): programsconnection as child implemented)
+=======
+
+        categoriesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection!
+            filter: CategoryFilter
+            sort: CategorySortInput
+        ): AgeRangesConnectionResponse
+>>>>>>> 66fbfd25 (fix(AD-1477): merge conflict solved)
     }
 `
 
@@ -602,6 +616,40 @@ export function loadOrganizationMembershipsForOrganization(
     return context.loaders.organizationMembershipsConnectionChild.instance.load(
         key
     )
+}
+
+export async function categoriesConnectionResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadCategoriesForOrganization(
+        ctx,
+        organization.id,
+        args,
+        includeTotalCount
+    )
+}
+
+export async function loadCategoriesForOrganization(
+    context: Pick<Context, 'loaders'>,
+    organizationId: OrganizationConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Category> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: organizationId,
+            filterKey: 'organizationId',
+            pivot: '"Organization"."organization_id"',
+        },
+        primaryColumn: 'id',
+    }
+    return context.loaders.categoriesConnectionChild.instance.load(key)
 }
 
 export async function ageRangesChildConnectionResolver(
