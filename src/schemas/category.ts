@@ -226,7 +226,7 @@ export async function loadSubcategoriesForCategory(
         parent: {
             id: categoryId,
             filterKey: 'categoryId',
-            pivot: '"Category_Subcategory"."categoryId"',
+            pivot: '"Category"."id"',
         },
         primaryColumn: 'id',
     }
