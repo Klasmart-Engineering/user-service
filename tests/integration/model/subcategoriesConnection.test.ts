@@ -477,7 +477,7 @@ describe('subcategoriesConnection', () => {
                         kind: 'Field',
                         name: {
                             kind: 'Name',
-                            value: 'organizationMembershipsConnection',
+                            value: 'subcategoriesConnection',
                         },
                         selectionSet: {
                             kind: 'SelectionSet',
