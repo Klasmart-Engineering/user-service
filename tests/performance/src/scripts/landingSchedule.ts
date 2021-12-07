@@ -6,6 +6,8 @@ import scheduleFilter from "./scheduleFilterProgram";
 import loginSetup from "../utils/loginSetup";
 import scheduleFilterProgram from "./scheduleFilterProgram";
 import scheduleFilterClass from "./scheduleFilterClass";
+import getSchoolsFilter from "./getSchoolsFilter";
+import meMemership from "./meMemership"
 
 
 
@@ -25,42 +27,17 @@ export default function(data: { res: any, userId: string}) {
     jar.set(process.env.SERVICE_URL as string, 'access', data.res.cookies?.access[0].Value);
     jar.set(process.env.SERVICE_URL as string, 'refresh', data.res.cookies?.refresh[0].Value);
 
+    jar.set(process.env.LIVE_URL as string, 'access', data.res.cookies?.access[0].Value);
+    jar.set(process.env.LIVE_URL as string, 'refresh', data.res.cookies?.refresh[0].Value);
+
     schedulesTimeView();
-    /* sleep(2);
+    sleep(5);
     scheduleFilterProgram();
-    sleep(2);
+    sleep(5);
     scheduleFilterClass();
-    sleep(2); */
-    
-    /*
-    meTestGetSchoolFilter();
-    sleep(2);
-    query1();
-    sleep(2);
-    query2();
-    sleep(2);
-    query3();
-    sleep(2);
-    query4();
-    sleep(2);
-    query5();
-    sleep(2);
-    query6(); */
-
-    
-
-
-    /* meTest();
-    sleep(1);
-    meTest();
-    sleep(1);
-    meTest();
-    sleep(0.5)
-    getUserTest(data.userId);
-    sleep(1);
-    meTest();
-    sleep(0.5)
-    getUserTest(data.userId);
-    sleep(0.5)
-    meTest(); */
+    //sleep(0.5);
+    getSchoolsFilter();
+    //sleep(0.5);
+    meMemership();
+    // then is missing 3 request more.
 }
