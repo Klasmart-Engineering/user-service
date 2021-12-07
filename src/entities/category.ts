@@ -38,8 +38,7 @@ export class Category extends CustomBaseEntity {
     @JoinTable()
     public subcategories?: Promise<Subcategory[]>
 
-    @ManyToMany(() => Subject)
-    @JoinTable({ name: 'subject_categories_category' })
+    @ManyToMany(() => Subject, (subject) => subject.categories)
     public subjects?: Promise<Subject[]>
 
     public async editSubcategories(

@@ -179,7 +179,7 @@ export async function loadCategoriesForSubject(
         parent: {
             id: subjectId,
             filterKey: 'subjectId',
-            pivot: '"Category_Subject"."subjectId"',
+            pivot: '"Subject"."id"',
         },
         primaryColumn: 'id',
     }
