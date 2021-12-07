@@ -1,4 +1,7 @@
-import { normalizePhoneNumber } from './phoneNumberCleaning'
+import {
+    getCountryCallCodeFromString,
+    normalizePhoneNumber,
+} from './phoneNumberCleaning'
 import { isEmail, isPhone } from './validations'
 
 export const uniqueAndTruthy = <T>(array: Array<T> | undefined): T[] => {
@@ -33,6 +36,21 @@ export function unswapEmailAndPhone(
         phone = undefined
     }
     return { email, phone }
+}
+
+// hack to avoid a migration
+export function denormalizedValues(value: string): string[] {
+    const withoutLeadingPlus = value.substr(1)
+    let phoneParts: { countryCallCode: string; localPhoneNumber: string }
+    try {
+        phoneParts = getCountryCallCodeFromString(withoutLeadingPlus)
+    } catch (e) {
+        return [value]
+    }
+    return [
+        value,
+        `+${phoneParts.countryCallCode}0${phoneParts.localPhoneNumber}`,
+    ]
 }
 
 /*

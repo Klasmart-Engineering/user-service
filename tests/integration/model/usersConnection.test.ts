@@ -1,8 +1,8 @@
 import { expect, use } from 'chai'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
-import { sortBy } from 'lodash'
-import { Like } from 'typeorm'
+import { create, sortBy } from 'lodash'
+import { getRepository, Like, SelectQueryBuilder } from 'typeorm'
 import { Class } from '../../../src/entities/class'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
@@ -12,7 +12,10 @@ import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
-import { mapUserToUserConnectionNode } from '../../../src/pagination/usersConnection'
+import {
+    mapUserToUserConnectionNode,
+    usersConnectionQuery,
+} from '../../../src/pagination/usersConnection'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
@@ -1290,6 +1293,25 @@ describe('usersConnection', () => {
 
             expect(usersConnection?.pageInfo.hasNextPage).to.be.false
             expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+        })
+
+        it('should match not normalized phone numbers', async () => {
+            await createUser({ phone: '+4407111111111' }).save()
+            await createUser({ phone: '+447111111111' }).save()
+
+            const scope = connection.getRepository(User).createQueryBuilder()
+            const filter: IEntityFilter = {
+                phone: {
+                    operator: 'eq',
+                    value: '+447111111111',
+                },
+            }
+            await usersConnectionQuery(scope, filter)
+            const userPhones = (await scope.getMany()).map((u) => u.phone)
+            expect(userPhones).to.deep.equalInAnyOrder([
+                '+4407111111111',
+                '+447111111111',
+            ])
         })
     })
 

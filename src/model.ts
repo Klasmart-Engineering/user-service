@@ -26,7 +26,7 @@ import { Context } from './main'
 import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
-import clean from './utils/clean'
+import clean, { denormalizedValues } from './utils/clean'
 import { processUserFromCSVRow, validateUserCSVHeaders } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
@@ -175,12 +175,18 @@ export class Model {
         }
 
         const email = token?.email
-        const phone = token?.phone
+        let phones: string[] = []
+
+        if (token?.phone) {
+            phones = denormalizedValues(token?.phone)
+        }
 
         const user = await this.userRepository.findOne({
             where: [
                 { email, user_id },
-                { phone, user_id },
+                ...phones.map((phone) => {
+                    return { phone, user_id }
+                }),
             ],
         })
 
@@ -322,8 +328,8 @@ export class Model {
                 .getMany()
         } else if (userPhone) {
             users = await scope
-                .andWhere('User.phone = :phone', {
-                    phone: userPhone,
+                .andWhere('User.phone IN (:...phone)', {
+                    phone: denormalizedValues(userPhone),
                 })
                 .getMany()
         }

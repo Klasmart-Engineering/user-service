@@ -5,7 +5,7 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { Status } from '../entities/status'
 import { PermissionName } from './permissionNames'
 import { superAdminRole } from './superAdmin'
-import { uniqueAndTruthy } from '../utils/clean'
+import { denormalizedValues, uniqueAndTruthy } from '../utils/clean'
 import { Organization } from '../entities/organization'
 
 export interface PermissionContext {
@@ -38,7 +38,7 @@ export class UserPermissions {
 
     private readonly user_id?: string
     private readonly email?: string
-    private readonly phone?: string
+    private readonly phones?: string[]
     private user?: User
     public readonly isAdmin?: boolean
 
@@ -51,7 +51,7 @@ export class UserPermissions {
             this.isAdmin = false
         }
         if (typeof token?.phone == 'string' && token?.phone?.length > 0) {
-            this.phone = token?.phone
+            this.phones = denormalizedValues(token?.phone)
         }
     }
 
@@ -81,8 +81,8 @@ export class UserPermissions {
         return this.email
     }
 
-    public getPhone(): string | undefined {
-        return this.phone
+    public getPhones(): string[] | undefined {
+        return this.phones
     }
 
     public rejectIfNotAdmin(): void {

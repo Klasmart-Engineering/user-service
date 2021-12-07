@@ -13,6 +13,7 @@ import { Subject } from '../../src/entities/subject'
 import { User } from '../../src/entities/user'
 import { Model } from '../../src/model'
 import { TokenPayload } from '../../src/token'
+import clean, { denormalizedValues } from '../../src/utils/clean'
 import { createServer } from '../../src/utils/createServer'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
@@ -91,6 +92,19 @@ describe('model', () => {
             const result = await model.getMyUser(token)
             expect(result?.user_id).to.deep.eq(user.user_id)
         })
+        it('returns the user with matching user ID and normalized phone', async () => {
+            // some legacy users have phone numbers that are not nornalized
+            // but auth service will supply a normalized form to us in their
+            // token
+            const user = await createUser({ phone: '+4407111111111' }).save()
+            const token = {
+                id: user.user_id,
+                phone: clean.phone('+4407111111111') as string,
+                iss: 'calmid-debug',
+            }
+            const result = await model.getMyUser(token)
+            expect(result?.user_id).to.deep.eq(user.user_id)
+        })
     })
 
     describe('myUsers', () => {
@@ -123,6 +137,33 @@ describe('model', () => {
             const users = await model.myUsers(userToken)
             expect(users).to.have.length(2)
         })
+        it('returns expected users with shared phone', async () => {
+            // user profile scoping only checks for shared phones
+            // when the token has no email
+            userToken.email = undefined
+            const samePhone = await createUser({
+                phone: clientUser.phone,
+            }).save()
+
+            // some legacy users have phone numbers that are not nornalized
+            // but auth service will supply a normalized form to us in their
+            // token
+            const countryCode = clientUser.phone?.substr(0, 3)
+            const localNumber = clientUser.phone?.substr(3)
+            const notNormalizedPhone = await createUser({
+                phone: `${countryCode}0${localNumber}`,
+            }).save()
+
+            for (const user of [samePhone, notNormalizedPhone]) {
+                await createOrganizationMembership({
+                    user,
+                    organization,
+                }).save()
+            }
+            const users = await model.myUsers(userToken)
+            expect(users).to.have.length(3)
+        })
+
         context('when user membership is inactive', () => {
             beforeEach(async () => {
                 const dbOtherMembership = await OrganizationMembership.findOneOrFail(

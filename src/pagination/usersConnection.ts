@@ -9,6 +9,7 @@ import {
     filterHasProperty,
     getWhereClauseFromFilter,
     IEntityFilter,
+    replacePhoneFilters,
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
@@ -118,6 +119,8 @@ export async function usersConnectionQuery(
                 scope.innerJoin('User.classesTeaching', 'ClassTeaching')
             }
         }
+
+        replacePhoneFilters(filter)
 
         scope.andWhere(
             getWhereClauseFromFilter(filter, {

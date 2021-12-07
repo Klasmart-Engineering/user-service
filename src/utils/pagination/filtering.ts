@@ -1,5 +1,6 @@
 import { Brackets } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
+import { denormalizedValues } from '../clean'
 
 export interface IEntityFilter {
     [key: string]: IFilter | IEntityFilter[] | undefined
@@ -231,6 +232,35 @@ export function getWhereClauseFromFilter(
             )
         }
     })
+}
+
+export function replacePhoneFilters(filter?: IEntityFilter): IFilter[] {
+    const property = 'phone'
+
+    if (!filter) {
+        return []
+    }
+
+    for (const key of Object.keys(filter)) {
+        if (key === 'AND' || key === 'OR') {
+            for (const op of filter[key]!) {
+                replacePhoneFilters(op)
+            }
+        } else if (
+            key === property &&
+            (<IFilter>filter[key]!).operator == 'eq'
+        ) {
+            const iFilter = <IFilter>filter[key]!
+            if (iFilter.operator == 'eq' && typeof iFilter.value === 'string') {
+                filter[key] = {
+                    operator: 'in',
+                    value: denormalizedValues(iFilter.value),
+                }
+            }
+        }
+    }
+
+    return []
 }
 
 // returns true if the specified property is anywhere in the filter schema.

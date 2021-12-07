@@ -34,7 +34,7 @@ export function normalizePhoneNumber(phoneNumber: string) {
     return `+${countryCallCode}${localPhoneNumberWithoutLeadingZeros}`
 }
 
-function getCountryCallCodeFromString(
+export function getCountryCallCodeFromString(
     phoneNumber: string
 ): { countryCallCode: string; localPhoneNumber: string } {
     const maxLengthCountryCallCode = 3

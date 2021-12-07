@@ -247,7 +247,7 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     const user_id = permissions.getUserId()
     const user = getRepository(User).create({ user_id })
     const email = permissions.getEmail()
-    const phone = permissions.getPhone()
+    const phones = permissions.getPhones()
 
     // generate queries to find users for each of the conditions below,
     // then do a WHERE user_id IN on each query to find all visible users
@@ -334,9 +334,9 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
                     email: email,
                 })
             }
-            if (phone) {
-                qb.orWhere('User.phone = :phone', {
-                    phone: phone,
+            if (phones) {
+                qb.orWhere('User.phone IN (:...phone)', {
+                    phone: phones,
                 })
             }
             visibleUserQueries.forEach((userQuery) => {
