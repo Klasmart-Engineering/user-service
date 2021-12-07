@@ -18,6 +18,7 @@ import {
 } from '../utils/pagination/paginate'
 import { Category } from '../entities/category'
 import { Subcategory } from '../entities/subcategory'
+import { AgeRange } from '../entities/ageRange'
 
 const typeDefs = gql`
     scalar HexColor
@@ -97,11 +98,11 @@ const typeDefs = gql`
         classes: [Class] @deprecated(reason: "Use 'getClasses'.")
         getClasses: [Class]
         ageRanges: [AgeRange!]
-        grades: [Grade!]
-        categories: [Category!]
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
             )
+        grades: [Grade!]
+        categories: [Category!]
         subcategories: [Subcategory!]
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
@@ -345,9 +346,10 @@ const typeDefs = gql`
             sort: ClassSortInput
         ): ClassesConnectionResponse
 
-        categoriesConnection(
+        ageRangesConnection(
             count: PageSize
             cursor: String
+<<<<<<< HEAD
             filter: CategoryFilter
             sort: CategorySortInput
             direction: ConnectionDirection
@@ -360,6 +362,12 @@ const typeDefs = gql`
             sort: SubcategorySortInput
             direction: ConnectionDirection
         ): SubcategoriesConnectionResponse
+=======
+            direction: ConnectionDirection!
+            filter: AgeRangeFilter
+            sort: AgeRangeSortInput
+        ): AgeRangesConnectionResponse
+>>>>>>> 23794f55 (feat(AD-1477): programsconnection as child implemented)
     }
 `
 
@@ -492,6 +500,7 @@ export default function getDefault(
                 classesConnection: classesChildConnectionResolver,
                 categoriesConnection: categoriesConnectionResolver,
                 subcategoriesConnection: subcategoriesConnectionResolver,
+                ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
@@ -595,14 +604,14 @@ export function loadOrganizationMembershipsForOrganization(
     )
 }
 
-export async function categoriesConnectionResolver(
+export async function ageRangesChildConnectionResolver(
     organization: Pick<OrganizationConnectionNode, 'id'>,
     args: IChildPaginationArgs,
     ctx: Pick<Context, 'loaders'>,
     info: Pick<GraphQLResolveInfo, 'fieldNodes'>
 ) {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-    return loadCategoriesForOrganization(
+    return loadAgeRangesForOrganization(
         ctx,
         organization.id,
         args,
@@ -610,13 +619,13 @@ export async function categoriesConnectionResolver(
     )
 }
 
-export async function loadCategoriesForOrganization(
+export async function loadAgeRangesForOrganization(
     context: Pick<Context, 'loaders'>,
     organizationId: OrganizationConnectionNode['id'],
     args: IChildPaginationArgs = {},
     includeTotalCount = true
 ) {
-    const key: IChildConnectionDataloaderKey<Category> = {
+    const key: IChildConnectionDataloaderKey<AgeRange> = {
         args,
         includeTotalCount,
         parent: {
@@ -626,7 +635,7 @@ export async function loadCategoriesForOrganization(
         },
         primaryColumn: 'id',
     }
-    return context.loaders.categoriesConnectionChild.instance.load(key)
+    return context.loaders.ageRangesConnectionChild.instance.load(key)
 }
 
 export async function subcategoriesConnectionResolver(
