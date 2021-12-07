@@ -545,4 +545,110 @@ describe('acceptance.category', () => {
             })
         })
     })
+
+    context('categoriesConnection as a child', () => {
+        let user: User
+        let organization: Organization
+        let token: string
+        beforeEach(async () => {
+            user = await createUser().save()
+            organization = await createOrganization(user).save()
+            await createOrganizationMembership({
+                user,
+                organization,
+            }).save()
+            await createSubcategory(organization).save()
+            token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+        })
+        it('as a child of subjects', async () => {
+            const query = `
+            query subjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: SubjectSortInput){
+                subjectsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            categoriesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    filterArgs: {
+                        status: {
+                            operator: 'eq',
+                            value: 'active',
+                        },
+                    },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                getAdminAuthToken()
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.categoriesConnection.edges[0].node
+                    .subcategoriesConnection.totalCount
+            ).to.be.gte(1)
+        })
+        it('as a child of organizations', async () => {
+            const query = `
+            query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
+                organizationsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            categoriesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .categoriesConnection.totalCount
+            ).to.eq(1)
+        })
+    })
 })

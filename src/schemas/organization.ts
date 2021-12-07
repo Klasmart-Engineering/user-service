@@ -16,6 +16,7 @@ import {
     IPaginatedResponse,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
+import { Category } from '../entities/category'
 
 const typeDefs = gql`
     scalar HexColor
@@ -97,6 +98,9 @@ const typeDefs = gql`
         ageRanges: [AgeRange!]
         grades: [Grade!]
         categories: [Category!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         subcategories: [Subcategory!]
         subjects: [Subject!]
         programs: [Program!]
@@ -336,6 +340,14 @@ const typeDefs = gql`
             filter: ClassFilter
             sort: ClassSortInput
         ): ClassesConnectionResponse
+
+        categoriesConnection(
+            count: PageSize
+            cursor: String
+            filter: CategoryFilter
+            sort: CategorySortInput
+            direction: ConnectionDirection
+        ): CategoriesConnectionResponse
     }
 `
 
@@ -466,6 +478,7 @@ export default function getDefault(
                 schoolsConnection: schoolsChildConnectionResolver,
                 rolesConnection: rolesConnectionChildResolver,
                 classesConnection: classesChildConnectionResolver,
+                categoriesConnection: categoriesConnectionResolver,
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
@@ -567,4 +580,38 @@ export async function loadOrganizationMembershipsForOrganization(
     return context.loaders.organizationMembershipsConnectionChild.instance.load(
         key
     )
+}
+
+export async function categoriesConnectionResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadCategoriesForOrganization(
+        ctx,
+        organization.id,
+        args,
+        includeTotalCount
+    )
+}
+
+export async function loadCategoriesForOrganization(
+    context: Pick<Context, 'loaders'>,
+    organizationId: OrganizationConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Category> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: organizationId,
+            filterKey: 'organizationId',
+            pivot: '"Organization"."organization_id"',
+        },
+        primaryColumn: 'id',
+    }
+    return context.loaders.categoriesConnectionChild.instance.load(key)
 }

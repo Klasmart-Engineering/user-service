@@ -25,6 +25,21 @@ import { Category } from '../../../src/entities/category'
 import { categoriesConnectionResolver } from '../../../src/pagination/categoriesConnection'
 import { SelectQueryBuilder } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
+import { Context } from '../../../src/main'
+import { createUser } from '../../factories/user.factory'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import {
+    loadCategoriesForOrganization,
+    categoriesConnectionResolver as resolverForOrganization,
+} from '../../../src/schemas/organization'
+import { createSubject } from '../../factories/subject.factory'
+import { Subject } from '../../../src/entities/subject'
+import {
+    loadCategoriesForSubject,
+    categoriesConnectionResolver as resolverForSubject,
+} from '../../../src/schemas/subject'
 
 use(chaiAsPromised)
 
@@ -229,6 +244,185 @@ describe('model', () => {
             expect(result.totalCount).to.eq(activeSystemCategories.length)
             const systems = result.edges.map((edge) => edge.node.system)
             systems.every((system) => system === filterSystem)
+        })
+    })
+
+    context('categoriesConnectionChild', () => {
+        let ctx: Pick<Context, 'loaders'>
+        let fakeInfo: any
+        let organizationMember1: User
+        let subject: Subject
+        let subject2: Subject
+
+        beforeEach(async () => {
+            organizationMember1 = await createUser().save()
+            await createOrganizationMembership({
+                user: organizationMember1,
+                organization: org1,
+            }).save()
+            const token = { id: organizationMember1.user_id }
+            const permissions = new UserPermissions(token)
+            ctx = { loaders: createContextLazyLoaders(permissions) }
+            fakeInfo = {
+                fieldNodes: [
+                    {
+                        kind: 'Field',
+                        name: {
+                            kind: 'Name',
+                            value: 'categoriesConnection',
+                        },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [],
+                        },
+                    },
+                ],
+            }
+
+            subject = await createSubject(org1, org1Categories).save()
+            subject2 = await createSubject(org1, org1Categories).save()
+        })
+
+        context('as child of an organization', () => {
+            it('returns categories per organization', async () => {
+                const result = await loadCategoriesForOrganization(
+                    ctx,
+                    org1.organization_id
+                )
+                expect(result.edges).to.have.lengthOf(org1Categories.length)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    org1Categories.map((m) => m.id)
+                )
+            })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await resolverForOrganization(
+                    { id: org1.organization_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(org1Categories.length)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await resolverForOrganization(
+                    { id: org1.organization_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        context('as child of a subject', () => {
+            it('returns categories per subject', async () => {
+                const result = await loadCategoriesForSubject(ctx, subject.id)
+                expect(result.edges).to.have.lengthOf(org1Categories.length)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    org1Categories.map((m) => m.id)
+                )
+            })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await resolverForSubject(
+                    { id: subject.id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(org1Categories.length)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await resolverForSubject(
+                    { id: subject.id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        it('uses exactly one dataloader when called with different parent', async () => {
+            connection.logger.reset()
+            const loaderResults = []
+            for (const subj of [subject, subject2]) {
+                loaderResults.push(
+                    loadCategoriesForSubject(ctx, subj.id, {}, false)
+                )
+            }
+            await Promise.all(loaderResults)
+
+            expect(connection.logger.count).to.be.eq(1)
+        })
+        context('sorting', () => {
+            let subjectCategories: Category[]
+            beforeEach(() => {
+                subjectCategories = org1Categories.slice(0, 2)
+            })
+            it('sorts by id', async () => {
+                const result = await loadCategoriesForSubject(
+                    ctx,
+                    subject.id,
+                    {
+                        sort: {
+                            field: 'id',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = org1Categories.map((m) => m.id).sort()
+                expect(result.edges.map((e) => e.node.id)).to.deep.equal(sorted)
+            })
+            it('sorts by name', async () => {
+                const result = await loadCategoriesForSubject(
+                    ctx,
+                    subject.id,
+                    {
+                        sort: {
+                            field: 'name',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = org1Categories
+                    .map((m) => m.name)
+                    .sort(function (a, b) {
+                        return (a as string).localeCompare(b as string)
+                    })
+                expect(result.edges.map((e) => e.node.name)).to.deep.equal(
+                    sorted
+                )
+            })
+        })
+        context('totalCount', () => {
+            it('returns total count', async () => {
+                const result = await loadCategoriesForSubject(
+                    ctx,
+                    subject.id,
+                    {},
+                    true
+                )
+                expect(result.totalCount).to.eq(org1Categories.length)
+            })
+            it('does not return total count', async () => {
+                const result = await loadCategoriesForSubject(
+                    ctx,
+                    subject.id,
+                    {},
+                    false
+                )
+                expect(result.totalCount).to.not.exist
+            })
         })
     })
 })
