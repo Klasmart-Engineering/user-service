@@ -401,6 +401,7 @@ describe('acceptance.subcategory', () => {
         let user: User
         let organization: Organization
         let token: string
+        let subcategory: Subcategory
         beforeEach(async () => {
             await CategoriesInitializer.run()
             user = await createUser().save()
@@ -409,7 +410,7 @@ describe('acceptance.subcategory', () => {
                 user,
                 organization,
             }).save()
-            await createSubcategory(organization).save()
+            subcategory = await createSubcategory(organization).save()
             token = generateToken({
                 id: user.user_id,
                 email: user.email,
@@ -501,6 +502,10 @@ describe('acceptance.subcategory', () => {
                 response.body.data.organizationsConnection.edges[0].node
                     .subcategoriesConnection.totalCount
             ).to.eq(1)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .subcategoriesConnection.edges[0].node.id
+            ).to.eq(subcategory.id)
         })
     })
 })
