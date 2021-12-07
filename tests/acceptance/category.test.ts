@@ -49,6 +49,7 @@ import { Subcategory } from '../../src/entities/subcategory'
 import { createSubcategory } from '../factories/subcategory.factory'
 import { Organization } from '../../src/entities/organization'
 import { Status } from '../../src/entities/status'
+import { createSubject } from '../factories/subject.factory'
 
 use(deepEqualInAnyOrder)
 
@@ -557,7 +558,8 @@ describe('acceptance.category', () => {
                 user,
                 organization,
             }).save()
-            await createSubcategory(organization).save()
+            const category = await createCategory(organization).save()
+            await createSubject(organization, [category]).save()
             token = generateToken({
                 id: user.user_id,
                 email: user.email,
@@ -601,13 +603,13 @@ describe('acceptance.category', () => {
                     },
                     sortArgs: { order: 'ASC', field: 'name' },
                 },
-                getAdminAuthToken()
+                token
             )
 
             expect(response.status).to.eq(200)
             expect(
-                response.body.data.categoriesConnection.edges[0].node
-                    .subcategoriesConnection.totalCount
+                response.body.data.subjectsConnection.edges[0].node
+                    .categoriesConnection.totalCount
             ).to.be.gte(1)
         })
         it('as a child of organizations', async () => {
