@@ -7,7 +7,7 @@ import { OrganizationMembership } from '../../../src/entities/organizationMember
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { Class } from '../../../src/entities/class'
 
-const ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP = `
+export const ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP = `
     mutation myMutation(
             $user_id: ID!
             $organization_id: ID!

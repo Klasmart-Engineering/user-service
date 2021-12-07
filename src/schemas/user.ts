@@ -148,6 +148,17 @@ const typeDefs = gql`
         order: SortOrder!
     }
 
+    input EligibleMembersFilter {
+        # table columns
+        givenName: StringFilter
+        familyName: StringFilter
+        email: StringFilter
+        phone: StringFilter
+
+        AND: [EligibleMembersFilter!]
+        OR: [EligibleMembersFilter!]
+    }
+
     input UserFilter {
         # table columns
         userId: UUIDFilter
@@ -270,6 +281,20 @@ const typeDefs = gql`
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
             filter: UserFilter
+            sort: UserSortInput
+        ): UsersConnectionResponse @isAdmin(entity: "user")
+        eligibleStudentsConnection(
+            classId: ID!
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: EligibleMembersFilter
+            sort: UserSortInput
+        ): UsersConnectionResponse @isAdmin(entity: "user")
+        eligibleTeachersConnection(
+            classId: ID!
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: EligibleMembersFilter
             sort: UserSortInput
         ): UsersConnectionResponse @isAdmin(entity: "user")
         users: [User] @deprecated(reason: "Unused")
@@ -469,6 +494,18 @@ export default function getDefault(
                     }
                     return model.myUsers(ctx.token)
                 },
+                eligibleTeachersConnection: (
+                    _parent,
+                    args,
+                    ctx: Context,
+                    info
+                ) => model.eligibleTeachersConnection(ctx, info, args),
+                eligibleStudentsConnection: (
+                    _parent,
+                    args,
+                    ctx: Context,
+                    info
+                ) => model.eligibleStudentsConnection(ctx, info, args),
             },
             User: {
                 memberships: (user: User, _args, ctx: Context, info) => {

@@ -18,7 +18,9 @@ export function createClass(
     if (org) {
         cls.organization = Promise.resolve(org)
     }
-    cls.schools = Promise.resolve(schools)
+    if (schools && schools.length > 0) {
+        cls.schools = Promise.resolve(schools)
+    }
     cls.shortcode = generateShortCode()
     if (students) {
         cls.students = Promise.resolve(students)

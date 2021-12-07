@@ -86,6 +86,10 @@ import { gradesConnectionResolver } from './pagination/gradesConnection'
 import { ageRangesConnectionResolver } from './pagination/ageRangesConnection'
 import { subjectsConnectionResolver } from './pagination/subjectsConnection'
 import { TokenPayload } from './token'
+import {
+    eligibleMembersConnectionResolver,
+    EligibleMembersPaginationArgs,
+} from './pagination/eligibleMembersConnection'
 
 export class Model {
     public static async create() {
@@ -441,6 +445,28 @@ export class Model {
         info: GraphQLResolveInfo,
         paginationArgs: IPaginationArgs<Category>
     ) => categoriesConnectionResolver(info, paginationArgs)
+
+    public eligibleStudentsConnection = async (
+        _context: Context,
+        info: GraphQLResolveInfo,
+        paginationArgs: EligibleMembersPaginationArgs
+    ) =>
+        eligibleMembersConnectionResolver(
+            info,
+            'attend_live_class_as_a_student_187',
+            paginationArgs
+        )
+
+    public eligibleTeachersConnection = async (
+        _context: Context,
+        info: GraphQLResolveInfo,
+        paginationArgs: EligibleMembersPaginationArgs
+    ) =>
+        eligibleMembersConnectionResolver(
+            info,
+            'attend_live_class_as_a_teacher_186',
+            paginationArgs
+        )
 
     public async getRole({ role_id }: Role, context: Context) {
         try {

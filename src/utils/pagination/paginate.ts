@@ -58,7 +58,7 @@ export interface IPaginatedResponse<T = unknown> {
     edges: IEdge<T>[]
 }
 
-interface IDirectionArgs {
+export interface IDirectionArgs {
     count?: number
     cursor?: string
 }

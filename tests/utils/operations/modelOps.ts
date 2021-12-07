@@ -1492,6 +1492,66 @@ export const MYUSER_SCHOOLS_WITH_PERMISSIONS_QUERY = gql`
         }
     }
 `
+export const ELIGIBLE_TEACHERS_CONNECTION = `
+    query(
+        $classId: ID!,
+        $direction: ConnectionDirection!,
+        $directionArgs:ConnectionsDirectionArgs){
+        eligibleTeachersConnection(
+            classId: $classId,
+            direction:$direction,
+            directionArgs:$directionArgs){
+            totalCount
+            pageInfo{
+                startCursor
+                endCursor
+                hasNextPage
+                hasPreviousPage
+            }
+            edges{
+                node{
+                    id
+                    givenName
+                    familyName
+                    contactInfo{
+                        email
+                        phone
+                    }
+                }
+            }
+        }
+    }
+`
+export const ELIGIBLE_STUDENTS_CONNECTION = `
+    query(
+        $classId: ID!,
+        $direction: ConnectionDirection!,
+        $directionArgs:ConnectionsDirectionArgs){
+        eligibleStudentsConnection(
+            classId: $classId,
+            direction:$direction,
+            directionArgs:$directionArgs){
+            totalCount
+            pageInfo{
+                startCursor
+                endCursor
+                hasNextPage
+                hasPreviousPage
+            }
+            edges{
+                node{
+                    id
+                    givenName
+                    familyName
+                    contactInfo{
+                        email
+                        phone
+                    }
+                }
+            }
+        }
+    }
+`
 
 export async function runQuery(
     queryString: string,

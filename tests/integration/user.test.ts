@@ -2258,8 +2258,8 @@ describe('user', () => {
                     .where('User.user_id IN (:...ids)', { ids: userIds })
                     .getMany()
                 const dbAvatars = currentUsers.map((a) => a.avatar)
-                expect(inputAvatars).to.deep.equal(outputAvatars)
-                expect(inputAvatars).to.deep.equal(dbAvatars)
+                expect(inputAvatars).to.deep.equalInAnyOrder(outputAvatars)
+                expect(inputAvatars).to.deep.equalInAnyOrder(dbAvatars)
             })
             it('updates users date_of_birth and primary user flag', async () => {
                 connection.logger.reset()
