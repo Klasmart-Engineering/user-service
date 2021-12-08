@@ -58,7 +58,7 @@ export class Class extends CustomBaseEntity {
     @JoinTable()
     public age_ranges?: Promise<AgeRange[]>
 
-    @ManyToMany(() => Grade)
+    @ManyToMany(() => Grade, (grade) => grade.classes)
     @JoinTable()
     public grades?: Promise<Grade[]>
 

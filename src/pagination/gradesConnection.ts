@@ -1,23 +1,32 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { Grade } from '../entities/grade'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 
-export async function gradesConnectionResolver(
-    info: GraphQLResolveInfo,
-    { direction, directionArgs, scope, filter, sort }: IPaginationArgs<Grade>
-): Promise<IPaginatedResponse<GradeSummaryNode>> {
-    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+export const gradesConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'id',
+    aliases: {
+        id: 'id',
+        name: 'name',
+    },
+}
 
+export async function gradesConnectionQuery(
+    scope: SelectQueryBuilder<Grade>,
+    filter?: IEntityFilter
+) {
     if (filter) {
         if (filterHasProperty('organizationId', filter)) {
             scope.leftJoinAndSelect('Grade.organization', 'Organization')
@@ -31,6 +40,14 @@ export async function gradesConnectionResolver(
             scope.leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
         }
 
+        if (filterHasProperty('classId', filter)) {
+            scope.leftJoinAndSelect('Grade.classes', 'Class')
+        }
+
+        if (filterHasProperty('programId', filter)) {
+            scope.leftJoinAndSelect('Grade.programs', 'Program')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: 'Grade.id',
@@ -40,22 +57,31 @@ export async function gradesConnectionResolver(
                 organizationId: 'Organization.organization_id',
                 fromGradeId: 'FromGrade.id',
                 toGradeId: 'ToGrade.id',
+                classId: 'Class.class_id',
+                programId: 'Program.id',
             })
         )
     }
 
     scope.select(gradeSummaryNodeFields)
 
+    return scope
+}
+
+export async function gradesConnectionResolver(
+    info: GraphQLResolveInfo,
+    { direction, directionArgs, scope, filter, sort }: IPaginationArgs<Grade>
+): Promise<IPaginatedResponse<GradeSummaryNode>> {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+
+    await gradesConnectionQuery(scope, filter)
+
     const data = await paginateData<Grade>({
         direction,
         directionArgs,
         scope,
         sort: {
-            primaryKey: 'id',
-            aliases: {
-                id: 'id',
-                name: 'name',
-            },
+            ...gradesConnectionSortingConfig,
             sort,
         },
         includeTotalCount,
