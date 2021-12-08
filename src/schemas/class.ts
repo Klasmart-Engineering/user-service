@@ -13,6 +13,7 @@ import {
 } from '../utils/pagination/paginate'
 import { deleteClasses } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
 
 const typeDefs = gql`
@@ -62,14 +63,14 @@ const typeDefs = gql`
         schoolId: UUIDExclusiveFilter
         gradeId: UUIDFilter
         subjectId: UUIDFilter
-        programId: UUIDFilter
-
-        AND: [ClassFilter!]
-        OR: [ClassFilter!]
 
         #connections - extra filters
         studentId: UUIDFilter
         teacherId: UUIDFilter
+        programId: UUIDFilter
+
+        AND: [ClassFilter!]
+        OR: [ClassFilter!]
     }
 
     type ClassConnectionNode {
@@ -90,7 +91,10 @@ const typeDefs = gql`
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
             )
         subjects: [SubjectSummaryNode!]
-        programs: [ProgramSummaryNode!]
+        programs: [CoreProgramConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 01/03/22 Details: https://calmisland.atlassian.net/l/c/aaSJnmbQ"
+            )
 
         studentsConnection(
             count: PageSize
@@ -116,6 +120,14 @@ const typeDefs = gql`
             sort: SchoolSortInput
         ): SchoolsConnectionResponse
 
+        programsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ProgramFilter
+            sort: ProgramSortInput
+        ): ProgramsConnectionResponse
+
         gradesConnection(
             count: PageSize
             cursor: String
@@ -133,7 +145,7 @@ const typeDefs = gql`
         ): AgeRangesConnectionResponse
     }
 
-    type ProgramSummaryNode {
+    type CoreProgramConnectionNode {
         id: ID!
         name: String
         status: Status!
@@ -237,6 +249,36 @@ export async function schoolsChildConnection(
         },
         primaryColumn: 'school_id',
     })
+}
+
+export async function programsChildConnectionResolver(
+    class_: Pick<ClassConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadProgramsForClass(ctx, class_.id, args, includeTotalCount)
+}
+
+export async function loadProgramsForClass(
+    context: Pick<Context, 'loaders'>,
+    classId: ClassConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Program> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: classId,
+            filterKey: 'classId',
+            pivot: '"Class"."class_id"',
+        },
+        primaryColumn: 'id',
+    }
+
+    return context.loaders.programsConnectionChild.instance.load(key)
 }
 
 export async function gradesChildConnectionResolver(
@@ -368,6 +410,7 @@ export default function getDefault(
                         primaryColumn: 'user_id',
                     })
                 },
+                programsConnection: programsChildConnectionResolver,
                 ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {

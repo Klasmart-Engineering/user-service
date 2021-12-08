@@ -11,6 +11,7 @@ import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { Program } from '../entities/program'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -113,6 +114,14 @@ const typeDefs = gql`
             filter: ClassFilter
             sort: ClassSortInput
         ): ClassesConnectionResponse
+
+        programsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ProgramFilter
+            sort: ProgramSortInput
+        ): ProgramsConnectionResponse
     }
 
     input SchoolFilter {
@@ -125,6 +134,9 @@ const typeDefs = gql`
         # joined columns
         organizationId: UUIDFilter
         userId: UUIDFilter
+
+        #connections - extra filters
+        programId: UUIDFilter
 
         AND: [SchoolFilter!]
         OR: [SchoolFilter!]
@@ -171,6 +183,36 @@ export function classesChildConnection(
     })
 }
 
+export async function programsChildConnectionResolver(
+    school: Pick<ISchoolsConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadProgramsForSchool(ctx, school.id, args, includeTotalCount)
+}
+
+export async function loadProgramsForSchool(
+    context: Pick<Context, 'loaders'>,
+    schoolId: ISchoolsConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Program> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: schoolId,
+            filterKey: 'schoolId',
+            pivot: '"School"."school_id"',
+        },
+        primaryColumn: 'id',
+    }
+
+    return context.loaders.programsConnectionChild.instance.load(key)
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -181,6 +223,7 @@ export default function getDefault(
             SchoolConnectionNode: {
                 schoolMembershipsConnection: schoolMembershipsConnectionResolver,
                 classesConnection: classesChildConnectionResolver,
+                programsConnection: programsChildConnectionResolver,
             },
             Mutation: {
                 school: (_parent, args, ctx, _info) =>

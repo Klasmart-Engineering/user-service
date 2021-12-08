@@ -24,7 +24,6 @@ import {
     createTestConnection,
     TestConnection,
 } from '../../utils/testConnection'
-import { createAdminUser } from '../../utils/testEntities'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -44,6 +43,24 @@ import { createClass } from '../../factories/class.factory'
 import AgeRangesInitializer from '../../../src/initializers/ageRanges'
 import ProgramsInitializer from '../../../src/initializers/programs'
 import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import {
+    createContextLazyLoaders,
+    IDataLoaders,
+} from '../../../src/loaders/setup'
+import {
+    loadProgramsForClass,
+    programsChildConnectionResolver as classProgramsChildConnectionResolver,
+} from '../../../src/schemas/class'
+import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
+import { CoreProgramConnectionNode } from '../../../src/pagination/programsConnection'
+import { GraphQLResolveInfo } from 'graphql'
+import {
+    loadProgramsForSchool,
+    programsChildConnectionResolver as schoolProgramsChildConnectionResolver,
+} from '../../../src/schemas/school'
+import { createAdminUser } from '../../factories/user.factory'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -83,10 +100,14 @@ describe('model', () => {
     beforeEach(async () => {
         await AgeRangesInitializer.run()
         await ProgramsInitializer.run()
-        admin = await createAdminUser(testClient)
-        org1 = await createOrganization(admin)
-        org2 = await createOrganization(admin)
-        await connection.manager.save([org1, org2])
+        admin = await createAdminUser().save()
+        org1 = await createOrganization(admin).save()
+        org2 = await createOrganization(admin).save()
+
+        await createOrganizationMembership({
+            user: admin,
+            organization: org1,
+        }).save()
 
         school = await createSchool(org1)
         class1 = await createClass([school])
@@ -720,6 +741,239 @@ describe('model', () => {
             )
 
             expect(connection.logger.count).to.be.eq(1)
+        })
+    })
+
+    context('as child connection', async () => {
+        let fakeResolverInfo: any
+
+        beforeEach(() => {
+            fakeResolverInfo = {
+                fieldNodes: [
+                    {
+                        kind: 'Field',
+                        name: {
+                            kind: 'Name',
+                            value: 'programsConnection',
+                        },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [],
+                        },
+                    },
+                ],
+            }
+        })
+
+        context('common across all parents', () => {
+            let ctx: { loaders: IDataLoaders }
+
+            beforeEach(async () => {
+                const token = { id: admin.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            const resolveForPrograms = async (classes: Class[]) => {
+                const loaderResults = []
+                for (const c of classes) {
+                    const loaderResult = loadProgramsForClass(
+                        ctx,
+                        c.class_id,
+                        {},
+                        false
+                    )
+
+                    loaderResults.push(loaderResult)
+                }
+
+                await Promise.all(loaderResults)
+            }
+
+            it("db calls doesn't increase with number of resolver calls", async () => {
+                // warm up permission caches
+                await resolveForPrograms([class1, class2])
+                connection.logger.reset()
+
+                await resolveForPrograms([class1])
+                const dbCallsForSingleProgram = connection.logger.count
+                connection.logger.reset()
+
+                await resolveForPrograms([class1, class2])
+                const dbCallsForTwoPrograms = connection.logger.count
+
+                expect(dbCallsForSingleProgram).to.be.eq(dbCallsForTwoPrograms)
+            })
+
+            context('sorting', () => {
+                let args: IChildPaginationArgs
+
+                beforeEach(() => {
+                    args = {
+                        direction: 'FORWARD',
+                        count: 5,
+                        sort: {
+                            field: 'name',
+                            order: 'ASC',
+                        },
+                    }
+                })
+
+                const checkSorted = async (
+                    entityProperty: keyof Program,
+                    fieldName: keyof CoreProgramConnectionNode
+                ) => {
+                    const classToCheck = class1
+                    const programsToCheck = (await classToCheck.programs) as Program[]
+                    const result = await loadProgramsForClass(
+                        ctx,
+                        classToCheck.class_id,
+                        args,
+                        false
+                    )
+
+                    const sorted = programsToCheck
+                        .map((p) => p[entityProperty])
+                        .sort((a, b) => {
+                            // pagination sorting sorts in a case insensitive way
+                            return (a as string)
+                                .toLowerCase()
+                                .localeCompare((b as string).toLowerCase())
+                        })
+
+                    expect(
+                        result.edges.map((e) => e.node[fieldName])
+                    ).deep.equal(sorted)
+                }
+
+                it('sorts by id', async () => {
+                    args.sort!.field = 'id'
+                    await checkSorted('id', 'id')
+                })
+
+                it('sorts by name', async () => {
+                    args.sort!.field = 'name'
+                    await checkSorted('name', 'name')
+                })
+            })
+        })
+
+        context('class parent', () => {
+            let ctx: { loaders: IDataLoaders }
+
+            beforeEach(async () => {
+                const token = { id: admin.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            it('returns correct programs per class', async () => {
+                const classToCheck = class1
+                const programsToCheck = (await classToCheck.programs) as Program[]
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: 5,
+                }
+
+                const result = await loadProgramsForClass(
+                    ctx,
+                    classToCheck.class_id,
+                    args,
+                    false
+                )
+
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    programsToCheck.map((p) => p.id)
+                )
+            })
+
+            context('totalCount', async () => {
+                const callResolver = (
+                    fakeInfo: Pick<GraphQLResolveInfo, 'fieldNodes'>
+                ) =>
+                    classProgramsChildConnectionResolver(
+                        { id: class1.class_id },
+                        {},
+                        ctx,
+                        fakeInfo
+                    )
+
+                it('returns total count', async () => {
+                    fakeResolverInfo.fieldNodes[0].selectionSet?.selections.push(
+                        {
+                            kind: 'Field',
+                            name: { kind: 'Name', value: 'totalCount' },
+                        }
+                    )
+
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(3)
+                })
+
+                it("doesn't return total count", async () => {
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(undefined)
+                })
+            })
+        })
+
+        context('school parent', async () => {
+            let ctx: { loaders: IDataLoaders }
+
+            beforeEach(async () => {
+                const token = { id: admin.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            it('returns correct programs per school', async () => {
+                const schoolToCheck = school
+                const programsToCheck = (await school.programs) as Program[]
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: 2,
+                }
+
+                const result = await loadProgramsForSchool(
+                    ctx,
+                    schoolToCheck.school_id,
+                    args,
+                    false
+                )
+
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    programsToCheck.map((p) => p.id)
+                )
+            })
+
+            context('totalCount', async () => {
+                const callResolver = (
+                    fakeInfo: Pick<GraphQLResolveInfo, 'fieldNodes'>
+                ) =>
+                    schoolProgramsChildConnectionResolver(
+                        { id: school.school_id },
+                        {},
+                        ctx,
+                        fakeInfo
+                    )
+
+                it('returns total count', async () => {
+                    fakeResolverInfo.fieldNodes[0].selectionSet?.selections.push(
+                        {
+                            kind: 'Field',
+                            name: { kind: 'Name', value: 'totalCount' },
+                        }
+                    )
+
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(1)
+                })
+
+                it("doesn't return total count", async () => {
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(undefined)
+                })
+            })
         })
     })
 })

@@ -5,7 +5,7 @@ import { NodeDataLoader } from './genericNode'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { SubjectSummaryNode } from '../types/graphQL/subject'
-import { ProgramSummaryNode } from '../types/graphQL/program'
+import { CoreProgramConnectionNode } from '../pagination/programsConnection'
 
 export interface IProgramsConnectionLoaders {
     ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>
@@ -14,7 +14,7 @@ export interface IProgramsConnectionLoaders {
 }
 
 export interface IProgramNodeDataLoaders {
-    node: Lazy<NodeDataLoader<Program, ProgramSummaryNode>>
+    node: Lazy<NodeDataLoader<Program, CoreProgramConnectionNode>>
 }
 
 export const ageRangesForPrograms = async (

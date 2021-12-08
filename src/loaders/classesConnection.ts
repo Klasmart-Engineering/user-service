@@ -2,7 +2,6 @@ import DataLoader from 'dataloader'
 import { Class } from '../entities/class'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
-import { ProgramSummaryNode } from '../types/graphQL/program'
 import { SchoolSummaryNode } from '../types/graphQL/school'
 import { SubjectSummaryNode } from '../types/graphQL/subject'
 import { SelectQueryBuilder } from 'typeorm'
@@ -15,13 +14,14 @@ import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
+import { CoreProgramConnectionNode } from '../pagination/programsConnection'
 
 export interface IClassesConnectionLoaders {
     schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
     ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>
     grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
     subjects: Lazy<DataLoader<string, SubjectSummaryNode[]>>
-    programs: Lazy<DataLoader<string, ProgramSummaryNode[]>>
+    programs: Lazy<DataLoader<string, CoreProgramConnectionNode[]>>
 }
 
 export interface IClassNodeDataLoaders {
@@ -121,7 +121,7 @@ export const subjectsForClasses = async (
 
 export const programsForClasses = async (
     classIds: readonly string[]
-): Promise<ProgramSummaryNode[][]> => {
+): Promise<CoreProgramConnectionNode[][]> => {
     const scope = baseClassQuery(classIds)
         .leftJoin('Class.programs', 'Program')
         .addSelect([
@@ -135,7 +135,7 @@ export const programsForClasses = async (
         scope,
         classIds,
         'programs'
-    ) as Promise<ProgramSummaryNode[][]>
+    ) as Promise<CoreProgramConnectionNode[][]>
 
     return classPrograms
 }
@@ -145,7 +145,7 @@ type ClassEntitySummaryTypes =
     | AgeRangeConnectionNode
     | GradeSummaryNode
     | SubjectSummaryNode
-    | ProgramSummaryNode
+    | CoreProgramConnectionNode
 
 // gets the specified entity of classes
 async function getNestedEntities(
@@ -242,7 +242,7 @@ function buildEntityProps(
                 name: typedEntity.name,
                 status: typedEntity.status,
                 system: typedEntity.system,
-            } as ProgramSummaryNode
+            } as CoreProgramConnectionNode
 
         default:
             _exhaustiveCheck = entityName

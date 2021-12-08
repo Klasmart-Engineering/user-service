@@ -5,6 +5,7 @@ import faker from 'faker'
 import { Class } from '../../../src/entities/class'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { Program } from '../../../src/entities/program'
 import { Role } from '../../../src/entities/role'
 import { School } from '../../../src/entities/school'
 import { Status } from '../../../src/entities/status'
@@ -22,6 +23,7 @@ import { generateShortCode } from '../../../src/utils/shortcode'
 import { createClass } from '../../factories/class.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { createProgram } from '../../factories/program.factory'
 import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
@@ -53,7 +55,11 @@ describe('schoolsConnection', () => {
     let admin: User
     let org1: Organization
     let org2: Organization
+    let org1Programs: Program[]
+    let org2Programs: Program[]
     let schools: School[] = []
+    const schoolsCount = 10
+    const programsCount = 5
 
     let wizardUser: User
     let wizardOrg: Organization
@@ -78,15 +84,34 @@ describe('schoolsConnection', () => {
         org2 = createOrganization(admin)
         await connection.manager.save([org1, org2])
         schools = []
-        for (let i = 0; i < 10; i++) {
+        org1Programs = []
+        org2Programs = []
+
+        org1Programs = await Program.save(
+            Array.from(new Array(programsCount), () => createProgram(org1))
+        )
+
+        org2Programs = await Program.save(
+            Array.from(new Array(programsCount), () => createProgram(org2))
+        )
+
+        for (let i = 0; i < schoolsCount; i++) {
             const school = createSchool(org1, `school a${i}`)
             school.status = Status.ACTIVE
+            school.programs = Promise.resolve([
+                org1Programs[Math.floor(i / (schoolsCount / programsCount))],
+            ])
+
             schools.push(school)
         }
 
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < schoolsCount; i++) {
             const school = createSchool(org2, `school b${i}`)
             school.status = Status.INACTIVE
+            school.programs = Promise.resolve([
+                org2Programs[Math.floor(i / (schoolsCount / programsCount))],
+            ])
+
             schools.push(school)
         }
         await connection.manager.save(schools)
@@ -558,6 +583,24 @@ describe('schoolsConnection', () => {
             )
 
             expect(result.totalCount).to.eq(10)
+        })
+        it('support filtering by programId', async () => {
+            const filter: IEntityFilter = {
+                programId: {
+                    operator: 'eq',
+                    value: org1Programs[0].id,
+                },
+            }
+            const result = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                true,
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(2)
         })
     })
 

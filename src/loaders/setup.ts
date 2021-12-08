@@ -43,7 +43,10 @@ import {
     organizationSummaryNodeFields,
 } from '../pagination/organizationsConnection'
 import {
+    CoreProgramConnectionNode,
     mapProgramToProgramConnectionNode,
+    programsConnectionQuery,
+    programsConnectionSortingConfig,
     programSummaryNodeFields,
 } from '../pagination/programsConnection'
 import {
@@ -75,7 +78,6 @@ import { BrandingResult } from '../types/graphQL/branding'
 import { CategoryConnectionNode } from '../types/graphQL/category'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { GradeSummaryNode } from '../types/graphQL/grade'
-import { ProgramSummaryNode } from '../types/graphQL/program'
 import {
     ISchoolsConnectionNode,
     SchoolSummaryNode,
@@ -204,6 +206,8 @@ export interface IDataLoaders {
     subcategoryNode: ISubcategoryNodeDataLoader
     ageRangeNode: IAgeRangeNodeDataLoader
     subjectNode: ISubjectNodeDataLoader
+    categoryNode: ICategoryNodeDataLoader
+    schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 
     usersConnectionChild: Lazy<
         DataLoader<
@@ -256,6 +260,12 @@ export interface IDataLoaders {
             IPaginatedResponse<RoleConnectionNode>
         >
     >
+    programsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Program>,
+            IPaginatedResponse<CoreProgramConnectionNode>
+        >
+    >
     permissionsConnectionChild: Lazy<
         DataLoader<
             IChildConnectionDataloaderKey<Permission>,
@@ -286,8 +296,6 @@ export interface IDataLoaders {
             IPaginatedResponse<AgeRangeConnectionNode>
         >
     >
-    categoryNode: ICategoryNodeDataLoader
-    schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
 
 export function createContextLazyLoaders(
@@ -516,7 +524,7 @@ export function createContextLazyLoaders(
             ),
         },
         programNode: {
-            node: new Lazy<NodeDataLoader<Program, ProgramSummaryNode>>(
+            node: new Lazy<NodeDataLoader<Program, CoreProgramConnectionNode>>(
                 () =>
                     new NodeDataLoader(
                         Program,
@@ -560,7 +568,7 @@ export function createContextLazyLoaders(
             subjects: new Lazy<DataLoader<string, SubjectSummaryNode[]>>(
                 () => new DataLoader(subjectsForClasses)
             ),
-            programs: new Lazy<DataLoader<string, ProgramSummaryNode[]>>(
+            programs: new Lazy<DataLoader<string, CoreProgramConnectionNode[]>>(
                 () => new DataLoader(programsForClasses)
             ),
         },
@@ -656,5 +664,17 @@ export function createContextLazyLoaders(
                     )
             ),
         },
+        programsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        programsConnectionQuery,
+                        mapProgramToProgramConnectionNode,
+                        programsConnectionSortingConfig,
+                        { permissions, entity: 'program' }
+                    )
+                })
+        ),
     }
 }

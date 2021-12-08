@@ -1,9 +1,10 @@
-import { expect } from 'chai'
+import { expect, use } from 'chai'
 import { print } from 'graphql'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Class } from '../../src/entities/class'
 import { Organization } from '../../src/entities/organization'
+import { Program } from '../../src/entities/program'
 import { School } from '../../src/entities/school'
 import { User } from '../../src/entities/user'
 import { PermissionName } from '../../src/permissions/permissionNames'
@@ -21,10 +22,16 @@ import {
     createOrg,
     createSchool,
 } from '../utils/operations/acceptance/acceptanceOps.test'
-import { SCHOOLS_CONNECTION, SCHOOL_NODE } from '../utils/operations/modelOps'
+import {
+    SCHOOLS_CONNECTION,
+    SCHOOLS_CONNECTION_WITH_CHILDREN,
+    SCHOOL_NODE,
+} from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
+import ProgramsInitializer from '../../src/initializers/programs'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -60,6 +67,8 @@ const makeNodeQuery = async (id: string) => {
             },
         })
 }
+
+use(deepEqualInAnyOrder)
 
 describe('acceptance.school', () => {
     let connection: Connection
@@ -226,6 +235,49 @@ describe('acceptance.school', () => {
                 response.body.data.schoolsConnection.edges[0].node
                     .classesConnection.edges[0].node.id
             ).to.eq(potionsClass.class_id)
+        })
+
+        it('has programsConnection as a child', async () => {
+            await ProgramsInitializer.run()
+            const systemPrograms = await Program.find({
+                where: { system: true },
+                take: 3,
+            })
+            const systemProgramIds = systemPrograms.map((p) => p.id)
+
+            const school = await School.findOneOrFail(schoolId)
+            school.programs = Promise.resolve(systemPrograms)
+            await school.save()
+
+            const response = await makeRequest(
+                request,
+                print(SCHOOLS_CONNECTION_WITH_CHILDREN),
+                { direction: 'FORWARD' },
+                generateToken({
+                    id: clientUser.user_id,
+                    email: clientUser.email,
+                    iss: 'calmid-debug',
+                })
+            )
+
+            expect(response.status).to.eq(200)
+
+            const schoolsConnection = response.body.data.schoolsConnection
+            expect(schoolsConnection.edges).to.have.lengthOf(schoolsCount)
+            schoolsConnection.edges.forEach(
+                (s: { node: ISchoolsConnectionNode }) => {
+                    const programsConnection = s.node.programsConnection
+                    expect(programsConnection?.edges).to.have.lengthOf(
+                        systemPrograms.length
+                    )
+
+                    const programIds = programsConnection?.edges.map(
+                        (p) => p.node.id
+                    )
+
+                    expect(programIds).to.deep.equalInAnyOrder(systemProgramIds)
+                }
+            )
         })
     })
 

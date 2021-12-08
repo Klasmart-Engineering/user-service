@@ -514,15 +514,33 @@ export const SCHOOLS_CONNECTION = `
     }
 `
 
-export const SCHOOLS_CONNECTION_WITH_CHILDREN = `
-    query schoolsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SchoolFilter, $sortArgs: SchoolSortInput) {
-        schoolsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
+export const SCHOOLS_CONNECTION_WITH_CHILDREN = gql`
+    query schoolsConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: SchoolFilter
+        $sortArgs: SchoolSortInput
+    ) {
+        schoolsConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
             totalCount
             edges {
                 node {
                     id
                     name
                     classesConnection {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
+                    programsConnection {
                         totalCount
                         edges {
                             node {
@@ -864,6 +882,14 @@ const CLASS_FIELDS = gql`
             }
         }
         schoolsConnection {
+            totalCount
+            edges {
+                node {
+                    id
+                }
+            }
+        }
+        programsConnection {
             totalCount
             edges {
                 node {
@@ -2153,7 +2179,7 @@ export async function schoolsConnection(
     let paginationQuery: string
     if (withChildren) {
         paginationQuery = buildPaginationQuery(
-            SCHOOLS_CONNECTION_WITH_CHILDREN,
+            print(SCHOOLS_CONNECTION_WITH_CHILDREN),
             includeTotalCount
         )
     } else {
