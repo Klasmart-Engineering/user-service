@@ -6,12 +6,24 @@ import { Organization } from '../../../src/entities/organization'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import AgeRangesInitializer from '../../../src/initializers/ageRanges'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import { Context } from '../../../src/main'
 import { Model } from '../../../src/model'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import {
+    loadAgeRangesForOrganization,
+    ageRangesChildConnectionResolver as resolverForOrganization,
+} from '../../../src/schemas/organization'
+import {
+    loadAgeRangesForClass,
+    ageRangesChildConnectionResolver as resolverForClass,
+} from '../../../src/schemas/class'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { createOrganization } from '../../factories/organization.factory'
-import { createProgram } from '../../factories/program.factory'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { createUser } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -29,6 +41,14 @@ import {
     TestConnection,
 } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
+import { Class } from '../../../src/entities/class'
+import { createClass } from '../../factories/class.factory'
+import { createProgram } from '../../factories/program.factory'
+import { Program } from '../../../src/entities/program'
+import {
+    loadAgeRangesForProgram,
+    ageRangesChildConnectionResolver as resolverForProgram,
+} from '../../../src/schemas/program'
 
 use(chaiAsPromised)
 
@@ -539,6 +559,222 @@ describe('model', () => {
             )
 
             expect(connection.logger.count).to.be.eq(1)
+        })
+    })
+
+    context('ageRangesConnectionChild', () => {
+        let ctx: Pick<Context, 'loaders'>
+        let fakeInfo: any
+        let organizationMember1: User
+        let class1: Class
+        let class2: Class
+        let program: Program
+
+        beforeEach(async () => {
+            organizationMember1 = await createUser().save()
+            await createOrganizationMembership({
+                user: organizationMember1,
+                organization: org1,
+            }).save()
+            const token = { id: organizationMember1.user_id }
+            const permissions = new UserPermissions(token)
+            ctx = { loaders: createContextLazyLoaders(permissions) }
+            fakeInfo = {
+                fieldNodes: [
+                    {
+                        kind: 'Field',
+                        name: {
+                            kind: 'Name',
+                            value: 'ageRangesConnection',
+                        },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [],
+                        },
+                    },
+                ],
+            }
+
+            program = await createProgram(org1, org1AgeRanges).save()
+            class1 = await createClass(undefined, org1).save()
+            class2 = await createClass(undefined, org1).save()
+            ;(await class1.age_ranges)?.push(...org1AgeRanges)
+            ;(await class2.age_ranges)?.push(...org1AgeRanges)
+            await connection.manager.save([class1, class2])
+        })
+
+        context('as child of an organization', () => {
+            it('returns ageRanges per organization', async () => {
+                const result = await loadAgeRangesForOrganization(
+                    ctx,
+                    org1.organization_id
+                )
+                expect(result.edges).to.have.lengthOf(org1AgeRanges.length)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    org1AgeRanges.map((m) => m.id)
+                )
+            })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await resolverForOrganization(
+                    { id: org1.organization_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(org1AgeRanges.length)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await resolverForOrganization(
+                    { id: org1.organization_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        context('as child of a program', () => {
+            it('returns age ranges per program', async () => {
+                const result = await loadAgeRangesForProgram(ctx, program.id)
+                expect(result.edges).to.have.lengthOf(org1AgeRanges.length)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    org1AgeRanges.map((m) => m.id)
+                )
+            })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await resolverForProgram(
+                    { id: program.id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(org1AgeRanges.length)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await resolverForProgram(
+                    { id: program.id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        context('as child of a class', () => {
+            it('returns age ranges per class', async () => {
+                const result = await loadAgeRangesForClass(ctx, class1.class_id)
+                expect(result.edges).to.have.lengthOf(org1AgeRanges.length)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    org1AgeRanges.map((m) => m.id)
+                )
+            })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await resolverForClass(
+                    { id: class1.class_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(org1AgeRanges.length)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await resolverForClass(
+                    { id: class1.class_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        it('uses exactly one dataloader when called with different parent', async () => {
+            connection.logger.reset()
+            const loaderResults = []
+            for (const cl of [class1, class2]) {
+                loaderResults.push(
+                    loadAgeRangesForClass(ctx, class1.class_id, {}, false)
+                )
+            }
+            await Promise.all(loaderResults)
+
+            expect(connection.logger.count).to.be.eq(1)
+        })
+        context('sorting', () => {
+            let classAgeRanges: AgeRange[]
+            beforeEach(() => {
+                classAgeRanges = org1AgeRanges.slice(0, 2)
+            })
+            it('sorts by id', async () => {
+                const result = await loadAgeRangesForClass(
+                    ctx,
+                    class1.class_id,
+                    {
+                        sort: {
+                            field: 'id',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = org1AgeRanges.map((m) => m.id).sort()
+                expect(result.edges.map((e) => e.node.id)).to.deep.equal(sorted)
+            })
+            it('sorts by name', async () => {
+                const result = await loadAgeRangesForClass(
+                    ctx,
+                    class1.class_id,
+                    {
+                        sort: {
+                            field: 'name',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = org1AgeRanges
+                    .map((m) => m.name)
+                    .sort(function (a, b) {
+                        return (a as string).localeCompare(b as string)
+                    })
+                expect(result.edges.map((e) => e.node.name)).to.deep.equal(
+                    sorted
+                )
+            })
+        })
+        context('totalCount', () => {
+            it('returns total count', async () => {
+                const result = await loadAgeRangesForClass(
+                    ctx,
+                    class1.class_id,
+                    {},
+                    true
+                )
+                expect(result.totalCount).to.eq(org1AgeRanges.length)
+            })
+            it('does not return total count', async () => {
+                const result = await loadAgeRangesForClass(
+                    ctx,
+                    class1.class_id,
+                    {},
+                    false
+                )
+                expect(result.totalCount).to.not.exist
+            })
         })
     })
 })

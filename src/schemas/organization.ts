@@ -101,6 +101,9 @@ const typeDefs = gql`
         classes: [Class] @deprecated(reason: "Use 'getClasses'.")
         getClasses: [Class]
         ageRanges: [AgeRange!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         grades: [Grade!]
         categories: [Category!]
         subcategories: [Subcategory!]
@@ -336,6 +339,13 @@ const typeDefs = gql`
             filter: ClassFilter
             sort: ClassSortInput
         ): ClassesConnectionResponse
+        ageRangesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection!
+            filter: AgeRangeFilter
+            sort: AgeRangeSortInput
+        ): AgeRangesConnectionResponse
     }
 `
 
@@ -463,6 +473,7 @@ export default function getDefault(
                 schoolsConnection: schoolsChildConnectionResolver,
                 rolesConnection: rolesConnectionChildResolver,
                 classesConnection: classesChildConnectionResolver,
+                ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
@@ -574,4 +585,36 @@ export async function loadOrganizationMembershipsForOrganization(
     return context.loaders.organizationMembershipsConnectionChild.instance.load(
         key
     )
+}
+export async function ageRangesChildConnectionResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadAgeRangesForOrganization(
+        ctx,
+        organization.id,
+        args,
+        includeTotalCount
+    )
+}
+
+export async function loadAgeRangesForOrganization(
+    context: Pick<Context, 'loaders'>,
+    organizationId: OrganizationConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: organizationId,
+            filterKey: 'organizationId',
+            pivot: '"Organization"."organization_id"',
+        },
+    }
+    return context.loaders.ageRangesConnectionChild.instance.load(key)
 }

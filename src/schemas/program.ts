@@ -3,6 +3,10 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { ProgramConnectionNode } from '../types/graphQL/program'
 import { Context } from '../main'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { GraphQLResolveInfo } from 'graphql'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -62,8 +66,18 @@ const typeDefs = gql`
         status: Status!
         system: Boolean!
         ageRanges: [AgeRangeConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         grades: [GradeSummaryNode!]
         subjects: [SubjectSummaryNode!]
+        ageRangesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection!
+            filter: AgeRangeFilter
+            sort: AgeRangeSortInput
+        ): AgeRangesConnectionResponse
     }
 
     type GradeSummaryNode {
@@ -101,6 +115,9 @@ const typeDefs = gql`
         system: Boolean!
         status: Status
         age_ranges: [AgeRange!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         grades: [Grade!]
         subjects: [Subject!]
 
@@ -157,6 +174,7 @@ export default function getDefault(
                         program.id
                     )
                 },
+                ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {
                 program: (_parent, args, ctx, _info) =>
@@ -176,4 +194,32 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function ageRangesChildConnectionResolver(
+    program: Pick<ProgramConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadAgeRangesForProgram(ctx, program.id, args, includeTotalCount)
+}
+
+export async function loadAgeRangesForProgram(
+    context: Pick<Context, 'loaders'>,
+    programId: ProgramConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: programId,
+            filterKey: 'programId',
+            pivot: '"Program"."id"',
+        },
+    }
+    return context.loaders.ageRangesConnectionChild.instance.load(key)
 }

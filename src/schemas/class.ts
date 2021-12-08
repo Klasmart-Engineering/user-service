@@ -17,6 +17,7 @@ import Dataloader from 'dataloader'
 import { GraphQLResolveInfo } from 'graphql/type/definition'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IDataLoaders } from '../loaders/setup'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -81,6 +82,9 @@ const typeDefs = gql`
         shortCode: String
         schools: [SchoolSummaryNode!]
         ageRanges: [AgeRangeConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         grades: [GradeSummaryNode!]
         subjects: [SubjectSummaryNode!]
         programs: [ProgramSummaryNode!]
@@ -108,6 +112,14 @@ const typeDefs = gql`
             filter: SchoolFilter
             sort: SchoolSortInput
         ): SchoolsConnectionResponse
+
+        ageRangesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection!
+            filter: AgeRangeFilter
+            sort: AgeRangeSortInput
+        ): AgeRangesConnectionResponse
     }
 
     type SchoolSummaryNode {
@@ -308,6 +320,7 @@ export default function getDefault(
                         },
                     })
                 },
+                ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
@@ -349,4 +362,32 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function ageRangesChildConnectionResolver(
+    cl: Pick<ClassConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadAgeRangesForClass(ctx, cl.id, args, includeTotalCount)
+}
+
+export async function loadAgeRangesForClass(
+    context: Pick<Context, 'loaders'>,
+    classId: ClassConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: classId,
+            filterKey: 'classId',
+            pivot: '"Class"."class_id"',
+        },
+    }
+    return context.loaders.ageRangesConnectionChild.instance.load(key)
 }

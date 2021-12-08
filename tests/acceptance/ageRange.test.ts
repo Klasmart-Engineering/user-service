@@ -15,9 +15,18 @@ import {
     AGE_RANGES_CONNECTION,
     AGE_RANGE_NODE,
 } from '../utils/operations/modelOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
+import { Organization } from '../../src/entities/organization'
+import { User } from '../../src/entities/user'
+import { createUser } from '../factories/user.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createAgeRange } from '../factories/ageRange.factory'
+import { createProgram } from '../factories/program.factory'
+import { makeRequest } from './utils'
+import { createClass } from '../factories/class.factory'
 
 interface IAgeRangeEdge {
     node: AgeRangeConnectionNode
@@ -238,6 +247,107 @@ describe('acceptance.ageRange', () => {
                 expect(errors).to.exist
                 expect(ageRangeNode).to.be.null
             })
+        })
+    })
+
+    context('ageRangesConnection as a child', () => {
+        let user: User
+        let organization: Organization
+        let token: string
+        beforeEach(async () => {
+            user = await createUser().save()
+            organization = await createOrganization(user).save()
+            await createOrganizationMembership({
+                user,
+                organization,
+            }).save()
+            const ageRange = await createAgeRange(organization).save()
+            await createProgram(organization, [ageRange]).save()
+
+            token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+        })
+        it('as a child of programs', async () => {
+            const query = `
+            query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: ProgramSortInput){
+                programsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            ageRangesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                token
+            )
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.programsConnection.edges[0].node
+                    .ageRangesConnection.totalCount
+            ).to.be.gte(1)
+        })
+        it('as a child of organizations', async () => {
+            const query = `
+            query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
+                organizationsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            ageRangesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .ageRangesConnection.totalCount
+            ).to.eq(1)
         })
     })
 })
