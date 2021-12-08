@@ -35,9 +35,9 @@ export default function(data: { res: any, userId: string}) {
     scheduleFilterProgram();
     sleep(5);
     scheduleFilterClass();
-    //sleep(0.5);
+    sleep(1);
     getSchoolsFilter();
-    //sleep(0.5);
+    sleep(1);
     meMemership();
     // then is missing 3 request more.
 }

@@ -17,7 +17,17 @@ module.exports = {
         getPaginatedUsersCursor: `./getPaginatedUsersCursor.ts`,
         getPaginatedUsersFilter: `./getPaginatedUsersFilters.ts`,
         getPaginatedUsersMixed: `./getPaginatedUsersMixed.ts`,
-        scenario9ASchoolAdmin: `./Scenarios/Scenario 9/scenario9ASchoolAdmin.ts`
+        scenario9ASchoolAdmin: `./Scenarios/Scenario9/scenario9ASchoolAdmin.ts`,
+        scenario9BSchoolAdmin: `./Scenarios/Scenario9/scenario9BSchoolAdmin.ts`,
+        getPaginatedUsersCloud: `./getPaginatedUsersCloud.ts`,
+        getPaginatedUsersCursorCloud: `./getPaginatedUsersCursorCloud.ts`,
+        getPaginatedUsersFiltersCloud: `./getPaginatedUsersFiltersCloud.ts`,
+        getPaginatedUsersMixedCloud: `./getPaginatedUsersMixedCloud.ts`,
+
+        parallelLandingSchedule: `./parallelLandingSchedule.ts`,
+        create1kSchools: `./create1kschools.ts`
+        
+
     },
     output: {
         path: path.join(__dirname, `dist`),

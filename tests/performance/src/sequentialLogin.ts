@@ -8,6 +8,12 @@ import { Options } from 'k6/options';
 
 export const options: Options = {
     vus: 1,
+
+    ext: {
+        loadimpact: {
+          projectID: 3556835,
+        },
+      },
 };
 
 export default function() {

@@ -33,7 +33,7 @@ export default function () {
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
 
     check(res, {
-        'status is 200': () => res.status === 200,
+        'myUserTest - status is 200': () => res.status === 200,
         'my users query returns data': (r) => JSON.parse(r.body as string).data ?? false,
     });
 }

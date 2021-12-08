@@ -15,7 +15,7 @@ const params = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36',
-
+        
     },
 };
 
@@ -25,7 +25,7 @@ export default function (loginPayload: LoginPayload = defaultPayload) {
 
     if (
         ! check(res, {
-            'auth status is 200': (r) => r.status === 200,
+            'testLogin - auth status is 200': (r) => r.status === 200,
         })
     ) {
         fail('failed to authenticate user in login');
@@ -45,7 +45,7 @@ export default function (loginPayload: LoginPayload = defaultPayload) {
 
     if (
         ! check(transferRes, {
-            'status is 200': (r) => r.status === 200,
+            'testLogin - transfer - status is 200': (r) => r.status === 200,
         })
     ) {
         fail('failed to transfer user in login');

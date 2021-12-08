@@ -4,7 +4,7 @@ import getUsers from "../../scripts/getOrganizationUsers";
 
 /* 
 Link URL= https://calmisland.atlassian.net/wiki/spaces/BTS/pages/edit-v2/2398781836
-    - See: Scenario 9 - As a School Admin → lands on Users
+    - See: Scenario 9 - A - As a School Admin → lands on Users
     - Ticket: UD-1650 
 
 This is scenario consist of:
@@ -176,17 +176,17 @@ export function setup() {
 
     for (i; i < l; i++) {
         const prefix = ('0' + i).slice(-2);
-        const teacherLoginPayload = {
+        const schoolAdmLoginPayload = {
             deviceId: "webpage",
             deviceName: "k6",
             email: `${process.env.SCHOOLADMIN_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
             pw: process.env.PW_SCHOOL_ADMIN_1 as string,
         };
         
-        const teacherLoginData = loginSetup(teacherLoginPayload);
+        const schoolAdmLoginData = loginSetup(schoolAdmLoginPayload);
         data = { 
             ...data, 
-            [`schooladm${prefix}`]: teacherLoginData,
+            [`schooladm${prefix}`]: schoolAdmLoginData,
         };
     }
 

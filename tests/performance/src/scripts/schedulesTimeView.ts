@@ -29,11 +29,11 @@ export default function (roleType?: string) {
 
     const res = http.post(`${process.env.SCHEDULES_TIME_VIEW_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
 
-    console.log(JSON.stringify(res));
+   // console.log(JSON.stringify(res));
 
     check(res, {
         'SCHEDULES_TIME_VIEW - status is 200': () => res.status === 200,
-        //'schedule endpoint returns data': (r) => JSON.parse(r.body as string).data,
+       // 'schedule endpoint returns data': (r) => JSON.parse(r.body as string).id.name?? false,
     }, {
         userRoleType: roleType
     });

@@ -14,12 +14,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 4
                 },
                 // Hold
                 {
-                    duration: '2s',
-                    target: 4
+                    duration: '3m',
+                    target: 20
                 },
                 // Ramp down
                 {
@@ -37,12 +37,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
-                    duration: '2s',
-                    target: 4
+                    duration: '3m',
+                    target: 25
                 },
                 // Ramp down
                 {
@@ -60,12 +60,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 6
                 },
                 // Hold
                 {
-                    duration: '2s',
-                    target: 4
+                    duration: '3m',
+                    target: 30
                 },
                 // Ramp down
                 {
@@ -83,12 +83,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
-                    duration: '2s',
-                    target: 4
+                    duration: '3m',
+                    target: 25
                 },
                 // Ramp down
                 {
@@ -106,12 +106,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 4
                 },
                 // Hold
                 {
-                    duration: '2s',
-                    target: 4
+                    duration: '2m',
+                    target: 20
                 },
                 // Ramp down
                 {
@@ -129,12 +129,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 6
                 },
                 // Hold
                 {
-                    duration: '2s',
-                    target: 4
+                    duration: '3m',
+                    target: 20
                 },
                 // Ramp down
                 {
@@ -152,12 +152,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
-                    duration: '2s',
-                    target: 4
+                    duration: '3m',
+                    target: 25
                 },
                 // Ramp down
                 {
@@ -179,7 +179,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '2s',
+                    duration: '2m',
                     target: 4
                 },
                 // Ramp down

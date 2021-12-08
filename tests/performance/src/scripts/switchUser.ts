@@ -18,7 +18,7 @@ export default function () {
 
     if (
         ! check(resMyUsers, {
-            'status is 200': (r) => r.status === 200,
+            'swithUser - status is 200': (r) => r.status === 200,
             'my users query returns data': (r) => JSON.parse(r.body as string).data?.my_users.length ?? false,
         })
     ) {
@@ -45,7 +45,7 @@ export default function () {
 
     if (
         ! check(switchRes, {
-            '"My users" status is 200': (r) => r.status === 200,
+            'switchUser - status is 200': (r) => r.status === 200,
         })
     ) {
         fail('failed to switch user in login');

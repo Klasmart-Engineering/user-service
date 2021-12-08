@@ -15,8 +15,16 @@
       "get:users:cursor": "k6 run ./dist/getPaginatedUsersCursor.js",
       "get:users:filters": "k6 run ./dist/getPaginatedUsersFilter.js",
       "get:users:mixed": "k6 run ./dist/getPaginatedUsersMixed.js",
-      "get:scenario9-a": "k6 run ./dist/Scenario9ASchoolAdmin.js"
+      "get:scenario9-a": "k6 run ./dist/Scenario9ASchoolAdmin.js",
+      "get:scenario9-b": "k6 run ./dist/Scenario9BSchoolAdmin.js",
+      "cloud:get:users": "k6 run ./dist/getPaginatedUsersCloud.js",
+      "cloud:get:users:cursor": "k6 run ./dist/getPaginatedUsersCursorCloud.js",
+      "cloud:get:users:filters": "k6 run ./dist/getPaginatedUsersFilterCloud.js",
+      "cloud:get:users:mixed": "k6 run ./dist/getPaginatedUsersMixedCloud.js",
+      "get:schedule:list": "k6 run ./dist/parallelLandingSchedule.js",
+      "setup:create-1k-schools": "k6 run ./dist/create1kSchools.js"
     },
+
     "dependencies": {
       "@babel/core": "7.13.16",
       "@babel/plugin-proposal-class-properties": "7.13.0",

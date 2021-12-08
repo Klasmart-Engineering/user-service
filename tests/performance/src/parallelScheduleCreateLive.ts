@@ -3,6 +3,7 @@ import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
 import { sleep } from 'k6';
 import landingSchedule from './scripts/landingSchedule';
+import createBasicLiveClass from'./scripts/createBasicLiveClass';
 import http from 'k6/http';
 
 export const options: Options = {
@@ -20,8 +21,8 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '1m', // update to 3m
-                    target: 2 // update to 10
+                    duration: '3m',
+                    target: 10
                 },
                 // Ramp down
                 {
@@ -560,6 +561,8 @@ export function teacher00(data: { [key: string]: { res: any, userId: string }}) 
     //landingV2(data.teacher00);
     sleep(5);
     landingSchedule(data.teacher00);
+    sleep(5);
+    createBasicLiveClass();
 
 }
 /*

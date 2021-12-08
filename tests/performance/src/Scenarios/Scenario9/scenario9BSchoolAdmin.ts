@@ -1,25 +1,47 @@
 import { Options } from "k6/options";
-import loginSetup from "./utils/loginSetup";
-import getUsers from "./scripts/getOrganizationUsers";
+import loginSetup from "../../utils/loginSetup";
+import getUsers from "../../scripts/getOrganizationUsers";
 import { sleep } from "k6";
+
+/* 
+Link URL= https://calmisland.atlassian.net/wiki/spaces/BTS/pages/edit-v2/2398781836
+    - See: Scenario 9 - b - As a School Admin → lands on Users & search users by "Given Name" and "Family Name"
+    - Ticket: UD-1651 
+
+This is scenario consist of:
+    Create script that simulates a teacher using the search functionality by:
+    - Given Name
+    - Family Name
+        - Accounts: 5 uniques account
+*/
+
+/* 
+- Run with a max of VUs = 350
+    - The number of users starts at 0, and slowly ramps up to the nominal value (20 secs-115 max), 
+        where it stays for an extended period of time (3m). Then a ramp downstage goes to 0 in 20 secs.
+    - Stage 1-  ramps up: duration: '20s' - target: 5 
+    - Stage 2 - keep the load : duration: '2m' - target: 50
+    - Stage3 ramp downstage : duration: '20s' - target: 0
+    -Total time:  2m45s
+*/
 
 export const options: Options = {
     scenarios: {
-        teacher00: {
+        school00: {
             executor: 'ramping-vus',
-            exec: 'teacher00',
+            exec: 'school00',
             startTime: '0s',
             gracefulStop: '5s',
             stages: [
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
                     duration: '2m',
-                    target: 4
+                    target: 50
                 },
                 // Ramp down
                 {
@@ -28,21 +50,21 @@ export const options: Options = {
                 },
             ],
         },
-        teacher01: {
+        school01: {
             executor: 'ramping-vus',
-            exec: 'teacher01',
+            exec: 'school01',
             startTime: '0s',
             gracefulStop: '5s',
             stages: [
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
                     duration: '2m',
-                    target: 4
+                    target: 50
                 },
                 // Ramp down
                 {
@@ -51,21 +73,21 @@ export const options: Options = {
                 },
             ],
         },
-        teacher02: {
+        school02: {
             executor: 'ramping-vus',
-            exec: 'teacher02',
+            exec: 'school02',
             startTime: '0s',
             gracefulStop: '5s',
             stages: [
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
                     duration: '2m',
-                    target: 4
+                    target: 50
                 },
                 // Ramp down
                 {
@@ -74,21 +96,21 @@ export const options: Options = {
                 },
             ],
         },
-        teacher03: {
+        school03: {
             executor: 'ramping-vus',
-            exec: 'teacher03',
+            exec: 'school03',
             startTime: '0s',
             gracefulStop: '5s',
             stages: [
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
                     duration: '2m',
-                    target: 4
+                    target: 50
                 },
                 // Ramp down
                 {
@@ -97,21 +119,21 @@ export const options: Options = {
                 },
             ],
         },
-        teacher04: {
+        school04: {
             executor: 'ramping-vus',
-            exec: 'teacher04',
+            exec: 'school04',
             startTime: '0s',
             gracefulStop: '5s',
             stages: [
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
                     duration: '2m',
-                    target: 4
+                    target: 50
                 },
                 // Ramp down
                 {
@@ -120,44 +142,21 @@ export const options: Options = {
                 },
             ],
         },
-        teacher05: {
+        school05: {
             executor: 'ramping-vus',
-            exec: 'teacher05',
+            exec: 'school05',
             startTime: '0s',
             gracefulStop: '5s',
             stages: [
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
-                    duration: '0s',
-                    target: 4
-                },
-                // Ramp down
-                {
-                    duration: '20s',
-                    target: 0
-                },
-            ],
-        },
-        teacher06: {
-            executor: 'ramping-vus',
-            exec: 'teacher06',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                // Ramp up               
-                {
-                    duration: '20s',
-                    target: 2
-                },
-                // Hold
-                {
-                    duration: '0s',
-                    target: 4
+                    duration: '2m',
+                    target: 50
                 },
                 // Ramp down
                 {
@@ -175,12 +174,12 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 2
+                    target: 5
                 },
                 // Hold
                 {
-                    duration: '0s',
-                    target: 4
+                    duration: '2m',
+                    target: 50
                 },
                 // Ramp down
                 {
@@ -194,22 +193,22 @@ export const options: Options = {
 
 export function setup() {
     let i = 0;
-    const l = 9;
+    const l = 4;
     let data = {};
 
     for (i; i < l; i++) {
         const prefix = ('0' + i).slice(-2);
-        const teacherLoginPayload = {
+        const schoolAdmLoginPayload = {
             deviceId: "webpage",
             deviceName: "k6",
-            email: `${process.env.TEACHER_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
-            pw: process.env.PW_TEACHER_1 as string,
+            email: `${process.env.SCHOOLADMIN_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
+            pw: process.env.PW_SCHOOL_ADMIN_1 as string,
         };
         
-        const teacherLoginData = loginSetup(teacherLoginPayload);
+        const schoolAdmLoginData = loginSetup(schoolAdmLoginPayload);
         data = { 
             ...data, 
-            [`teacher${prefix}`]: teacherLoginData,
+            [`schooladm${prefix}`]: schoolAdmLoginData,
         };
     }
 
@@ -236,67 +235,41 @@ export function setup() {
 {email: {operator: "contains", value: "edgardo"}}
 */
 
-export function teacher00(data: { [key: string]: { res: any, userId: string }}) {
-    getUsers({ count: 10 }, data.teacher00, [{ organizationUserStatus: {
-        operator: 'eq',
-        value: 'active',
-    }}]);
-
+export function school00(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'student' }, data.school00);
+    sleep(5);
+    getUsers({ count: 10, search: 'test' }, data.school00);
     sleep(5);
 
-    getUsers({ count: 50 }, data.teacher00, [{ organizationUserStatus: {
+    /* getUsers({ count: 50, search: 'student' }, data.school00, [{ organizationUserStatus: {
         operator: 'eq',
         value: 'active',
-    }}]);
+    }}]); */
 }
 
-export function teacher01(data: { [key: string]: { res: any, userId: string }}) {
-    getUsers({ count: 10 }, data.teacher01, [{ organizationUserStatus: {
-        operator: 'eq',
-        value: 'inactive',
-    }}]);
+export function school01(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'student' }, data.school01);
+    sleep(5)
+    getUsers({ count: 10, search: 'student' }, data.school01);
 }
 
-export function teacher02(data: { [key: string]: { res: any, userId: string }}) {
-    getUsers({ count: 10 }, data.teacher02, [{ roleId: {
-        operator: 'eq',
-        value: process.env.ROLE_ID_STUDENT as string,
-    }}]);
+export function school02(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'student' }, data.school02);
 }
 
-export function teacher03(data: { [key: string]: { res: any, userId: string }}) {
-    getUsers({ count: 10 }, data.teacher03, [{ roleId: {
-        operator: 'eq',
-        value: process.env.ROLE_ID_STUDENT as string,
-    }}]);
+export function school03(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'student' }, data.school03);
 }
 
-export function teacher04(data: { [key: string]: { res: any, userId: string }}) {
-    getUsers({ count: 10 }, data.teacher04, [
-        { 
-            roleId: {
-                operator: 'eq',
-                value: process.env.ROLE_ID_STUDENT as string,
-            },
-            email: {
-                operator: "contains", 
-                value: "edgardo"
-            }
-        }
-    ]);
+export function school04(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'student' }, data.school04);
 }
 
-export function teacher05(data: { [key: string]: { res: any, userId: string }}) {
-   getUsers({ count: 10 }, data.teacher05, [{email: {operator: "contains", value: "edgardo"}}]);
-}
+export function school05(data: { [key: string]: { res: any, userId: string }}) {
+   getUsers({ count: 10, search: 'student'  }, data.school05);
 
-export function teacher06(data: { [key: string]: { res: any, userId: string }}) {
-    getUsers({ count: 10 }, data.teacher06, [{schoolId: {operator: "eq", value: "7b11aaae-8e8b-4370-b8a7-6bb069088967"}}]);
- }
+}
 
 export function orgAdmin(data: { [key: string]: { res: any, userId: string }}) {
-    getUsers({ count: 10 }, data.orgAdmin, [{ roleId: {
-        operator: 'eq',
-        value: process.env.ROLE_ID_STUDENT as string,
-    }}]);
+    getUsers({ count: 10 }, data.orgAdmin);
 }

@@ -45,12 +45,12 @@ export default function (roleType?: string) {
     // request to verfiy the memershipPayload 3
     const res3 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload3, params);
 
-    console.log(JSON.stringify(res3));
+    // console.log(JSON.stringify(res3));
 
     check(res, {
         '"Get me Memership 1" status is 200': () => res.status === 200,
-        '"Get me Memership 1" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_schedule_page_501 ?? true,
-        '"Get me Memership 1.B" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_schedule_page_501.schedule_search_582 ?? true,
+        '"Get me Memership 1" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_schedule_page_501 ?? false,
+        '"Get me Memership 1.B" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_schedule_page_501.schedule_search_582 ?? false,
         
         '"Get me Memership 2" status is 200': () => res2.status === 200,
         '"Get me Memership 2" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.attend_live_class_as_a_student_187 ?? false,

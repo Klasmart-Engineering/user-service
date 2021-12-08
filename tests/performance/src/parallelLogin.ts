@@ -6,48 +6,52 @@ import userParentLogin from './scripts/userParentLogin';
 import { Options } from 'k6/options';
 
 export const options: Options = {
+    ext: {
+        loadimpact: {
+          projectID: 3560234,
+        },
+      },
+    
     scenarios: {
-        // orgAdmin: {
-        //     executor: 'ramping-vus',
-        //     exec: 'userOrgAdminLogin',
-        //     startTime: '0s',
-        //     gracefulStop: '5s',
-        //     stages: [
-        //         {
-        //             duration: '10s',
-        //             target: 10
-        //         },
-        //         {
-        //             duration: '20s',
-        //             target: 30
-        //         },
-        //         {
-        //             duration: '40s',
-        //             target: 40
-        //         },
-        //         {
-        //             duration: '20s',
-        //             target: 30
-        //         },
-        //         {
-        //             duration: '10s',
-        //             target: 10
-        //         },
-        //         {
-        //             duration: '20s',
-        //             target: 30
-        //         },
-        //     ],
-        // },
-        // schoolAdmin: {
-        //     executor: 'shared-iterations',
-        //     exec: 'userSchoolAdminLogin',
-        //     startTime: '0s',
-        //     gracefulStop: '5s',
-        //     vus: 10,
-        //     iterations: 20,
-        //     maxDuration: '4m',
-        // },
+         orgAdmin: {
+             executor: 'ramping-vus',
+             exec: 'userOrgAdminLogin',
+             startTime: '0s',
+             gracefulStop: '5s',
+             stages: [
+                // Ramp up               
+                {
+                    duration: '20s',
+                    target: 3
+                },
+                // Hold
+                {
+                    duration: '4m',
+                    target: 5
+                },
+                // Ramp down
+                {
+                    duration: '20s',
+                    target: 0
+                },     
+             ],
+         },
+         schoolAdmin: {
+            executor: "ramping-vus",
+            exec: "userSchoolAdminLogin",
+            startTime: "0s",
+            gracefulStop: "5s",
+            stages: [{
+              duration: "20s",
+              target: 3
+            }, {
+              duration: "4m",
+              target: 5
+            }, {
+              duration: "20s",
+              target: 1
+            }]
+        },
         teacher: {
             executor: 'ramping-vus',
             exec: 'userTeacherLogin',
@@ -57,17 +61,17 @@ export const options: Options = {
                 // Ramp up               
                 {
                     duration: '20s',
-                    target: 20
+                    target: 7
                 },
                 // Hold
                 {
-                    duration: '2m',
-                    target: 20
+                    duration: '4m',
+                    target: 10
                 },
                 // Ramp down
                 {
                     duration: '20s',
-                    target: 5
+                    target: 0
                 },
             ],
         },
@@ -80,17 +84,17 @@ export const options: Options = {
                 // Ramp up          
                 {
                     duration: '20s',
-                    target: 30
+                    target: 10
                 },
                 // Hold
                 {
-                    duration: '2m',
-                    target: 235
+                    duration: '4m',
+                    target: 200
                 },
                 // Ramp down
                 {
                     duration: '20s',
-                    target: 20
+                    target: 0
                 },
             ],
         },
