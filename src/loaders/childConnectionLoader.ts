@@ -39,7 +39,7 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
     connectionQuery: (
         scope: SelectQueryBuilder<Entity>,
         filter?: IEntityFilter
-    ) => Promise<SelectQueryBuilder<Entity>>,
+    ) => Promise<SelectQueryBuilder<Entity>> | SelectQueryBuilder<Entity>,
     entityToNodeMapFunction: (source: Entity) => Node | Promise<Node>,
     sort: ISortingConfig,
     scopeArgs: ICreateScopeArgs
@@ -139,7 +139,7 @@ export const multiKeyChildConnectionLoader = async <
     connectionQuery: (
         scope: SelectQueryBuilder<Entity>,
         filter?: IEntityFilter
-    ) => Promise<SelectQueryBuilder<Entity>>,
+    ) => Promise<SelectQueryBuilder<Entity>> | SelectQueryBuilder<Entity>,
     entityToNodeMapFunction: (source: Entity) => Node | Promise<Node>,
     sort: ISortingConfig,
     scopeArgs: ICreateScopeArgs

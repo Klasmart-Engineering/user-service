@@ -393,11 +393,41 @@ describe('filtering', () => {
                 },
             }
 
-            scope.innerJoin('User.memberships', 'OrganizationMembership')
-            scope.andWhere(getWhereClauseFromFilter(scope, filter))
+            function scopeBuilder(
+                s: SelectQueryBuilder<User>,
+                f?: IEntityFilter
+            ) {
+                s.innerJoin('User.memberships', 'OrganizationMembership')
+                s.where(
+                    getWhereClauseFromFilter(s, f!, undefined, scopeBuilder)
+                )
+                return s
+            }
+
+            scope.leftJoin('User.school_memberships', 'SchoolMembership')
+            scopeBuilder(scope, filter)
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
+
+            // should remove unnecessary join in subquery
+            expect(
+                scope.expressionMap.wheres[0].condition.indexOf(
+                    'SchoolMembership'
+                )
+            ).to.equal(-1)
+
+            // sanity check that this neq does not work here
+            scope.where(
+                getWhereClauseFromFilter(scope, {
+                    organization_id: {
+                        operator: 'neq',
+                        value: organization2.organization_id,
+                    },
+                })
+            )
+            const extraData = await scope.getMany()
+            expect(extraData.length).to.equal(2)
         })
 
         it('supports uuid.eq', async () => {

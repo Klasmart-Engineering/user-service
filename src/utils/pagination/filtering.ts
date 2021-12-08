@@ -1,6 +1,5 @@
-import { Brackets, SelectQueryBuilder } from 'typeorm'
+import { Brackets, createQueryBuilder, SelectQueryBuilder } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
-import { createEntityScope } from '../../directives/isAdmin'
 
 export interface IEntityFilter {
     [key: string]: IFilter | IEntityFilter[] | undefined
@@ -31,6 +30,11 @@ interface IMultipleColumn {
     aliases: string[]
     operator: 'AND' | 'OR'
 }
+
+export type ScopeBuilder<T = unknown> = (
+    scope: SelectQueryBuilder<T>,
+    filter?: IEntityFilter
+) => SelectQueryBuilder<T>
 
 type ColumnAliasValue = string | IMultipleColumn
 type CommonValue = string | number | boolean | string[]
@@ -66,10 +70,11 @@ export const AVOID_NONE_SPECIFIED_BRACKETS = new Brackets((qb) => {
 })
 
 // generates a WHERE clause for a given query filter
-export function getWhereClauseFromFilter(
-    scope: SelectQueryBuilder<unknown>,
+export function getWhereClauseFromFilter<T>(
+    scope: SelectQueryBuilder<T>,
     filter: IEntityFilter,
-    columnAliases?: ColumnAliases
+    columnAliases?: ColumnAliases,
+    scopeBuilder?: ScopeBuilder<T>
 ): Brackets {
     return new Brackets((qb) => {
         for (const key of Object.keys(filter)) {
@@ -161,7 +166,9 @@ export function getWhereClauseFromFilter(
                         !!data.caseInsensitive,
                         alias,
                         sqlOperator,
-                        uniqueId
+                        uniqueId,
+                        value,
+                        scopeBuilder
                     )
 
                     qb.andWhere(whereCondition, {
@@ -186,7 +193,9 @@ export function getWhereClauseFromFilter(
                             !!data.caseInsensitive,
                             aliases[0],
                             sqlOperator,
-                            uniqueId
+                            uniqueId,
+                            value,
+                            scopeBuilder
                         )
 
                         queryBuilder.where(whereCondition, {
@@ -208,7 +217,9 @@ export function getWhereClauseFromFilter(
                                 !!data.caseInsensitive,
                                 aliases[i],
                                 sqlOperator,
-                                uniqueId
+                                uniqueId,
+                                value,
+                                scopeBuilder
                             )
 
                             if (operator === 'AND') {
@@ -356,12 +367,14 @@ export function setOperatorInComposedValue(
     }
 }
 
-function createWhereCondition(
-    scope: SelectQueryBuilder<unknown>,
+function createWhereCondition<T = unknown>(
+    scope: SelectQueryBuilder<T>,
     caseInsensitive: boolean,
     alias: string,
     sqlOperator: string,
-    uniqueId: string
+    uniqueId: string,
+    value: CommonValue | undefined,
+    scopeBuilder?: ScopeBuilder<T>
 ) {
     if (sqlOperator === 'IS NULL') {
         return `${alias} ${sqlOperator}`
@@ -376,13 +389,33 @@ function createWhereCondition(
         if (!table || !primaryKeys || primaryKeys.length !== 1) {
             throw new Error('Could not find table or primary keys')
         }
-
         const primaryKey = `"${table}"."${primaryKeys[0].databaseName}"`
-        return `${primaryKey} NOT IN (${scope
-            .clone()
-            .select(primaryKey)
-            .where(`${alias} = :${uniqueId}`)
-            .getQuery()})`
+
+        if (scopeBuilder) {
+            const simpleScope = createQueryBuilder(
+                scope.expressionMap.mainAlias?.name
+            ).select(primaryKey) as SelectQueryBuilder<T>
+
+            // adds required joins and filter
+            scopeBuilder(simpleScope, {
+                [alias]: {
+                    operator: 'eq',
+                    value,
+                },
+            })
+
+            scope.setParameters({
+                ...scope.getParameters(),
+                ...simpleScope.getParameters(),
+            })
+            return `${primaryKey} NOT IN (${simpleScope.getQuery()})`
+        } else {
+            return `${primaryKey} NOT IN (${scope
+                .clone()
+                .select(primaryKey)
+                .where(`${alias} = :${uniqueId}`)
+                .getQuery()})`
+        }
     }
     if (caseInsensitive) {
         return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`
