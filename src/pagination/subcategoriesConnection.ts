@@ -1,4 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { Subcategory } from '../entities/subcategory'
 import { Context } from '../main'
 import { SubcategoryConnectionNode } from '../types/graphQL/subcategory'
@@ -6,6 +7,7 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
     IEdge,
@@ -13,6 +15,15 @@ import {
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+
+export const subcategoriesConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'id',
+    aliases: {
+        id: 'id',
+        name: 'name',
+    },
+}
 
 export async function subcategoriesConnectionResolver(
     info: GraphQLResolveInfo,
@@ -27,37 +38,14 @@ export async function subcategoriesConnectionResolver(
 ): Promise<IPaginatedResponse<SubcategoryConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    if (filter) {
-        if (filterHasProperty('organizationId', filter)) {
-            scope.innerJoin('Subcategory.organization', 'Organization')
-        }
-
-        if (filterHasProperty('categoryId', filter)) {
-            scope.innerJoin('Subcategory.categories', 'Category')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(scope, filter, {
-                status: 'Subcategory.status',
-                system: 'Subcategory.system',
-                organizationId: 'Organization.organization_id',
-                categoryId: 'Category.id',
-            })
-        )
-    }
-
-    scope.select(subcategoryConnectionNodeFields)
+    scope = await subcategoryConnectionQuery(scope, filter)
 
     const data = await paginateData<Subcategory>({
         direction,
         directionArgs,
         scope,
         sort: {
-            primaryKey: 'id',
-            aliases: {
-                id: 'id',
-                name: 'name',
-            },
+            ...subcategoriesConnectionSortingConfig,
             sort,
         },
         includeTotalCount,
@@ -96,3 +84,31 @@ export const subcategoryConnectionNodeFields = ([
     'status',
     'system',
 ] as (keyof Subcategory)[]).map((field) => `Subcategory.${field}`)
+
+export async function subcategoryConnectionQuery(
+    scope: SelectQueryBuilder<Subcategory>,
+    filter?: IEntityFilter
+) {
+    if (filter) {
+        if (filterHasProperty('organizationId', filter)) {
+            scope.innerJoin('Subcategory.organization', 'Organization')
+        }
+
+        if (filterHasProperty('categoryId', filter)) {
+            scope.innerJoin('Subcategory.categories', 'Category')
+        }
+
+        scope.andWhere(
+            getWhereClauseFromFilter(scope, filter, {
+                status: 'Subcategory.status',
+                system: 'Subcategory.system',
+                organizationId: 'Organization.organization_id',
+                categoryId: 'Category.id',
+            })
+        )
+    }
+
+    scope.select(subcategoryConnectionNodeFields)
+
+    return scope
+}

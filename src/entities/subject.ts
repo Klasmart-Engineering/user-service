@@ -34,7 +34,7 @@ export class Subject extends CustomBaseEntity {
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
 
-    @ManyToMany(() => Category)
+    @ManyToMany(() => Category, (category) => category.subjects)
     @JoinTable()
     public categories?: Promise<Category[]>
 

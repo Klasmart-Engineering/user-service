@@ -1,31 +1,36 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { Category } from '../entities/category'
 import { CategoryConnectionNode } from '../types/graphQL/category'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
+import {
+    filterHasProperty,
+    getWhereClauseFromFilter,
+    IEntityFilter,
+} from '../utils/pagination/filtering'
 import {
     IEdge,
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+
+export const categoriesConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'id',
+    aliases: {
+        id: 'id',
+        name: 'name',
+    },
+}
+
 export async function categoriesConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<Category>
 ): Promise<IPaginatedResponse<CategoryConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    if (filter) {
-        scope.andWhere(
-            getWhereClauseFromFilter(scope, filter, {
-                name: 'Category.name',
-                system: 'Category.system',
-                status: 'Category.status',
-            })
-        )
-    }
-
-    scope.select(categoryConnectionNodeFields)
+    scope = await categoryConnectionQuery(scope, filter)
 
     const data = await paginateData<Category>({
         direction,
@@ -47,6 +52,31 @@ export async function categoriesConnectionResolver(
         pageInfo: data.pageInfo,
         edges: data.edges.map(mapCategoryEdgeToCategoryConnectionEdge),
     }
+}
+
+export async function categoryConnectionQuery(
+    scope: SelectQueryBuilder<Category>,
+    filter?: IEntityFilter
+) {
+    if (filter) {
+        if (filterHasProperty('organizationId', filter)) {
+            scope.innerJoin('Category.organization', 'Organization')
+        }
+        if (filterHasProperty('subjectId', filter)) {
+            scope.innerJoin('Category.subjects', 'Subject')
+        }
+        scope.andWhere(
+            getWhereClauseFromFilter(scope, filter, {
+                name: 'Category.name',
+                system: 'Category.system',
+                status: 'Category.status',
+                organizationId: 'Organization.organization_id',
+                subjectId: 'Subject.id',
+            })
+        )
+    }
+
+    return scope.select(categoryConnectionNodeFields)
 }
 
 function mapCategoryEdgeToCategoryConnectionEdge(

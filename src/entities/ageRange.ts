@@ -4,6 +4,7 @@ import {
     Entity,
     getManager,
     JoinColumn,
+    ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
     Unique,
@@ -15,6 +16,8 @@ import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 import { CustomBaseEntity } from './customBaseEntity'
+import { Class } from './class'
+import { Program } from './program'
 
 @Entity()
 @Check(`"low_value" >= 0 AND "low_value" <= 99`)
@@ -51,6 +54,12 @@ export class AgeRange extends CustomBaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @ManyToMany(() => Class, (cl) => cl.age_ranges)
+    public classes?: Promise<Class[]>
+
+    @ManyToMany(() => Program, (program) => program.age_ranges)
+    public programs?: Promise<Program[]>
 
     public async delete(
         args: Record<string, unknown>,

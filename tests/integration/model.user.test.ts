@@ -76,7 +76,7 @@ describe('model.user', () => {
                 })
             })
 
-            it('overwrites alternate_email/phone if NULL specified', async () => {
+            it('normalizes empty string alternate_email/phone to NULL', async () => {
                 const gqlUser = await updateUser(
                     testClient,
                     {
@@ -93,7 +93,7 @@ describe('model.user', () => {
                 expect(gqlUser.alternate_phone).to.be.null
             })
 
-            it('normalizes empty string alternate_email/phone to NULL', async () => {
+            it('overwrites alternate_email/phone if NULL specified', async () => {
                 const gqlUser = await updateUser(
                     testClient,
                     {

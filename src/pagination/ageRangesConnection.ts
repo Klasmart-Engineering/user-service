@@ -1,16 +1,28 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { AgeRange } from '../entities/ageRange'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+
+export const ageRangesConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'id',
+    aliases: {
+        id: 'id',
+        lowValue: 'low_value',
+        lowValueUnit: 'low_value_unit',
+    },
+}
 
 export async function ageRangesConnectionResolver(
     info: GraphQLResolveInfo,
@@ -18,25 +30,7 @@ export async function ageRangesConnectionResolver(
 ): Promise<IPaginatedResponse<AgeRangeConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    if (filter) {
-        if (filterHasProperty('organizationId', filter)) {
-            scope.leftJoinAndSelect('AgeRange.organization', 'Organization')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(scope, filter, {
-                ageRangeValueFrom: 'AgeRange.low_value',
-                ageRangeUnitFrom: 'AgeRange.low_value_unit',
-                ageRangeValueTo: 'AgeRange.high_value',
-                ageRangeUnitTo: 'AgeRange.high_value_unit',
-                system: 'AgeRange.system',
-                status: 'AgeRange.status',
-                organizationId: 'Organization.organization_id',
-            })
-        )
-    }
-
-    scope.select(ageRangeNodeFields)
+    scope = await ageRangeConnectionQuery(scope, filter)
 
     const data = await paginateData<AgeRange>({
         direction,
@@ -64,6 +58,39 @@ export async function ageRangesConnectionResolver(
             }
         }),
     }
+}
+
+export async function ageRangeConnectionQuery(
+    scope: SelectQueryBuilder<AgeRange>,
+    filter?: IEntityFilter
+) {
+    if (filter) {
+        if (filterHasProperty('organizationId', filter)) {
+            scope.leftJoinAndSelect('AgeRange.organization', 'Organization')
+        }
+        if (filterHasProperty('classId', filter)) {
+            scope.innerJoin('AgeRange.classes', 'Class')
+        }
+        if (filterHasProperty('programId', filter)) {
+            scope.innerJoin('AgeRange.programs', 'Program')
+        }
+
+        scope.andWhere(
+            getWhereClauseFromFilter(scope, filter, {
+                ageRangeValueFrom: 'AgeRange.low_value',
+                ageRangeUnitFrom: 'AgeRange.low_value_unit',
+                ageRangeValueTo: 'AgeRange.high_value',
+                ageRangeUnitTo: 'AgeRange.high_value_unit',
+                system: 'AgeRange.system',
+                status: 'AgeRange.status',
+                organizationId: 'Organization.organization_id',
+                classId: 'Class.class_id',
+                programId: 'Program.id',
+            })
+        )
+    }
+
+    return scope.select(ageRangeNodeFields)
 }
 
 export function mapAgeRangeToAgeRangeConnectionNode(

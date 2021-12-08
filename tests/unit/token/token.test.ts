@@ -83,6 +83,31 @@ describe('Check Token', () => {
         req.headers = { authorization: token }
         await expect(checkToken(req)).to.eventually.have.deep.include(payload)
     })
+
+    context('email normalization', () => {
+        it('removes leading and trailing spaces', async () => {
+            const token = generateToken(payload)
+            req.headers = { authorization: token }
+            payload.email = ' ' + payload.email + ' '
+            const checkedToken = await checkToken(req)
+            expect(checkedToken.email).to.eq(payload.email.trim())
+        })
+        it('NFKC unicode normalization', async () => {
+            const originalEmail = payload.email
+            // based on https://unicode.org/reports/tr15/
+            // specificly the first example of
+            // https://unicode.org/reports/tr15/images/UAX15-NormFig6.jpg
+            const beforeNFKCNormalization = '\uFB01'
+            const afterNFKCNormalization = '\u0066\u0069'
+            payload.email = payload.email + beforeNFKCNormalization
+            const token = generateToken(payload)
+            req.headers = { authorization: token }
+            const checkedToken = await checkToken(req)
+            expect(checkedToken.email).to.eq(
+                originalEmail + afterNFKCNormalization
+            )
+        })
+    })
 })
 
 describe('Issuer Authorization', () => {

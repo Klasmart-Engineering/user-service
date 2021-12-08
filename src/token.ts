@@ -3,6 +3,7 @@ import express, { NextFunction, Request, Response } from 'express'
 import { decode, Secret, verify, VerifyOptions } from 'jsonwebtoken'
 import getAuthenticatedUser from './services/azureAdB2C'
 import { customErrors } from './types/errors/customError'
+import clean from './utils/clean'
 
 const IS_AZURE_B2C_ENABLED = process.env.AZURE_B2C_ENABLED === 'true'
 const issuers = new Map<
@@ -70,7 +71,7 @@ const blackListIssuers = [
 ]
 
 export interface TokenPayload {
-    [k: string]: string | undefined
+    [k: string]: string | undefined | number | string[] | boolean
     id: string
     email?: string
     phone?: string
@@ -111,20 +112,27 @@ async function checkTokenAMS(req: Request): Promise<TokenPayload> {
 }
 
 export async function checkToken(req: Request): Promise<TokenPayload> {
+    let tokenPayload: TokenPayload
     if (IS_AZURE_B2C_ENABLED) {
         const azureTokenPayload = await getAuthenticatedUser(req)
         const { emails, ...rest } = azureTokenPayload
-        const tokenPayload = {
+        tokenPayload = {
             ...rest,
             id: azureTokenPayload.sub,
             iss: azureTokenPayload.iss,
             email: emails && emails?.length > 0 ? emails[0] : '',
         }
-        // To be compatible with  [k: string]: string | undefined type of TokenPayload we need to convert as unknown and then convert to TokenPayload
-        return (tokenPayload as unknown) as TokenPayload
     } else {
-        return checkTokenAMS(req)
+        tokenPayload = await checkTokenAMS(req)
     }
+    // the auth service that create our tokens does not normalize emails
+    // as strictly as we do
+    // https://calmisland.atlassian.net/browse/AD-1133?focusedCommentId=56306
+    // therefor we must normalize them ourselves to ensure they match up
+    // with what is saved to our db
+    // cast is ok because clean.email only return null if input is null
+    tokenPayload.email = clean.email(tokenPayload.email) as string | undefined
+    return tokenPayload
 }
 
 export function checkIssuerAuthorization(

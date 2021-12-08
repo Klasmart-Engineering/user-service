@@ -264,6 +264,7 @@ export class User extends CustomBaseEntity {
                 }
             }
             if (phone) {
+                phone = clean.phone(phone, false) ?? undefined
                 if (!isPhone(phone)) {
                     phone = undefined
                 }
@@ -298,10 +299,13 @@ export class User extends CustomBaseEntity {
                 this.alternate_email = alternate_email
             }
 
-            if (alternate_phone && isPhone(alternate_phone)) {
-                this.alternate_phone = alternate_phone
+            if (alternate_phone) {
+                alternate_phone = clean.phone(alternate_phone, false)
+                if (alternate_phone !== null && !isPhone(alternate_phone)) {
+                    alternate_phone = undefined
+                }
             }
-
+            this.alternate_phone = alternate_phone
             await this.save()
             return this
         } catch (e) {

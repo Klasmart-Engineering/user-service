@@ -1,8 +1,14 @@
+import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
-import { Model } from '../model'
+import { AgeRange } from '../entities/ageRange'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { IDataLoaders } from '../loaders/setup'
 import { Context } from '../main'
+import { Model } from '../model'
 import { ProgramConnectionNode } from '../types/graphQL/program'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -62,8 +68,30 @@ const typeDefs = gql`
         status: Status!
         system: Boolean!
         ageRanges: [AgeRangeConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         grades: [GradeSummaryNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         subjects: [SubjectSummaryNode!]
+
+        gradesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: GradeFilter
+            sort: GradeSortInput
+        ): GradesConnectionResponse
+
+        ageRangesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection!
+            filter: AgeRangeFilter
+            sort: AgeRangeSortInput
+        ): AgeRangesConnectionResponse
     }
 
     type GradeSummaryNode {
@@ -101,6 +129,9 @@ const typeDefs = gql`
         system: Boolean!
         status: Status
         age_ranges: [AgeRange!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         grades: [Grade!]
         subjects: [Subject!]
 
@@ -157,6 +188,8 @@ export default function getDefault(
                         program.id
                     )
                 },
+                gradesConnection: gradesChildConnectionResolver,
+                ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {
                 program: (_parent, args, ctx, _info) =>
@@ -176,4 +209,66 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function gradesChildConnectionResolver(
+    program: Pick<ProgramConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadGradesForProgram(
+        program.id,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+export async function loadGradesForProgram(
+    programId: ProgramConnectionNode['id'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.gradesConnectionChild.instance.load({
+        args,
+        includeTotalCount,
+        parent: {
+            id: programId,
+            filterKey: 'programId',
+            pivot: '"Program"."id"',
+        },
+        primaryColumn: 'id',
+    })
+}
+
+export async function ageRangesChildConnectionResolver(
+    program: Pick<ProgramConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadAgeRangesForProgram(ctx, program.id, args, includeTotalCount)
+}
+
+export async function loadAgeRangesForProgram(
+    context: Pick<Context, 'loaders'>,
+    programId: ProgramConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<AgeRange> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: programId,
+            filterKey: 'programId',
+            pivot: '"Program"."id"',
+        },
+        primaryColumn: 'id',
+    }
+    return context.loaders.ageRangesConnectionChild.instance.load(key)
 }

@@ -17,6 +17,7 @@ export interface Context {
     logger: Logger
     permissions: UserPermissions
     loaders: IDataLoaders
+    complexity?: { limit: number; score: number }
 }
 
 Sentry.init({

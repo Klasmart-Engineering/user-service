@@ -36,6 +36,15 @@ import { SelectQueryBuilder } from 'typeorm'
 import { nonAdminSubcategoryScope } from '../../../src/directives/isAdmin'
 import { subcategoriesConnectionResolver } from '../../../src/pagination/subcategoriesConnection'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import {
+    loadSubcategoriesForCategory,
+    subcategoriesConnectionResolver as resolverForCategory,
+} from '../../../src/schemas/category'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import {
+    loadSubcategoriesForOrganization,
+    subcategoriesConnectionResolver as resolverForOrganization,
+} from '../../../src/schemas/organization'
 
 type SubcategoryConnectionNodeKey = keyof SubcategoryConnectionNode
 
@@ -450,6 +459,191 @@ describe('subcategoriesConnection', () => {
                 expect(conditions).to.deep.equalInAnyOrder([
                     '(OrganizationMembership.user_id = :d_user_id OR Subcategory.system = :system)',
                 ])
+            })
+        })
+    })
+
+    context('subcategoriesConnectionChild', () => {
+        let ctx: Pick<Context, 'loaders'>
+        let fakeInfo: any
+
+        beforeEach(async () => {
+            const token = { id: organizationMember1.user_id }
+            const permissions = new UserPermissions(token)
+            ctx = { loaders: createContextLazyLoaders(permissions) }
+            fakeInfo = {
+                fieldNodes: [
+                    {
+                        kind: 'Field',
+                        name: {
+                            kind: 'Name',
+                            value: 'subcategoriesConnection',
+                        },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [],
+                        },
+                    },
+                ],
+            }
+        })
+
+        context('as child of an organization', () => {
+            it('returns subcategories per organization', async () => {
+                const result = await loadSubcategoriesForOrganization(
+                    ctx,
+                    organization1.organization_id
+                )
+                expect(result.edges).to.have.lengthOf(subcategories1.length)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    subcategories1.map((m) => m.id)
+                )
+            })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await resolverForOrganization(
+                    { id: organization1.organization_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(subcategories1.length)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await resolverForOrganization(
+                    { id: organization1.organization_id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        context('as child of a subcategory', () => {
+            it('returns subcategories per category', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id
+                )
+                expect(result.edges).to.have.lengthOf(3)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    [
+                        subcategories1[0],
+                        subcategories1[1],
+                        subcategories1[2],
+                    ].map((m) => m.id)
+                )
+            })
+            it('returns totalCount when requested', async () => {
+                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
+                    kind: 'Field',
+                    name: { kind: 'Name', value: 'totalCount' },
+                })
+                const result = await resolverForCategory(
+                    { id: categories1[0].id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.eq(3)
+            })
+            it('omits totalCount when not requested', async () => {
+                const result = await resolverForCategory(
+                    { id: categories1[0].id },
+                    {},
+                    ctx,
+                    fakeInfo
+                )
+                expect(result.totalCount).to.be.undefined
+            })
+        })
+
+        it('uses exactly one dataloader when called with different parent', async () => {
+            connection.logger.reset()
+            const loaderResults = []
+            for (const category of categories1) {
+                loaderResults.push(
+                    loadSubcategoriesForCategory(ctx, category.id, {}, false)
+                )
+            }
+            await Promise.all(loaderResults)
+
+            expect(connection.logger.count).to.be.eq(1)
+        })
+        context('sorting', () => {
+            let category1Subcategories: Subcategory[]
+            beforeEach(() => {
+                category1Subcategories = subcategories1.slice(0, 2)
+            })
+            it('sorts by id', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id,
+                    {
+                        sort: {
+                            field: 'id',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = [
+                    subcategories1[0],
+                    subcategories1[1],
+                    subcategories1[2],
+                ]
+                    .map((m) => m.id)
+                    .sort()
+                expect(result.edges.map((e) => e.node.id)).to.deep.equal(sorted)
+            })
+            it('sorts by name', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id,
+                    {
+                        sort: {
+                            field: 'name',
+                            order: 'ASC',
+                        },
+                    },
+                    false
+                )
+                const sorted = [
+                    subcategories1[0],
+                    subcategories1[1],
+                    subcategories1[2],
+                ]
+                    .map((m) => m.name)
+                    .sort(function (a, b) {
+                        return (a as string).localeCompare(b as string)
+                    })
+                expect(result.edges.map((e) => e.node.name)).to.deep.equal(
+                    sorted
+                )
+            })
+        })
+        context('totalCount', () => {
+            it('returns total count', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id,
+                    {},
+                    true
+                )
+                expect(result.totalCount).to.eq(3)
+            })
+            it('does not return total count', async () => {
+                const result = await loadSubcategoriesForCategory(
+                    ctx,
+                    categories1[0].id,
+                    {},
+                    false
+                )
+                expect(result.totalCount).to.not.exist
             })
         })
     })

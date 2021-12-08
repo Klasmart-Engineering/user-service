@@ -14,6 +14,7 @@ import {
     isMIMETypeTransformer,
 } from '../directives'
 import { loadPlugins } from './plugins'
+import logger from '../logging'
 
 /* accessing a child via a connection field takes 3 depth
     myconnection { // 0
@@ -66,7 +67,11 @@ async function createContext({
         permissions,
         res,
         req,
-        logger: req.logger,
+        // prefer the request logger as it has a correlationId
+        // but if it's not set, use the general logger
+        // this is the case in tests where we do not setup the whole
+        // express app
+        logger: req.logger ?? logger,
         loaders: createContextLazyLoaders(permissions),
     }
 }

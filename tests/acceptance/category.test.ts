@@ -49,6 +49,7 @@ import { Subcategory } from '../../src/entities/subcategory'
 import { createSubcategory } from '../factories/subcategory.factory'
 import { Organization } from '../../src/entities/organization'
 import { Status } from '../../src/entities/status'
+import { createSubject } from '../factories/subject.factory'
 
 use(deepEqualInAnyOrder)
 
@@ -543,6 +544,113 @@ describe('acceptance.category', () => {
                 expect(categoriesUpdated).to.be.null
                 expect(errors).to.exist
             })
+        })
+    })
+
+    context('categoriesConnection as a child', () => {
+        let user: User
+        let organization: Organization
+        let token: string
+        beforeEach(async () => {
+            user = await createUser().save()
+            organization = await createOrganization(user).save()
+            await createOrganizationMembership({
+                user,
+                organization,
+            }).save()
+            const category = await createCategory(organization).save()
+            await createSubject(organization, [category]).save()
+            token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+        })
+        it('as a child of subjects', async () => {
+            const query = `
+            query subjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: SubjectSortInput){
+                subjectsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            categoriesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    filterArgs: {
+                        status: {
+                            operator: 'eq',
+                            value: 'active',
+                        },
+                    },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.subjectsConnection.edges[0].node
+                    .categoriesConnection.totalCount
+            ).to.be.gte(1)
+        })
+        it('as a child of organizations', async () => {
+            const query = `
+            query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
+                organizationsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            categoriesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .categoriesConnection.totalCount
+            ).to.eq(1)
         })
     })
 })

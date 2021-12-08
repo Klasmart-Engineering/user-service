@@ -36,6 +36,9 @@ import { buildUpdateSubcategoryInputArray } from '../utils/operations/subcategor
 import { createSubcategory } from '../factories/subcategory.factory'
 import { Organization } from '../../src/entities/organization'
 import { loadFixtures } from '../utils/fixtures'
+import { Category } from '../../src/entities/category'
+import { createCategory } from '../factories/category.factory'
+import CategoriesInitializer from '../../src/initializers/categories'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -230,9 +233,7 @@ describe('acceptance.subcategory', () => {
 
                 const inputNames = input.map((i) => i.name)
 
-                expect(subcategoriesCreatedNames).to.deep.equalInAnyOrder(
-                    inputNames
-                )
+                expect(subcategoriesCreatedNames).to.deep.equal(inputNames)
             })
         })
 
@@ -393,6 +394,118 @@ describe('acceptance.subcategory', () => {
                 expect(categoriesUpdated).to.be.null
                 expect(errors).to.exist
             })
+        })
+    })
+
+    context('subcategoriesConnection as a child', () => {
+        let user: User
+        let organization: Organization
+        let token: string
+        let subcategory: Subcategory
+        beforeEach(async () => {
+            await CategoriesInitializer.run()
+            user = await createUser().save()
+            organization = await createOrganization(user).save()
+            await createOrganizationMembership({
+                user,
+                organization,
+            }).save()
+            subcategory = await createSubcategory(organization).save()
+            token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+        })
+        it('as a child of categories', async () => {
+            const query = `
+            query categoriesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: CategoryFilter, $sortArgs: CategorySortInput){
+                categoriesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            subcategoriesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    filterArgs: {
+                        status: {
+                            operator: 'eq',
+                            value: 'active',
+                        },
+                    },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.categoriesConnection.edges[0].node
+                    .subcategoriesConnection.totalCount
+            ).to.be.gte(1)
+        })
+        it('as a child of organizations', async () => {
+            const query = `
+            query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
+                organizationsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
+                    totalCount
+                    edges {
+                        cursor
+                        node {
+                            id
+                            subcategoriesConnection(direction: FORWARD){
+                              totalCount
+                              edges {
+                                  cursor
+                                  node {
+                                      id
+                                  }
+                              }
+                            }
+                        }
+                    }
+                }
+            }`
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: 1 },
+                    sortArgs: { order: 'ASC', field: 'name' },
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .subcategoriesConnection.totalCount
+            ).to.eq(1)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .subcategoriesConnection.edges[0].node.id
+            ).to.eq(subcategory.id)
         })
     })
 })

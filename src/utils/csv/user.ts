@@ -199,6 +199,9 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     const rawEmail = row.user_email
     row.user_email = clean.email(row.user_email) || undefined
+    // we don't need to catch errors here
+    // as its already pass validation
+    // so the cleaning will succeed
     row.user_phone = clean.phone(row.user_phone) || undefined
     row.user_gender = row.user_gender?.toLowerCase()
 
@@ -256,6 +259,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     }
 
     if (row.user_alternate_phone) {
+        // don't throw errors as they will of already been
+        // found by validation but this code runs before we return them
         user.alternate_phone = clean.phone(row.user_alternate_phone)
     }
 

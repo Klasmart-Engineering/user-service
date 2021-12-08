@@ -826,7 +826,7 @@ export function userToUpdateUserInput(u: User): UpdateUserInput {
 export function randomChangeToUpdateUserInput(
     u: UpdateUserInput
 ): UpdateUserInput {
-    const choice = faker.datatype.number(10)
+    const choice = faker.datatype.number(8)
     switch (choice) {
         case 0:
             u.givenName = faker.name.firstName()
@@ -835,7 +835,7 @@ export function randomChangeToUpdateUserInput(
             u.familyName = faker.name.lastName()
             break
         case 2:
-            u.gender = faker.datatype.boolean() ? 'Male' : 'Female'
+            u.gender = u.gender == 'Female' ? 'Male' : 'Female'
             break
         case 3:
             {
@@ -858,17 +858,17 @@ export function randomChangeToUpdateUserInput(
         case 5:
             u.alternateEmail = faker.internet.email()
             break
-        case 7:
+        case 6:
             u.alternatePhone = faker.phone.phoneNumber('+44#######')
             break
-        case 8:
+        case 7:
             u.avatar = faker.internet.url()
             break
-        case 9:
-            u.primaryUser = faker.datatype.boolean()
+        case 8:
+            u.primaryUser = u.primaryUser ? false : true
             break
         default:
-            break
+            throw new Error('bad choice')
     }
     return u
 }

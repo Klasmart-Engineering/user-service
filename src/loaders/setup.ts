@@ -13,11 +13,15 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { Subcategory } from '../entities/subcategory'
 import { User } from '../entities/user'
 import {
+    ageRangeConnectionQuery,
     ageRangeNodeFields,
+    ageRangesConnectionSortingConfig,
     mapAgeRangeToAgeRangeConnectionNode,
 } from '../pagination/ageRangesConnection'
 import {
+    categoriesConnectionSortingConfig,
     categoryConnectionNodeFields,
+    categoryConnectionQuery,
     mapCategoryToCategoryConnectionNode,
 } from '../pagination/categoriesConnection'
 import {
@@ -28,6 +32,8 @@ import {
     classesConnectionQuery,
 } from '../pagination/classesConnection'
 import {
+    gradesConnectionQuery,
+    gradesConnectionSortingConfig,
     gradeSummaryNodeFields,
     mapGradeToGradeConnectionNode,
 } from '../pagination/gradesConnection'
@@ -53,6 +59,8 @@ import {
 import {
     mapSubcategoryToSubcategoryConnectionNode,
     subcategoryConnectionNodeFields,
+    subcategoryConnectionQuery,
+    subcategoriesConnectionSortingConfig,
 } from '../pagination/subcategoriesConnection'
 import {
     CoreUserConnectionNode,
@@ -254,6 +262,30 @@ export interface IDataLoaders {
             IPaginatedResponse<PermissionConnectionNode>
         >
     >
+    gradesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Grade>,
+            IPaginatedResponse<GradeSummaryNode>
+        >
+    >
+    categoriesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Category>,
+            IPaginatedResponse<CategoryConnectionNode>
+        >
+    >
+    subcategoriesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Subcategory>,
+            IPaginatedResponse<SubcategoryConnectionNode>
+        >
+    >
+    ageRangesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<AgeRange>,
+            IPaginatedResponse<AgeRangeConnectionNode>
+        >
+    >
     categoryNode: ICategoryNodeDataLoader
     schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
@@ -388,6 +420,54 @@ export function createContextLazyLoaders(
                         mapPermissionToPermissionConnectionNode,
                         permissionConnectionSortingConfig,
                         { permissions, entity: 'permission' }
+                    )
+                })
+        ),
+        categoriesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        categoryConnectionQuery,
+                        mapCategoryToCategoryConnectionNode,
+                        categoriesConnectionSortingConfig,
+                        { permissions, entity: 'category' }
+                    )
+                })
+        ),
+        subcategoriesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        subcategoryConnectionQuery,
+                        mapSubcategoryToSubcategoryConnectionNode,
+                        subcategoriesConnectionSortingConfig,
+                        { permissions, entity: 'subcategory' }
+                    )
+                })
+        ),
+        gradesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        gradesConnectionQuery,
+                        mapGradeToGradeConnectionNode,
+                        gradesConnectionSortingConfig,
+                        { permissions, entity: 'grade' }
+                    )
+                })
+        ),
+        ageRangesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        ageRangeConnectionQuery,
+                        mapAgeRangeToAgeRangeConnectionNode,
+                        ageRangesConnectionSortingConfig,
+                        { permissions, entity: 'ageRange' }
                     )
                 })
         ),

@@ -1,4 +1,5 @@
 import { Connection } from 'typeorm'
+import faker from 'faker'
 
 import { createTestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
@@ -24,6 +25,7 @@ after(async () => {
 })
 
 beforeEach(async () => {
+    faker.seed(123)
     await RoleInitializer.run()
 })
 
