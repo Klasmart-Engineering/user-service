@@ -616,7 +616,9 @@ describe('model', () => {
                     permissions[0].permission_id,
                     permissions[1].permission_id,
                 ].sort()
-                expect(result.edges.map((e) => e.node.id)).to.deep.equal(sorted)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    sorted
+                )
             })
             it('sorts by permission name', async () => {
                 const result = await loadPermissionsForRole(
@@ -630,14 +632,14 @@ describe('model', () => {
                     },
                     false
                 )
-                const sorted = [permissions[0], permissions[1]]
-                    .map((m) => m.permission_name)
-                    .sort(function (a, b) {
-                        return (a as string).localeCompare(b as string)
-                    })
-                expect(result.edges.map((e) => e.node.name)).to.deep.equal(
-                    sorted
-                )
+
+                const sorted = [
+                    permissions[0].permission_name,
+                    permissions[1].permission_name,
+                ].sort()
+                expect(
+                    result.edges.map((e) => e.node.name)
+                ).to.have.same.members(sorted)
             })
         })
         context('totalCount', () => {
