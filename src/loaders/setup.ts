@@ -13,7 +13,9 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { Subcategory } from '../entities/subcategory'
 import { User } from '../entities/user'
 import {
+    ageRangeConnectionQuery,
     ageRangeNodeFields,
+    ageRangesConnectionSortingConfig,
     mapAgeRangeToAgeRangeConnectionNode,
 } from '../pagination/ageRangesConnection'
 import {
@@ -270,6 +272,12 @@ export interface IDataLoaders {
             IPaginatedResponse<SubcategoryConnectionNode>
         >
     >
+    ageRangesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<AgeRange>,
+            IPaginatedResponse<AgeRangeConnectionNode>
+        >
+    >
     categoryNode: ICategoryNodeDataLoader
     schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
@@ -428,6 +436,18 @@ export function createContextLazyLoaders(
                         mapSubcategoryToSubcategoryConnectionNode,
                         subcategoriesConnectionSortingConfig,
                         { permissions, entity: 'subcategory' }
+                    )
+                })
+        ),
+        ageRangesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        ageRangeConnectionQuery,
+                        mapAgeRangeToAgeRangeConnectionNode,
+                        ageRangesConnectionSortingConfig,
+                        { permissions, entity: 'ageRange' }
                     )
                 })
         ),

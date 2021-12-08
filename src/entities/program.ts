@@ -35,7 +35,7 @@ export class Program extends CustomBaseEntity {
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
 
-    @ManyToMany(() => AgeRange)
+    @ManyToMany(() => AgeRange, (ageRange) => ageRange.programs)
     @JoinTable()
     public age_ranges?: Promise<AgeRange[]>
 
