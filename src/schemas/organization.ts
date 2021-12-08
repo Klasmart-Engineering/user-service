@@ -349,10 +349,9 @@ const typeDefs = gql`
             sort: ClassSortInput
         ): ClassesConnectionResponse
 
-        ageRangesConnection(
+        categoriesConnection(
             count: PageSize
             cursor: String
-<<<<<<< HEAD
             filter: CategoryFilter
             sort: CategorySortInput
             direction: ConnectionDirection
@@ -365,23 +364,14 @@ const typeDefs = gql`
             sort: SubcategorySortInput
             direction: ConnectionDirection
         ): SubcategoriesConnectionResponse
-=======
+
+        ageRangesConnection(
+            count: PageSize
+            cursor: String
             direction: ConnectionDirection!
             filter: AgeRangeFilter
             sort: AgeRangeSortInput
         ): AgeRangesConnectionResponse
-<<<<<<< HEAD
->>>>>>> 23794f55 (feat(AD-1477): programsconnection as child implemented)
-=======
-
-        categoriesConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection!
-            filter: CategoryFilter
-            sort: CategorySortInput
-        ): AgeRangesConnectionResponse
->>>>>>> 66fbfd25 (fix(AD-1477): merge conflict solved)
     }
 `
 
