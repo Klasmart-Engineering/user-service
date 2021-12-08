@@ -4,16 +4,10 @@ import scheduleFilterProgram from "./scheduleFilterProgram";
 import scheduleFilterClass from "./scheduleFilterClass";
 import getSchoolsFilter from "./getSchoolsFilter";
 
-export default function(skipTimeView?: boolean) {
-    if (!skipTimeView) {
-        schedulesTimeView();
-    }
-
+export default function() {
+    schedulesTimeView();
     sleep(5);
-    
-    if (!skipTimeView) {
-        scheduleFilterProgram();
-    }
+    scheduleFilterProgram();
     sleep(5);
     scheduleFilterClass();
     sleep(0.5);

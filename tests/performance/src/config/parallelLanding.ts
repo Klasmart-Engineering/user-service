@@ -4,8 +4,8 @@ import generateStages from '../utils/generateStages';
 export const config = (stages: number): Options => ({
     ext: {
         loadimpact: {
-            // projectID: 3560234,
-            projectID: 3559532,
+            projectID: 3560234,
+            // projectID: 3559532,
         }
     },
     thresholds: {
@@ -36,21 +36,42 @@ export const config = (stages: number): Options => ({
         },
         student00: {
             executor: 'ramping-vus',
-            exec: 'teacher00',
+            exec: 'students00',
             startTime: '0s',
             gracefulStop: '5s',
             stages: generateStages(stages),
         },
         student01: {
             executor: 'ramping-vus',
-            exec: 'teacher00',
+            exec: 'students01',
             startTime: '0s',
             gracefulStop: '5s',
             stages:  generateStages(stages),
         },
         student02: {
             executor: 'ramping-vus',
-            exec: 'teacher00',
+            exec: 'students02',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+        },
+        student03: {
+            executor: 'ramping-vus',
+            exec: 'students03',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+        },
+        student04: {
+            executor: 'ramping-vus',
+            exec: 'students04',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+        },
+        student05: {
+            executor: 'ramping-vus',
+            exec: 'students05',
             startTime: '0s',
             gracefulStop: '5s',
             stages:  generateStages(stages),

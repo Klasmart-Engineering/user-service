@@ -10,19 +10,10 @@ const params = {
 };
 
 export default function (roleType?: string) {
-    const userPayload = JSON.stringify({
-        variables: {},
-        query: meQuery,
-    })
-
-
-    const res = http.get(`${process.env.SCHEDULE_FILTER_PROGRAM_URL}?org_id=${process.env.ORG_ID}` as string, params);
-
-    
+    const res = http.get(`${process.env.SCHEDULE_FILTER_PROGRAM_URL}?org_id=${process.env.ORG_ID}` as string, params)
     
     check(res, {
         'SCHEDULE_FILTER_Program - status is 200': () => res.status === 200,
-        'schedule filter endpoint returns data': (r) => JSON.parse(r.body as string).data,
     }, {
         userRoleType: roleType
     });

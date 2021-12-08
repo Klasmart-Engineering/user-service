@@ -174,7 +174,7 @@ export function students00(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students00);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students01(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -186,7 +186,7 @@ export function students01(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students01);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students02(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -198,7 +198,7 @@ export function students02(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students02);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students03(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -210,7 +210,7 @@ export function students03(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students03);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students04(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -222,7 +222,7 @@ export function students04(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students04);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students05(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -234,7 +234,7 @@ export function students05(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students05);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students06(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -246,7 +246,7 @@ export function students06(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students06);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students07(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -258,7 +258,7 @@ export function students07(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students07);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students08(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -270,7 +270,7 @@ export function students08(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students08);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
 export function students09(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -282,5 +282,5 @@ export function students09(data: { [key: string]: { res: any, userId: string }})
     
     landingV2(data.students09);
     sleep(5);
-    landingSchedule(true);
+    landingSchedule();
 }
