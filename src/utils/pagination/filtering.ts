@@ -383,6 +383,11 @@ function createWhereCondition<T = unknown>(
         return `${alias} ${sqlOperator} (:...${uniqueId})`
     }
     if (sqlOperator === 'NOT IN') {
+        // We need to use a subquery, here we go!
+
+        // First we need the primaryKey, so in SQL we can do WHERE primaryKey NOT IN (subquery...)
+        // We could require it as an additional argument, but for current use cases
+        // we can just assume a single primaryKey
         const table = scope.expressionMap.mainAlias?.name
         const primaryKeys =
             scope.expressionMap.mainAlias?.metadata.primaryColumns
@@ -392,6 +397,8 @@ function createWhereCondition<T = unknown>(
         const primaryKey = `"${table}"."${primaryKeys[0].databaseName}"`
 
         if (scopeBuilder) {
+            // performance: the current scope may have unnecessary joins, so that the caller can
+            // provide a scope builder function to regenerate it and include the bits it needs
             const simpleScope = createQueryBuilder(
                 scope.expressionMap.mainAlias?.name
             ).select(primaryKey) as SelectQueryBuilder<T>
@@ -410,6 +417,8 @@ function createWhereCondition<T = unknown>(
             })
             return `${primaryKey} NOT IN (${simpleScope.getQuery()})`
         } else {
+            // if the caller doesn't provide a scope builder, use the scope as is (may have unnecessary joins)
+            // but overwrite the SELECT and WHERE statements
             return `${primaryKey} NOT IN (${scope
                 .clone()
                 .select(primaryKey)
