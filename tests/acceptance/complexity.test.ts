@@ -8,6 +8,7 @@ import { loadFixtures } from '../utils/fixtures'
 import { User } from '../../src/entities/user'
 import { createUser } from '../factories/user.factory'
 import { DEFAULT_MAX_QUERY_DEPTH } from '../../src/utils/createServer'
+import { DEFAULT_MAX_QUERY_COMPLEXITY } from '../../src/utils/complexity'
 
 use(chaiAsPromised)
 
@@ -75,6 +76,33 @@ query getSchoolTeacher($user_id: ID!) { # doesn't add to depth
 }
 `
 
+const COMPLEXITY_CHILD_CONNECTIONS_QUERY = `
+query {
+
+    queryComplexity{
+        score,
+        limit
+    }
+
+    usersConnection(
+        direction:FORWARD,
+        directionArgs: {count: 50}
+    ) {
+        edges {
+            node {
+              schoolMembershipsConnection(count: 50) {
+                  edges {
+                    node {
+                      userId
+                    }
+                  }
+              }
+            }
+        }
+    }
+}
+`
+
 describe('acceptance.complexity', () => {
     let connection: Connection
     let userId: string
@@ -130,6 +158,29 @@ describe('acceptance.complexity', () => {
                     },
                 })
             expect(response.status).to.eq(200)
+        })
+    })
+
+    context('query complexity', () => {
+        it('does not exceed complexity limit', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: COMPLEXITY_CHILD_CONNECTIONS_QUERY,
+                    variables: {
+                        user_id: userId,
+                    },
+                })
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).is.undefined
+            expect(response.body.data.queryComplexity.limit).to.eq(
+                DEFAULT_MAX_QUERY_COMPLEXITY
+            )
+            expect(response.body.data.queryComplexity.score).to.eq(2550)
         })
     })
 })

@@ -5,6 +5,7 @@ import directives from './directives'
 import ageRange from './ageRange'
 import category from './category'
 import _class from './class'
+import { module as complexity } from './complexity'
 import utils from './utils'
 import grade from './grade'
 import organization from './organization'
@@ -32,11 +33,12 @@ export default function getDefault(
 ): GraphQLSchema {
     const modules: GraphQLSchemaModule[] = [
         utils(model, context),
-        pagination(model, context),
+        pagination,
         filtering(model, context),
         ageRange(model, context),
         category(model, context),
         _class(model, context),
+        complexity,
         grade(model, context),
         organization(model, context),
         permission(model, context),

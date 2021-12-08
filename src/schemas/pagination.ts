@@ -1,7 +1,5 @@
 import gql from 'graphql-tag'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { Model } from '../model'
-import { Context } from '../main'
 
 const typeDefs = gql`
     enum ConnectionDirection {
@@ -36,23 +34,20 @@ const typeDefs = gql`
     }
     # Core pagination schema defintion ends here
 `
-export default function getDefault(
-    model: Model,
-    context?: Context
-): GraphQLSchemaModule {
-    return {
-        typeDefs,
-        resolvers: {
-            iConnectionResponse: {
-                __resolveType() {
-                    return null
-                },
-            },
-            iConnectionEdge: {
-                __resolveType() {
-                    return null
-                },
+const schemaModule: GraphQLSchemaModule = {
+    typeDefs,
+    resolvers: {
+        iConnectionResponse: {
+            __resolveType() {
+                return null
             },
         },
-    }
+        iConnectionEdge: {
+            __resolveType() {
+                return null
+            },
+        },
+    },
 }
+
+export default schemaModule

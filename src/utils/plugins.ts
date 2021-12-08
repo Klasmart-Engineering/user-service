@@ -1,6 +1,7 @@
 import { PluginDefinition } from 'apollo-server-core'
+import { complexityPlugin } from './complexity'
 
-const staticPlugins: PluginDefinition[] = []
+const staticPlugins: PluginDefinition[] = [complexityPlugin]
 
 /**
  * Avoid importing the ApolloServerPlugin for NewRelic (which tries to load NewRelic) if not in 'production'
