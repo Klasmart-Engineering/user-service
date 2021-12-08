@@ -615,7 +615,7 @@ describe('model', () => {
         })
 
         context('as child of a program', () => {
-            it('returns categories per program', async () => {
+            it('returns age ranges per program', async () => {
                 const result = await loadAgeRangesForProgram(ctx, program.id)
                 expect(result.edges).to.have.lengthOf(org1AgeRanges.length)
                 expect(result.edges.map((e) => e.node.id)).to.have.same.members(
@@ -647,7 +647,7 @@ describe('model', () => {
         })
 
         context('as child of a class', () => {
-            it('returns categories per class', async () => {
+            it('returns age ranges per class', async () => {
                 const result = await loadAgeRangesForClass(ctx, class1.class_id)
                 expect(result.edges).to.have.lengthOf(org1AgeRanges.length)
                 expect(result.edges.map((e) => e.node.id)).to.have.same.members(
