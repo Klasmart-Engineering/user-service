@@ -49,7 +49,6 @@ import {
     extractCoreUserConnectionNode,
     mapUserToUserConnectionNode,
 } from '../../src/pagination/usersConnection'
-import faker from 'faker'
 import { config } from '../../src/config/config'
 
 use(chaiAsPromised)
@@ -720,8 +719,6 @@ describe('acceptance.user', () => {
         let token: string
         let updateUserInputs: UpdateUserInput[] = []
         beforeEach(async () => {
-            // So the test is the same every time
-            faker.seed(123546)
             myUser = await createUser().save()
             myOrg = await createOrganization().save()
             const role = await createRole(undefined, myOrg, {

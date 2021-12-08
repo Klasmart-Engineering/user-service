@@ -2113,8 +2113,6 @@ describe('user', () => {
         let updateUserInputs: UpdateUserInput[]
         let adminToken: string
         beforeEach(async () => {
-            faker.seed(123456)
-
             userPerformingOperation = await createNonAdminUser(testClient)
             idOfUserPerformingOperation = userPerformingOperation.user_id
             arbitraryUserToken = getNonAdminAuthToken()

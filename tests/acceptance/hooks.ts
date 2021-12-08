@@ -1,12 +1,11 @@
 import { Connection } from 'typeorm'
+import faker from 'faker'
 
 import { createTestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
-import { UserPermissions } from '../../src/permissions/userPermissions'
 import { truncateTables } from '../utils/database'
 
 let connection: Connection
-let originalAdmins: string[]
 
 before(async () => {
     connection = await createTestConnection({
@@ -21,6 +20,7 @@ after(async () => {
 })
 
 beforeEach(async () => {
+    faker.seed(1234)
     await RoleInitializer.run()
 })
 
