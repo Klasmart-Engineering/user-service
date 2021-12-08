@@ -1,8 +1,6 @@
 import { check } from 'k6';
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import { meQuery } from '../queries/users';
-
 
 export const options:Options = {
     vus: 1,
@@ -29,11 +27,9 @@ export default function (roleType?: string) {
 
     const res = http.post(`${process.env.SCHEDULES_TIME_VIEW_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
 
-    console.log(JSON.stringify(res));
-
     check(res, {
         'SCHEDULES_TIME_VIEW - status is 200': () => res.status === 200,
-        //'schedule endpoint returns data': (r) => JSON.parse(r.body as string).data,
+        'schedule time view endpoint returns data': (r) => JSON.parse(r.body as string).data,
     }, {
         userRoleType: roleType
     });

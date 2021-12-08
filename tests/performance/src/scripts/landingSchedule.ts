@@ -1,18 +1,21 @@
 import { sleep } from "k6";
-import http from "k6/http";
-import getUserTest from "./getUserTest";
 import schedulesTimeView from "./schedulesTimeView";
-import scheduleFilter from "./scheduleFilterProgram";
-import loginSetup from "../utils/loginSetup";
 import scheduleFilterProgram from "./scheduleFilterProgram";
 import scheduleFilterClass from "./scheduleFilterClass";
+import getSchoolsFilter from "./getSchoolsFilter";
 
-export default function() {
-    schedulesTimeView();
+export default function(skipTimeView?: boolean) {
+    if (!skipTimeView) {
+        schedulesTimeView();
+    }
 
     sleep(5);
-    scheduleFilterProgram();
+    
+    if (!skipTimeView) {
+        scheduleFilterProgram();
+    }
     sleep(5);
     scheduleFilterClass();
     sleep(0.5);
+    getSchoolsFilter();
 }
