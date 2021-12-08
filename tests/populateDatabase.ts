@@ -200,9 +200,9 @@ async function populate() {
     // await makeSchoolsWithRangeOfMemberCounts(connection)
     const clientOrg = await createFakeOrgWithUsersSchoolsClasses(
         connection,
-        4000,
-        21,
-        26
+        10000,
+        20,
+        20
     )
     // console.log('START LOGGING CALL COUNTS TO DB')
     // connection.logger.reset()
@@ -210,7 +210,7 @@ async function populate() {
     // console.log('END:')
     // console.log(connection.logger.count)
     // connection.logger.reset()
-    //await truncateTables(connection)
+    await truncateTables(connection)
 }
 
 void populate()
