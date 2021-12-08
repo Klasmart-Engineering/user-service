@@ -571,6 +571,15 @@ export const PROGRAMS_CONNECTION = `
                         status
                         system
                     }
+
+                    gradesConnection {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
                 }
             }
 
@@ -843,6 +852,14 @@ const CLASS_FIELDS = gql`
             }
         }
         schoolsConnection {
+            totalCount
+            edges {
+                node {
+                    id
+                }
+            }
+        }
+        gradesConnection {
             totalCount
             edges {
                 node {

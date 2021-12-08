@@ -3,10 +3,13 @@ import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
+import { Organization } from '../../src/entities/organization'
 import { Program } from '../../src/entities/program'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import { ProgramConnectionNode } from '../../src/types/graphQL/program'
+import { createGrade } from '../factories/grade.factory'
+import { createProgram } from '../factories/program.factory'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addProgramsToClass,
@@ -18,8 +21,10 @@ import {
     IProgramDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { PROGRAMS_CONNECTION } from '../utils/operations/modelOps'
+import { CREATE_OR_UPDATE_GRADES } from '../utils/operations/organizationOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
+import { makeRequest } from './utils'
 
 interface IProgramEdge {
     node: ProgramConnectionNode
@@ -357,6 +362,39 @@ describe('acceptance.program', () => {
 
             expect(response.status).to.eq(400)
             expect(response.body).to.have.property('errors')
+        })
+
+        it('has gradesConnection as a child', async () => {
+            const org = await Organization.findOne(orgId)
+            const program = await createProgram(org).save()
+            const programGrade = await createGrade(org).save()
+            const otherProgramGrade = await createGrade(org).save()
+            program.grades = Promise.resolve([programGrade])
+            await program.save()
+
+            const response = await makeRequest(
+                request,
+                PROGRAMS_CONNECTION,
+                {
+                    direction: 'FORWARD',
+                    filterArgs: {
+                        id: {
+                            operator: 'eq',
+                            value: program.id,
+                        },
+                    },
+                },
+                getAdminAuthToken()
+            )
+            const programsConnection = response.body.data.programsConnection
+            expect(programsConnection.edges).to.have.lengthOf(1)
+            expect(
+                programsConnection.edges[0].node.gradesConnection.edges
+            ).to.have.lengthOf(1)
+            expect(
+                programsConnection.edges[0].node.gradesConnection.edges[0].node
+                    .id
+            ).to.eq(programGrade.id)
         })
     })
 })

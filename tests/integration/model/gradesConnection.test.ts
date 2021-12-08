@@ -1,13 +1,22 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import { Context } from 'mocha'
+import { Class } from '../../../src/entities/class'
 import { Grade } from '../../../src/entities/grade'
 import { Organization } from '../../../src/entities/organization'
+import { Program } from '../../../src/entities/program'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import GradesInitializer from '../../../src/initializers/grades'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Model } from '../../../src/model'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { loadGradesForClass } from '../../../src/schemas/class'
+import { loadGradesForProgram } from '../../../src/schemas/program'
+import user from '../../../src/schemas/user'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
+import { createClass } from '../../factories/class.factory'
 import { createGrade } from '../../factories/grade.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createProgram } from '../../factories/program.factory'
@@ -19,6 +28,7 @@ import {
     gradesConnection,
     gradesConnectionMainData,
 } from '../../utils/operations/modelOps'
+import { userToPayload } from '../../utils/operations/userOps'
 import {
     isStringArraySortedAscending,
     isStringArraySortedDescending,
@@ -461,6 +471,170 @@ describe('model', () => {
             )
 
             expect(connection.logger.count).to.be.eq(1)
+        })
+    })
+    context('gradesConnectionChild', () => {
+        let ctx: Pick<Context, 'loaders'>
+        let clientUser: User
+        let allGrades: Grade[]
+
+        beforeEach(async () => {
+            allGrades = [
+                await createGrade().save(),
+                await createGrade().save(),
+                await createGrade().save(),
+            ]
+            clientUser = await createAdminUser(testClient)
+            const userPermissions = new UserPermissions(
+                userToPayload(clientUser)
+            )
+            ctx = { loaders: createContextLazyLoaders(userPermissions) }
+        })
+        context('as a child of programs', () => {
+            let program: Program
+            let programGrades: Grade[]
+            beforeEach(async () => {
+                programGrades = [allGrades[0], allGrades[1]]
+                program = await createProgram(
+                    undefined,
+                    undefined,
+                    programGrades
+                ).save()
+            })
+            it('returns grades per program', async () => {
+                const result = await loadGradesForProgram(
+                    program.id,
+                    {},
+                    ctx.loaders,
+                    true
+                )
+                expect(result.totalCount).to.eq(2)
+                expect(result.edges.length).to.eq(2)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    programGrades.map((g) => g.id)
+                )
+            })
+        })
+        context('as a child of classes', () => {
+            let class_: Class
+            let classGrades: Grade[]
+            beforeEach(async () => {
+                classGrades = [allGrades[0], allGrades[1]]
+                class_ = await createClass()
+                class_.grades = Promise.resolve(classGrades)
+                await class_.save()
+            })
+            it('returns grades per class', async () => {
+                const result = await loadGradesForClass(
+                    class_.class_id,
+                    {},
+                    ctx.loaders,
+                    true
+                )
+                expect(result.totalCount).to.eq(2)
+                expect(result.edges.length).to.eq(2)
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    classGrades.map((g) => g.id)
+                )
+            })
+        })
+        it('uses exactly one dataloader when called with different parents', async () => {
+            const programs = [
+                await createProgram(undefined, undefined, [
+                    allGrades[0],
+                ]).save(),
+                await createProgram(undefined, undefined, [
+                    allGrades[1],
+                ]).save(),
+            ]
+
+            connection.logger.reset()
+            const loaderResults = []
+            for (const program of programs) {
+                loaderResults.push(
+                    loadGradesForProgram(program.id, {}, ctx.loaders, false)
+                )
+            }
+            await Promise.all(loaderResults)
+            expect(connection.logger.count).to.be.eq(1)
+        })
+        context('sorting', () => {
+            let program: Program
+            beforeEach(async () => {
+                program = await createProgram(
+                    undefined,
+                    undefined,
+                    allGrades
+                ).save()
+            })
+            it('sorts by grade id', async () => {
+                const result = await loadGradesForProgram(
+                    program.id,
+                    {
+                        sort: {
+                            field: 'id',
+                            order: 'ASC',
+                        },
+                    },
+                    ctx.loaders,
+                    true
+                )
+                expect(result.edges.map((e) => e.node.id)).to.deep.equal(
+                    allGrades.map((g) => g.id).sort()
+                )
+            })
+            it('sorts by grade name', async () => {
+                const result = await loadGradesForProgram(
+                    program.id,
+                    {
+                        sort: {
+                            field: 'name',
+                            order: 'ASC',
+                        },
+                    },
+                    ctx.loaders,
+                    true
+                )
+                expect(
+                    result.edges.map((e) => e.node.name?.toLowerCase())
+                ).to.deep.equal(
+                    allGrades.map((g) => g.name?.toLowerCase()).sort()
+                )
+            })
+        })
+        context('totalCount', () => {
+            let program: Program
+            let programGrades: Grade[]
+            beforeEach(async () => {
+                programGrades = [allGrades[0], allGrades[1]]
+                program = await createProgram(
+                    undefined,
+                    undefined,
+                    programGrades
+                ).save()
+            })
+            it('returns total count when requested', async () => {
+                connection.logger.reset()
+                const result = await loadGradesForProgram(
+                    program.id,
+                    {},
+                    ctx.loaders,
+                    true
+                )
+                expect(result.totalCount).to.eq(2)
+                expect(connection.logger.count).to.be.eq(2)
+            })
+            it('omits total count response &  calculation when not requested', async () => {
+                connection.logger.reset()
+                const result = await loadGradesForProgram(
+                    program.id,
+                    {},
+                    ctx.loaders,
+                    false
+                )
+                expect(result.totalCount).to.undefined
+                expect(connection.logger.count).to.be.eq(1)
+            })
         })
     })
 })

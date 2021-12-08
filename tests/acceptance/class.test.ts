@@ -968,6 +968,31 @@ describe('acceptance.class', () => {
                 expectedSchoolIds
             )
         })
+        it('has gradesConnection as a child', async () => {
+            const response = await makeRequest(
+                request,
+                print(CLASSES_CONNECTION),
+                {
+                    direction: 'FORWARD',
+                    filterArgs: {
+                        id: {
+                            operator: 'eq',
+                            value: class1Ids[3],
+                        },
+                    },
+                },
+                getAdminAuthToken()
+            )
+            const classesConnection = response.body.data.classesConnection
+            expect(classesConnection.edges).to.have.lengthOf(1)
+            expect(
+                classesConnection.edges[0].node.gradesConnection.edges
+            ).to.have.lengthOf(1)
+            expect(
+                classesConnection.edges[0].node.gradesConnection.edges[0].node
+                    .id
+            ).to.eq(gradeId)
+        })
     })
 
     context('classNode', () => {

@@ -1,12 +1,13 @@
-import gql from 'graphql-tag'
-import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { ProgramConnectionNode } from '../types/graphQL/program'
-import { Context } from '../main'
-import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { GraphQLResolveInfo } from 'graphql'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import gql from 'graphql-tag'
+import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { IDataLoaders } from '../loaders/setup'
+import { Context } from '../main'
+import { Model } from '../model'
+import { ProgramConnectionNode } from '../types/graphQL/program'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -70,7 +71,19 @@ const typeDefs = gql`
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
             )
         grades: [GradeSummaryNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
         subjects: [SubjectSummaryNode!]
+
+        gradesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: GradeFilter
+            sort: GradeSortInput
+        ): GradesConnectionResponse
+
         ageRangesConnection(
             count: PageSize
             cursor: String
@@ -174,6 +187,7 @@ export default function getDefault(
                         program.id
                     )
                 },
+                gradesConnection: gradesChildConnectionResolver,
                 ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {
@@ -194,6 +208,38 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function gradesChildConnectionResolver(
+    program: Pick<ProgramConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadGradesForProgram(
+        program.id,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+export async function loadGradesForProgram(
+    programId: ProgramConnectionNode['id'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.gradesConnectionChild.instance.load({
+        args,
+        includeTotalCount,
+        parent: {
+            id: programId,
+            filterKey: 'programId',
+            pivot: '"Program"."id"',
+        },
+    })
 }
 
 export async function ageRangesChildConnectionResolver(

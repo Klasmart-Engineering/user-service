@@ -30,6 +30,8 @@ import {
     classesConnectionQuery,
 } from '../pagination/classesConnection'
 import {
+    gradesConnectionQuery,
+    gradesConnectionSortingConfig,
     gradeSummaryNodeFields,
     mapGradeToGradeConnectionNode,
 } from '../pagination/gradesConnection'
@@ -225,6 +227,12 @@ export interface IDataLoaders {
             IPaginatedResponse<RoleConnectionNode>
         >
     >
+    gradesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<GradeSummaryNode>
+        >
+    >
     ageRangesConnectionChild: Lazy<
         DataLoader<
             IChildConnectionDataloaderKey,
@@ -353,6 +361,18 @@ export function createContextLazyLoaders(
                         mapRoleToRoleConnectionNode,
                         rolesConnectionSortingConfig,
                         { permissions, entity: 'role' }
+                    )
+                })
+        ),
+        gradesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        gradesConnectionQuery,
+                        mapGradeToGradeConnectionNode,
+                        gradesConnectionSortingConfig,
+                        { permissions, entity: 'grade' }
                     )
                 })
         ),
