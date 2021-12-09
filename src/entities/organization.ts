@@ -90,19 +90,15 @@ export class Organization extends CustomBaseEntity {
 
     public async membership(
         { user_id }: { user_id: string },
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        try {
-            const membership = await getRepository(
-                OrganizationMembership
-            ).findOneOrFail({
-                where: { user_id, organization_ids: [this.organization_id] },
-            })
-            return membership
-        } catch (e) {
-            context.logger?.error(e)
-        }
+        context?: Context,
+        info?: GraphQLResolveInfo
+    ): Promise<OrganizationMembership | undefined> {
+        const membership = await getRepository(
+            OrganizationMembership
+        ).findOneOrFail({
+            where: { user_id, organization_id: this.organization_id },
+        })
+        return membership
     }
 
     @OneToOne(() => User, (user) => user.my_organization)
@@ -113,7 +109,7 @@ export class Organization extends CustomBaseEntity {
     public primary_contact?: Promise<User>
 
     public async roles(
-        args: Record<string, unknown>,
+        args?: Record<string, unknown>,
         context?: Context,
         info?: Record<string, unknown>
     ): Promise<Role[]> {
@@ -122,7 +118,7 @@ export class Organization extends CustomBaseEntity {
                 { system_role: true, organization: { organization_id: null } },
                 {
                     system_role: false,
-                    organization: { organization_ids: [this.organization_id] },
+                    organization: { organization_id: this.organization_id },
                 },
             ],
         })

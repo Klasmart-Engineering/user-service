@@ -102,8 +102,6 @@ import { Headers } from 'node-mocks-http'
 import { expectAPIError, expectToBeAPIErrorCollection } from '../utils/apiError'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { AddUsersToOrganizationInput } from '../../src/types/graphQL/organization'
-import { customErrors } from '../../src/types/errors/customError'
-import { Permission } from '../../src/entities/permission'
 import { errorFormattingWrapper } from '../utils/errors'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { addUsersToOrganizations } from '../../src/resolvers/organization'
@@ -115,7 +113,6 @@ describe('organization', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     let user: User
-    let originalAdmins: string[]
     let organization: Organization
     let role: Role
     const shortcode_re = /^[A-Z|0-9]+$/
@@ -6981,6 +6978,92 @@ describe('organization', () => {
                         })
                     }
                 )
+            })
+        })
+    })
+
+    describe('.memberships', () => {
+        beforeEach(async () => {
+            user = await createUser().save()
+            organization = await createOrganization().save()
+        })
+
+        context('when there is a membership on the organisation', () => {
+            beforeEach(async () => {
+                await createOrganizationMembership({
+                    user,
+                    organization,
+                }).save()
+            })
+
+            it('finds the membership', async () => {
+                const res: OrganizationMembership = await expect(
+                    organization.membership({
+                        user_id: user.user_id,
+                    })
+                ).to.be.fulfilled
+                expect(res).to.be.instanceOf(OrganizationMembership)
+                expect(res.user_id).to.equal(user.user_id)
+                expect(res.organization_id).to.equal(
+                    organization.organization_id
+                )
+            })
+        })
+
+        context('when there is no membership on the organisation', () => {
+            it('throws an EntityNotFound error', async () => {
+                const res: EntityNotFoundError = await expect(
+                    organization.membership({
+                        user_id: user.user_id,
+                    })
+                ).to.be.rejected
+                expect(res).to.be.instanceOf(EntityNotFoundError)
+            })
+        })
+    })
+
+    describe('.roles', () => {
+        let res: Role[]
+        beforeEach(async () => {
+            user = await createUser().save()
+            organization = await createOrganization().save()
+        })
+
+        context('when a non-system role exists on the organisation', () => {
+            beforeEach(async () => {
+                role = await roleFactory(undefined, organization).save()
+                res = await expect(organization.roles()).to.be.fulfilled
+            })
+
+            it('finds the non-system role', () => {
+                const nonSystemRoles: Role[] = res.filter((r) => !r.system_role)
+                expect(nonSystemRoles).to.have.length(1)
+                const nonSystemRole: Role = nonSystemRoles[0]
+                expect(nonSystemRole).to.be.instanceOf(Role)
+                expect(nonSystemRole.role_id).to.equal(role.role_id)
+            })
+
+            it('finds the system roles', () => {
+                const systemRoles: Role[] = res.filter((r) => r.system_role)
+                expect(systemRoles).to.have.length(5)
+                systemRoles.forEach((sr) => expect(sr).to.be.instanceOf(Role))
+            })
+        })
+
+        context('when no non-system roles exist on the organisation', () => {
+            beforeEach(async () => {
+                res = await expect(organization.roles()).to.be.fulfilled
+            })
+
+            it('finds no non-system roles', () => {
+                const nonSystemRoles: Role[] = res.filter((r) => !r.system_role)
+                expect(nonSystemRoles).to.be.empty
+            })
+
+            it('finds the system roles', () => {
+                const systemRoles: Role[] = res.filter((r) => r.system_role)
+                expect(systemRoles).to.have.length(5)
+                systemRoles.forEach((sr) => expect(sr).to.be.instanceOf(Role))
             })
         })
     })
