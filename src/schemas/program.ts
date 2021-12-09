@@ -7,8 +7,9 @@ import { Context } from '../main'
 import { Model } from '../model'
 import { ProgramConnectionNode } from '../types/graphQL/program'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { Subject } from '../entities/subject'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -75,7 +76,18 @@ const typeDefs = gql`
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
             )
-        subjects: [SubjectSummaryNode!]
+        subjects: [CoreSubjectConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 07/03/2022 Details: https://calmisland.atlassian.net/l/c/Ts9fp60C"
+            )
+
+        subjectsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SubjectFilter
+            sort: SubjectSortInput
+        ): SubjectsConnectionResponse
 
         gradesConnection(
             count: PageSize
@@ -101,7 +113,7 @@ const typeDefs = gql`
         system: Boolean!
     }
 
-    type SubjectSummaryNode {
+    type CoreSubjectConnectionNode {
         id: ID!
         name: String
         status: Status!
@@ -153,6 +165,36 @@ const typeDefs = gql`
     }
 `
 
+export async function subjectsChildConnectionResolver(
+    program: Pick<ProgramConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadSubjectsForProgram(ctx, program.id, args, includeTotalCount)
+}
+
+export async function loadSubjectsForProgram(
+    context: Pick<Context, 'loaders'>,
+    programId: ProgramConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Subject> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: programId,
+            filterKey: 'programId',
+            pivot: '"Program"."id"',
+        },
+        primaryColumn: 'id',
+    }
+
+    return context.loaders.subjectsConnectionChild.instance.load(key)
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -188,6 +230,7 @@ export default function getDefault(
                         program.id
                     )
                 },
+                subjectsConnection: subjectsChildConnectionResolver,
                 gradesConnection: gradesChildConnectionResolver,
                 ageRangesConnection: ageRangesChildConnectionResolver,
             },

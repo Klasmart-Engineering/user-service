@@ -35,7 +35,6 @@ import {
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { GradeSummaryNode } from '../../../src/types/graphQL/grade'
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRange'
-import { SubjectSummaryNode } from '../../../src/types/graphQL/subject'
 import { School } from '../../../src/entities/school'
 import { createSchool } from '../../factories/school.factory'
 import { Class } from '../../../src/entities/class'
@@ -43,6 +42,7 @@ import { createClass } from '../../factories/class.factory'
 import AgeRangesInitializer from '../../../src/initializers/ageRanges'
 import ProgramsInitializer from '../../../src/initializers/programs'
 import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
+import { CoreSubjectConnectionNode } from '../../../src/pagination/subjectsConnection'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import {
     createContextLazyLoaders,
@@ -594,7 +594,7 @@ describe('model', () => {
 
             const subjectsIds = result.edges.map((edge) => {
                 return edge.node.subjects?.map(
-                    (subject: SubjectSummaryNode) => subject.id
+                    (subject: CoreSubjectConnectionNode) => subject.id
                 )
             })
 

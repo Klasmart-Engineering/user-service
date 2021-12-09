@@ -4,13 +4,13 @@ import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
-import { SubjectSummaryNode } from '../types/graphQL/subject'
+import { CoreSubjectConnectionNode } from '../pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../pagination/programsConnection'
 
 export interface IProgramsConnectionLoaders {
     ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>
     grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
-    subjects: Lazy<DataLoader<string, SubjectSummaryNode[]>>
+    subjects: Lazy<DataLoader<string, CoreSubjectConnectionNode[]>>
 }
 
 export interface IProgramNodeDataLoaders {
@@ -81,7 +81,7 @@ export const gradesForPrograms = async (
 
 export const subjectsForPrograms = async (
     programIds: readonly string[]
-): Promise<SubjectSummaryNode[][]> => {
+): Promise<CoreSubjectConnectionNode[][]> => {
     const scope = await Program.createQueryBuilder('Program')
         .leftJoinAndSelect('Program.subjects', 'Subjects')
         .where('Program.id IN (:...ids)', { ids: programIds })

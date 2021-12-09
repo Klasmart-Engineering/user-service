@@ -14,6 +14,7 @@ import { User } from '../../../src/entities/user'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Context } from '../../../src/main'
 import { Model } from '../../../src/model'
+import { CoreSubjectConnectionNode } from '../../../src/pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../../../src/pagination/programsConnection'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
@@ -21,8 +22,6 @@ import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRange'
 import { ClassConnectionNode } from '../../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../../src/types/graphQL/school'
-import { SubjectSummaryNode } from '../../../src/types/graphQL/subject'
-
 import { createServer } from '../../../src/utils/createServer'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { createClass } from '../../factories/class.factory'
@@ -95,7 +94,7 @@ function expectGradesSummaryNode(
 }
 
 function expectSubjectsSummaryNode(
-    querySubjects: SubjectSummaryNode[],
+    querySubjects: CoreSubjectConnectionNode[],
     subjectsToCompare: Subject[]
 ) {
     expect(querySubjects.length).to.eql(subjectsToCompare.length)

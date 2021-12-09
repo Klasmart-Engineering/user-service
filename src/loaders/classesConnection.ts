@@ -3,7 +3,6 @@ import { Class } from '../entities/class'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { SchoolSummaryNode } from '../types/graphQL/school'
-import { SubjectSummaryNode } from '../types/graphQL/subject'
 import { SelectQueryBuilder } from 'typeorm'
 import { School } from '../entities/school'
 import { AgeRange } from '../entities/ageRange'
@@ -14,13 +13,14 @@ import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
+import { CoreSubjectConnectionNode } from '../pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../pagination/programsConnection'
 
 export interface IClassesConnectionLoaders {
     schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
     ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>
     grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
-    subjects: Lazy<DataLoader<string, SubjectSummaryNode[]>>
+    subjects: Lazy<DataLoader<string, CoreSubjectConnectionNode[]>>
     programs: Lazy<DataLoader<string, CoreProgramConnectionNode[]>>
 }
 
@@ -100,7 +100,7 @@ export const gradesForClasses = async (
 
 export const subjectsForClasses = async (
     classIds: readonly string[]
-): Promise<SubjectSummaryNode[][]> => {
+): Promise<CoreSubjectConnectionNode[][]> => {
     const scope = baseClassQuery(classIds)
         .leftJoin('Class.subjects', 'Subject')
         .addSelect([
@@ -114,7 +114,7 @@ export const subjectsForClasses = async (
         scope,
         classIds,
         'subjects'
-    ) as Promise<SubjectSummaryNode[][]>
+    ) as Promise<CoreSubjectConnectionNode[][]>
 
     return classSubjects
 }
@@ -144,7 +144,7 @@ type ClassEntitySummaryTypes =
     | SchoolSummaryNode
     | AgeRangeConnectionNode
     | GradeSummaryNode
-    | SubjectSummaryNode
+    | CoreSubjectConnectionNode
     | CoreProgramConnectionNode
 
 // gets the specified entity of classes
@@ -232,7 +232,7 @@ function buildEntityProps(
                 name: typedEntity.name,
                 status: typedEntity.status,
                 system: typedEntity.system,
-            } as SubjectSummaryNode
+            } as CoreSubjectConnectionNode
 
         case 'programs':
             typedEntity = entity as Program

@@ -134,10 +134,7 @@ import {
     ISubjectNodeDataLoader,
     ISubjectsConnectionLoaders,
 } from './subjectsConnection'
-import {
-    SubjectConnectionNode,
-    SubjectSummaryNode,
-} from '../types/graphQL/subject'
+import { SubjectConnectionNode } from '../types/graphQL/subject'
 import {
     ISchoolLoaders,
     organizationsForSchools,
@@ -176,8 +173,11 @@ import {
 import { RoleConnectionNode, RoleSummaryNode } from '../types/graphQL/role'
 import { Subject } from '../entities/subject'
 import {
+    CoreSubjectConnectionNode,
     mapSubjectToSubjectConnectionNode,
     subjectNodeFields,
+    subjectsConnectionQuery,
+    subjectsConnectionSortingConfig,
 } from '../pagination/subjectsConnection'
 import { OrganizationMembershipConnectionNode } from '../types/graphQL/organizationMemberships'
 import {
@@ -282,6 +282,12 @@ export interface IDataLoaders {
         DataLoader<
             IChildConnectionDataloaderKey<Category>,
             IPaginatedResponse<CategoryConnectionNode>
+        >
+    >
+    subjectsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Subject>,
+            IPaginatedResponse<CoreSubjectConnectionNode>
         >
     >
     subcategoriesConnectionChild: Lazy<
@@ -519,7 +525,7 @@ export function createContextLazyLoaders(
             grades: new Lazy<DataLoader<string, GradeSummaryNode[]>>(
                 () => new DataLoader(gradesForPrograms)
             ),
-            subjects: new Lazy<DataLoader<string, SubjectSummaryNode[]>>(
+            subjects: new Lazy<DataLoader<string, CoreSubjectConnectionNode[]>>(
                 () => new DataLoader(subjectsForPrograms)
             ),
         },
@@ -565,7 +571,7 @@ export function createContextLazyLoaders(
             grades: new Lazy<DataLoader<string, GradeSummaryNode[]>>(
                 () => new DataLoader(gradesForClasses)
             ),
-            subjects: new Lazy<DataLoader<string, SubjectSummaryNode[]>>(
+            subjects: new Lazy<DataLoader<string, CoreSubjectConnectionNode[]>>(
                 () => new DataLoader(subjectsForClasses)
             ),
             programs: new Lazy<DataLoader<string, CoreProgramConnectionNode[]>>(
@@ -664,6 +670,18 @@ export function createContextLazyLoaders(
                     )
             ),
         },
+        subjectsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) =>
+                    childConnectionLoader(
+                        items,
+                        subjectsConnectionQuery,
+                        mapSubjectToSubjectConnectionNode,
+                        subjectsConnectionSortingConfig,
+                        { permissions, entity: 'subject' }
+                    )
+                )
+        ),
         programsConnectionChild: new Lazy(
             () =>
                 new DataLoader((items) => {

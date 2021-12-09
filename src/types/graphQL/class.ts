@@ -1,10 +1,10 @@
 import { Status } from '../../entities/status'
+import { CoreSubjectConnectionNode } from '../../pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../../pagination/programsConnection'
 import { IPaginatedResponse } from '../../utils/pagination/paginate'
 import { AgeRangeConnectionNode } from './ageRange'
 import { GradeSummaryNode } from './grade'
 import { SchoolSummaryNode } from './school'
-import { SubjectSummaryNode } from './subject'
 import { UserConnectionNode } from './user'
 export interface ClassConnectionNode {
     id: string
@@ -14,11 +14,12 @@ export interface ClassConnectionNode {
     schools?: SchoolSummaryNode[]
     ageRanges?: AgeRangeConnectionNode[]
     grades?: GradeSummaryNode[]
-    subjects?: SubjectSummaryNode[]
+    subjects?: CoreSubjectConnectionNode[]
     programs?: CoreProgramConnectionNode[]
 
     studentsConnection?: IPaginatedResponse<UserConnectionNode>
     teachersConnection?: IPaginatedResponse<UserConnectionNode>
+    subjectsConnection?: IPaginatedResponse<CoreSubjectConnectionNode>
     programsConnection?: IPaginatedResponse<CoreProgramConnectionNode>
 }
 

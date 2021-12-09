@@ -12,7 +12,6 @@ import {
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
-import { SubjectSummaryNode } from '../../src/types/graphQL/subject'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addAgeRangesToClass,
@@ -46,6 +45,7 @@ import { print } from 'graphql'
 import { Program } from '../../src/entities/program'
 import ProgramsInitializer from '../../src/initializers/programs'
 import { makeRequest } from './utils'
+import { CoreSubjectConnectionNode } from '../../src/pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../../src/pagination/programsConnection'
 
 interface IClassEdge {
@@ -735,7 +735,7 @@ describe('acceptance.class', () => {
                 (edge: IClassEdge) => edge.node.subjects
             )
 
-            classSubjects.every((subjects: SubjectSummaryNode[]) => {
+            classSubjects.every((subjects: CoreSubjectConnectionNode[]) => {
                 const subjectIds = subjects.map((subject) => subject.id)
                 expect(subjectIds).includes(subjectId)
             })

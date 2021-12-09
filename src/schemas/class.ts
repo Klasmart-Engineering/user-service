@@ -13,6 +13,7 @@ import {
 } from '../utils/pagination/paginate'
 import { deleteClasses } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { Subject } from '../entities/subject'
 import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
 
@@ -90,7 +91,10 @@ const typeDefs = gql`
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
             )
-        subjects: [SubjectSummaryNode!]
+        subjects: [CoreSubjectConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 07/03/2022 Details: https://calmisland.atlassian.net/l/c/Ts9fp60C"
+            )
         programs: [CoreProgramConnectionNode!]
             @deprecated(
                 reason: "Sunset Date: 01/03/22 Details: https://calmisland.atlassian.net/l/c/aaSJnmbQ"
@@ -119,6 +123,14 @@ const typeDefs = gql`
             filter: SchoolFilter
             sort: SchoolSortInput
         ): SchoolsConnectionResponse
+
+        subjectsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SubjectFilter
+            sort: SubjectSortInput
+        ): SubjectsConnectionResponse
 
         programsConnection(
             count: PageSize
@@ -221,6 +233,36 @@ const typeDefs = gql`
         classes: [ClassConnectionNode!]!
     }
 `
+
+export async function subjectsChildConnectionResolver(
+    class_: Pick<ClassConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadSubjectsForClass(ctx, class_.id, args, includeTotalCount)
+}
+
+export async function loadSubjectsForClass(
+    context: Pick<Context, 'loaders'>,
+    classId: ClassConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Subject> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: classId,
+            filterKey: 'classId',
+            pivot: '"Class"."class_id"',
+        },
+        primaryColumn: 'id',
+    }
+
+    return context.loaders.subjectsConnectionChild.instance.load(key)
+}
 
 export async function schoolsChildConnectionResolver(
     class_: Pick<ClassConnectionNode, 'id'>,
@@ -410,6 +452,7 @@ export default function getDefault(
                         primaryColumn: 'user_id',
                     })
                 },
+                subjectsConnection: subjectsChildConnectionResolver,
                 programsConnection: programsChildConnectionResolver,
                 ageRangesConnection: ageRangesChildConnectionResolver,
             },

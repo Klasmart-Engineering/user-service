@@ -14,6 +14,7 @@ import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { GraphQLResolveInfo } from 'graphql'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { Subject } from '../entities/subject'
 import { Subcategory } from '../entities/subcategory'
 
 const typeDefs = gql`
@@ -75,6 +76,15 @@ const typeDefs = gql`
         name: String
         status: Status!
         system: Boolean!
+
+        subjectsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SubjectFilter
+            sort: SubjectSortInput
+        ): SubjectsConnectionResponse
+
         subcategoriesConnection(
             count: PageSize
             cursor: String
@@ -159,6 +169,36 @@ const typeDefs = gql`
     }
 `
 
+export async function subjectsChildConnectionResolver(
+    category: Pick<CategoryConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadSubjectsForCategory(ctx, category.id, args, includeTotalCount)
+}
+
+export async function loadSubjectsForCategory(
+    context: Pick<Context, 'loaders'>,
+    categoryId: CategoryConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<Subject> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: categoryId,
+            filterKey: 'categoryId',
+            pivot: '"Category"."id"',
+        },
+        primaryColumn: 'id',
+    }
+
+    return context.loaders.subjectsConnectionChild.instance.load(key)
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -167,6 +207,7 @@ export default function getDefault(
         typeDefs,
         resolvers: {
             CategoryConnectionNode: {
+                subjectsConnection: subjectsChildConnectionResolver,
                 subcategoriesConnection: subcategoriesConnectionResolver,
             },
             Mutation: {
