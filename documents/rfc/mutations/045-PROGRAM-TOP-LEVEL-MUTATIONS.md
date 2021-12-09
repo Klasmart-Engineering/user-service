@@ -164,7 +164,7 @@ type ProgramConnectionNode {
     system: Boolean!
     ageRanges: [AgeRangeConnectionNode!]
     grades: [GradeSummaryNode!]
-    subjects: [SubjectSummaryNode!]
+    subjects: [CoreSubjectConnectionNode!]
 }
 ```
 

@@ -110,7 +110,7 @@ type SubjectConnectionNode {
     status: Status!
     system: Boolean!
     categories: [CategoryConnectionNode!]
-    programs: [ProgramSummaryNode!]
+    programs: [CoreProgramConnectionNode!]
 }
 ```
 

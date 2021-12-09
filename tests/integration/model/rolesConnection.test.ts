@@ -661,7 +661,12 @@ describe('rolesConnection', () => {
 
                     const sorted = org1Roles
                         .map((r) => r[entityProperty])
-                        .sort()
+                        .sort((a, b) => {
+                            // pagination sorting sorts in a case insensitive way
+                            return (a as string)
+                                .toLowerCase()
+                                .localeCompare((b as string).toLowerCase())
+                        })
 
                     expect(
                         result.edges.map((e) => e.node[fieldName])

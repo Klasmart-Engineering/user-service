@@ -8,10 +8,3 @@ export interface SubjectConnectionNode {
     system: boolean
     categories?: CategoryConnectionNode[]
 }
-
-export interface SubjectSummaryNode {
-    id: string
-    name?: string
-    status: Status
-    system: boolean
-}

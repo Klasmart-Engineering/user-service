@@ -2,9 +2,7 @@ import DataLoader from 'dataloader'
 import { Class } from '../entities/class'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
-import { ProgramSummaryNode } from '../types/graphQL/program'
 import { SchoolSummaryNode } from '../types/graphQL/school'
-import { SubjectSummaryNode } from '../types/graphQL/subject'
 import { SelectQueryBuilder } from 'typeorm'
 import { School } from '../entities/school'
 import { AgeRange } from '../entities/ageRange'
@@ -15,13 +13,15 @@ import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
+import { CoreSubjectConnectionNode } from '../pagination/subjectsConnection'
+import { CoreProgramConnectionNode } from '../pagination/programsConnection'
 
 export interface IClassesConnectionLoaders {
     schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
     ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>
     grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
-    subjects: Lazy<DataLoader<string, SubjectSummaryNode[]>>
-    programs: Lazy<DataLoader<string, ProgramSummaryNode[]>>
+    subjects: Lazy<DataLoader<string, CoreSubjectConnectionNode[]>>
+    programs: Lazy<DataLoader<string, CoreProgramConnectionNode[]>>
 }
 
 export interface IClassNodeDataLoaders {
@@ -100,7 +100,7 @@ export const gradesForClasses = async (
 
 export const subjectsForClasses = async (
     classIds: readonly string[]
-): Promise<SubjectSummaryNode[][]> => {
+): Promise<CoreSubjectConnectionNode[][]> => {
     const scope = baseClassQuery(classIds)
         .leftJoin('Class.subjects', 'Subject')
         .addSelect([
@@ -114,14 +114,14 @@ export const subjectsForClasses = async (
         scope,
         classIds,
         'subjects'
-    ) as Promise<SubjectSummaryNode[][]>
+    ) as Promise<CoreSubjectConnectionNode[][]>
 
     return classSubjects
 }
 
 export const programsForClasses = async (
     classIds: readonly string[]
-): Promise<ProgramSummaryNode[][]> => {
+): Promise<CoreProgramConnectionNode[][]> => {
     const scope = baseClassQuery(classIds)
         .leftJoin('Class.programs', 'Program')
         .addSelect([
@@ -135,7 +135,7 @@ export const programsForClasses = async (
         scope,
         classIds,
         'programs'
-    ) as Promise<ProgramSummaryNode[][]>
+    ) as Promise<CoreProgramConnectionNode[][]>
 
     return classPrograms
 }
@@ -144,8 +144,8 @@ type ClassEntitySummaryTypes =
     | SchoolSummaryNode
     | AgeRangeConnectionNode
     | GradeSummaryNode
-    | SubjectSummaryNode
-    | ProgramSummaryNode
+    | CoreSubjectConnectionNode
+    | CoreProgramConnectionNode
 
 // gets the specified entity of classes
 async function getNestedEntities(
@@ -232,7 +232,7 @@ function buildEntityProps(
                 name: typedEntity.name,
                 status: typedEntity.status,
                 system: typedEntity.system,
-            } as SubjectSummaryNode
+            } as CoreSubjectConnectionNode
 
         case 'programs':
             typedEntity = entity as Program
@@ -242,7 +242,7 @@ function buildEntityProps(
                 name: typedEntity.name,
                 status: typedEntity.status,
                 system: typedEntity.system,
-            } as ProgramSummaryNode
+            } as CoreProgramConnectionNode
 
         default:
             _exhaustiveCheck = entityName

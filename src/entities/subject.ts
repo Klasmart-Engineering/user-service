@@ -18,6 +18,7 @@ import { Subcategory } from './subcategory'
 import { Status } from './status'
 import { Class } from './class'
 import { CustomBaseEntity } from './customBaseEntity'
+import { Program } from './program'
 
 @Entity()
 export class Subject extends CustomBaseEntity {
@@ -40,6 +41,9 @@ export class Subject extends CustomBaseEntity {
 
     @ManyToMany(() => Class, (_class) => _class.subjects)
     public classes?: Promise<Class[]>
+
+    @ManyToMany(() => Program, (program) => program.subjects)
+    public programs?: Promise<Program[]>
 
     public async subcategories(
         args: Record<string, unknown>,

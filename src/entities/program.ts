@@ -43,7 +43,7 @@ export class Program extends CustomBaseEntity {
     @JoinTable()
     public grades?: Promise<Grade[]>
 
-    @ManyToMany(() => Subject)
+    @ManyToMany(() => Subject, (subject) => subject.programs)
     @JoinTable()
     public subjects?: Promise<Subject[]>
 

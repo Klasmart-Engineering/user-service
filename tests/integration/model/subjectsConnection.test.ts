@@ -1,16 +1,33 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { GraphQLResolveInfo } from 'graphql'
 import { Category } from '../../../src/entities/category'
+import { Class } from '../../../src/entities/class'
 import { Organization } from '../../../src/entities/organization'
+import { Program } from '../../../src/entities/program'
 import { Status } from '../../../src/entities/status'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
+import {
+    createContextLazyLoaders,
+    IDataLoaders,
+} from '../../../src/loaders/setup'
 import { Model } from '../../../src/model'
+import { CoreSubjectConnectionNode } from '../../../src/pagination/subjectsConnection'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { loadSubjectsForCategory } from '../../../src/schemas/category'
+import { loadSubjectsForClass } from '../../../src/schemas/class'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
-import { MAX_PAGE_SIZE } from '../../../src/utils/pagination/paginate'
+import {
+    IChildPaginationArgs,
+    MAX_PAGE_SIZE,
+} from '../../../src/utils/pagination/paginate'
 import { createCategory } from '../../factories/category.factory'
+import { createClass } from '../../factories/class.factory'
 import { createOrganization } from '../../factories/organization.factory'
+import { createProgram } from '../../factories/program.factory'
 import { createSubject } from '../../factories/subject.factory'
 import { createUser } from '../../factories/user.factory'
 import {
@@ -37,8 +54,15 @@ import {
     TestConnection,
 } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
+import { subjectsChildConnectionResolver as categorySubjectsResolver } from '../../../src/schemas/category'
+import { subjectsChildConnectionResolver as classSubjectsResolver } from '../../../src/schemas/class'
+import {
+    loadSubjectsForProgram,
+    subjectsChildConnectionResolver as programSubjectsResolver,
+} from '../../../src/schemas/program'
 
 use(chaiAsPromised)
+use(deepEqualInAnyOrder)
 
 describe('subjectsConnection', () => {
     let connection: TestConnection
@@ -361,7 +385,23 @@ describe('subjectsConnection', () => {
     })
 
     context('filtering', () => {
+        let class_: Class
+        let program: Program
+        let subjectsToFilter: Subject[]
+
         beforeEach(async () => {
+            subjectsToFilter = org1Subjects.slice(0, subjectsCount / 2)
+            class_ = createClass(undefined, org1)
+            class_.subjects = Promise.resolve(subjectsToFilter)
+            await class_.save()
+
+            program = await createProgram(
+                org1,
+                undefined,
+                undefined,
+                subjectsToFilter
+            ).save()
+
             for (let i = 0; i < subjectsCount; i++) {
                 org1Subjects[i].status = i % 2 ? Status.ACTIVE : Status.INACTIVE
                 org2Subjects[i].system = !!(i % 2)
@@ -549,6 +589,50 @@ describe('subjectsConnection', () => {
 
             categoryIds.every((ids) => ids?.includes(categoryId))
         })
+
+        it('supports filtering by class ID', async () => {
+            const classId = class_.class_id
+            const filter: IEntityFilter = {
+                classId: {
+                    operator: 'eq',
+                    value: classId,
+                },
+            }
+
+            const result = await subjectsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            const subjectIds = result.edges.map((e) => e.node.id)
+            const toFilterIds = subjectsToFilter.map((s) => s.id)
+            expect(subjectIds).to.deep.equalInAnyOrder(toFilterIds)
+        })
+
+        it('supports filtering by program ID', async () => {
+            const programId = program.id
+            const filter: IEntityFilter = {
+                programId: {
+                    operator: 'eq',
+                    value: programId,
+                },
+            }
+
+            const result = await subjectsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            const subjectIds = result.edges.map((e) => e.node.id)
+            const toFilterIds = subjectsToFilter.map((s) => s.id)
+            expect(subjectIds).to.deep.equalInAnyOrder(toFilterIds)
+        })
     })
 
     context('when totalCount is not requested', () => {
@@ -564,6 +648,307 @@ describe('subjectsConnection', () => {
             )
 
             expect(connection.logger.count).to.be.eq(1)
+        })
+    })
+
+    context('as child connection', () => {
+        let ctx: { loaders: IDataLoaders }
+        let fakeResolverInfo: any
+        let org1Classes: Class[]
+        let org1Programs: Program[]
+        const classesCount = 2
+        const programsCount = 2
+
+        beforeEach(async () => {
+            const token = { id: admin.user_id }
+            const permissions = new UserPermissions(token)
+            ctx = { loaders: createContextLazyLoaders(permissions) }
+
+            org1Classes = await Class.save(
+                Array.from(new Array(classesCount), (_, i) => {
+                    const class_ = createClass(undefined, org1)
+                    const start = i ? subjectsCount / 2 - 1 : 0
+                    const end = i ? undefined : subjectsCount / 2
+                    class_.subjects = Promise.resolve(
+                        org1Subjects.slice(start, end)
+                    )
+
+                    return class_
+                })
+            )
+
+            org1Programs = await Program.save(
+                Array.from(new Array(programsCount), (_, i) => {
+                    const start = i ? subjectsCount / 2 - 1 : 0
+                    const end = i ? undefined : subjectsCount / 2
+                    const program = createProgram(
+                        org1,
+                        undefined,
+                        undefined,
+                        org1Subjects.slice(start, end)
+                    )
+
+                    return program
+                })
+            )
+
+            fakeResolverInfo = {
+                fieldNodes: [
+                    {
+                        kind: 'Field',
+                        name: {
+                            kind: 'Name',
+                            value: 'subjectsConnection',
+                        },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [],
+                        },
+                    },
+                ],
+            }
+        })
+
+        context('common across all parents', () => {
+            const resolveForSubjects = async (classes: Class[]) => {
+                const loaderResults = []
+                for (const c of classes) {
+                    const loaderResult = loadSubjectsForClass(
+                        ctx,
+                        c.class_id,
+                        {},
+                        false
+                    )
+
+                    loaderResults.push(loaderResult)
+                }
+
+                await Promise.all(loaderResults)
+            }
+
+            it("db calls doesn't increase with number of resolver calls", async () => {
+                // warm up permission caches
+                await resolveForSubjects(org1Classes.slice(0, 2))
+                connection.logger.reset()
+
+                await resolveForSubjects(org1Classes.slice(0, 1))
+                const dbCallsForSingleClass = connection.logger.count
+                connection.logger.reset()
+
+                await resolveForSubjects(org1Classes.slice(0, 2))
+                const dbCallsForTwoClasses = connection.logger.count
+                expect(dbCallsForSingleClass).to.be.eq(dbCallsForTwoClasses)
+            })
+
+            context('sorting', () => {
+                let args: IChildPaginationArgs
+
+                beforeEach(() => {
+                    args = {
+                        direction: 'FORWARD',
+                        count: 5,
+                        sort: {
+                            field: 'name',
+                            order: 'ASC',
+                        },
+                    }
+                })
+
+                const checkSorted = async (
+                    entityProperty: keyof Subject,
+                    fieldName: keyof CoreSubjectConnectionNode
+                ) => {
+                    const classToCheck = org1Classes[0]
+                    const subjectsToCheck = (await classToCheck.subjects) as Subject[]
+
+                    const result = await loadSubjectsForClass(
+                        ctx,
+                        classToCheck.class_id,
+                        args,
+                        false
+                    )
+
+                    const sorted = subjectsToCheck
+                        .map((p) => p[entityProperty])
+                        .sort((a, b) => {
+                            // pagination sorting sorts in a case insensitive way
+                            return (a as string)
+                                .toLowerCase()
+                                .localeCompare((b as string).toLowerCase())
+                        })
+
+                    expect(
+                        result.edges.map((e) => e.node[fieldName])
+                    ).deep.equal(sorted)
+                }
+
+                it('sorts by id', async () => {
+                    args.sort!.field = 'id'
+                    await checkSorted('id', 'id')
+                })
+
+                it('sorts by name', async () => {
+                    args.sort!.field = 'name'
+                    await checkSorted('name', 'name')
+                })
+            })
+        })
+
+        context('category parent', () => {
+            it('returns correct subjects per category', async () => {
+                const categoryToCheck = org1Categories[0]
+                const subjectsToCheck = (await categoryToCheck.subjects) as Subject[]
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: 5,
+                }
+
+                const result = await loadSubjectsForCategory(
+                    ctx,
+                    categoryToCheck.id,
+                    args,
+                    false
+                )
+
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    subjectsToCheck.map((p) => p.id)
+                )
+            })
+
+            context('totalCount', async () => {
+                const callResolver = (
+                    fakeInfo: Pick<GraphQLResolveInfo, 'fieldNodes'>
+                ) =>
+                    categorySubjectsResolver(
+                        { id: org1Categories[0].id },
+                        {},
+                        ctx,
+                        fakeInfo
+                    )
+
+                it('returns total count', async () => {
+                    fakeResolverInfo.fieldNodes[0].selectionSet?.selections.push(
+                        {
+                            kind: 'Field',
+                            name: { kind: 'Name', value: 'totalCount' },
+                        }
+                    )
+
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(1)
+                })
+
+                it("doesn't return total count", async () => {
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(undefined)
+                })
+            })
+        })
+
+        context('class parent', () => {
+            it('returns correct subjects per class', async () => {
+                const classToCheck = org1Classes[0]
+                const subjectsToCheck = (await classToCheck.subjects) as Subject[]
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: 5,
+                }
+
+                const result = await loadSubjectsForClass(
+                    ctx,
+                    classToCheck.class_id,
+                    args,
+                    false
+                )
+
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    subjectsToCheck.map((p) => p.id)
+                )
+            })
+
+            context('totalCount', async () => {
+                const callResolver = (
+                    fakeInfo: Pick<GraphQLResolveInfo, 'fieldNodes'>
+                ) =>
+                    classSubjectsResolver(
+                        { id: org1Classes[0].class_id },
+                        {},
+                        ctx,
+                        fakeInfo
+                    )
+
+                it('returns total count', async () => {
+                    fakeResolverInfo.fieldNodes[0].selectionSet?.selections.push(
+                        {
+                            kind: 'Field',
+                            name: { kind: 'Name', value: 'totalCount' },
+                        }
+                    )
+
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(
+                        subjectsCount / classesCount
+                    )
+                })
+
+                it("doesn't return total count", async () => {
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(undefined)
+                })
+            })
+        })
+
+        context('program parent', () => {
+            it('returns correct subjects per program', async () => {
+                const programToCheck = org1Programs[0]
+                const subjectsToCheck = (await programToCheck.subjects) as Subject[]
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: 5,
+                }
+
+                const result = await loadSubjectsForProgram(
+                    ctx,
+                    programToCheck.id,
+                    args,
+                    false
+                )
+
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    subjectsToCheck.map((p) => p.id)
+                )
+            })
+
+            context('totalCount', async () => {
+                const callResolver = (
+                    fakeInfo: Pick<GraphQLResolveInfo, 'fieldNodes'>
+                ) =>
+                    programSubjectsResolver(
+                        { id: org1Programs[0].id },
+                        {},
+                        ctx,
+                        fakeInfo
+                    )
+
+                it('returns total count', async () => {
+                    fakeResolverInfo.fieldNodes[0].selectionSet?.selections.push(
+                        {
+                            kind: 'Field',
+                            name: { kind: 'Name', value: 'totalCount' },
+                        }
+                    )
+
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(
+                        subjectsCount / programsCount
+                    )
+                })
+
+                it("doesn't return total count", async () => {
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(undefined)
+                })
+            })
         })
     })
 })

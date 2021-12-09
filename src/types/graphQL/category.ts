@@ -1,10 +1,14 @@
 import { Status } from '../../entities/status'
+import { CoreSubjectConnectionNode } from '../../pagination/subjectsConnection'
+import { IPaginatedResponse } from '../../utils/pagination/paginate'
 
 export interface CategoryConnectionNode {
     id: string
     name?: string
     status: Status
     system: boolean
+
+    subjectsConnection?: IPaginatedResponse<CoreSubjectConnectionNode>
 }
 
 export interface CreateCategoryInput {

@@ -1,5 +1,6 @@
 import { Status } from '../../entities/status'
 import { CoreClassConnectionNode } from '../../pagination/classesConnection'
+import { CoreProgramConnectionNode } from '../../pagination/programsConnection'
 import { IPaginatedResponse } from '../../utils/pagination/paginate'
 import { SchoolMembershipConnectionNode } from './schoolMembership'
 
@@ -12,6 +13,7 @@ export interface ISchoolsConnectionNode {
 
     schoolMembershipsConnection?: IPaginatedResponse<SchoolMembershipConnectionNode>
     classesConnection?: IPaginatedResponse<CoreClassConnectionNode>
+    programsConnection?: IPaginatedResponse<CoreProgramConnectionNode>
 }
 
 export interface SchoolSummaryNode {

@@ -80,6 +80,10 @@ export async function schoolConnectionQuery(
             scope.innerJoin('School.classes', 'Class')
         }
 
+        if (filterHasProperty('programId', filter)) {
+            scope.innerJoin('School.programs', 'Program')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(scope, filter, {
                 organizationId: 'School.organization',
@@ -94,6 +98,7 @@ export async function schoolConnectionQuery(
                 // Connections
                 userId: 'SchoolMembership.userUserId',
                 classId: 'Class.class_id',
+                programId: 'Program.id',
             })
         )
     }

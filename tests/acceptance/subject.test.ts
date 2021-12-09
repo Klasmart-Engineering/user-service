@@ -14,13 +14,31 @@ import {
     ISubjectDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { SUBJECTS_CONNECTION, SUBJECT_NODE } from '../utils/operations/modelOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { SubjectConnectionNode } from '../../src/types/graphQL/subject'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { NIL_UUID } from '../utils/database'
 import { makeRequest } from './utils'
+import { User } from '../../src/entities/user'
+import { Organization } from '../../src/entities/organization'
+import { createUser } from '../factories/user.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { createSubject } from '../factories/subject.factory'
+import { createProgram } from '../factories/program.factory'
+import { gql } from 'apollo-server-core'
+import { Category } from '../../src/entities/category'
+import { createCategory } from '../factories/category.factory'
+import { CategoryConnectionNode } from '../../src/types/graphQL/category'
+import { createClass } from '../factories/class.factory'
+import { ClassConnectionNode } from '../../src/types/graphQL/class'
+import { Class } from '../../src/entities/class'
+import { Program } from '../../src/entities/program'
+import { ProgramConnectionNode } from '../../src/types/graphQL/program'
+import { createRole } from '../factories/role.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
 
 interface ISubjectEdge {
     node: SubjectConnectionNode
@@ -421,6 +439,260 @@ describe('acceptance.subject', () => {
                 expect(response.status).to.eq(200)
                 expect(subjectNode).to.be.null
                 expect(errors).to.exist
+            })
+        })
+    })
+
+    context('subjectsConnection as a child', () => {
+        let user: User
+        let organization: Organization
+        let token: string
+        let subject: Subject
+
+        beforeEach(async () => {
+            user = await createUser().save()
+            organization = await createOrganization(user).save()
+
+            const viewClassesRole = await createRole(
+                'View Classes',
+                organization,
+                { permissions: [PermissionName.view_classes_20114] }
+            ).save()
+
+            await createOrganizationMembership({
+                user,
+                organization,
+                roles: [viewClassesRole],
+            }).save()
+
+            subject = await createSubject(organization).save()
+            token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+        })
+
+        context('of categories', () => {
+            let category: Category
+            const query = gql`
+                query CategoriesConnection(
+                    $direction: ConnectionDirection!
+                    $directionArgs: ConnectionsDirectionArgs
+                    $sortArgs: CategorySortInput
+                ) {
+                    categoriesConnection(
+                        direction: $direction
+                        directionArgs: $directionArgs
+                        sort: $sortArgs
+                    ) {
+                        totalCount
+                        edges {
+                            cursor
+                            node {
+                                id
+                                subjectsConnection {
+                                    totalCount
+                                    edges {
+                                        cursor
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+
+            beforeEach(async () => {
+                category = createCategory(organization)
+                category.subjects = Promise.resolve([subject])
+                await category.save()
+            })
+
+            it('should retrieve the subjects for each category', async () => {
+                const response = await makeRequest(
+                    request,
+                    print(query),
+                    {
+                        direction: 'FORWARD',
+                        directionArgs: { count: 1 },
+                        sortArgs: { order: 'ASC', field: 'name' },
+                    },
+                    token
+                )
+
+                expect(response.status).to.eq(200)
+
+                const categoriesConnection =
+                    response.body.data.categoriesConnection
+
+                expect(categoriesConnection.totalCount).to.eq(1)
+                expect(categoriesConnection.edges).to.have.lengthOf(1)
+
+                categoriesConnection.edges.forEach(
+                    (edge: { node: CategoryConnectionNode }) => {
+                        expect(edge.node.id).to.eq(category.id)
+
+                        const subjectsConnection = edge.node.subjectsConnection
+                        expect(subjectsConnection?.totalCount).to.eq(1)
+                        expect(subjectsConnection?.edges).to.have.lengthOf(1)
+                        expect(subjectsConnection?.edges[0].node.id).to.eq(
+                            subject.id
+                        )
+                    }
+                )
+            })
+        })
+
+        context('of classes', () => {
+            let class_: Class
+            const query = gql`
+                query ClassesConnection(
+                    $direction: ConnectionDirection!
+                    $directionArgs: ConnectionsDirectionArgs
+                    $sortArgs: ClassSortInput
+                ) {
+                    classesConnection(
+                        direction: $direction
+                        directionArgs: $directionArgs
+                        sort: $sortArgs
+                    ) {
+                        totalCount
+                        edges {
+                            cursor
+                            node {
+                                id
+                                subjectsConnection {
+                                    totalCount
+                                    edges {
+                                        cursor
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+
+            beforeEach(async () => {
+                class_ = createClass(undefined, organization)
+                class_.subjects = Promise.resolve([subject])
+                await class_.save()
+            })
+
+            it('should retrieve the subjects for each class', async () => {
+                const response = await makeRequest(
+                    request,
+                    print(query),
+                    {
+                        direction: 'FORWARD',
+                        directionArgs: { count: 1 },
+                        sortArgs: { order: 'ASC', field: 'name' },
+                    },
+                    token
+                )
+
+                expect(response.status).to.eq(200)
+
+                const classesConnection = response.body.data.classesConnection
+
+                expect(classesConnection.totalCount).to.eq(1)
+                expect(classesConnection.edges).to.have.lengthOf(1)
+
+                classesConnection.edges.forEach(
+                    (edge: { node: ClassConnectionNode }) => {
+                        expect(edge.node.id).to.eq(class_.class_id)
+
+                        const subjectsConnection = edge.node.subjectsConnection
+                        expect(subjectsConnection?.totalCount).to.eq(1)
+                        expect(subjectsConnection?.edges).to.have.lengthOf(1)
+                        expect(subjectsConnection?.edges[0].node.id).to.eq(
+                            subject.id
+                        )
+                    }
+                )
+            })
+        })
+
+        context('of programs', () => {
+            let program: Program
+            const query = gql`
+                query ProgramsConnection(
+                    $direction: ConnectionDirection!
+                    $directionArgs: ConnectionsDirectionArgs
+                    $sortArgs: ProgramSortInput
+                ) {
+                    programsConnection(
+                        direction: $direction
+                        directionArgs: $directionArgs
+                        sort: $sortArgs
+                    ) {
+                        totalCount
+                        edges {
+                            cursor
+                            node {
+                                id
+                                subjectsConnection {
+                                    totalCount
+                                    edges {
+                                        cursor
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+
+            beforeEach(async () => {
+                program = await createProgram(
+                    organization,
+                    undefined,
+                    undefined,
+                    [subject]
+                ).save()
+            })
+
+            it('should retrieve the subjects for each program', async () => {
+                const response = await makeRequest(
+                    request,
+                    print(query),
+                    {
+                        direction: 'FORWARD',
+                        directionArgs: { count: 1 },
+                        sortArgs: { order: 'ASC', field: 'name' },
+                    },
+                    token
+                )
+
+                expect(response.status).to.eq(200)
+
+                const programsConnection = response.body.data.programsConnection
+
+                expect(programsConnection.totalCount).to.eq(1)
+                expect(programsConnection.edges).to.have.lengthOf(1)
+
+                programsConnection.edges.forEach(
+                    (edge: { node: ProgramConnectionNode }) => {
+                        expect(edge.node.id).to.eq(program.id)
+
+                        const subjectsConnection = edge.node.subjectsConnection
+                        expect(subjectsConnection?.totalCount).to.eq(1)
+                        expect(subjectsConnection?.edges).to.have.lengthOf(1)
+                        expect(subjectsConnection?.edges[0].node.id).to.eq(
+                            subject.id
+                        )
+                    }
+                )
             })
         })
     })

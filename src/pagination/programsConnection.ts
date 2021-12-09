@@ -1,24 +1,71 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { Program } from '../entities/program'
-import { ProgramSummaryNode } from '../types/graphQL/program'
+import { ProgramConnectionNode } from '../types/graphQL/program'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     AVOID_NONE_SPECIFIED_BRACKETS,
     filterHasProperty,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+
+export type CoreProgramConnectionNode = Pick<
+    ProgramConnectionNode,
+    'id' | 'name' | 'status' | 'system'
+>
 
 export async function programsConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<Program>
-): Promise<IPaginatedResponse<ProgramSummaryNode>> {
+): Promise<IPaginatedResponse<CoreProgramConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    const newScope = await programsConnectionQuery(scope, filter)
+    const data = await paginateData<Program>({
+        direction,
+        directionArgs,
+        scope: newScope,
+        sort: {
+            ...programsConnectionSortingConfig,
+            sort,
+        },
+        includeTotalCount,
+    })
 
+    return {
+        totalCount: data.totalCount,
+        pageInfo: data.pageInfo,
+        edges: data.edges.map((edge) => {
+            return {
+                node: mapProgramToProgramConnectionNode(edge.node),
+                cursor: edge.cursor,
+            }
+        }),
+    }
+}
+
+export function mapProgramToProgramConnectionNode(
+    program: Program
+): CoreProgramConnectionNode {
+    return {
+        id: program.id,
+        name: program.name,
+        status: program.status,
+        system: program.system,
+        // other properties have dedicated resolvers that use Dataloader
+    }
+}
+
+export async function programsConnectionQuery(
+    scope: SelectQueryBuilder<Program>,
+    filter?: IEntityFilter
+) {
     if (filter) {
         if (filterHasProperty('organizationId', filter)) {
             scope.leftJoinAndSelect('Program.organization', 'Organization')
@@ -76,44 +123,7 @@ export async function programsConnectionResolver(
     }
 
     scope.select(programSummaryNodeFields)
-
-    const data = await paginateData<Program>({
-        direction,
-        directionArgs,
-        scope,
-        sort: {
-            primaryKey: 'id',
-            aliases: {
-                id: 'id',
-                name: 'name',
-            },
-            sort,
-        },
-        includeTotalCount,
-    })
-
-    return {
-        totalCount: data.totalCount,
-        pageInfo: data.pageInfo,
-        edges: data.edges.map((edge) => {
-            return {
-                node: mapProgramToProgramConnectionNode(edge.node),
-                cursor: edge.cursor,
-            }
-        }),
-    }
-}
-
-export function mapProgramToProgramConnectionNode(
-    program: Program
-): ProgramSummaryNode {
-    return {
-        id: program.id,
-        name: program.name,
-        status: program.status,
-        system: program.system,
-        // other properties have dedicated resolvers that use Dataloader
-    }
+    return scope
 }
 
 export const programSummaryNodeFields = ([
@@ -122,3 +132,11 @@ export const programSummaryNodeFields = ([
     'status',
     'system',
 ] as (keyof Program)[]).map((field) => `Program.${field}`)
+
+export const programsConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'id',
+    aliases: {
+        id: 'id',
+        name: 'name',
+    },
+}

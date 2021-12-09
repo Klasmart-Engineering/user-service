@@ -11,9 +11,7 @@ import {
     DeleteClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
-import { ProgramSummaryNode } from '../../src/types/graphQL/program'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
-import { SubjectSummaryNode } from '../../src/types/graphQL/subject'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addAgeRangesToClass,
@@ -44,7 +42,11 @@ import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
+import { Program } from '../../src/entities/program'
+import ProgramsInitializer from '../../src/initializers/programs'
 import { makeRequest } from './utils'
+import { CoreSubjectConnectionNode } from '../../src/pagination/subjectsConnection'
+import { CoreProgramConnectionNode } from '../../src/pagination/programsConnection'
 
 interface IClassEdge {
     node: ClassConnectionNode
@@ -70,6 +72,7 @@ let org1Id: string
 let org2Id: string
 let class1Ids: string[]
 let class2Ids: string[]
+let systemProgramIds: string[]
 
 let ageRangeId: string
 let schoolId: string
@@ -149,6 +152,12 @@ describe('acceptance.class', () => {
     beforeEach(async () => {
         const systemRoles = await getSystemRoleIds()
         const schoolAdminRoleId = String(systemRoles['School Admin'])
+        await ProgramsInitializer.run()
+        const systemPrograms = (await Program.find({
+            where: { system: true },
+            take: 3,
+        })) as Program[]
+        systemProgramIds = systemPrograms.map((p) => p.id)
 
         class1Ids = []
         class2Ids = []
@@ -303,6 +312,12 @@ describe('acceptance.class', () => {
                 getAdminAuthToken()
             )
 
+            await addProgramsToClass(
+                class1Id,
+                systemProgramIds,
+                getAdminAuthToken()
+            )
+
             if (i > classesCount / 2) {
                 const org2ClassResponse = await createClass(
                     org2Id,
@@ -327,10 +342,10 @@ describe('acceptance.class', () => {
             [ageRangeId],
             getAdminAuthToken()
         )
+
         await addSchoolsToClass(class1Ids[2], [schoolId], getAdminAuthToken())
         await addGradesToClass(class1Ids[3], [gradeId], getAdminAuthToken())
         await addSubjectsToClass(class1Ids[4], [subjectId], getAdminAuthToken())
-        await addProgramsToClass(class1Ids[5], [programId], getAdminAuthToken())
     })
 
     context('classesConnection', () => {
@@ -720,13 +735,19 @@ describe('acceptance.class', () => {
                 (edge: IClassEdge) => edge.node.subjects
             )
 
-            classSubjects.every((subjects: SubjectSummaryNode[]) => {
+            classSubjects.every((subjects: CoreSubjectConnectionNode[]) => {
                 const subjectIds = subjects.map((subject) => subject.id)
                 expect(subjectIds).includes(subjectId)
             })
         })
 
         it('queries paginated classes filtering by program ID', async () => {
+            await addProgramsToClass(
+                class1Ids[5],
+                [programId],
+                getAdminAuthToken()
+            )
+
             const response = await request
                 .post('/user')
                 .set({
@@ -755,7 +776,7 @@ describe('acceptance.class', () => {
                 (edge: IClassEdge) => edge.node.programs
             )
 
-            classPrograms.every((programs: ProgramSummaryNode[]) => {
+            classPrograms.every((programs: CoreProgramConnectionNode[]) => {
                 const programIds = programs.map((program) => program.id)
                 expect(programIds).includes(programId)
             })
@@ -972,6 +993,34 @@ describe('acceptance.class', () => {
                 expectedSchoolIds
             )
         })
+
+        it('has programsConnection as a child', async () => {
+            const user1 = await User.findOneOrFail(user_id)
+            const response = await makeRequest(
+                request,
+                print(CLASSES_CONNECTION),
+                { direction: 'FORWARD' },
+                generateToken(userToPayload(user1))
+            )
+
+            expect(response.status).to.eq(200)
+
+            const classesConnection = response.body.data.classesConnection
+            expect(classesConnection.edges).to.have.lengthOf(classesCount)
+            classesConnection.edges.forEach((c: IClassEdge) => {
+                const programsConnection = c.node.programsConnection
+                expect(programsConnection?.edges).to.have.lengthOf(
+                    systemProgramIds.length
+                )
+
+                const programIds = programsConnection?.edges.map(
+                    (p) => p.node.id
+                )
+
+                expect(programIds).to.deep.equalInAnyOrder(systemProgramIds)
+            })
+        })
+
         it('has gradesConnection as a child', async () => {
             const response = await makeRequest(
                 request,
