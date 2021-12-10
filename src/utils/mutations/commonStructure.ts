@@ -201,18 +201,12 @@ export function mutate<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType,
-    ModifiedEntityType extends CustomBaseEntity,
-    MutationOps extends Mutation<
-        EntityType,
-        InputType,
-        OutputType,
-        ModifiedEntityType
-    >
+    ModifiedEntityType extends CustomBaseEntity
 >(
     mutation: new (
         argsInput: InputType[],
         ctx: Pick<Context, 'permissions'>
-    ) => MutationOps,
+    ) => Mutation<EntityType, InputType, OutputType, ModifiedEntityType>,
     args: Record<'input', InputType[]>,
     context: Pick<Context, 'permissions'>
 ): Promise<OutputType> {

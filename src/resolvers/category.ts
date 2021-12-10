@@ -29,7 +29,7 @@ import { config } from '../config/config'
 import { categoryConnectionNodeFields } from '../pagination/categoriesConnection'
 import { subcategoryConnectionNodeFields } from '../pagination/subcategoriesConnection'
 import { customErrors } from '../types/errors/customError'
-import { DeleteMutation, EntityMap } from '../utils/ mutations/commonStructure'
+import { DeleteMutation, EntityMap } from '../utils/mutations/commonStructure'
 
 interface InputAndOrgRelation {
     id: string

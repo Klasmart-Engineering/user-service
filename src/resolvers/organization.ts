@@ -16,7 +16,7 @@ import {
 import { createEntityAPIError } from '../utils/resolvers'
 import { config } from '../config/config'
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
-import { AddMutation, EntityMap } from '../utils/ mutations/commonStructure'
+import { AddMutation, EntityMap } from '../utils/mutations/commonStructure'
 
 export class AddUsersToOrganizations extends AddMutation<
     Organization,

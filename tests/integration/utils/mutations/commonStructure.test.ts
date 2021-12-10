@@ -14,7 +14,7 @@ import {
     CategoriesMutationResult,
     DeleteCategoryInput,
 } from '../../../../src/types/graphQL/category'
-import { mutate } from '../../../../src/utils/ mutations/commonStructure'
+import { mutate } from '../../../../src/utils/mutations/commonStructure'
 import { createServer } from '../../../../src/utils/createServer'
 import { createInputLengthAPIError } from '../../../../src/utils/resolvers'
 import { createCategories } from '../../../factories/category.factory'

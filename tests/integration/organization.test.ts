@@ -104,7 +104,7 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { AddUsersToOrganizationInput } from '../../src/types/graphQL/organization'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { AddUsersToOrganizations } from '../../src/resolvers/organization'
-import { mutate } from '../../src/utils/ mutations/commonStructure'
+import { mutate } from '../../src/utils/mutations/commonStructure'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)

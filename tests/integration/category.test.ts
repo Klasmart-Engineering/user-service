@@ -62,7 +62,7 @@ import CategoriesInitializer from '../../src/initializers/categories'
 import { buildDeleteCategoryInputArray } from '../utils/operations/categoryOps'
 import { buildPermissionError } from '../utils/errors'
 import { compareErrors } from '../utils/apiError'
-import { mutate } from '../../src/utils/ mutations/commonStructure'
+import { mutate } from '../../src/utils/mutations/commonStructure'
 
 interface CategoryAndSubcategories {
     id: string
