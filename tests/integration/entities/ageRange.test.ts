@@ -62,7 +62,7 @@ describe('ageRange', () => {
         })
 
         context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
+            it('fails authentication', async () => {
                 const gqlResult = deleteAgeRange(testClient, ageRange.id, {
                     authorization: undefined,
                 })

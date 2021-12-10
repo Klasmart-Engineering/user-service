@@ -66,7 +66,7 @@ describe('Category', () => {
 
     describe('delete', () => {
         context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
+            it('fails authentication', async () => {
                 const gqlResult = deleteCategory(testClient, category.id, {
                     authorization: undefined,
                 })
@@ -478,7 +478,7 @@ describe('Category', () => {
         })
 
         context('when not authenticated', () => {
-            xit('throws a permission error', async () => {
+            it('throws a permission error', async () => {
                 await expect(
                     editSubcategories(
                         testClient,

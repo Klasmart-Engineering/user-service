@@ -62,7 +62,7 @@ describe('Subcategory', () => {
         })
 
         context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
+            it('fails authentication', async () => {
                 const gqlResult = deleteSubcategory(
                     testClient,
                     subcategory.id,
