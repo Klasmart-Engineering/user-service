@@ -13,7 +13,7 @@ type entityErrorType =
 export function createInputLengthAPIError(
     entity: string,
     limit: 'min' | 'max'
-) {
+): APIError {
     const lengthLimitValues = {
         min: {
             code: customErrors.invalid_array_min_length.code,
@@ -44,7 +44,7 @@ export function createNonExistentOrInactiveEntityAPIError(
     attribute: string,
     entity: string,
     otherAttribute: string
-) {
+): APIError {
     return new APIError({
         code: customErrors.nonexistent_or_inactive.code,
         message: customErrors.nonexistent_or_inactive.message,
@@ -76,7 +76,7 @@ export function createDuplicateInputAPIError(
     index: number,
     variables: string[],
     entity: string
-) {
+): APIError {
     return new APIError({
         code: customErrors.duplicate_attribute_values.code,
         message: customErrors.duplicate_attribute_values.message,
@@ -87,12 +87,16 @@ export function createDuplicateInputAPIError(
     })
 }
 
-export function createDatabaseSaveAPIError(entity: string, message: string) {
-    new APIError({
+export function createDatabaseSaveAPIError(
+    entity: string,
+    message: string
+): APIError {
+    return new APIError({
         code: customErrors.database_save_error.code,
         message: customErrors.database_save_error.message,
-        variables: [message],
+        variables: [],
         entity,
+        attribute: message,
     })
 }
 
@@ -119,7 +123,7 @@ export function createEntityAPIError(
     parentEntity?: string,
     parentName?: string,
     variables?: string[]
-) {
+): APIError {
     const errorValues = {
         nonExistent: {
             code: customErrors.nonexistent_entity.code,

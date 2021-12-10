@@ -2,7 +2,9 @@
 
 ## Synopsis
 
-In the context of reworking mutations, creating a structure (abstract class or interface) for all new mutations to follow help standardise our approach and speed up development. The structure should accomplish the following objectives:
+In the context of reworking mutations, creating a structure (abstract class or interface) for
+all new mutations to follow help standardise our approach and speed up development. The
+structure should accomplish the following objectives:
 
 1. Cut down on common code: there should be minimal code repetition across mutations
 
@@ -10,15 +12,21 @@ In the context of reworking mutations, creating a structure (abstract class or i
 
 ## Background
 
-This is a follow-up from [RFC-038-HOW-TO-STRUCTURE-MUTATIONS](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/038-How-to-structure-mutations.md), related to issue [AD-1724](https://calmisland.atlassian.net/browse/AD-1724). While RFC-038 specifies what to implement (details specified in the sub-RFCs located [here](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/mutations/)), it gives no instructions on how. This led to a divergence in our approaches within the team, which ended up slowing dow the development process.
+This is a follow-up from
+[RFC-038-HOW-TO-STRUCTURE-MUTATIONS](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/038-How-to-structure-mutations.md),
+related to issue [AD-1724](https://calmisland.atlassian.net/browse/AD-1724).
+While RFC-038 specifies what to implement (details specified in the sub-RFCs located
+[here](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/mutations/)),
+it gives no instructions on how. This led to a divergence in our approaches within the team,
+which ended up slowing dow the development process.
 
 We noticed that the mutations we wrote shared a basic structure:
 
 1. Input Checks
 
-2. Authorisation
+2. Input Normalisation (for *Create* and *Update* mutations)
 
-3. Input Normalisation (for *Create* and *Update* mutations)
+3. Authorisation
 
 4. Validate database objects, make change & build output
 
@@ -26,32 +34,51 @@ We noticed that the mutations we wrote shared a basic structure:
 
 6. Return a structure to the caller
 
-**Input checks**: this can include static checks (using JOI validations), and checks on the input length
+**Input checks**: this can include static checks (using JOI validations),
+and checks on the input length
 
-**Authorisation**: check if the user calling the mutation has the appropriate permissions against a list of organisations and/or schools
+**Input Normalisation**: make sure inputs are in a valid & consistent format
+(we have `clean` methods for this already), should also include all possible checks
 
-**Input Normalisation**: make sure inputs are in a valid & consistent format (we have `clean` methods for this already), should also include all possible checks
+**Authorisation**: check if the user calling the mutation has the appropriate
+permissions against a list of organisations and/or schools
 
-**Validate Database Objects**: check that what was fetched from the database is what was expected
+**Validate Database Objects**: check that what was fetched from the database is
+what was expected
 
-**Make Change**: modify the database objects, effectively performing the main objective of the mutation
+**Make Change**: modify the database objects, effectively performing the main
+objective of the mutation
 
-**Build Output**: pass in the modified object to a list and format it for output. This will involve mapping an `EntityConnectionNode` to a `CoreEntityConnectionNode` if the `EntityConnectionNode` includes properties that are to be handled by resolvers (and thus don't need to be returned)
+**Build Output**: pass in the modified object to a list and format it for output.
+This will involve mapping an `EntityConnectionNode` to a `CoreEntityConnectionNode`
+if the `EntityConnectionNode` includes properties that are to be handled by resolvers
+(and thus don't need to be returned)
 
-**Save to Database**: send an update query to the database for each input element. In the case of *Delete* mutations a batch update can be issued for all inputs (since all we're making the same change on all objects)
+**Save to Database**: send an update query to the database for each input element.
+In the case of *Delete* mutations a batch update can be issued for all inputs
+(since all we're making the same change on all objects)
 
 ## Proposal
 
 ### Common structure
 
-The new structure to follow can be found in `src/utils/mutations/commonStructure.ts` (TODO: replace this by link once merged to master). The abstract classes that mutations will have to use have the following signatures:
+The new structure to follow can be found in `src/utils/mutations/commonStructure.ts`.
+The parent class is called `Mutation`, this is where most of the common logic will live.
+It has the following signature:
 
 ``` typescript
-abstract class Mutation<E, I, O> {}
-abstract class CreateMutation<E, I, O> extends Mutation<E, I, O> {}
-abstract class UpdateMutation<E, I, O> extends Mutation<E, I, O> {}
-abstract class AddRemoveMutation<E, I, O> extends Mutation<E, I, O> {}
-abstract class DeleteMutation<E extends CustomBaseEntity, I, O> extends Mutation<E, I, O> {}
+abstract class Mutation<EntityType extends CustomBaseEntity, InputType, OutputType> {}
+```
+
+`Mutation` is extended by some other abstract classes in order to group common logic
+by operation. These will be implemented by the mutation resolver classes.
+
+``` typescript
+abstract class CreateMutation<EntityType extends CustomBaseEntity, InputType, OutputType> {}
+abstract class UpdateMutation<EntityType extends CustomBaseEntity, InputType, OutputType> {}
+abstract class DeleteMutation<EntityType extends CustomBaseEntity, InputType, OutputType> {}
+abstract class AddMutation<EntityType extends CustomBaseEntity, InputType, OutputType, ModifiedEntityType extends CustomBaseEntity> {}
+abstract class RemoveMutation<EntityType extends CustomBaseEntity, InputType, OutputType, ModifiedEntityType extends CustomBaseEntity> {}
 ```
 
 ### How to use it as a resolver
@@ -75,21 +102,9 @@ class DeleteCategories extends DeleteMutation<Category, DeleteCategoryInput, Cat
 
 ### How to call the resolver
 
-The mutation itself will be called by the `mutate()` method which is implemented in `Mutation`. All 6 steps are represented in this method:
-
-``` typescript
-async mutate(): Promise<O> {
-    const input = this.i
-    this.validateInputLength()
-    const normalisedInput = await this.normalise(input)
-    await this.authorise()
-    const loopResults = await this.inputLoop(normalisedInput)
-    await this.saveWrapper(loopResults.processedEntities)
-    return loopResults.mutationOutput
-}
-```
-
-The method would be called in the schema in the following way (still using `DeleteCategories` as an example):
+The mutation itself will be called by the `mutate()` function, which will run through all
+the steps mentioned before. The method would be called in the schema in the following way
+(still using `DeleteCategories` as an example):
 
 ``` typescript
 export default function getDefault(
@@ -101,7 +116,7 @@ export default function getDefault(
         resolvers: {
             Mutation: {
                 deleteCategories: (_parent, args, ctx, _info) =>
-                    new DeleteCategories(args.input, ctx).mutate(),
+                    mutate(DeleteCategories, args, ctx),
             },
         },
     }
@@ -110,16 +125,25 @@ export default function getDefault(
 
 ### Testing
 
-One of the most important aspects of this change is how it will affect testing. In the same way that the way we currently write mutations results in a lot of duplicate code, it also results in duplicate tests. There will be integration tests for the common structure in `tests/integration/commonStructure.tests.ts`, whatever is tested in there should not be tested again for each mutation.
-
+One of the most important aspects of this change is how it will affect testing. In the same way
+that the way we currently write mutations results in a lot of duplicate code, it also results
+in duplicate tests. There will be integration tests for the common structure in
+`tests/integration/commonStructure.tests.ts`, whatever is tested in there should not
+be tested again for each mutation.
 
 ## Out of scope
 
-None
+* Standardising errors used by GraphQL operations. For now, we use `APIError`, but this
+can be improved on, and applied to all errors.
+
+* Finding a way to have a single source of truth for GraphQL types. GraphQL types need
+to be cloned as typescript types for us to use them in resolvers. There must be some
+solution out there to avoid having to do that. Perhaps generating the GraphQL schema
+automatically.
 
 ## Appendix
 
-None
+* [The PR for the common structure code](https://bitbucket.org/calmisland/kidsloop-user-service/pull-requests/729)
 
 ## Decision
 

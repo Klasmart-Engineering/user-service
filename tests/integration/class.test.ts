@@ -81,9 +81,6 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { Role } from '../../src/entities/role'
 import { DeleteClassInput } from '../../src/types/graphQL/class'
 import { expectAPIError } from '../utils/apiError'
-import { customErrors } from '../../src/types/errors/customError'
-import { formatMessage } from '../../src/types/errors/apiError'
-import { errorFormattingWrapper } from '../utils/errors'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 
 use(chaiAsPromised)
@@ -4185,18 +4182,9 @@ describe('class', () => {
         let input: DeleteClassInput[]
 
         function deleteClasses(i: DeleteClassInput[], u = user1) {
-            return errorFormattingWrapper(
-                deleteClassesResolver(
-                    { input: i },
-                    {
-                        permissions: new UserPermissions({
-                            id: u.user_id,
-                            email: u.email,
-                            phone: u.phone,
-                        }),
-                    }
-                )
-            )
+            const permissions = new UserPermissions(userToPayload(u))
+            const ctx = { permissions }
+            return deleteClassesResolver({ input: i }, ctx)
         }
 
         async function checkClassesDeleted(i: DeleteClassInput[]) {

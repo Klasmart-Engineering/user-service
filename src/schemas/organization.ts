@@ -6,7 +6,7 @@ import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { IDataLoaders } from '../loaders/setup'
 import { Context } from '../main'
 import { Model } from '../model'
-import { addUsersToOrganizations } from '../resolvers/organization'
+import { AddUsersToOrganizations } from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { RoleConnectionNode } from '../types/graphQL/role'
 import { GraphQLSchemaModule } from '../types/schemaModule'
@@ -16,6 +16,7 @@ import {
     IPaginatedResponse,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
+import { mutate } from '../utils/ mutations/commonStructure'
 import { Category } from '../entities/category'
 import { Subcategory } from '../entities/subcategory'
 import { AgeRange } from '../entities/ageRange'
@@ -508,7 +509,7 @@ export default function getDefault(
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
-                    addUsersToOrganizations(args, ctx),
+                    mutate(AddUsersToOrganizations, args, ctx),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>

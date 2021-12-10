@@ -17,3 +17,12 @@ export function createCategory(
 
     return category
 }
+
+export const createCategories = (
+    length: number,
+    org?: Organization,
+    subCats?: Subcategory[]
+) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createCategory(org, subCats))

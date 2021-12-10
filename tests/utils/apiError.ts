@@ -1,4 +1,5 @@
-import { expect } from 'chai'
+import { expect, use } from 'chai'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import {
     APIError,
     APIErrorCollection,
@@ -12,6 +13,8 @@ import {
     genericErrorCodes,
 } from '../../src/types/errors/customError'
 import { Implements } from '../../src/types/generics'
+
+use(deepEqualInAnyOrder)
 
 export function expectToBeAPIErrorCollection(
     error: Error,
@@ -38,16 +41,17 @@ function expectAPIErrorType(
     errorCount = 1
 ) {
     expectIsAPIErrorCollection(actualError)
-    const expectedError = customErrors[expectedErrorType] as {
-        code: string
-        message?: string
-    }
-    expect(actualError.errors[errorIndex]).to.deep.equal({
+    const expectedError = {
+        ...customErrors[expectedErrorType],
+        variables,
+        ...params,
+    } as APIError
+    compareErrors(actualError.errors[errorIndex], {
         code: expectedError.code,
         message: formatMessage(expectedError.message, params),
         variables,
         ...params,
-    })
+    } as APIError)
     return expect(actualError.errors).to.have.length(errorCount)
 }
 
@@ -126,3 +130,16 @@ export const expectAPIError = Object.fromEntries(
                 ),
         ])
 ) as ExpectAPIErrors
+
+export function compareErrors(error: APIError, expectedError: APIError) {
+    expect(error.code).to.eq(expectedError.code)
+    expect(error.message).to.eq(expectedError.message)
+    expect(error.variables).to.deep.equalInAnyOrder(expectedError.variables)
+    expect(error.entity).to.eq(expectedError.entity)
+    expect(error.entityName).to.eq(expectedError.entityName)
+    expect(error.attribute).to.eq(expectedError.attribute)
+    expect(error.otherAttribute).to.eq(expectedError.otherAttribute)
+    expect(error.index).to.eq(expectedError.index)
+    expect(error.min).to.eq(expectedError.min)
+    expect(error.max).to.eq(expectedError.max)
+}

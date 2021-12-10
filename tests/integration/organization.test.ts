@@ -102,9 +102,9 @@ import { Headers } from 'node-mocks-http'
 import { expectAPIError, expectToBeAPIErrorCollection } from '../utils/apiError'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { AddUsersToOrganizationInput } from '../../src/types/graphQL/organization'
-import { errorFormattingWrapper } from '../utils/errors'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { addUsersToOrganizations } from '../../src/resolvers/organization'
+import { AddUsersToOrganizations } from '../../src/resolvers/organization'
+import { mutate } from '../../src/utils/ mutations/commonStructure'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -7083,18 +7083,9 @@ describe('organization', () => {
         let input: AddUsersToOrganizationInput[]
 
         function addUsers(authUser = adminUser) {
-            return errorFormattingWrapper(
-                addUsersToOrganizations(
-                    { input },
-                    {
-                        permissions: new UserPermissions({
-                            id: authUser.user_id,
-                            email: authUser.email,
-                            phone: authUser.phone,
-                        }),
-                    }
-                )
-            )
+            const permissions = new UserPermissions(userToPayload(authUser))
+            const ctx = { permissions }
+            return mutate(AddUsersToOrganizations, { input }, ctx)
         }
 
         async function checkOutput() {
@@ -7144,27 +7135,14 @@ describe('organization', () => {
             }[]
         ) {
             expectedErrors.forEach((val, errorIndex) => {
-                const variables: string[] = []
-                switch (val.entity) {
-                    case 'Role':
-                        variables.push('role_id')
-                        break
-                    case 'Organization':
-                        variables.push('organization_id')
-                        break
-                    case 'User':
-                        variables.push('user_id')
-                        break
-                }
-                expectAPIError.nonexistent_or_inactive(
+                expectAPIError.nonexistent_entity(
                     actualError,
                     {
                         entity: val.entity,
-                        attribute: val.entity === 'Role' ? 'IDs' : 'ID',
-                        otherAttribute: val.id,
+                        entityName: val.id,
                         index: val.entryIndex,
                     },
-                    variables,
+                    ['id'],
                     errorIndex,
                     expectedErrors.length
                 )
@@ -7277,7 +7255,7 @@ describe('organization', () => {
                                 await organization3.inactivate(getManager())
                         )
 
-                        it('returns an inactive or nonexistent organization error', async () => {
+                        it('returns an nonexistent organization error', async () => {
                             const res = await expect(addUsers()).to.be.rejected
                             checkNotFoundErrors(res, [
                                 {
@@ -7295,7 +7273,7 @@ describe('organization', () => {
                 context('and one of the users is inactive', async () => {
                     beforeEach(async () => await user2.inactivate(getManager()))
 
-                    it('returns an inactive or nonexistent user error', async () => {
+                    it('returns an nonexistent user error', async () => {
                         const res = await expect(addUsers()).to.be.rejected
                         checkNotFoundErrors(res, [
                             {
@@ -7312,7 +7290,7 @@ describe('organization', () => {
                 context('and one of the roles is inactive', async () => {
                     beforeEach(async () => await role1.inactivate(getManager()))
 
-                    it('returns an inactive or nonexistent role error', async () => {
+                    it('returns an nonexistent role error', async () => {
                         const res = await expect(addUsers()).to.be.rejected
                         checkNotFoundErrors(res, [
                             {
@@ -7335,7 +7313,7 @@ describe('organization', () => {
                         ])
                     })
 
-                    it('returns several inactive or nonexistent errors', async () => {
+                    it('returns several nonexistent errors', async () => {
                         const res = await expect(addUsers()).to.be.rejected
                         checkNotFoundErrors(res, [
                             {

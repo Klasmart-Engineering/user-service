@@ -4,11 +4,12 @@ import { Context } from '../main'
 import {
     createCategories,
     removeSubcategoriesFromCategories,
-    deleteCategories,
     updateCategories,
     addSubcategoriesToCategories,
+    DeleteCategories,
 } from '../resolvers/category'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { mutate } from '../utils/ mutations/commonStructure'
 import { CategoryConnectionNode } from '../types/graphQL/category'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { GraphQLResolveInfo } from 'graphql'
@@ -218,7 +219,7 @@ export default function getDefault(
                 createCategories: (_parent, args, ctx, _info) =>
                     createCategories(args, ctx),
                 deleteCategories: (_parent, args, ctx, _info) =>
-                    deleteCategories(args, ctx),
+                    mutate(DeleteCategories, args, ctx),
                 updateCategories: (_parent, args, ctx, _info) =>
                     updateCategories(args, ctx),
                 addSubcategoriesToCategories: (_parent, args, ctx) =>

@@ -1,4 +1,6 @@
 import { createHash } from 'crypto'
+import { config } from '../config/config'
+import clean from './clean'
 
 export const SHORTCODE_DEFAULT_MAXLEN = 10
 
@@ -40,4 +42,11 @@ export function validateShortCode(
         return true
     }
     return false
+}
+
+export function formatShortCode(code?: string): string | undefined {
+    code = clean.shortcode(code)
+    return validateShortCode(code, config.limits.SHORTCODE_MAX_LENGTH)
+        ? code
+        : undefined
 }

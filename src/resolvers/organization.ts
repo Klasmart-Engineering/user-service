@@ -1,4 +1,4 @@
-import { getManager, In } from 'typeorm'
+import { In } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Role } from '../entities/role'
@@ -7,188 +7,179 @@ import { User } from '../entities/user'
 import { Context } from '../main'
 import { mapOrganizationToOrganizationConnectionNode } from '../pagination/organizationsConnection'
 import { PermissionName } from '../permissions/permissionNames'
-import { APIError, APIErrorCollection } from '../types/errors/apiError'
+import { APIError } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 import {
     AddUsersToOrganizationInput,
-    OrganizationConnectionNode,
     OrganizationsMutationResult,
 } from '../types/graphQL/organization'
-import { createInputLengthAPIError } from '../utils/resolvers'
+import { createEntityAPIError } from '../utils/resolvers'
 import { config } from '../config/config'
-import { generateShortCode, validateShortCode } from '../utils/shortcode'
+import { formatShortCode, generateShortCode } from '../utils/shortcode'
+import { AddMutation, EntityMap } from '../utils/ mutations/commonStructure'
 
-export async function addUsersToOrganizations(
-    args: { input: AddUsersToOrganizationInput[] },
-    context: Pick<Context, 'permissions'>
-): Promise<OrganizationsMutationResult> {
-    // Initial validations
-    if (args.input.length === 0) {
-        throw createInputLengthAPIError('Organization', 'min')
-    }
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('Organization', 'max')
-    }
-    await context.permissions.rejectIfNotAllowed(
-        { organization_ids: args.input.map((i) => i.organizationId) },
-        PermissionName.send_invitation_40882
-    )
+export class AddUsersToOrganizations extends AddMutation<
+    Organization,
+    AddUsersToOrganizationInput,
+    OrganizationsMutationResult,
+    OrganizationMembership
+> {
+    protected readonly EntityType = Organization
+    protected inputTypeName = 'AddUsersToOrganizationInput'
+    protected mainEntityIds: string[]
+    protected output: OrganizationsMutationResult
 
-    // Preloading
-    const preloadedOrgArray = Organization.findByIds(
-        args.input.map((val) => val.organizationId),
-        { where: { status: Status.ACTIVE } }
-    )
+    constructor(
+        input: AddUsersToOrganizationInput[],
+        context: Pick<Context, 'permissions'>
+    ) {
+        super(input, context)
+        this.mainEntityIds = input.map((val) => val.organizationId)
+        this.output = { organizations: [] }
+    }
+
+    generateEntityMaps = async (
+        input: AddUsersToOrganizationInput[]
+    ): Promise<EntityMap<Organization>> =>
+        generateMaps(this.mainEntityIds, input)
+
+    protected async authorize(): Promise<void> {
+        return this.context.permissions.rejectIfNotAllowed(
+            { organization_ids: this.mainEntityIds },
+            PermissionName.send_invitation_40882
+        )
+    }
+
+    protected validate = validateForAddRemove
+
+    protected process = processForAddRemove
+
+    protected buildOutput = (currentEntity: Organization): void => {
+        this.output.organizations.push(
+            mapOrganizationToOrganizationConnectionNode(currentEntity)
+        )
+    }
+}
+
+async function generateMaps(
+    organizationIds: string[],
+    input: AddUsersToOrganizationInput[]
+) {
+    const preloadedOrgArray = Organization.findByIds(organizationIds, {
+        where: { status: Status.ACTIVE },
+    })
     const preloadedRoleArray = Role.findByIds(
-        args.input.map((val) => val.organizationRoleIds).flat(),
+        input.map((val) => val.organizationRoleIds).flat(),
         { where: { status: Status.ACTIVE } }
     )
     const preloadedUserArray = User.findByIds(
-        args.input.map((val) => val.userIds).flat(),
+        input.map((val) => val.userIds).flat(),
         { where: { status: Status.ACTIVE } }
     )
     const preloadedMembershipArray = OrganizationMembership.find({
         where: {
-            user_id: In(args.input.map((val) => val.userIds).flat()),
-            organization_id: In(args.input.map((val) => val.organizationId)),
+            user_id: In(input.map((val) => val.userIds).flat()),
+            organization_id: In(organizationIds),
             status: Status.ACTIVE,
         },
     })
-    const preloadedOrgs = new Map(
-        (await preloadedOrgArray).map((i) => [i.organization_id, i])
-    )
-    const preloadedRoles = new Map(
-        (await preloadedRoleArray).map((i) => [i.role_id, i])
-    )
-    const preloadedUsers = new Map(
-        (await preloadedUserArray).map((i) => [i.user_id, i])
-    )
-    const preloadedMemberships = new Map(
-        (await preloadedMembershipArray).map((i) => [
-            [i.organization_id, i.user_id].toString(),
-            i,
-        ])
-    )
 
-    // Process inputs
-    const memberships: OrganizationMembership[] = []
-    const output: OrganizationConnectionNode[] = []
+    return {
+        mainEntity: new Map(
+            (await preloadedOrgArray).map((i) => [i.organization_id, i])
+        ),
+        roles: new Map((await preloadedRoleArray).map((i) => [i.role_id, i])),
+        users: new Map((await preloadedUserArray).map((i) => [i.user_id, i])),
+        memberships: new Map(
+            (await preloadedMembershipArray).map((i) => [
+                [i.organization_id, i.user_id].toString(),
+                i,
+            ])
+        ),
+    }
+}
+
+function validateForAddRemove(
+    index: number,
+    currentEntity: Organization,
+    currentInput: AddUsersToOrganizationInput,
+    maps: EntityMap<Organization>
+): APIError[] {
+    // Retrieval
     const errors: APIError[] = []
-    for (const [index, subArgs] of args.input.entries()) {
-        // Organization validation
-        const { organizationId, organizationRoleIds, userIds } = subArgs
-        let { shortcode } = subArgs
+    const { organizationId, organizationRoleIds, userIds } = currentInput
 
-        const organization = preloadedOrgs.get(organizationId)
-        if (!organization) {
+    // Role validation
+    const missingRoleIds: string[] = organizationRoleIds.reduce(
+        (acc: string[], orgRoleId: string) => {
+            if (!maps.roles.has(orgRoleId)) acc.push(orgRoleId)
+            return acc
+        },
+        []
+    )
+    if (missingRoleIds.length) {
+        errors.push(
+            createEntityAPIError(
+                'nonExistent',
+                index,
+                'Role',
+                missingRoleIds.toString()
+            )
+        )
+    }
+
+    for (const userId of userIds) {
+        // User validation
+        const user = maps.users.get(userId) as User
+        if (!user) {
+            errors.push(
+                createEntityAPIError('nonExistent', index, 'User', userId)
+            )
+        }
+        if (!user) continue
+        // Membership validation
+        if (maps.memberships.has([organizationId, userId].toString())) {
             errors.push(
                 new APIError({
-                    code: customErrors.nonexistent_or_inactive.code,
-                    message: customErrors.nonexistent_or_inactive.message,
-                    variables: ['organization_id'],
-                    entity: 'Organization',
-                    attribute: 'ID',
-                    otherAttribute: organizationId,
+                    code: customErrors.duplicate_child_entity.code,
+                    message: customErrors.duplicate_child_entity.message,
+                    variables: ['organization_id', 'user_id'],
+                    entity: 'User',
+                    entityName: user.username,
+                    parentEntity: 'OrganizationMembership in Organization',
+                    parentName: currentEntity.organization_name,
                     index,
                 })
             )
         }
-
-        // Shortcode validation
-        if (organization) {
-            if (shortcode) shortcode = shortcode.toUpperCase()
-            shortcode = validateShortCode(
-                shortcode,
-                config.limits.SHORTCODE_MAX_LENGTH
-            )
-                ? shortcode
-                : undefined
-        }
-
-        // Role validation
-        const roles: Role[] = []
-        const missingRoleIds: string[] = []
-        organizationRoleIds.forEach((val) => {
-            const role = preloadedRoles.get(val)
-            if (role) roles.push(role)
-            else missingRoleIds.push(val)
-        })
-        if (missingRoleIds.length) {
-            errors.push(
-                new APIError({
-                    code: customErrors.nonexistent_or_inactive.code,
-                    message: customErrors.nonexistent_or_inactive.message,
-                    variables: ['role_id'],
-                    entity: 'Role',
-                    attribute: 'IDs',
-                    otherAttribute: missingRoleIds.toString(),
-                    index,
-                })
-            )
-        }
-
-        // Create org memberships for each user, including all roles
-        for (const userId of userIds) {
-            const user = preloadedUsers.get(userId)
-            if (!user) {
-                errors.push(
-                    new APIError({
-                        code: customErrors.nonexistent_or_inactive.code,
-                        message: customErrors.nonexistent_or_inactive.message,
-                        variables: ['user_id'],
-                        entity: 'User',
-                        attribute: 'ID',
-                        otherAttribute: userId,
-                        index,
-                    })
-                )
-            }
-
-            if (!organization || !user) continue
-            if (preloadedMemberships.has([organizationId, userId].toString())) {
-                errors.push(
-                    new APIError({
-                        code: customErrors.duplicate_child_entity.code,
-                        message: customErrors.duplicate_child_entity.message,
-                        variables: ['organization_id', 'user_id'],
-                        entity: 'User',
-                        entityName: user.username,
-                        parentEntity: 'OrganizationMembership in Organization',
-                        parentName: organization.organization_name,
-                        index,
-                    })
-                )
-            }
-
-            if (errors.length > 0) continue
-            const membership = new OrganizationMembership()
-            membership.organization_id = organizationId
-            membership.roles = Promise.resolve(roles)
-            membership.organization = Promise.resolve(organization)
-            membership.user_id = userId
-            membership.user = Promise.resolve(user)
-            membership.shortcode =
-                shortcode ||
-                generateShortCode(userId, config.limits.SHORTCODE_MAX_LENGTH)
-            memberships.push(membership)
-        }
-
-        // Build output
-        if (errors.length > 0 || !organization) continue
-        output.push(mapOrganizationToOrganizationConnectionNode(organization))
     }
+    return errors
+}
 
-    if (errors.length > 0) throw new APIErrorCollection(errors)
-    try {
-        await getManager().save(memberships)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw new APIError({
-            code: customErrors.database_save_error.code,
-            message: customErrors.database_save_error.message,
-            variables: [message],
-            entity: 'User',
-        })
+function processForAddRemove(
+    currentEntity: Organization,
+    currentInput: AddUsersToOrganizationInput,
+    maps: EntityMap<Organization>
+): OrganizationMembership[] {
+    // Retrieval
+    const { organizationId, organizationRoleIds, userIds } = currentInput
+    const roles = organizationRoleIds.map((ori) => maps.roles.get(ori) as Role)
+    const shortcode = formatShortCode(currentInput.shortcode)
+
+    // Create new memberships in organisation
+    const memberships: OrganizationMembership[] = []
+    for (const userId of userIds) {
+        const user = maps.users.get(userId) as User
+        const membership = new OrganizationMembership()
+        membership.organization_id = organizationId
+        membership.roles = Promise.resolve(roles)
+        membership.organization = Promise.resolve(currentEntity)
+        membership.user_id = userId
+        membership.user = Promise.resolve(user)
+        membership.shortcode =
+            shortcode ||
+            generateShortCode(userId, config.limits.SHORTCODE_MAX_LENGTH)
+        memberships.push(membership)
     }
-    return { organizations: output }
+    return memberships
 }

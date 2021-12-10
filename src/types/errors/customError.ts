@@ -210,6 +210,6 @@ export const customErrors = {
 
     database_save_error: {
         code: 'ERROR_SAVING',
-        message: 'Cannot save to database',
+        message: 'Cannot save {entity} to database: {attribute}',
     },
 }

@@ -29,6 +29,7 @@ import { config } from '../config/config'
 import { categoryConnectionNodeFields } from '../pagination/categoriesConnection'
 import { subcategoryConnectionNodeFields } from '../pagination/subcategoriesConnection'
 import { customErrors } from '../types/errors/customError'
+import { DeleteMutation, EntityMap } from '../utils/ mutations/commonStructure'
 
 interface InputAndOrgRelation {
     id: string
@@ -407,92 +408,57 @@ export async function createCategories(
     return { categories: output }
 }
 
-export async function deleteCategories(
-    args: { input: DeleteCategoryInput[] },
-    context: Pick<Context, 'permissions'>
-): Promise<CategoriesMutationResult> {
-    // input length validations
-    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('Category', 'min')
+export class DeleteCategories extends DeleteMutation<
+    Category,
+    DeleteCategoryInput,
+    CategoriesMutationResult
+> {
+    protected readonly EntityType = Category
+    protected readonly inputTypeName = 'DeleteCategoryInput'
+    protected readonly mainEntityIds: string[]
+    protected readonly output: CategoriesMutationResult
+
+    constructor(
+        input: DeleteCategoryInput[],
+        context: Pick<Context, 'permissions'>
+    ) {
+        super(input, context)
+        this.mainEntityIds = input.map((val) => val.id)
+        this.output = { categories: [] }
     }
 
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('Category', 'max')
+    protected async generateEntityMaps(): Promise<EntityMap<Category>> {
+        const categories = await Category.createQueryBuilder()
+            .select([
+                ...categoryConnectionNodeFields,
+                'Organization.organization_id',
+            ])
+            .leftJoin('Category.organization', 'Organization')
+            .where('Category.id IN (:...ids)', { ids: this.mainEntityIds })
+            .getMany()
+        return { mainEntity: new Map(categories.map((c) => [c.id, c])) }
     }
 
-    const errors = []
-    const ids = args.input.map((val) => val.id)
-    const categoryNodes: CategoryConnectionNode[] = []
-
-    const categories = await Category.createQueryBuilder()
-        .select([
-            ...categoryConnectionNodeFields,
-            'Organization.organization_id',
-        ])
-        .leftJoin('Category.organization', 'Organization')
-        .where('Category.id IN (:...ids)', {
-            ids,
-        })
-        .getMany()
-
-    const categoriesMap = new Map(categories.map((cf) => [cf.id, cf]))
-    const organizationIds: string[] = []
-    for (const c of categoriesMap.values()) {
-        const organizationId = (await c.organization)?.organization_id
-        if (organizationId) organizationIds.push(organizationId)
-    }
-
-    await context.permissions.rejectIfNotAllowed(
-        { organization_ids: organizationIds },
-        PermissionName.delete_subjects_20447
-    )
-
-    for (const [index, id] of ids.entries()) {
-        const category = categoriesMap.get(id)
-        if (!category) {
-            errors.push(
-                createEntityAPIError('nonExistent', index, 'Category', id)
-            )
-            continue
+    protected async authorize(
+        _input: DeleteCategoryInput[],
+        entityMaps: EntityMap<Category>
+    ) {
+        const organizationIds: string[] = []
+        for (const c of entityMaps.mainEntity.values()) {
+            const organizationId = (await c.organization)?.organization_id
+            if (organizationId) organizationIds.push(organizationId)
         }
-
-        const inputIdIsDuplicate = ids.some(
-            (item, findIndex) => item === category.id && findIndex < index
+        await this.context.permissions.rejectIfNotAllowed(
+            { organization_ids: organizationIds },
+            PermissionName.delete_subjects_20447
         )
-
-        if (inputIdIsDuplicate) {
-            errors.push(
-                createDuplicateInputAPIError(
-                    index,
-                    ['id'],
-                    'DeleteCategoryInput'
-                )
-            )
-        }
-
-        if (category.status === Status.INACTIVE && !inputIdIsDuplicate) {
-            errors.push(
-                createEntityAPIError('inactive', index, 'Category', category.id)
-            )
-        }
-
-        category.status = Status.INACTIVE
-        category.deleted_at = new Date()
-        categoryNodes.push(mapCategoryToCategoryConnectionNode(category))
     }
 
-    if (errors.length) {
-        throw new APIErrorCollection(errors)
+    protected buildOutput(currentEntity: Category): void {
+        this.output.categories.push(
+            mapCategoryToCategoryConnectionNode(currentEntity)
+        )
     }
-
-    try {
-        await getManager().save(categories)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw createDatabaseSaveAPIError('Category', message)
-    }
-
-    return { categories: categoryNodes }
 }
 
 export async function addSubcategoriesToCategories(
@@ -816,10 +782,10 @@ const validateEntity = (
         )
     }
     if (!entity.system && !isAdmin) {
-        const isAllowedIntheOrg = organizationsWhereIsPermitted.includes(
+        const isAllowedInTheOrg = organizationsWhereIsPermitted.includes(
             entity.__organization__?.organization_id || ``
         )
-        if (!isAllowedIntheOrg) {
+        if (!isAllowedInTheOrg) {
             errors.push(
                 new APIError({
                     code: customErrors.unauthorized.code,

@@ -26,6 +26,7 @@ import {
     userToCreateUserInput,
     userToUpdateUserInput,
     randomChangeToUpdateUserInput,
+    userToPayload,
 } from '../utils/operations/userOps'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import {
@@ -87,7 +88,6 @@ import {
     updateUsers,
 } from '../../src/resolvers/user'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { errorFormattingWrapper } from '../utils/errors'
 import {
     AddOrganizationRolesToUserInput,
     CreateUserInput,
@@ -1716,18 +1716,9 @@ describe('user', () => {
         // All the tests for .modifyOrganizationRoles are done here, as well as a specific one for .addOrganizationRolesToUsers
         context('when called by .addOrganizationRolesToUsers', () => {
             function addOrgRoles(authUser = adminUser) {
-                return errorFormattingWrapper(
-                    addOrganizationRolesToUsers(
-                        { input },
-                        {
-                            permissions: new UserPermissions({
-                                id: authUser.user_id,
-                                email: authUser.email,
-                                phone: authUser.phone,
-                            }),
-                        }
-                    )
-                )
+                const permissions = new UserPermissions(userToPayload(authUser))
+                const ctx = { permissions }
+                return addOrganizationRolesToUsers({ input }, ctx)
             }
 
             function checkNotFoundErrors(
@@ -2038,18 +2029,9 @@ describe('user', () => {
         // There is only one test specifically for .removeOrganizationRolesFromUsers, all common tests are done with .addOrganizationRolesToUsers
         context('when called by .removeOrganizationRolesFromUsers', () => {
             function removeOrgRoles(authUser = adminUser) {
-                return errorFormattingWrapper(
-                    removeOrganizationRolesFromUsers(
-                        { input: input },
-                        {
-                            permissions: new UserPermissions({
-                                id: authUser.user_id,
-                                email: authUser.email,
-                                phone: authUser.phone,
-                            }),
-                        }
-                    )
-                )
+                const permissions = new UserPermissions(userToPayload(authUser))
+                const ctx = { permissions }
+                return removeOrganizationRolesFromUsers({ input: input }, ctx)
             }
 
             function checkRolesRemoved() {

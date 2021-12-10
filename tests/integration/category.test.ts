@@ -17,7 +17,7 @@ import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     addSubcategoriesToCategories,
     createCategories,
-    deleteCategories,
+    DeleteCategories,
     removeSubcategoriesFromCategories,
     updateCategories,
 } from '../../src/resolvers/category'
@@ -61,6 +61,8 @@ import faker from 'faker'
 import CategoriesInitializer from '../../src/initializers/categories'
 import { buildDeleteCategoryInputArray } from '../utils/operations/categoryOps'
 import { buildPermissionError } from '../utils/errors'
+import { compareErrors } from '../utils/apiError'
+import { mutate } from '../../src/utils/ mutations/commonStructure'
 
 interface CategoryAndSubcategories {
     id: string
@@ -72,12 +74,6 @@ type NoUpdateProp = 'name' | 'subcategories' | 'both'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
-
-const buildContext = (permissions: UserPermissions) => {
-    return {
-        permissions,
-    }
-}
 
 const permErrorMeta = (permission: string) => {
     return (usr: User, orgs?: Organization[]): string =>
@@ -103,19 +99,6 @@ const expectAPIError = async (
 
     expect(error).to.exist
     compareErrors(error, expectedError)
-}
-
-const compareErrors = (error: APIError, expectedError: APIError) => {
-    expect(error.code).to.eq(expectedError.code)
-    expect(error.message).to.eq(expectedError.message)
-    expect(error.variables).to.deep.equalInAnyOrder(expectedError.variables)
-    expect(error.entity).to.eq(expectedError.entity)
-    expect(error.entityName).to.eq(expectedError.entityName)
-    expect(error.attribute).to.eq(expectedError.attribute)
-    expect(error.otherAttribute).to.eq(expectedError.otherAttribute)
-    expect(error.index).to.eq(expectedError.index)
-    expect(error.min).to.eq(expectedError.min)
-    expect(error.max).to.eq(expectedError.max)
 }
 
 describe('category', () => {
@@ -231,8 +214,8 @@ describe('category', () => {
             user: User,
             input: CreateCategoryInput[]
         ) => {
-            const permission = new UserPermissions(userToPayload(user))
-            const ctx = buildContext(permission)
+            const permissions = new UserPermissions(userToPayload(user))
+            const ctx = { permissions }
             const result = await createCategories({ input }, ctx)
 
             return result
@@ -605,8 +588,8 @@ describe('category', () => {
             user: User,
             input: UpdateCategoryInput[]
         ) => {
-            const permission = new UserPermissions(userToPayload(user))
-            const ctx = buildContext(permission)
+            const permissions = new UserPermissions(userToPayload(user))
+            const ctx = { permissions }
             const result = await updateCategories({ input }, ctx)
             return result
         }
@@ -761,7 +744,7 @@ describe('category', () => {
         })
 
         context('permissions', () => {
-            context('succesfull cases', () => {
+            context('successful cases', () => {
                 context('when user is admin', () => {
                     it('should update any category', async () => {
                         await expectCategoriesFromCategories(admin, [
@@ -899,7 +882,7 @@ describe('category', () => {
         })
 
         context('inputs', () => {
-            context('succesfull cases', () => {
+            context('successful cases', () => {
                 context(
                     'when the received name already exists in system categories',
                     () => {
@@ -974,7 +957,7 @@ describe('category', () => {
                 })
 
                 context(
-                    `when input length is greather than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE}`,
+                    `when input length is greater than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE}`,
                     () => {
                         it('should throw an APIError', async () => {
                             const categoryToUpdate = org1Categories[0]
@@ -985,7 +968,6 @@ describe('category', () => {
                                 ),
                                 () => categoryToUpdate
                             )
-
                             const expectedError = createInputLengthAPIError(
                                 'Category',
                                 'max'
@@ -1302,10 +1284,9 @@ describe('category', () => {
             user: User,
             input: DeleteCategoryInput[]
         ): Promise<CategoriesMutationResult> => {
-            const permission = new UserPermissions(userToPayload(user))
-            const ctx = buildContext(permission)
-            const result = await deleteCategories({ input }, ctx)
-            return result
+            const permissions = new UserPermissions(userToPayload(user))
+            const ctx = { permissions }
+            return mutate(DeleteCategories, { input }, ctx)
         }
 
         const expectCategoriesDeleted = async (
@@ -1341,311 +1322,145 @@ describe('category', () => {
             await createInitialCategories()
         })
 
-        context('permissions', () => {
-            context('successfull cases', () => {
-                context('when user is admin', () => {
-                    it('should delete any category', async () => {
-                        const catsToDelete = [
-                            systemCategories[0],
-                            org1Categories[0],
-                            org2Categories[0],
-                        ]
+        context('when user is admin', () => {
+            it('should delete any category', async () => {
+                const catsToDelete = [
+                    systemCategories[0],
+                    org1Categories[0],
+                    org2Categories[0],
+                ]
 
-                        await expectCategoriesDeleted(admin, catsToDelete)
-                        await expectCategories(
-                            categoriesTotalCount - catsToDelete.length
-                        )
-                    })
-                })
-
-                context('when user is not admin', () => {
-                    context('but has permission', () => {
-                        it('should delete categories in its organization', async () => {
-                            const catsToDelete = org1Categories
-                            await expectCategoriesDeleted(
-                                userWithPermission,
-                                catsToDelete
-                            )
-
-                            await expectCategories(
-                                categoriesTotalCount - catsToDelete.length
-                            )
-                        })
-                    })
-                })
-            })
-
-            context('error handling', () => {
-                let user: User
-                const permError = permErrorMeta(
-                    PermissionName.delete_subjects_20447
+                await expectCategoriesDeleted(admin, catsToDelete)
+                await expectCategories(
+                    categoriesTotalCount - catsToDelete.length
                 )
-
-                context('when user is not admin', () => {
-                    context('but has permission', () => {
-                        beforeEach(() => {
-                            user = userWithPermission
-                        })
-
-                        context('and tries to update system categories', () => {
-                            it('throws a permission error', async () => {
-                                const catsToDelete = systemCategories
-                                const input = buildDeleteCategoryInputArray(
-                                    catsToDelete
-                                )
-
-                                const operation = deleteCategoriesFromResolver(
-                                    user,
-                                    input
-                                )
-
-                                await expect(operation).to.be.rejectedWith(
-                                    permError(user)
-                                )
-
-                                await expectCategories(categoriesTotalCount)
-                            })
-                        })
-
-                        context('and tries to update system categories', () => {
-                            it('throws a permission error', async () => {
-                                const catsToDelete = org2Categories
-                                const input = buildDeleteCategoryInputArray(
-                                    catsToDelete
-                                )
-
-                                const operation = deleteCategoriesFromResolver(
-                                    user,
-                                    input
-                                )
-
-                                await expect(operation).to.be.rejectedWith(
-                                    permError(user, [org2])
-                                )
-
-                                await expectCategories(categoriesTotalCount)
-                            })
-                        })
-                    })
-
-                    context('and has not permission', () => {
-                        context('but has membership', () => {
-                            beforeEach(() => {
-                                user = userWithoutPermission
-                            })
-
-                            context(
-                                'and tries to delete categories in its organization',
-                                () => {
-                                    it('throws a permission error', async () => {
-                                        const catsToDelete = org1Categories
-                                        const input = buildDeleteCategoryInputArray(
-                                            catsToDelete
-                                        )
-
-                                        const operation = deleteCategoriesFromResolver(
-                                            user,
-                                            input
-                                        )
-
-                                        await expect(
-                                            operation
-                                        ).to.be.rejectedWith(
-                                            permError(user, [org1])
-                                        )
-
-                                        await expectCategories(
-                                            categoriesTotalCount
-                                        )
-                                    })
-                                }
-                            )
-                        })
-
-                        context('neither has membership', () => {
-                            beforeEach(() => {
-                                user = userWithoutMembership
-                            })
-
-                            context(
-                                'and tries to delete any categories',
-                                () => {
-                                    it('throws a permission error', async () => {
-                                        const catsToDelete = [
-                                            systemCategories[0],
-                                            org1Categories[0],
-                                            org2Categories[0],
-                                        ]
-
-                                        const input = buildDeleteCategoryInputArray(
-                                            catsToDelete
-                                        )
-
-                                        const operation = deleteCategoriesFromResolver(
-                                            user,
-                                            input
-                                        )
-
-                                        await expect(
-                                            operation
-                                        ).to.be.rejectedWith(permError(user))
-
-                                        await expectCategories(
-                                            categoriesTotalCount
-                                        )
-                                    })
-                                }
-                            )
-                        })
-                    })
-                })
             })
         })
 
-        context('inputs', () => {
-            context('error handling', () => {
-                context('when input provided is an empty array', () => {
-                    it('should throw an APIError', async () => {
-                        const expectedError = createInputLengthAPIError(
-                            'Category',
-                            'min'
+        context('when user is not admin', () => {
+            let user: User
+            const permError = permErrorMeta(
+                PermissionName.delete_subjects_20447
+            )
+
+            context('and has permission', () => {
+                it('should delete categories in its organization', async () => {
+                    const catsToDelete = org1Categories
+                    await expectCategoriesDeleted(
+                        userWithPermission,
+                        catsToDelete
+                    )
+
+                    await expectCategories(
+                        categoriesTotalCount - catsToDelete.length
+                    )
+                })
+            })
+
+            context('and has wrong permissions', () => {
+                beforeEach(() => {
+                    user = userWithPermission
+                })
+
+                context('and tries to update system categories', () => {
+                    it('throws a permission error', async () => {
+                        const catsToDelete = systemCategories
+                        const input = buildDeleteCategoryInputArray(
+                            catsToDelete
                         )
 
-                        const input = buildDeleteCategoryInputArray([])
                         const operation = deleteCategoriesFromResolver(
-                            admin,
+                            user,
                             input
                         )
 
-                        await expectAPIError(operation, expectedError)
+                        await expect(operation).to.be.rejectedWith(
+                            permError(user)
+                        )
+
                         await expectCategories(categoriesTotalCount)
                     })
                 })
 
-                context(
-                    `when input length is greather than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE}`,
-                    () => {
-                        it('should throw an APIError', async () => {
-                            const expectedError = createInputLengthAPIError(
-                                'Category',
-                                'max'
-                            )
+                context('and tries to update system categories', () => {
+                    it('throws a permission error', async () => {
+                        const catsToDelete = org2Categories
+                        const input = buildDeleteCategoryInputArray(
+                            catsToDelete
+                        )
 
-                            const catsToDelete = Array.from(
-                                new Array(
-                                    config.limits
-                                        .MUTATION_MAX_INPUT_ARRAY_SIZE + 1
-                                ),
-                                () => org1Categories[0]
-                            )
+                        const operation = deleteCategoriesFromResolver(
+                            user,
+                            input
+                        )
+
+                        await expect(operation).to.be.rejectedWith(
+                            permError(user, [org2])
+                        )
+
+                        await expectCategories(categoriesTotalCount)
+                    })
+                })
+            })
+
+            context('and does not have permissions', () => {
+                context('and has membership', () => {
+                    beforeEach(() => {
+                        user = userWithoutPermission
+                    })
+
+                    context(
+                        'and tries to delete categories in its organization',
+                        () => {
+                            it('throws a permission error', async () => {
+                                const catsToDelete = org1Categories
+                                const input = buildDeleteCategoryInputArray(
+                                    catsToDelete
+                                )
+
+                                const operation = deleteCategoriesFromResolver(
+                                    user,
+                                    input
+                                )
+
+                                await expect(operation).to.be.rejectedWith(
+                                    permError(user, [org1])
+                                )
+
+                                await expectCategories(categoriesTotalCount)
+                            })
+                        }
+                    )
+                })
+
+                context('and does not have membership', () => {
+                    beforeEach(() => {
+                        user = userWithoutMembership
+                    })
+
+                    context('and tries to delete any categories', () => {
+                        it('throws a permission error', async () => {
+                            const catsToDelete = [
+                                systemCategories[0],
+                                org1Categories[0],
+                                org2Categories[0],
+                            ]
 
                             const input = buildDeleteCategoryInputArray(
                                 catsToDelete
                             )
 
                             const operation = deleteCategoriesFromResolver(
-                                admin,
+                                user,
                                 input
                             )
 
-                            await expectAPIError(operation, expectedError)
-                            await expectCategories(categoriesTotalCount)
-                        })
-                    }
-                )
-
-                context(
-                    "when input provided has duplicates in 'id' field",
-                    () => {
-                        it('should throw an ErrorCollection', async () => {
-                            const catsToDelete = Array.from(
-                                new Array(3),
-                                () => org1Categories[0]
-                            )
-
-                            const input = buildDeleteCategoryInputArray(
-                                catsToDelete
-                            )
-
-                            const expectedErrors = Array.from(
-                                [input[1], input[2]],
-                                (_, index) => {
-                                    return createDuplicateInputAPIError(
-                                        index + 1,
-                                        ['id'],
-                                        'DeleteCategoryInput'
-                                    )
-                                }
-                            )
-
-                            await expectAPIErrorCollection(
-                                deleteCategoriesFromResolver(admin, input),
-                                new APIErrorCollection(expectedErrors)
+                            await expect(operation).to.be.rejectedWith(
+                                permError(user)
                             )
 
                             await expectCategories(categoriesTotalCount)
                         })
-                    }
-                )
-
-                context(
-                    'when a category with the received id does not exists',
-                    () => {
-                        it('should throw an ErrorCollection', async () => {
-                            const nonExistentCategoryId = NIL_UUID
-                            const input = buildDeleteCategoryInputArray(
-                                org1Categories
-                            )
-
-                            input.push({ id: nonExistentCategoryId })
-                            const expectedErrors = [
-                                createEntityAPIError(
-                                    'nonExistent',
-                                    input.length - 1,
-                                    'Category',
-                                    nonExistentCategoryId
-                                ),
-                            ]
-
-                            await expectAPIErrorCollection(
-                                deleteCategoriesFromResolver(admin, input),
-                                new APIErrorCollection(expectedErrors)
-                            )
-
-                            await expectCategories(categoriesTotalCount)
-                        })
-                    }
-                )
-
-                context('when the received category is inactive', () => {
-                    let inactiveCategory: Category
-
-                    beforeEach(async () => {
-                        inactiveCategory = org1Categories[0]
-                        inactiveCategory.status = Status.INACTIVE
-                        await inactiveCategory.save()
-                    })
-
-                    it('should throw an ErrorCollection', async () => {
-                        const input = buildDeleteCategoryInputArray(
-                            org1Categories
-                        )
-
-                        const expectedErrors = [
-                            createEntityAPIError(
-                                'inactive',
-                                0,
-                                'Category',
-                                inactiveCategory.id
-                            ),
-                        ]
-
-                        await expectAPIErrorCollection(
-                            deleteCategoriesFromResolver(admin, input),
-                            new APIErrorCollection(expectedErrors)
-                        )
-
-                        await expectCategories(categoriesTotalCount - 1)
                     })
                 })
             })
@@ -1653,16 +1468,9 @@ describe('category', () => {
     })
 
     describe('addSubcategoriesToCategories', () => {
-        let admin: User
-        let userWithPermission: User
-        let userWithoutPermission: User
-        let userWithoutMembership: User
-        let org1: Organization
-        let org2: Organization
         let editSubjectsRole: Role
         let categoriesOrg1: Category[]
         let categoriesOrg2: Category[]
-        let systemCategories: Category[]
         let subcategoriesOrg1: Subcategory[]
         let subcategoriesOrg2: Subcategory[]
         let systemSubcategories: Subcategory[]
@@ -1740,8 +1548,8 @@ describe('category', () => {
             user: User,
             input: AddSubcategoriesToCategoryInput[]
         ) => {
-            const permission = new UserPermissions(userToPayload(user))
-            const ctx = buildContext(permission)
+            const permissions = new UserPermissions(userToPayload(user))
+            const ctx = { permissions }
             const result = await addSubcategoriesToCategories(
                 { input },
                 ctx as Context
@@ -1758,13 +1566,10 @@ describe('category', () => {
                         subcategoryIds: ['x'],
                     })
                 }
-                const expectedError = createInputLengthAPIError(
-                    'Category',
-                    'max'
-                )
+                const xError = createInputLengthAPIError('Category', 'max')
                 await expectAPIError(
                     addSubcategoriesToCategoriesResolver(admin, inputs),
-                    expectedError
+                    xError
                 )
             })
         })
@@ -2359,8 +2164,8 @@ describe('category', () => {
             user: User,
             input: RemoveSubcategoriesFromCategoryInput[]
         ) => {
-            const permission = new UserPermissions(userToPayload(user))
-            const ctx = buildContext(permission)
+            const permissions = new UserPermissions(userToPayload(user))
+            const ctx = { permissions }
             const result = await removeSubcategoriesFromCategories(
                 { input },
                 ctx
