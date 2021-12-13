@@ -615,10 +615,12 @@ describe('model', () => {
                 const sorted = [
                     permissions[0].permission_id,
                     permissions[1].permission_id,
-                ].sort()
-                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
-                    sorted
-                )
+                ]
+                    .map((s) => s?.toLowerCase())
+                    .sort()
+                expect(
+                    result.edges.map((e) => e.node.id.toLowerCase())
+                ).to.deep.equal(sorted)
             })
             it('sorts by permission name', async () => {
                 const result = await loadPermissionsForRole(
@@ -636,10 +638,12 @@ describe('model', () => {
                 const sorted = [
                     permissions[0].permission_name,
                     permissions[1].permission_name,
-                ].sort()
+                ]
+                    .map((s) => s?.toLowerCase())
+                    .sort()
                 expect(
-                    result.edges.map((e) => e.node.name)
-                ).to.have.same.members(sorted)
+                    result.edges.map((e) => e.node.name.toLowerCase())
+                ).to.deep.equal(sorted)
             })
         })
         context('totalCount', () => {

@@ -406,7 +406,7 @@ describe('subcategory', () => {
                         )
 
                         await expect(result).to.be.rejectedWith(
-                            "Cannot read property 'organization_id' of undefined"
+                            "Cannot read properties of undefined (reading 'organization_id')"
                         )
                     })
                 }

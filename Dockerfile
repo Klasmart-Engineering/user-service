@@ -1,7 +1,6 @@
 FROM node:lts-alpine AS base
 WORKDIR /usr/src/app
 COPY ./package*.json ./
-RUN npm install -g npm@7.22.0
 
 FROM base AS build
 RUN npm ci
