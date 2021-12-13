@@ -18,6 +18,7 @@ import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback
 import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
+import { ProcessEntitiesFromCSVRowsBatchValidation } from '../../types/csv/createEntityRowCallback'
 import clean from '../clean'
 import { Permission } from '../../entities/permission'
 import { config } from '../../config/config'
@@ -404,5 +405,52 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         }
     }
 
+    return rowErrors
+}
+
+// Used for batch validation of a CSV file - replaces legacy row-by-row validation
+export const processUsersFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation<UserRow> = async (
+    manager: EntityManager,
+    userPermissions: UserPermissions,
+    userRows: UserRow[],
+    rowErrors: CSVError[]
+) => {
+    // #1 for each unique org name, check if client user is member + check if org name exists
+    let rowNumber = 1
+    const orgNamesInCSV = userRows.map((row) => row.organization_name)
+    const uniqueOrgNames = new Set(orgNamesInCSV)
+    const invalidOrgNames: String[] = []
+    for (const orgName of uniqueOrgNames) {
+        const org = await Organization.createQueryBuilder('Organization')
+            .innerJoin('Organization.memberships', 'OrganizationMembership')
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: userPermissions.getUserId(),
+            })
+            .andWhere('Organization.organization_name = :organization_name', {
+                organization_name: orgName,
+            })
+            .getOne()
+
+        if (!org) {
+            invalidOrgNames.push(orgName)
+        }
+    }
+    for (const row of userRows) {
+        if (row.organization_name in invalidOrgNames) {
+            addCsvError(
+                rowErrors,
+                customErrors.nonexistent_entity.code,
+                rowNumber,
+                'organization_name',
+                customErrors.nonexistent_entity.message,
+                {
+                    entity: 'Organization',
+                    attribute: 'Name',
+                    entityName: row.organization_name,
+                }
+            )
+        }
+        rowNumber += 1
+    }
     return rowErrors
 }

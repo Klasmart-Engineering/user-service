@@ -27,9 +27,16 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
 import clean from './utils/clean'
-import { processUserFromCSVRow, validateUserCSVHeaders } from './utils/csv/user'
+import {
+    processUserFromCSVRow,
+    processUsersFromCSVRows,
+    validateUserCSVHeaders,
+} from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
-import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
+import {
+    createEntitiesFromCsvBatchValidation,
+    createEntityFromCsvWithRollBack,
+} from './utils/csv/importEntity'
 import { processGradeFromCSVRow, setGradeFromToFields } from './utils/csv/grade'
 import { processOrganizationFromCSVRow } from './utils/csv/organization'
 import { processSchoolFromCSVRow } from './utils/csv/school'
@@ -85,6 +92,13 @@ import { gradesConnectionResolver } from './pagination/gradesConnection'
 import { ageRangesConnectionResolver } from './pagination/ageRangesConnection'
 import { subjectsConnectionResolver } from './pagination/subjectsConnection'
 import { TokenPayload } from './token'
+import { CSVError } from './types/csv/csvError'
+import { ReReadable } from 'rereadable-stream'
+import { formatCSVRow, validateFile } from './utils/csv/readFile'
+import csv = require('csv-parser')
+import { UserRow } from './types/csv/userRow'
+import { validateRow } from './utils/csv/csvUtils'
+import { userRowValidation } from './utils/csv/validations/user'
 
 export class Model {
     public static async create() {
@@ -734,6 +748,31 @@ export class Model {
             [processUserFromCSVRow],
             context.permissions,
             validateUserCSVHeaders,
+            isDryRun
+        )
+
+        return file
+    }
+
+    // Used for batch validation of a CSV file - replaces legacy row-by-row validation
+    public async uploadUsersFromCSVBatchValidation(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await (args.file as Promise<{ file: Upload }>)
+        const isDryRun = args.isDryRun as boolean
+        await createEntitiesFromCsvBatchValidation<UserRow>(
+            this.connection,
+            file,
+            processUsersFromCSVRows,
+            context.permissions,
+            validateUserCSVHeaders,
+            userRowValidation,
             isDryRun
         )
 

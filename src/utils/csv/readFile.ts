@@ -2,7 +2,10 @@ import csv = require('csv-parser')
 import { Upload } from '../../types/upload'
 import { ReReadable } from 'rereadable-stream'
 import { EntityManager } from 'typeorm'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import {
+    CreateEntityRowCallback,
+    ProcessEntitiesFromCSVRowsBatchValidation,
+} from '../../types/csv/createEntityRowCallback'
 import { Transform } from 'stream'
 import { CSVError } from '../../types/csv/csvError'
 import { stringInject } from '../stringUtils'
@@ -14,6 +17,9 @@ import { customErrors } from '../../types/errors/customError'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import logger from '../../logging'
 import { config } from '../../config/config'
+import { UserRow } from '../../types/csv/userRow'
+import { validateRow } from './csvUtils'
+import { CsvRowValidationSchema } from './validations/types'
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
@@ -228,4 +234,88 @@ export async function readCSVFile(
             })
         )
     }
+}
+
+export async function readCSVFileBatchValidation<EntityRow>(
+    manager: EntityManager,
+    file: Upload,
+    validateAndSaveRowsBatchFunction: ProcessEntitiesFromCSVRowsBatchValidation<EntityRow>,
+    userPermissions: UserPermissions,
+    headersCallback: CreateEntityHeadersCallback,
+    validateRowEntityFunction: CsvRowValidationSchema<EntityRow>
+) {
+    const { filename, mimetype, encoding } = file
+    let csvStream
+
+    const readStream = file.createReadStream()
+    const rereadableStream = readStream.pipe(new ReReadable())
+
+    // Preliminary CSV validation checks (basics + headers)
+    // Stop here if any of these checks fail
+    const fileErrors: CSVError[] = []
+    const rowErrors: CSVError[] = []
+    const joiValidEntityRows: EntityRow[] = []
+
+    await validateFile(
+        readStream,
+        rereadableStream,
+        headersCallback,
+        filename,
+        mimetype,
+        fileErrors
+    )
+    csvStream = rereadableStream.rewind().pipe(csv())
+
+    if (fileErrors.length) {
+        throw fileErrors
+    }
+
+    // Preprocess CSV into stream, perform Joi validation per row
+    // Stop here if any Joi validation fails in a row
+    let rowNumber = 1
+    for await (let csvRow of csvStream) {
+        csvRow = formatCSVRow(csvRow)
+        // First check static validation constraints
+        const validationErrors = validateRow(
+            csvRow,
+            rowNumber,
+            validateRowEntityFunction
+        )
+        rowErrors.push(...validationErrors)
+        if (validationErrors.length == 0) {
+            joiValidEntityRows.push(csvRow)
+        }
+        rowNumber += 1
+    }
+    if (rowErrors.length > 0) {
+        throw rowErrors
+    }
+    // At this point we should have all csv rows Joi-validated as joiValidUserRows
+
+    const csvRowErrors = await validateAndSaveRowsBatchFunction(
+        manager,
+        userPermissions,
+        joiValidEntityRows,
+        rowErrors
+    )
+    rowErrors.push(...csvRowErrors)
+
+    if (rowErrors.length) {
+        logger.error(`These errors were found in the file: ${rowErrors}`)
+        throw rowErrors
+    }
+
+    return {
+        mimetype,
+        encoding,
+        filename,
+    }
+
+    // if (rowCounter === 0) {
+    //     throw new Error(
+    //         stringInject(constants.MSG_ERR_CSV_EMPTY_FILE, {
+    //             filename,
+    //         })
+    //     )
+    // }
 }
