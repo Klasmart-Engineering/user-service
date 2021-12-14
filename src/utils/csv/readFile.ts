@@ -310,6 +310,7 @@ export async function readProcessCSVFileBatchValidation<EntityRowType>(
         filename,
     }
 
+    // ADD THIS BACK IN LATER
     // if (rowCounter === 0) {
     //     throw new Error(
     //         stringInject(constants.MSG_ERR_CSV_EMPTY_FILE, {

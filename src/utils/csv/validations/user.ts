@@ -7,6 +7,11 @@ import { roleValidations } from '../../../entities/validations/role'
 import { schoolValidations } from '../../../entities/validations/school'
 import { classValidations } from '../../../entities/validations/class'
 import { CsvRowValidationSchema } from './types'
+import { UserPermissions } from '../../../permissions/userPermissions'
+import { CSVError } from '../../../types/csv/csvError'
+import { Organization } from '../../../entities/organization'
+import { addCsvError } from '../csvUtils'
+import { customErrors } from '../../../types/errors/customError'
 
 // CSV rows generally contain a mix of properties from various entities, so we need to define
 // custom validation schemas for them, reusing validation rules from the entity
@@ -85,4 +90,49 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
         attribute: 'Name',
         validation: classValidations.class_name.allow(null, '').optional(),
     },
+}
+
+// For each unique org name, check if client user is member + check if org name exists
+export async function validateOrgsInCSV(
+    userRows: UserRow[],
+    userPermissions: UserPermissions,
+    rowErrors: CSVError[]
+): Promise<CSVError[]> {
+    let rowNumber = 1
+    const orgNamesInCSV = userRows.map((row) => row.organization_name)
+    const uniqueOrgNames = new Set(orgNamesInCSV)
+    const invalidOrgNames: string[] = []
+    for (const orgName of uniqueOrgNames) {
+        const org = await Organization.createQueryBuilder('Organization')
+            .innerJoin('Organization.memberships', 'OrganizationMembership')
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: userPermissions.getUserId(),
+            })
+            .andWhere('Organization.organization_name = :organization_name', {
+                organization_name: orgName,
+            })
+            .getOne()
+
+        if (!org) {
+            invalidOrgNames.push(orgName)
+        }
+    }
+    for (const row of userRows) {
+        if (row.organization_name in invalidOrgNames) {
+            addCsvError(
+                rowErrors,
+                customErrors.nonexistent_entity.code,
+                rowNumber,
+                'organization_name',
+                customErrors.nonexistent_entity.message,
+                {
+                    entity: 'Organization',
+                    attribute: 'Name',
+                    entityName: row.organization_name,
+                }
+            )
+        }
+        rowNumber += 1
+    }
+    return rowErrors
 }
