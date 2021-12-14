@@ -19,6 +19,7 @@ import logger from '../../logging'
 import { config } from '../../config/config'
 import { validateRow } from './csvUtils'
 import { CsvRowValidationSchema } from './validations/types'
+import { EntityRow as EntityRowType } from '../../types/csv/entityRow'
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
@@ -235,13 +236,14 @@ export async function readCSVFile(
     }
 }
 
-export async function readCSVFileBatchValidation<EntityRow>(
+// Used for batch validation of a CSV file - replaces legacy row-by-row validation
+export async function readProcessCSVFileBatchValidation<EntityRowType>(
     manager: EntityManager,
     file: Upload,
-    validateAndSaveRowsBatchFunction: ProcessEntitiesFromCSVRowsBatchValidation<EntityRow>,
+    validateAndSaveRowsBatchFunction: ProcessEntitiesFromCSVRowsBatchValidation<EntityRowType>,
     userPermissions: UserPermissions,
     headersCallback: CreateEntityHeadersCallback,
-    validateRowEntityFunction: CsvRowValidationSchema<EntityRow>
+    validateRowEntityFunction: CsvRowValidationSchema<EntityRowType>
 ) {
     const { filename, mimetype, encoding } = file
     let csvStream: Transform
@@ -253,7 +255,7 @@ export async function readCSVFileBatchValidation<EntityRow>(
     // Stop here if any of these checks fail
     const fileErrors: CSVError[] = []
     const rowErrors: CSVError[] = []
-    const joiValidEntityRows: EntityRow[] = []
+    const joiValidEntityRows: EntityRowType[] = []
 
     await validateFile(
         readStream,
@@ -289,8 +291,8 @@ export async function readCSVFileBatchValidation<EntityRow>(
     if (rowErrors.length > 0) {
         throw rowErrors
     }
-    // At this point we should have all csv rows Joi-validated as joiValidUserRows
 
+    // At this point we should have all csv rows Joi-validated as joiValidUserRows
     const csvRowErrors = await validateAndSaveRowsBatchFunction(
         manager,
         userPermissions,

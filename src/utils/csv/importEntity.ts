@@ -4,12 +4,13 @@ import {
     ProcessEntitiesFromCSVRowsBatchValidation,
 } from '../../types/csv/createEntityRowCallback'
 import { Upload } from '../../types/upload'
-import { readCSVFile, readCSVFileBatchValidation } from './readFile'
+import { readCSVFile, readProcessCSVFileBatchValidation } from './readFile'
 import { CustomError, instanceOfCSVError } from '../../types/csv/csvError'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import logger from '../../logging'
 import { CsvRowValidationSchema } from './validations/types'
+import { EntityRow as EntityRowType } from '../../types/csv/entityRow'
 
 export async function createEntityFromCsvWithRollBack(
     connection: Connection,
@@ -58,20 +59,20 @@ export async function createEntityFromCsvWithRollBack(
 }
 
 // Used for batch validation of a CSV file - replaces legacy row-by-row validation
-export async function createEntitiesFromCsvBatchValidation<EntityRow>(
+export async function createEntitiesFromCsvBatchValidation<EntityRowType>(
     connection: Connection,
     file: Upload,
-    functionToSaveEntitiesFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation,
+    functionToSaveEntitiesFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation<EntityRowType>,
     userPermissions: UserPermissions,
     functionToValidateCSVHeaders: CreateEntityHeadersCallback,
-    functionToValidateCSVRowEntity: CsvRowValidationSchema<EntityRow>,
+    functionToValidateCSVRowEntity: CsvRowValidationSchema<EntityRowType>,
     isDryRun = false
 ) {
     const queryRunner = connection.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
     try {
-        await readCSVFileBatchValidation<EntityRow>(
+        await readProcessCSVFileBatchValidation<EntityRowType>(
             queryRunner.manager,
             file,
             functionToSaveEntitiesFromCSVRows,

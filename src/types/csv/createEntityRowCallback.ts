@@ -1,6 +1,7 @@
 import { EntityManager } from 'typeorm'
 import { CSVError } from './csvError'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { EntityRow as EntityRowType } from './entityRow'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CreateEntityRowCallback<RowType = any> = (
@@ -13,7 +14,9 @@ export type CreateEntityRowCallback<RowType = any> = (
 
 // Used for batch validation of a CSV file - replaces legacy row-by-row validation
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ProcessEntitiesFromCSVRowsBatchValidation<RowType = any> = (
+export type ProcessEntitiesFromCSVRowsBatchValidation<
+    RowType = EntityRowType
+> = (
     manager: EntityManager,
     userPermissions: UserPermissions,
     entityRows: RowType[],

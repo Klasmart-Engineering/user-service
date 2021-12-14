@@ -1,7 +1,7 @@
 import { HeaderValidation } from './createEntityHeadersCallback'
+import { EntityRow } from './entityRow'
 
-export interface UserRow {
-    organization_name: string
+export interface UserRow extends EntityRow {
     user_given_name: string
     user_family_name: string
     user_shortcode?: string

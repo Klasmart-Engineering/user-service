@@ -1,4 +1,5 @@
-export interface SubCategoryRow {
-    organization_name: string
+import { EntityRow } from './entityRow'
+
+export interface SubCategoryRow extends EntityRow {
     subcategory_name: string
 }

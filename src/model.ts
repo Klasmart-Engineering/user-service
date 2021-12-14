@@ -92,12 +92,7 @@ import { gradesConnectionResolver } from './pagination/gradesConnection'
 import { ageRangesConnectionResolver } from './pagination/ageRangesConnection'
 import { subjectsConnectionResolver } from './pagination/subjectsConnection'
 import { TokenPayload } from './token'
-import { CSVError } from './types/csv/csvError'
-import { ReReadable } from 'rereadable-stream'
-import { formatCSVRow, validateFile } from './utils/csv/readFile'
-import csv = require('csv-parser')
 import { UserRow } from './types/csv/userRow'
-import { validateRow } from './utils/csv/csvUtils'
 import { userRowValidation } from './utils/csv/validations/user'
 
 export class Model {
