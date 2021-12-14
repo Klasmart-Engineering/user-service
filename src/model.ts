@@ -761,7 +761,7 @@ export class Model {
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
         const isDryRun = args.isDryRun as boolean
-        await createEntitiesFromCsvBatchValidation(
+        await createEntitiesFromCsvBatchValidation<UserRow>(
             this.connection,
             file,
             processUsersFromCSVRows,
