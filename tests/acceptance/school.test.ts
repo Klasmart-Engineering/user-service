@@ -32,6 +32,9 @@ import { createTestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 import ProgramsInitializer from '../../src/initializers/programs'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { DeleteSchoolInput } from '../../src/types/graphQL/school'
+import { DELETE_SCHOOLS } from '../utils/operations/schoolOps'
+import { Status } from '../../src/entities/status'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -321,6 +324,53 @@ describe('acceptance.school', () => {
                 schoolMember.user_id,
                 clientUser.user_id,
             ])
+        })
+    })
+
+    context('deleteSchools', () => {
+        const makeDeleteSchoolsMutation = async (
+            input: DeleteSchoolInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(DELETE_SCHOOLS),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        context('when input is sent in a correct way', () => {
+            it('should respond succesfully', async () => {
+                const input = [{ id: schoolId }]
+
+                const response = await makeDeleteSchoolsMutation(input)
+                const schools = response.body.data.deleteSchools.schools
+                expect(response.status).to.eq(200)
+                expect(schools).to.exist
+                expect(schools).to.be.an('array')
+                expect(schools.length).to.eq(input.length)
+                const schoolDeletedIds = schools.map(
+                    (cd: ISchoolsConnectionNode) => cd.id
+                )
+
+                const inputIds = input.map((i) => i.id)
+
+                expect(schoolDeletedIds).to.deep.equalInAnyOrder(inputIds)
+            })
+        })
+
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                const input = [{ id: schoolId }, { id: NIL_UUID }]
+
+                const response = await makeDeleteSchoolsMutation(input)
+                const schoolsDeleted = response.body.data.deleteSchools
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(schoolsDeleted).to.be.null
+                expect(errors).to.exist
+            })
         })
     })
 })
