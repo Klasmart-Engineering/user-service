@@ -565,7 +565,7 @@ export const nonAdminSchoolScope: NonAdminScope<School> = async (
         scope.where('School.organization IN (:...schoolOrgs)', {
             schoolOrgs,
         })
-    } else if (mySchoolOrgs.length) {
+    } else if (mySchoolOrgs.length && schoolIds.length > 0) {
         scope
             .innerJoin(
                 'School.memberships',

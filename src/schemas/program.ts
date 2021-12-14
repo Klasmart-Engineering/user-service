@@ -100,7 +100,7 @@ const typeDefs = gql`
         ageRangesConnection(
             count: PageSize
             cursor: String
-            direction: ConnectionDirection!
+            direction: ConnectionDirection
             filter: AgeRangeFilter
             sort: AgeRangeSortInput
         ): AgeRangesConnectionResponse
