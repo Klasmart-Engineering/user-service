@@ -17,7 +17,6 @@ import { customErrors } from '../../types/errors/customError'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import logger from '../../logging'
 import { config } from '../../config/config'
-import { UserRow } from '../../types/csv/userRow'
 import { validateRow } from './csvUtils'
 import { CsvRowValidationSchema } from './validations/types'
 
@@ -245,7 +244,7 @@ export async function readCSVFileBatchValidation<EntityRow>(
     validateRowEntityFunction: CsvRowValidationSchema<EntityRow>
 ) {
     const { filename, mimetype, encoding } = file
-    let csvStream
+    let csvStream: Transform
 
     const readStream = file.createReadStream()
     const rereadableStream = readStream.pipe(new ReReadable())
