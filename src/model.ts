@@ -219,6 +219,7 @@ export class Model {
         newUser.date_of_birth = date_of_birth
         newUser.username = username
 
+        console.log(`newUser called: ${JSON.stringify(newUser)}`)
         await this.manager.save(newUser)
         return newUser
     }
@@ -253,6 +254,7 @@ export class Model {
 
         const user = await this.userRepository.findOneOrFail(user_id)
 
+        console.log(`setUser called: ${JSON.stringify(user)}`)
         if (given_name !== undefined) {
             user.given_name = given_name
         }
@@ -294,6 +296,7 @@ export class Model {
         const userEmail = context.token?.email
         const userPhone = context.token?.phone
         let users: User[] = []
+        console.log(`myUsers called: ${userEmail}`)
 
         const scope = getRepository(User)
             .createQueryBuilder()
