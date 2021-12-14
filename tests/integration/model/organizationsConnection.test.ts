@@ -348,6 +348,30 @@ describe('organizationsConnection', () => {
     })
 
     context('sorting', () => {
+        let owners: User[]
+        const orgsCount = 6
+
+        beforeEach(async () => {
+            owners = await User.save(
+                Array.from(new Array(orgsCount), (_, i) =>
+                    createUser({ email: `owner${i}@gmail.com` })
+                )
+            )
+
+            organizationsList = await Organization.save(
+                Array.from(owners, (owner) => createOrganization(owner))
+            )
+
+            await OrganizationOwnership.save(
+                Array.from(organizationsList, (org, i) =>
+                    createOrganizationOwnership({
+                        user: owners[i],
+                        organization: org,
+                    })
+                )
+            )
+        })
+
         it('sorts by name', async () => {
             const organizationsConnectionResponse = await organizationsConnection(
                 testClient,
@@ -364,7 +388,9 @@ describe('organizationsConnection', () => {
             const organizationOrderedByNameAsc = [
                 ...organizationsList,
             ].sort((a, b) =>
-                a.organization_name!.localeCompare(b.organization_name!)
+                a
+                    .organization_name!.toLowerCase()
+                    .localeCompare(b.organization_name!.toLowerCase())
             )
 
             for (
@@ -376,6 +402,29 @@ describe('organizationsConnection', () => {
                     organizationsConnectionResponse.edges[i].node.name
                 ).to.eq(organizationOrderedByNameAsc[i].organization_name)
             }
+        })
+
+        it('sorts by owner email', async () => {
+            const organizationsConnectionResponse = await organizationsConnection(
+                testClient,
+                direction,
+                { count: 3 },
+                { authorization: getAdminAuthToken() },
+                undefined,
+                {
+                    field: 'ownerEmail',
+                    order: 'ASC',
+                }
+            )
+
+            const { totalCount, edges } = organizationsConnectionResponse
+            expect(totalCount).to.equal(orgsCount)
+            expect(edges).to.have.lengthOf(3)
+
+            edges.forEach((edge, i) => {
+                const owner = edge.node.owners![0]
+                expect(owner.email).to.eq(`owner${i}@gmail.com`)
+            })
         })
 
         it('works with filtering', async () => {
@@ -708,8 +757,11 @@ describe('organizationsConnection', () => {
             )
 
             // create another user then add to another organization
-            anotherOrganization = await Organization.save(createOrganization())
             anotherUser = await User.save(createUser())
+            anotherOrganization = await Organization.save(
+                createOrganization(anotherUser)
+            )
+
             await OrganizationMembership.save(
                 createOrganizationMembership({
                     user: anotherUser,

@@ -1247,6 +1247,7 @@ export const ORGANIZATIONS_CONNECTION = `
                     name
                     owners {
                         id
+                        email
                     }
                     organizationMembershipsConnection {
                         totalCount

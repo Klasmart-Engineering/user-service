@@ -2,7 +2,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { SelectQueryBuilder } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
-import { OrganizationOwnership } from '../entities/organizationOwnership'
+import { User } from '../entities/user'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
@@ -15,7 +15,10 @@ import {
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
-import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+import {
+    IConnectionSortingConfig,
+    ISortField,
+} from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 
 /**
@@ -30,6 +33,7 @@ export const organizationConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'organization_id',
     aliases: {
         name: 'organization_name',
+        ownerEmail: 'Owner.email',
     },
 }
 
@@ -44,8 +48,7 @@ export async function organizationsConnectionResolver(
     }: IPaginationArgs<Organization>
 ): Promise<IPaginatedResponse<CoreOrganizationConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
-    const newScope = await organizationsConnectionQuery(scope, filter)
+    const newScope = await organizationsConnectionQuery(scope, filter, sort)
 
     const data = await paginateData<Organization>({
         direction,
@@ -72,15 +75,12 @@ export async function organizationsConnectionResolver(
 
 export async function organizationsConnectionQuery(
     scope: SelectQueryBuilder<Organization>,
-    filter?: IEntityFilter
+    filter?: IEntityFilter,
+    sort?: ISortField
 ) {
     if (filter) {
         if (filterHasProperty('ownerUserId', filter)) {
-            scope.innerJoin(
-                OrganizationOwnership,
-                'OrganizationOwnership',
-                'Organization.organization_id = OrganizationOwnership.organization_id'
-            )
+            scope.innerJoin('Organization.owner', 'Owner')
         }
 
         if (
@@ -103,12 +103,23 @@ export async function organizationsConnectionQuery(
 
                 // connections
                 userId: 'OrganizationMembership.userUserId',
-                ownerUserId: 'OrganizationOwnership.user_id',
+                ownerUserId: 'Owner.user_id',
             })
         )
     }
 
     scope.select(organizationSummaryNodeFields)
+
+    /*
+    joining organization's owner to get owner's email
+    */
+    if (sort?.field.includes('ownerEmail')) {
+        if (!scopeHasJoin(scope, User)) {
+            scope.leftJoin('Organization.owner', 'Owner')
+        }
+
+        scope.addSelect('Owner.email')
+    }
 
     return scope
 }

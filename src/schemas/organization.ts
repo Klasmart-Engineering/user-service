@@ -263,6 +263,7 @@ const typeDefs = gql`
 
     enum OrganizationSortBy {
         name
+        ownerEmail
     }
 
     input OrganizationSortInput {
@@ -305,6 +306,7 @@ const typeDefs = gql`
 
     type UserSummaryNode {
         id: String
+        email: String
     }
 
     type OrganizationConnectionNode {

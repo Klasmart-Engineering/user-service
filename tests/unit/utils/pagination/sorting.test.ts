@@ -107,6 +107,33 @@ describe('paginated sorting', () => {
             })
         })
     })
+
+    context('joined column sorting', () => {
+        let orgScope: SelectQueryBuilder<unknown>
+
+        beforeEach(() => {
+            orgScope = createQueryBuilder('Organization').leftJoin(
+                'Organization.owner',
+                'owner'
+            )
+        })
+
+        it('sorts by the joined column first', () => {
+            addOrderByClause(orgScope, 'FORWARD', {
+                primaryKey: 'organization_id',
+                sort: {
+                    field: 'owner.email',
+                    order: 'ASC',
+                },
+            })
+
+            const sql = scope.getSql()
+            expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
+                'ORDER BY "owner"."email" ASC NULLS LAST, "Organization"."organization_id" ASC NULLS LAST'
+            )
+        })
+    })
+
     context('aliasing', () => {
         it('maps fields to aliases', () => {
             addOrderByClause(scope, 'FORWARD', {

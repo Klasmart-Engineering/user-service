@@ -3,6 +3,7 @@ import {
     ISortingConfig,
     ISortField,
     SortOrder,
+    isJoinedColumn,
 } from './sorting'
 import { SelectQueryBuilder, BaseEntity, Brackets } from 'typeorm'
 import { IEntityFilter } from './filtering'
@@ -99,7 +100,18 @@ export const getEdges = (
 
         if (primaryColumns?.length) {
             primaryColumns.forEach((primaryColumn) => {
-                cursorData[primaryColumn] = d[primaryColumn]
+                // a primaryColumn from a joined entity is written as <table>.<column>
+                const [table, column] = primaryColumn.split('.')
+
+                /*
+                getting the correct values for the cursorData's properties
+                if this one comes a joined entity, is necessary go inside the joined entity to get that property
+                */
+                const value = isJoinedColumn(primaryColumn)
+                    ? d[`__${table.toLowerCase()}__`][column]
+                    : d[primaryColumn]
+
+                cursorData[primaryColumn] = value
             })
         }
 
@@ -220,7 +232,16 @@ export const getPaginationQuery = async ({
 
             primaryColumns.forEach((primaryColumn, index) => {
                 const paramName = `primaryColumn${index + 1}`
-                queryColumns.push(`${scope.alias}.${primaryColumn}`)
+
+                /*
+                a primaryColumn from a joined entity is written as <table>.<column>,
+                if this one comes from a joined entity we have to use it without join scope.alias
+                */
+                const column = isJoinedColumn(primaryColumn)
+                    ? primaryColumn
+                    : `${scope.alias}.${primaryColumn}`
+
+                queryColumns.push(column)
                 queryValues.push(`:${paramName}`)
                 queryParams[paramName] = cursorData[primaryColumn]
             })

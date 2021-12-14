@@ -26,8 +26,10 @@ export const ownersForOrgs = async (
     )
         .select([
             'OrganizationOwnership.organization_id',
-            'OrganizationOwnership.user_id',
+            'Owner.user_id',
+            'Owner.email',
         ])
+        .leftJoin('OrganizationOwnership.user', 'Owner')
         .where('OrganizationOwnership.organization_id IN (:...ids)', {
             ids: organizationIds,
         })
@@ -39,8 +41,21 @@ export const ownersForOrgs = async (
         ])
     )
 
-    return organizationIds.map((id) => {
-        const ownerUserId = ownerships.get(id)?.user_id
-        return ownerUserId ? [{ id: ownerUserId }] : []
-    })
+    const owners: UserSummaryNode[][] = []
+
+    for (const id of organizationIds) {
+        const ownership = ownerships.get(id)
+        const owner = await ownership?.user
+
+        if (!owner) {
+            owners.push([])
+        } else {
+            const ownerId = owner.user_id
+            const ownerEmail = owner.email || ''
+
+            owners.push([{ id: ownerId, email: ownerEmail }])
+        }
+    }
+
+    return owners
 }

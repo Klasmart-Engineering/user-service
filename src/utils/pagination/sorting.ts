@@ -58,12 +58,17 @@ export function addOrderByClause(
 
         fields.forEach((field) => {
             const primaryColumn = config.aliases?.[field] || field
+
+            /*
+            a primaryColumn from a joined entity is written as <table>.<column>,
+            if this one comes from a joined entity we have to use it without join scope.alias
+            */
+            const column = isJoinedColumn(primaryColumn)
+                ? primaryColumn
+                : `${scope.alias}.${primaryColumn}`
+
             primaryColumns.push(primaryColumn)
-            scope.addOrderBy(
-                `${scope.alias}.${primaryColumn}`,
-                order,
-                'NULLS LAST'
-            )
+            scope.addOrderBy(column, order, 'NULLS LAST')
         })
     }
 
@@ -81,4 +86,8 @@ export function addOrderByClause(
         primaryColumns,
         primaryKeyOrder,
     }
+}
+
+export function isJoinedColumn(primaryColumn: string) {
+    return primaryColumn.split('.').length === 2
 }

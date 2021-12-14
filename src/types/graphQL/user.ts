@@ -30,6 +30,7 @@ export interface UserConnectionNode {
 
 export interface UserSummaryNode {
     id: string
+    email: string
 }
 
 export interface UserContactInfo {

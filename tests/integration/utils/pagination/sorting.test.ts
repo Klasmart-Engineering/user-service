@@ -14,8 +14,16 @@ import { createUser } from '../../../factories/user.factory'
 import {
     paginateData,
     IPaginateData,
+    convertDataToCursor,
 } from '../../../../src/utils/pagination/paginate'
 import { createOrganization } from '../../../factories/organization.factory'
+import { Organization } from '../../../../src/entities/organization'
+import { OrganizationOwnership } from '../../../../src/entities/organizationOwnership'
+import { createOrganizationOwnership } from '../../../factories/organizationOwnership.factory'
+
+interface OrgAndOwner extends Organization {
+    __owner__: { email: string }
+}
 
 use(chaiAsPromised)
 
@@ -692,6 +700,232 @@ describe('sorting', () => {
                     hasPreviousPage = data.pageInfo.hasPreviousPage
                     args.directionArgs!.cursor = data.pageInfo.startCursor
                     args.scope = createQueryBuilder('user')
+                }
+            })
+        })
+    })
+
+    context('joined column sorting', () => {
+        const orderedEmails: string[] = Array.from(
+            new Array(6),
+            (_, i) => `owner${i}.gmail.com`
+        )
+        const orderedEmailsReversed = [...orderedEmails].reverse()
+        const totalOrgs = orderedEmails.length
+        const fetchCount = 2
+        let index = 0
+        let hasPreviousPage = true
+        let hasNextPage = true
+        let args!: IPaginateData
+        let organizations: Organization[]
+        let owners: User[]
+        let organizationsReversed: Organization[]
+        let ownersReversed: User[]
+
+        beforeEach(async () => {
+            index = 0
+            owners = await User.save(
+                Array.from(orderedEmails, (email: string) =>
+                    createUser({ email })
+                )
+            )
+
+            organizations = await Organization.save(
+                Array.from(owners, (owner) => createOrganization(owner))
+            )
+
+            await OrganizationOwnership.save(
+                Array.from(organizations, (org, i) =>
+                    createOrganizationOwnership({
+                        user: owners[i],
+                        organization: org,
+                    })
+                )
+            )
+
+            organizationsReversed = [...organizations].reverse()
+            ownersReversed = [...owners].reverse()
+
+            args = {
+                direction: 'FORWARD',
+                directionArgs: {
+                    count: fetchCount,
+                },
+                scope: Organization.createQueryBuilder('Organization')
+                    .addSelect('owner.email')
+                    .leftJoin('Organization.owner', 'owner'),
+                sort: {
+                    primaryKey: 'organization_id',
+                    aliases: {
+                        ownerEmail: 'owner.email',
+                    },
+                    sort: {
+                        field: ['ownerEmail'],
+                        order: 'ASC',
+                    },
+                },
+                includeTotalCount: true,
+            }
+        })
+
+        context('forwards pagination', () => {
+            it('sorts ascending', async () => {
+                while (hasNextPage) {
+                    const data = await paginateData<Organization>(args)
+                    const unseenOrgs = totalOrgs - index
+
+                    expect(data.totalCount).to.eq(totalOrgs)
+                    expect(data.edges.length).to.eq(
+                        unseenOrgs < fetchCount ? unseenOrgs : fetchCount
+                    )
+
+                    for (let i = 0; i < data.edges.length; i++) {
+                        const orgNode = data.edges[i].node as OrgAndOwner
+                        const orgCursor = data.edges[i].cursor
+
+                        expect(orgNode.__owner__.email).to.eq(
+                            orderedEmails[index]
+                        )
+
+                        expect(orgCursor).to.equal(
+                            convertDataToCursor({
+                                organization_id:
+                                    organizations[index].organization_id,
+                                'owner.email': owners[index].email,
+                            })
+                        )
+
+                        index++
+                    }
+
+                    hasNextPage = data.pageInfo.hasNextPage
+                    args.directionArgs!.cursor = data.pageInfo.endCursor
+                }
+            })
+
+            it('sorts descending', async () => {
+                args.sort!.sort!.order = 'DESC'
+
+                while (hasNextPage) {
+                    const data = await paginateData<Organization>(args)
+                    const unseenOrgs = totalOrgs - index
+
+                    expect(data.totalCount).to.eq(totalOrgs)
+                    expect(data.edges.length).to.eq(
+                        unseenOrgs < fetchCount ? unseenOrgs : fetchCount
+                    )
+
+                    for (let i = 0; i < data.edges.length; i++) {
+                        const orgNode = data.edges[i].node as OrgAndOwner
+                        const orgCursor = data.edges[i].cursor
+
+                        expect(orgNode.__owner__.email).to.eq(
+                            orderedEmailsReversed[index]
+                        )
+
+                        expect(orgCursor).to.equal(
+                            convertDataToCursor({
+                                organization_id:
+                                    organizationsReversed[index]
+                                        .organization_id,
+                                'owner.email': ownersReversed[index].email,
+                            })
+                        )
+
+                        index++
+                    }
+
+                    hasNextPage = data.pageInfo.hasNextPage
+                    args.directionArgs!.cursor = data.pageInfo.endCursor
+                }
+            })
+        })
+
+        context('backwards pagination', () => {
+            beforeEach(() => {
+                args.direction = 'BACKWARD'
+            })
+
+            it('sorts ascending', async () => {
+                while (hasPreviousPage) {
+                    const data = await paginateData<Organization>(args)
+                    const unseenOrgs = totalOrgs - index
+
+                    expect(data.totalCount).to.eq(totalOrgs)
+                    expect(data.edges.length).to.eq(
+                        unseenOrgs < fetchCount
+                            ? unseenOrgs
+                            : unseenOrgs % fetchCount
+                            ? unseenOrgs % fetchCount
+                            : fetchCount
+                    )
+
+                    data.edges.reverse()
+
+                    for (let i = 0; i < data.edges.length; i++) {
+                        const orgNode = data.edges[i].node as OrgAndOwner
+                        const orgCursor = data.edges[i].cursor
+
+                        expect(orgNode.__owner__.email).to.eq(
+                            orderedEmailsReversed[index]
+                        )
+
+                        expect(orgCursor).to.equal(
+                            convertDataToCursor({
+                                organization_id:
+                                    organizationsReversed[index]
+                                        .organization_id,
+                                'owner.email': ownersReversed[index].email,
+                            })
+                        )
+
+                        index++
+                    }
+
+                    hasPreviousPage = data.pageInfo.hasNextPage
+                    args.directionArgs!.cursor = data.pageInfo.startCursor
+                }
+            })
+
+            it('sorts descending', async () => {
+                args.sort!.sort!.order = 'DESC'
+
+                while (hasPreviousPage) {
+                    const data = await paginateData<Organization>(args)
+                    const unseenOrgs = totalOrgs - index
+
+                    data.edges.reverse()
+
+                    expect(data.totalCount).to.eq(totalOrgs)
+                    expect(data.edges.length).to.eq(
+                        unseenOrgs < fetchCount
+                            ? unseenOrgs
+                            : unseenOrgs % fetchCount
+                            ? unseenOrgs % fetchCount
+                            : fetchCount
+                    )
+
+                    for (let i = 0; i < data.edges.length; i++) {
+                        const orgNode = data.edges[i].node as OrgAndOwner
+                        const orgCursor = data.edges[i].cursor
+
+                        expect(orgNode.__owner__.email).to.eq(
+                            orderedEmails[index]
+                        )
+
+                        expect(orgCursor).to.equal(
+                            convertDataToCursor({
+                                organization_id:
+                                    organizations[index].organization_id,
+                                'owner.email': owners[index].email,
+                            })
+                        )
+
+                        index++
+                    }
+
+                    hasPreviousPage = data.pageInfo.hasNextPage
+                    args.directionArgs!.cursor = data.pageInfo.startCursor
                 }
             })
         })
