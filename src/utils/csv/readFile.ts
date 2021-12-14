@@ -19,7 +19,6 @@ import logger from '../../logging'
 import { config } from '../../config/config'
 import { validateRow } from './csvUtils'
 import { CsvRowValidationSchema } from './validations/types'
-import { EntityRow as EntityRowType } from '../../types/csv/entityRow'
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
@@ -246,7 +245,6 @@ export async function readProcessCSVFileBatchValidation<EntityRowType>(
     validateRowEntityFunction: CsvRowValidationSchema<EntityRowType>
 ) {
     const { filename, mimetype, encoding } = file
-    let csvStream: Transform
 
     const readStream = file.createReadStream()
     const rereadableStream = readStream.pipe(new ReReadable())
@@ -265,7 +263,7 @@ export async function readProcessCSVFileBatchValidation<EntityRowType>(
         mimetype,
         fileErrors
     )
-    csvStream = rereadableStream.rewind().pipe(csv())
+    const csvStream = rereadableStream.rewind().pipe(csv())
 
     if (fileErrors.length) {
         throw fileErrors

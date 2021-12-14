@@ -419,7 +419,7 @@ export const processUsersFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation<
     let rowNumber = 1
     const orgNamesInCSV = userRows.map((row) => row.organization_name)
     const uniqueOrgNames = new Set(orgNamesInCSV)
-    const invalidOrgNames: String[] = []
+    const invalidOrgNames: string[] = []
     for (const orgName of uniqueOrgNames) {
         const org = await Organization.createQueryBuilder('Organization')
             .innerJoin('Organization.memberships', 'OrganizationMembership')

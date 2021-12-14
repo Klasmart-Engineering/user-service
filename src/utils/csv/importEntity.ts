@@ -10,7 +10,6 @@ import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import logger from '../../logging'
 import { CsvRowValidationSchema } from './validations/types'
-import { EntityRow as EntityRowType } from '../../types/csv/entityRow'
 
 export async function createEntityFromCsvWithRollBack(
     connection: Connection,
