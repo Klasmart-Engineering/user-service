@@ -13,7 +13,6 @@ export type CreateEntityRowCallback<RowType = any> = (
 ) => Promise<CSVError[]>
 
 // Used for batch validation of a CSV file - replaces legacy row-by-row validation
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ProcessEntitiesFromCSVRowsBatchValidation<
     RowType = EntityRowType
 > = (
