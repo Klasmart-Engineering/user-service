@@ -8,11 +8,11 @@ Organization
 
 User
   - if you have `view_users_40110` in any organization:
-    - view all users _of those organizations only_
+    - view all users of those organizations
   - if you have `view_my_school_users_40111` in any organization:
-    - view all users of the schools that you're a member of _in those organizations only_
+    - view all users of the _schools that you're a member of_ in those organizations 
   - if you have `view_my_class_users_40112` in any organization:
-    - views students & teachers of classes that you're a member of _in those organizations only_
+    - views students & teachers of _classes that you're a member of_ in those organizations
   - otherwise, you can view users with the same email or phone
 
 School
