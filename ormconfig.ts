@@ -10,7 +10,7 @@ const config: ConnectionOptions = {
     password: process.env.POSTGRES_PASSWORD || 'kidsloop',
     url:
         process.env.DATABASE_URL ||
-        'postgres://postgres:kidsloop@localhost/postgres',
+        'postgres://postgres:kidsloop@localhost:5432/postgres1',
     entities: ['src/entities/*.ts'],
     migrations: ['migrations/*.js'],
     cli: {

@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: kidsloop-user-service
+  name: kidsloop-user-service-deployment
+  namespace: kidskube-local
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: kidsloop-user-service
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        io.kompose.service: kidsloop-user-service
+    spec:
+      containers:
+        - args:
+            - npm
+            - run
+            - start
+          env:
+            - name: DATABASE_URL
+              value: postgres://postgres:kidsloop@postgres1:5432/postgres1
+            - name: DOMAIN
+              value: fe.alpha.kidsloop.net 
+            - name: FORCE_LOCAL_STORAGE
+              value: "true"
+            - name: NODE_ENV
+              value: development
+            - name: ROUTE_PREFIX
+              value: /user-service
+            - name: STORAGE_ACCESS_KEY_ID
+              value: '""'
+            - name: STORAGE_BUCKET
+              value: kidsloop-alpha-account-asset-objects
+            - name: STORAGE_ENDPOINT
+              value: http://localstack1:4566
+            - name: STORAGE_PROVIDER
+              value: amazon
+            - name: STORAGE_REGION
+              value: eu-west-1
+            - name: STORAGE_SECRET_ACCESS_KEY
+              value: '""'
+          name: user-service
+          image: user-service-tilt
+          ports:
+            - containerPort: 8080
+          resources: {}
+      restartPolicy: Always
+status: {}
+
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   labels:
+#     io.kompose.service: kidsloop-user-service
+#   name: kidsloop-user-service
+#   namespace: kidskube-local
+# spec:
+#   ports:
+#     - name: "8080"
+#       port: 8080
+#       targetPort: 8080
+#     # - name: 8080-tcp
+#     #   port: 8080
+#     #   targetPort: 8080
+#   selector:
+#     io.kompose.service: kidsloop-user-service
+# status:
+#   loadBalancer: {}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: kidsloop-user-service
+  namespace: kidskube-local
+spec:
+  selector:
+   io.kompose.service: kidsloop-user-service
+  ports:
+    - port: 8080 
+      targetPort: 8080
+  type: LoadBalancer
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kidsloop-user-service-ingress
+  namespace: kidskube-local
+  annotations:
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/mergeable-ingress-type: "minion"
+spec:
+  rules:
+  - host: fe.alpha.kidsloop.net
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/user-service"
+        backend:
+          service:
+            name: kidsloop-user-service
+            port:
+              number: 8080

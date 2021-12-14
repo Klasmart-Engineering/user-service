@@ -14,7 +14,6 @@ if (!domain) {
 const domainRegex = new RegExp(
     `^https://(.*\\.)?${escapeStringRegexp(domain)}(:\\d{1,5})?$`
 )
-
 const routePrefix = process.env.ROUTE_PREFIX || ''
 
 export const initApp = async () => {
@@ -43,7 +42,8 @@ export const initApp = async () => {
     apolloServer.applyMiddleware({
         app: app,
         cors: {
-            allowedHeaders: ['Authorization', 'Content-Type'],
+            allowedHeaders: ['Authorization', 'Content-Type', 'Origin'],
+            methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
             credentials: true,
             maxAge: 60 * 60 * 24, // 1 day
             origin: (origin, callback) => {

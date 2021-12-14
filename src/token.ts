@@ -16,17 +16,42 @@ const issuers = new Map<
         {
             options: {
                 issuer: 'kidsloop',
-                algorithms: ['RS512'],
+                // algorithms: ['RS512'],
+                algorithms: ['RS256', 'RS384', 'RS512'],
             },
-            secretOrPublicKey: `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxdHMYTqFobj3oGD/JDYb
-DN07icTH/Dj7jBtJSG2clM6hQ1HRLApQUNoqcrcJzA0A7aNqELIJuxMovYAoRtAT
-E1pYMWpVyG41inQiJjKFyAkuHsVzL+t2C778BFxlXTC/VWoR6CowWSWJaYlT5fA/
-krUew7/+sGW6rjV2lQqxBN3sQsfaDOdN5IGkizsfMpdrETbc5tKksNs6nL6SFRDe
-LoS4AH5KI4T0/HC53iLDjgBoka7tJuu3YsOBzxDX22FbYfTFV7MmPyq++8ANbzTL
-sgaD2lwWhfWO51cWJnFIPc7gHBq9kMqMK3T2dw0jCHpA4vYEMjsErNSWKjaxF8O/
-FwIDAQAB
------END PUBLIC KEY-----`,
+            // this key is the auth-server public key and not the auth-lambda-funcs public key
+            secretOrPublicKey: [
+                '-----BEGIN PUBLIC KEY-----',
+                'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAr29OQ4iVeZadf8jxcKxX',
+                'Im7VppDW1+G/+pVAIwybsVPNE3HZr0w40CSduqX5hOM5XGRmTtP34Zji/a5OiyqY',
+                'VjHJ9YeR6NZ2R3coz+DRiGYdhzg99CWy4LnQkpOY6cdP0dDEjvVugoAi4VkIpLeB',
+                'KHm0Rq6S8XKDJvbD/RK+jauWMyuPnA3RPXTbL3sXZFPx4dAaGNgzAF3C+c/pr/9H',
+                'w7FFg+MAUqUJp4R9QuGT2QUCiChDgl2t2NYTlvdi/4tgwRmekxcQgG+qCiGgmiBO',
+                'OmYoC2uj1rGqwZpxoISBPHbEeLjpsgBN0jNArmT3rdfJOlMzZiyC2qAocT6q/xeN',
+                '8tvXM7jj0wyp2LMCqkf6+dJrknXZgIzoQIbwN3Nz5W0loZrx/wg0MTg4ZcFirX1R',
+                'L3IrnciggKCrBpPAshjNtOyQHF69C+g7fu9MYc9APE1vPYyCtlXI/UFW71PVa+/K',
+                '2WRusymH9FZwJBqv2OnQ/VujG5BCg5uXFAm+z6yN4WOTb3HPqZBWqqo2xSz/kpVS',
+                'bIR+zKi7+4kka7gH3mZEPs24ymuSngYrtT0gYTvtzOF+pIl4SnTAZriKjZVRf1BP',
+                'bav5qkwGY2hLTc1f49SKQ3KxuRZ8ITUL2H41WCPgA7lwC23H9gQYWuXXc37a99nj',
+                'fuqu0FVsu/BdXaEqOL0UJwkCAwEAAQ==',
+                '-----END PUBLIC KEY-----',
+            ].join('\n'),
+            // secretOrPublicKey: [
+            //     '-----BEGIN PUBLIC KEY-----',
+            //     'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA18fOlp2EQKI0aa4B+MJ9',
+            //     'Ob7reHcXGbfQo2RD9YwBnM6RryAUHpq4hIGmWw5Ch57eW0NBNV3dpkTWr48UKlnV',
+            //     '8HhEPyJwbXdGo1N+Qh9eo58yb+sgOxMCUXmklpxtprjXjgaH+6ecU4wCk53/jGkI',
+            //     't5vvyaQogSmf8NTF95IWuT/DULc6qnB+AFBch4AHgregu3HU2aV0BC1eUdHQCF1o',
+            //     'XoZOIaGfEXBOy032DzUheVM1UMCw0SNOsm9zJdOpHpGoA67fQcOGt/K8tnl2c3TW',
+            //     'TZejGprudVsBheQCBh3+3b8yvRxAcOGY2YK/EX/x8jEdOY2cAxu3RnGjSpZSvYyr',
+            //     'tanZ6z36oFBRSXvKsfzxhSdCZeID8z9EFnHdMK3LnhY6OinuQ7eVPZBzUQVaYBmw',
+            //     'eXtm8TgI6J0L6j1z8GjpDLYZsX4pS0FKKv/vtca1K+wNe2M2PAndLFUyPYsku1CH',
+            //     'JaUrn+sR8LJGDibC66ScK3CxLJpgPMVPd5XtyhfS6EmI4wr3SdktqHMxgEVSpjcj',
+            //     'B+x9tQCFgxEfjMvgKAh/PNoE1CFAE5iPvmYccsZZZ6vKAHmzwhFey1Qqup2A8e11',
+            //     'cpYDSlLcNMEDoQcUhjv6CsOJBaeKSAWvRKiiM3/ES8D7I9+3/yXKo0B/CTAsrau3',
+            //     'q/qovQYzU2qEwtMMz65ZZ8MCAwEAAQ==',
+            //     '-----END PUBLIC KEY-----',
+            // ].join('\n'),
         },
     ],
     [
@@ -78,6 +103,7 @@ export interface TokenPayload {
 
 async function checkTokenAMS(req: Request): Promise<TokenPayload> {
     const token = req.headers.authorization || req.cookies.access
+    console.log(`request token: ${JSON.stringify(req.cookies)}`)
     if (!token) {
         throw new AuthenticationError('No authentication token')
     }
@@ -89,6 +115,7 @@ async function checkTokenAMS(req: Request): Promise<TokenPayload> {
     if (!issuer || typeof issuer !== 'string') {
         throw new AuthenticationError('Malformed authentication token issuer')
     }
+    console.log(`token issuer: ${issuer}`)
     const issuerOptions = issuers.get(issuer)
     if (!issuerOptions) {
         throw new AuthenticationError('Unknown authentication token issuer')
@@ -98,9 +125,11 @@ async function checkTokenAMS(req: Request): Promise<TokenPayload> {
     const verifiedToken = await new Promise<any>((resolve, reject) => {
         verify(token, secretOrPublicKey, options, (err, decoded) => {
             if (err) {
+                console.log(`token rejected: ${err}`)
                 reject(err)
             }
             if (decoded) {
+                console.log(`successfully decoded token: ${decoded}`)
                 resolve(decoded)
             }
             reject(new AuthenticationError('Unexpected authorization error'))

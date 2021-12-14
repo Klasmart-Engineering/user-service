@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: postgres1
+  name: postgres1
+  namespace: kidskube-local
+spec:
+  ports:
+    - name: "5432"
+      port: 5432
+      targetPort: 5432
+  selector:
+    io.kompose.service: postgres1
+status:
+  loadBalancer: {}    
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: postgres1
+  name: postgres1
+  namespace: kidskube-local
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: postgres1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        io.kompose.service: postgres1
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: postgres1
+            - name: POSTGRES_PASSWORD
+              value: kidsloop
+          image: postgres
+          name: postgres1
+          ports:
+            - containerPort: 5432
+          resources: {}
+      restartPolicy: Always
+
