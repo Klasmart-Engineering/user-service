@@ -6,6 +6,7 @@ import { School } from '../../../src/entities/school'
 import { Organization } from '../../../src/entities/organization'
 import { Program } from '../../../src/entities/program'
 import { Class } from '../../../src/entities/class'
+import { DeleteSchoolInput } from '../../../src/types/graphQL/school'
 
 const GET_ORGANIZATION = `
     query myQuery($school_id: ID!) {
@@ -251,6 +252,14 @@ export async function deleteSchool(
     const res = await gqlTry(operation)
     const gqlSchool = res.data?.school.delete as boolean
     return gqlSchool
+}
+
+export function buildDeleteSchoolInputArray(
+    schools: School[]
+): DeleteSchoolInput[] {
+    return Array.from(schools, (c) => {
+        return { id: c.school_id }
+    })
 }
 
 export async function listPrograms(

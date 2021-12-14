@@ -23,3 +23,11 @@ export interface SchoolSummaryNode {
     status?: Status
     userStatus?: Status
 }
+
+export interface DeleteSchoolInput {
+    id: string
+}
+
+export interface SchoolsMutationResult {
+    schools: ISchoolsConnectionNode[]
+}

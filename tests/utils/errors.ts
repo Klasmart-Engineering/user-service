@@ -22,3 +22,8 @@ export function buildPermissionError(
     }
     return message
 }
+
+export const permErrorMeta = (permission: string) => {
+    return (usr: User, orgs?: Organization[]): string =>
+        buildPermissionError(permission, usr, orgs)
+}

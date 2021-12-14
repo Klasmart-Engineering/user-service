@@ -12,12 +12,15 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Program } from '../entities/program'
+import { DeleteSchools } from '../resolvers/school'
+import { mutate } from '../utils/mutations/commonStructure'
 
 const typeDefs = gql`
     extend type Mutation {
         school(school_id: ID!): School
         uploadSchoolsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        deleteSchools(input: [DeleteSchoolInput!]!): SchoolsMutationResult
     }
     extend type Query {
         school(school_id: ID!): School
@@ -152,6 +155,14 @@ const typeDefs = gql`
         field: [SchoolSortBy!]!
         order: SortOrder!
     }
+
+    input DeleteSchoolInput {
+        id: ID!
+    }
+
+    type SchoolsMutationResult {
+        schools: [SchoolConnectionNode!]!
+    }
 `
 
 // This is a workaround to needing to mock total count AST check in tests
@@ -230,6 +241,8 @@ export default function getDefault(
                     model.getSchool(args, ctx),
                 uploadSchoolsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSchoolsFromCSV(args, ctx, info),
+                deleteSchools: (_parent, args, ctx, _info) =>
+                    mutate(DeleteSchools, args, ctx),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>
