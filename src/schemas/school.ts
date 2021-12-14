@@ -55,6 +55,9 @@ const typeDefs = gql`
         addUser(user_id: ID!): SchoolMembership
         editPrograms(program_ids: [ID!]): [Program]
         delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/HhhZ2uD4"
+            )
     }
     type SchoolMembership {
         #properties
