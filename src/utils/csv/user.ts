@@ -15,6 +15,7 @@ import { CSVError } from '../../types/csv/csvError'
 import {
     userRowValidation,
     validateOrgsInCSV,
+    validateOrgUploadPermsForCSV,
     ValidationStateAndEntities,
 } from './validations/user'
 import { customErrors } from '../../types/errors/customError'
@@ -434,15 +435,15 @@ export const processUsersFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation<
         throw validationStateAndEntities.rowErrors
     }
 
-    // Is the client user authorized to upload to these orgs?
-    // rowErrors = await validateOrgUploadPermsForCSV(
-    //     userRows,
-    //     userPermissions,
-    //     rowErrors
-    // )
-    // if (rowErrors.length > 0) {
-    //     throw rowErrors
-    // }
+    //Is the client user authorized to upload to these orgs?
+    validationStateAndEntities = await validateOrgUploadPermsForCSV(
+        userRows,
+        userPermissions,
+        validationStateAndEntities
+    )
+    if (validationStateAndEntities.rowErrors.length > 0) {
+        throw rowErrors
+    }
 
     // More validation methods to come!
 
