@@ -79,7 +79,10 @@ export async function organizationsConnectionQuery(
     sort?: ISortField
 ) {
     if (filter) {
-        if (filterHasProperty('ownerUserId', filter)) {
+        if (
+            filterHasProperty('ownerUserId', filter) ||
+            filterHasProperty('ownerUserEmail', filter)
+        ) {
             scope.innerJoin('Organization.owner', 'Owner')
         }
 
@@ -104,6 +107,7 @@ export async function organizationsConnectionQuery(
                 // connections
                 userId: 'OrganizationMembership.userUserId',
                 ownerUserId: 'Owner.user_id',
+                ownerUserEmail: 'Owner.email',
             })
         )
     }

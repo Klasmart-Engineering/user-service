@@ -795,6 +795,84 @@ describe('organizationsConnection', () => {
         })
     })
 
+    context('ownerUserEmail filtering', () => {
+        let owners: User[]
+        let orgs: Organization[]
+        const ownersCount = 10
+        const domains = ['gmail.com', 'yahoo.com']
+
+        beforeEach(async () => {
+            owners = await User.save(
+                Array.from(new Array(ownersCount), (_, i) => {
+                    const domain = i < ownersCount / 2 ? domains[0] : domains[1]
+                    return createUser({ email: `owner${i}@${domain}` })
+                })
+            )
+
+            orgs = await Organization.save(
+                Array.from(owners, (owner) => createOrganization(owner))
+            )
+
+            await OrganizationOwnership.save(
+                Array.from(orgs, (org, i) =>
+                    createOrganizationOwnership({
+                        user: owners[i],
+                        organization: org,
+                    })
+                )
+            )
+        })
+
+        it('returns only organizations which owner user email is equal to the filter value', async () => {
+            const ownerEmail = owners[0].email
+            const organizationsConnectionResponse = await organizationsConnection(
+                testClient,
+                direction,
+                {},
+                { authorization: getAdminAuthToken() },
+                {
+                    ownerUserEmail: {
+                        operator: 'eq',
+                        value: ownerEmail,
+                    },
+                }
+            )
+
+            const { totalCount, edges } = organizationsConnectionResponse
+            expect(totalCount).to.equal(1)
+            expect(edges).to.have.lengthOf(1)
+
+            const responseEmails = edges.map((e) => e.node.owners![0].email)
+            expect(responseEmails).to.deep.equalInAnyOrder([ownerEmail])
+        })
+
+        it('returns only organizations which owner user email contains the filter value', async () => {
+            const organizationsConnectionResponse = await organizationsConnection(
+                testClient,
+                direction,
+                {},
+                { authorization: getAdminAuthToken() },
+                {
+                    ownerUserEmail: {
+                        operator: 'contains',
+                        value: domains[0],
+                    },
+                }
+            )
+
+            const { totalCount, edges } = organizationsConnectionResponse
+            expect(totalCount).to.equal(ownersCount / 2)
+            expect(edges).to.have.lengthOf(ownersCount / 2)
+
+            const responseEmails = edges.map((e) => e.node.owners![0].email)
+            const ownerEmails = owners
+                .slice(0, ownersCount / 2)
+                .map((o) => o.email)
+
+            expect(responseEmails).to.deep.equalInAnyOrder(ownerEmails)
+        })
+    })
+
     context('when totalCount is not requested', () => {
         it('makes just one call to the database', async () => {
             connection.logger.reset()
