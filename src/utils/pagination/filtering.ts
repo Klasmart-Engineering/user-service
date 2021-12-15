@@ -1,4 +1,4 @@
-import { Brackets, createQueryBuilder, SelectQueryBuilder } from 'typeorm'
+import { Brackets, SelectQueryBuilder } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 
 export interface IEntityFilter {
@@ -73,8 +73,7 @@ export const AVOID_NONE_SPECIFIED_BRACKETS = new Brackets((qb) => {
 export function getWhereClauseFromFilter<T>(
     scope: SelectQueryBuilder<T>,
     filter: IEntityFilter,
-    columnAliases?: ColumnAliases,
-    scopeBuilder?: ScopeBuilder<T>
+    columnAliases?: ColumnAliases
 ): Brackets {
     return new Brackets((qb) => {
         for (const key of Object.keys(filter)) {
@@ -166,9 +165,7 @@ export function getWhereClauseFromFilter<T>(
                         !!data.caseInsensitive,
                         alias,
                         sqlOperator,
-                        uniqueId,
-                        value,
-                        scopeBuilder
+                        uniqueId
                     )
 
                     qb.andWhere(whereCondition, {
@@ -193,9 +190,7 @@ export function getWhereClauseFromFilter<T>(
                             !!data.caseInsensitive,
                             aliases[0],
                             sqlOperator,
-                            uniqueId,
-                            value,
-                            scopeBuilder
+                            uniqueId
                         )
 
                         queryBuilder.where(whereCondition, {
@@ -205,10 +200,13 @@ export function getWhereClauseFromFilter<T>(
                         for (let i = 1; i < aliases.length; i += 1) {
                             let operator = (columnAliasValue as IMultipleColumn)
                                 .operator
-                            // Always enforce an AND operation when using the isNull operator
+                            // Always enforce an AND operation when using the isNull/excludes operator
                             // Currently only required for the classId filter of userConnection to
                             // check for classes studying AND teaching
-                            if (data.operator === 'isNull') {
+                            if (
+                                data.operator === 'isNull' ||
+                                data.operator === 'excludes'
+                            ) {
                                 operator = 'AND'
                             }
                             uniqueId = uuid_v4()
@@ -217,9 +215,7 @@ export function getWhereClauseFromFilter<T>(
                                 !!data.caseInsensitive,
                                 aliases[i],
                                 sqlOperator,
-                                uniqueId,
-                                value,
-                                scopeBuilder
+                                uniqueId
                             )
 
                             if (operator === 'AND') {
@@ -372,9 +368,7 @@ function createWhereCondition<T = unknown>(
     caseInsensitive: boolean,
     alias: string,
     sqlOperator: string,
-    uniqueId: string,
-    value: CommonValue | undefined,
-    scopeBuilder?: ScopeBuilder<T>
+    uniqueId: string
 ) {
     if (sqlOperator === 'IS NULL') {
         return `${alias} ${sqlOperator}`
@@ -396,35 +390,12 @@ function createWhereCondition<T = unknown>(
         }
         const primaryKey = `"${table}"."${primaryKeys[0].databaseName}"`
 
-        if (scopeBuilder) {
-            // performance: the current scope may have unnecessary joins, so that the caller can
-            // provide a scope builder function to regenerate it and include the bits it needs
-            const simpleScope = createQueryBuilder(
-                scope.expressionMap.mainAlias?.name
-            ).select(primaryKey) as SelectQueryBuilder<T>
-
-            // adds required joins and filter
-            scopeBuilder(simpleScope, {
-                [alias]: {
-                    operator: 'eq',
-                    value,
-                },
-            })
-
-            scope.setParameters({
-                ...scope.getParameters(),
-                ...simpleScope.getParameters(),
-            })
-            return `${primaryKey} NOT IN (${simpleScope.getQuery()})`
-        } else {
-            // if the caller doesn't provide a scope builder, use the scope as is (may have unnecessary joins)
-            // but overwrite the SELECT and WHERE statements
-            return `${primaryKey} NOT IN (${scope
-                .clone()
-                .select(primaryKey)
-                .where(`${alias} = :${uniqueId}`)
-                .getQuery()})`
-        }
+        // overwrite the SELECT and WHERE statements
+        return `${primaryKey} NOT IN (${scope
+            .clone()
+            .select(primaryKey)
+            .where(`${alias} = :${uniqueId}`)
+            .getQuery()})`
     }
     if (caseInsensitive) {
         return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`

@@ -729,6 +729,9 @@ describe('usersConnection', () => {
         let school1: School
         let school2: School
         let role1: Role
+        let school1Users: User[]
+        let school2Users: User[]
+        let numUsersInBothSchools: number
         beforeEach(async () => {
             //org used to filter
             const superAdmin = await createAdminUser(testClient)
@@ -757,21 +760,18 @@ describe('usersConnection', () => {
                 .of(role1)
                 .add(memberships)
 
-            // add half of users to one school and other half to different school
-            // also add 5th user to both school
+            school1Users = usersList.slice(0, 7)
+            school2Users = usersList.slice(5)
+            numUsersInBothSchools = 2
             await SchoolMembership.save(
-                usersList
-                    .slice(0, 6)
-                    .map((user) =>
-                        createSchoolMembership({ user, school: school1 })
-                    )
+                school1Users.map((user) =>
+                    createSchoolMembership({ user, school: school1 })
+                )
             )
             await SchoolMembership.save(
-                usersList
-                    .slice(5)
-                    .map((user) =>
-                        createSchoolMembership({ user, school: school2 })
-                    )
+                school2Users.map((user) =>
+                    createSchoolMembership({ user, school: school2 })
+                )
             )
         })
         it('should filter the pagination results on schoolId', async () => {
@@ -792,7 +792,7 @@ describe('usersConnection', () => {
                 filter
             )
 
-            expect(usersConnection?.totalCount).to.eql(5)
+            expect(usersConnection?.totalCount).to.eql(school1Users.length)
             expect(usersConnection?.edges.length).to.equal(3)
 
             //user belonging to more than one returned
@@ -850,7 +850,7 @@ describe('usersConnection', () => {
                 { authorization: getNonAdminAuthToken() },
                 filter
             )
-            expect(usersConnection?.totalCount).to.eql(5)
+            expect(usersConnection?.totalCount).to.eql(school2Users.length)
         })
         it('supports the exclusive filter via IS NULL', async () => {
             await createUser().save()
@@ -868,6 +868,27 @@ describe('usersConnection', () => {
                 filter
             )
             expect(usersConnection.totalCount).to.eql(2) // new user + super admin
+        })
+
+        it('can filter out users belonging to a specific school', async () => {
+            const filter: IEntityFilter = {
+                schoolId: {
+                    operator: 'excludes',
+                    value: school1.school_id,
+                },
+            }
+            const usersConnection = await userConnection(
+                testClient,
+                direction,
+                { count: 3 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(usersConnection.totalCount).to.eql(
+                school2Users.length - numUsersInBothSchools + 1,
+                'one extra for admin'
+            )
         })
     })
 
@@ -1300,6 +1321,10 @@ describe('usersConnection', () => {
         let class2: Class
         let role1: Role
 
+        let class1Users: User[]
+        let class2Users: User[]
+        let numUsersInBothClasses: number
+
         beforeEach(async () => {
             //org used to filter
             const superAdmin = await createAdminUser(testClient)
@@ -1329,17 +1354,18 @@ describe('usersConnection', () => {
                 .of(role1)
                 .add(memberships)
 
-            // add half of users to one class and other half to different class
-            // also add 5th user to both classes
+            class1Users = usersList.slice(0, 7)
+            class2Users = usersList.slice(5)
+            numUsersInBothClasses = 2
             await Class.createQueryBuilder()
                 .relation('students')
                 .of(class1)
-                .add(usersList.slice(0, 6))
+                .add(class1Users)
 
             await Class.createQueryBuilder()
                 .relation('students')
                 .of(class2)
-                .add(usersList.slice(5))
+                .add(class2Users)
         })
 
         it('should filter the pagination results on classId', async () => {
@@ -1362,7 +1388,7 @@ describe('usersConnection', () => {
                 filter
             )
 
-            expect(usersConnection?.totalCount).to.eql(5)
+            expect(usersConnection?.totalCount).to.eql(class2Users.length)
             expect(usersConnection?.edges.length).to.equal(5)
 
             expect(usersConnection?.edges[0].node.id).to.equal(
@@ -1430,7 +1456,7 @@ describe('usersConnection', () => {
                 filter
             )
 
-            expect(usersConnection?.totalCount).to.eql(5)
+            expect(usersConnection?.totalCount).to.eql(class2Users.length)
 
             const userIds = usersConnection?.edges.map((edge) => {
                 return edge.node.id
@@ -1463,6 +1489,26 @@ describe('usersConnection', () => {
                 filter
             )
             expect(usersConnection.totalCount).to.eql(2) // new user + super admin
+        })
+        it('can filter out users belonging to a specific class', async () => {
+            const filter: IEntityFilter = {
+                classId: {
+                    operator: 'excludes',
+                    value: class1.class_id,
+                },
+            }
+            const usersConnection = await userConnection(
+                testClient,
+                direction,
+                { count: 3 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(usersConnection.totalCount).to.eql(
+                class2Users.length - numUsersInBothClasses + 1,
+                'one extra for admin'
+            )
         })
     })
 

@@ -120,29 +120,24 @@ export function usersConnectionQuery(
         }
 
         scope.andWhere(
-            getWhereClauseFromFilter(
-                scope,
-                filter,
-                {
-                    organizationId: 'OrganizationMembership.organization_id',
-                    organizationUserStatus: 'OrganizationMembership.status',
-                    userStatus: 'User.status',
-                    userId: 'User.user_id',
-                    phone: 'User.phone',
-                    email: 'User.email',
-                    schoolId: 'SchoolMembership.school_id',
-                    classId: {
-                        operator: 'OR',
-                        aliases: [
-                            'ClassStudying.class_id',
-                            'ClassTeaching.class_id',
-                        ],
-                    },
-                    classStudyingId: 'ClassStudying.class_id',
-                    classTeachingId: 'ClassTeaching.class_id',
+            getWhereClauseFromFilter(scope, filter, {
+                organizationId: 'OrganizationMembership.organization_id',
+                organizationUserStatus: 'OrganizationMembership.status',
+                userStatus: 'User.status',
+                userId: 'User.user_id',
+                phone: 'User.phone',
+                email: 'User.email',
+                schoolId: 'SchoolMembership.school_id',
+                classId: {
+                    operator: 'OR',
+                    aliases: [
+                        'ClassStudying.class_id',
+                        'ClassTeaching.class_id',
+                    ],
                 },
-                usersConnectionQuery
-            )
+                classStudyingId: 'ClassStudying.class_id',
+                classTeachingId: 'ClassTeaching.class_id',
+            })
         )
     }
 
