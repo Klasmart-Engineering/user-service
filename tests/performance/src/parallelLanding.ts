@@ -22,113 +22,120 @@ export const options: Options = {
     },
     scenarios: {
         teacher00: {
-            executor: 'ramping-vus',
+            // executor: 'ramping-vus',
+            // exec: 'teacher00',
+            // startTime: '0s',
+            // gracefulStop: '5s',
+            // stages: [
+            //     {
+            //         duration: '30s',
+            //         target: 300,
+            //     }
+            // ]
+            executor: 'constant-arrival-rate',
             exec: 'teacher00',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
+            rate: 400, // 200 RPS, since timeUnit is the default 1s
+            duration: '30s',
+            timeUnit: '1s',
+            preAllocatedVUs: 50,
+            maxVUs: 1000,
         },
-        teacher01: {
-            executor: 'ramping-vus',
-            exec: 'teacher00',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
-        },
-        teacher02: {
-            executor: 'ramping-vus',
-            exec: 'teacher00',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
-        },
-        student00: {
-            executor: 'ramping-vus',
-            exec: 'students00',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
-        },
-        student01: {
-            executor: 'ramping-vus',
-            exec: 'students01',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
-        },
-        student02: {
-            executor: 'ramping-vus',
-            exec: 'students02',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
-        },
-        student03: {
-            executor: 'ramping-vus',
-            exec: 'students03',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
-        },
-        student04: {
-            executor: 'ramping-vus',
-            exec: 'students04',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
-        },
-        student05: {
-            executor: 'ramping-vus',
-            exec: 'students05',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                {
-                    duration: '30s',
-                    target: 45,
-                }
-            ]
-        },
+    //     teacher01: {
+    //         executor: 'ramping-vus',
+    //         exec: 'teacher00',
+    //         startTime: '0s',
+    //         gracefulStop: '5s',
+    //         stages: [
+    //             {
+    //                 duration: '30s',
+    //                 target: 300,
+    //             }
+    //         ]
+    //     },
+    //     teacher02: {
+    //         executor: 'ramping-vus',
+    //         exec: 'teacher00',
+    //         startTime: '0s',
+    //         gracefulStop: '5s',
+    //         stages: [
+    //             {
+    //                 duration: '30s',
+    //                 target: 300,
+    //             }
+    //         ]
+    //     },
+    //     student00: {
+    //         executor: 'ramping-vus',
+    //         exec: 'students00',
+    //         startTime: '0s',
+    //         gracefulStop: '5s',
+    //         stages: [
+    //             {
+    //                 duration: '30s',
+    //                 target: 300,
+    //             }
+    //         ]
+    //     },
+    //     student01: {
+    //         executor: 'ramping-vus',
+    //         exec: 'students01',
+    //         startTime: '0s',
+    //         gracefulStop: '5s',
+    //         stages: [
+    //             {
+    //                 duration: '30s',
+    //                 target: 300,
+    //             }
+    //         ]
+    //     },
+    //     student02: {
+    //         executor: 'ramping-vus',
+    //         exec: 'students02',
+    //         startTime: '0s',
+    //         gracefulStop: '5s',
+    //         stages: [
+    //             {
+    //                 duration: '30s',
+    //                 target: 300,
+    //             }
+    //         ]
+    //     },
+    //     student03: {
+    //         executor: 'ramping-vus',
+    //         exec: 'students03',
+    //         startTime: '0s',
+    //         gracefulStop: '5s',
+    //         stages: [
+    //             {
+    //                 duration: '30s',
+    //                 target: 300,
+    //             }
+    //         ]
+    //     },
+    //     student04: {
+    //         executor: 'ramping-vus',
+    //         exec: 'students04',
+    //         startTime: '0s',
+    //         gracefulStop: '5s',
+    //         stages: [
+    //             {
+    //                 duration: '30s',
+    //                 target: 300,
+    //             }
+    //         ]
+    //     },
+    //     student05: {
+    //         executor: 'ramping-vus',
+    //         exec: 'students05',
+    //         startTime: '0s',
+    //         gracefulStop: '5s',
+    //         stages: [
+    //             {
+    //                 duration: '30s',
+    //                 target: 300,
+    //             }
+    //         ]
+    //     },
     }
 };
 

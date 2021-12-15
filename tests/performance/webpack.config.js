@@ -12,6 +12,7 @@ module.exports = {
         createUsersAllRoles: `./createUsersAllRoles`,
         create1kUsers: `./create1kUsers`,
         createUsersParallel: `./createUsersParallel`,
+        parallelLanding: `./parallelLanding.ts`,
         parallelLandingSchedule: `./parallelLandingSchedule.ts`,
         getPaginatedUsers: `./getPaginatedUsers.ts`,
         getPaginatedUsersCursor: `./getPaginatedUsersCursor.ts`,
