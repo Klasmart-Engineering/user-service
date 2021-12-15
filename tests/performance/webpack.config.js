@@ -18,6 +18,10 @@ module.exports = {
         getPaginatedUsersFilter: `./getPaginatedUsersFilters.ts`,
         getPaginatedUsersMixed: `./getPaginatedUsersMixed.ts`,
         scenario9ASchoolAdmin: `./Scenarios/Scenario 9/scenario9ASchoolAdmin.ts`,
+        hitLandingHome: `./hitLandingHome1.ts`,
+        hitLandingHome2: `./hitLandingHome2.ts`,
+        hitLandingHome3: `./hitLandingHome3.ts`,
+        hitLandingHome4: `./hitLandingHome4.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),

@@ -15,7 +15,11 @@
       "get:users:cursor": "k6 run ./dist/getPaginatedUsersCursor.js",
       "get:users:filters": "k6 run ./dist/getPaginatedUsersFilter.js",
       "get:users:mixed": "k6 run ./dist/getPaginatedUsersMixed.js",
-      "get:scenario9-a": "k6 run ./dist/Scenario9ASchoolAdmin.js"
+      "get:scenario9-a": "k6 run ./dist/Scenario9ASchoolAdmin.js",
+      "test:hit:landinghome": "k6 run ./dist/hitLandingHome1.js",
+      "test:hit:landinghome2": "k6 run ./dist/hitLandingHome2.js",
+      "test:hit:landinghome3": "k6 run ./dist/hitLandingHome3.js",
+      "test:hit:landinghome4": "k6 run ./dist/hitLandingHome4.js"
     },
     "dependencies": {
       "@babel/core": "7.13.16",
