@@ -298,7 +298,7 @@ describe('category', () => {
             expect(categoriesCreatedNames).to.deep.equalInAnyOrder(inputNames)
 
             const categoriesDB = await findCategoriesByInput(input)
-            categoriesDB.forEach(async (cdb, i) => {
+            categoriesDB.forEach((cdb, i) => {
                 expect(cdb.name).to.include(input[i].name)
                 expect(cdb.organizationId).to.eq(input[i].organizationId)
                 expect(cdb.subcategories).to.deep.equalInAnyOrder(
@@ -680,7 +680,7 @@ describe('category', () => {
 
             expect(categoriesDB.length).to.eq(input.length)
 
-            categoriesDB.forEach(async (cdb) => {
+            for (const cdb of categoriesDB) {
                 const inputRelated = input.find((i) => i.id === cdb.id)
                 const categoryRelated = categoriesToUpdate.find(
                     (c) => c.id === cdb.id
@@ -691,12 +691,14 @@ describe('category', () => {
                 expect(cdb.name).to.eq(
                     avoidNames ? categoryRelated?.name : inputRelated?.name
                 )
-                expect(cdb.subcategories).to.eq(
+                expect(cdb.subcategories).to.deep.eq(
                     avoidSubcategories
-                        ? await categoryRelated?.subcategories
+                        ? (await categoryRelated?.subcategories)?.map(
+                              (s) => s.id
+                          )
                         : inputRelated?.subcategories
                 )
-            })
+            }
         }
 
         const expectNoChangesMade = async (categoriesToFind: Category[]) => {
@@ -720,19 +722,22 @@ describe('category', () => {
 
             expect(categoriesDB).to.exist
             expect(categoriesDB.length).to.eq(categoriesToFind.length)
-            categoriesToFind.forEach(async (c, i) => {
+            for (const [i, c] of categoriesToFind.entries()) {
                 const categoryRelated = categoriesDB.find(
                     (cdb) => c.id === cdb.id
                 )
 
                 expect(categoryRelated?.name).to.eq(c.name)
                 expect(categoryRelated?.status).to.eq(c.status)
+
+                const categoryRelatedSubcategories = await categoryRelated?.subcategories
+
                 expect(
-                    categoriesToFindSubcategories[i]
+                    await categoriesToFindSubcategories[i]
                 ).to.deep.equalInAnyOrder(
-                    (categoryRelated as any).__subcategories__.id
+                    categoryRelatedSubcategories?.map((s) => s.id)
                 )
-            })
+            }
         }
 
         beforeEach(async () => {

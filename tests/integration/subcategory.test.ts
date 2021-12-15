@@ -266,7 +266,7 @@ describe('subcategory', () => {
                 )
 
                 const subcategoriesDB = await findSubcategoriesByInput(input)
-                subcategoriesDB.forEach(async (cdb, i) => {
+                subcategoriesDB.forEach((cdb, i) => {
                     expect(cdb.name).to.include(input[i].name)
                     expect(cdb.organizationId).to.eq(input[i].organizationId)
                 })
@@ -292,7 +292,7 @@ describe('subcategory', () => {
                 )
 
                 const subcategoriesDB = await findSubcategoriesByInput(input)
-                subcategoriesDB.forEach(async (cdb, i) => {
+                subcategoriesDB.forEach((cdb, i) => {
                     expect(cdb.name).to.include(input[i].name)
                     expect(cdb.organizationId).to.eq(input[i].organizationId)
                 })
@@ -698,7 +698,7 @@ describe('subcategory', () => {
 
             expect(subcategoriesDB.length).to.eq(input.length)
 
-            subcategoriesDB.forEach(async (cdb) => {
+            subcategoriesDB.forEach((cdb) => {
                 const inputRelated = input.find((i) => i.id === cdb.id)
                 const subcategoryRelated = subcategoriesToUpdate.find(
                     (c) => c.id === cdb.id
@@ -803,7 +803,7 @@ describe('subcategory', () => {
 
             expect(categoriesDB).to.exist
             expect(categoriesDB.length).to.eq(categoriesToFind.length)
-            categoriesToFind.forEach(async (c, i) => {
+            categoriesToFind.forEach((c) => {
                 const categoryRelated = categoriesDB.find(
                     (cdb) => c.id === cdb.id
                 )

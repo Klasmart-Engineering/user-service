@@ -31,6 +31,7 @@
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-unused-vars": [2, {"vars": "all", "args": "none"}],
       "@typescript-eslint/no-floating-promises": "error",
-      "mocha/no-exclusive-tests": "error"
+      "mocha/no-exclusive-tests": "error",
+      "no-await-in-loop": "warn"
     }
   }

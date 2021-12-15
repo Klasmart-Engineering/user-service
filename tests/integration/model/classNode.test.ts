@@ -298,25 +298,33 @@ describe('classNode', () => {
                 Array.from(Array(programsCount), () => createProgram(org1))
             )
 
-            org1Classes.forEach(async (c, i) => {
-                c.age_ranges = Promise.resolve([
-                    ageRanges[Math.floor(i / (classesCount / ageRangesCount))],
-                ])
+            await Promise.all(
+                org1Classes.map((c, i) => {
+                    c.age_ranges = Promise.resolve([
+                        ageRanges[
+                            Math.floor(i / (classesCount / ageRangesCount))
+                        ],
+                    ])
 
-                c.grades = Promise.resolve([
-                    grades[Math.floor(i / (classesCount / gradesCount))],
-                ])
+                    c.grades = Promise.resolve([
+                        grades[Math.floor(i / (classesCount / gradesCount))],
+                    ])
 
-                c.subjects = Promise.resolve([
-                    subjects[Math.floor(i / (classesCount / subjectsCount))],
-                ])
+                    c.subjects = Promise.resolve([
+                        subjects[
+                            Math.floor(i / (classesCount / subjectsCount))
+                        ],
+                    ])
 
-                c.programs = Promise.resolve([
-                    programs[Math.floor(i / (classesCount / programsCount))],
-                ])
+                    c.programs = Promise.resolve([
+                        programs[
+                            Math.floor(i / (classesCount / programsCount))
+                        ],
+                    ])
 
-                await c.save()
-            })
+                    return c.save()
+                })
+            )
         })
 
         it('should get the correct class with its corresponding data', async () => {

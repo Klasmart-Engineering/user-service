@@ -141,9 +141,7 @@ describe('schoolNode', () => {
 
     context('data', () => {
         beforeEach(async () => {
-            org1Schools.forEach(async (c, i) => {
-                await c.save()
-            })
+            await Promise.all(org1Schools.map((c) => c.save()))
         })
 
         it('should get the correct school with its corresponding data', async () => {

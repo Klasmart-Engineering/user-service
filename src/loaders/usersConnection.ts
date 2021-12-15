@@ -212,30 +212,42 @@ export const rolesForUsers = async (
             const schoolMemberships = await schoolUsers.get(id)
                 ?.school_memberships
 
-            /* TODO: these forEach loops need to be reworked to
-                     correctly wait for the promises to complete. */
-            const roles: RoleSummaryNode[] = []
-            organizationMemberships?.forEach(async (orgMembership) =>
-                (await orgMembership.roles)?.forEach((role) =>
-                    roles.push({
-                        id: role.role_id,
-                        name: role.role_name,
-                        organizationId: orgMembership.organization_id,
-                        status: role.status,
-                    })
-                )
+            const orgRoles = (organizationMemberships ?? []).map(
+                (orgMembership) => {
+                    const roles = orgMembership.roles ?? Promise.resolve([])
+                    return roles.then((roles) =>
+                        roles.map((role) => {
+                            return {
+                                id: role.role_id,
+                                name: role.role_name,
+                                organizationId: orgMembership.organization_id,
+                                status: role.status,
+                            }
+                        })
+                    )
+                }
             )
-            schoolMemberships?.forEach(async (schoolMembership) =>
-                (await schoolMembership.roles)?.forEach((role) =>
-                    roles.push({
-                        id: role.role_id,
-                        name: role.role_name,
-                        schoolId: schoolMembership.school_id,
-                        status: role.status,
-                    })
-                )
+            const schoolRoles = (schoolMemberships ?? []).map(
+                (schoolMembership) => {
+                    const roles = schoolMembership.roles ?? Promise.resolve([])
+                    return roles.then((roles) =>
+                        roles.map((role) => {
+                            return {
+                                id: role.role_id,
+                                name: role.role_name,
+                                schoolId: schoolMembership.school_id,
+                                status: role.status,
+                            }
+                        })
+                    )
+                }
             )
-            return roles
+            const rolesByMembership: Promise<RoleSummaryNode[]>[] = [
+                ...orgRoles,
+                ...schoolRoles,
+            ]
+
+            return (await Promise.all(rolesByMembership)).flat()
         })
     )
 }
