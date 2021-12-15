@@ -12,6 +12,7 @@ module.exports = {
         createUsersAllRoles: `./createUsersAllRoles`,
         create1kUsers: `./create1kUsers`,
         createUsersParallel: `./createUsersParallel`,
+        parallelLanding: `./parallelLanding.ts`,
         parallelLandingSchedule: `./parallelLandingSchedule.ts`,
         getPaginatedUsers: `./getPaginatedUsers.ts`,
         getPaginatedUsersCursor: `./getPaginatedUsersCursor.ts`,
@@ -21,7 +22,8 @@ module.exports = {
         hitLandingHome: `./hitLandingHome1.ts`,
         hitLandingHome2: `./hitLandingHome2.ts`,
         hitLandingHome3: `./hitLandingHome3.ts`,
-        hitLandingHome4: `./hitLandingHome4.ts`
+        hitLandingHome4: `./hitLandingHome4.ts`,
+        liveClassPopulate: `./liveClassPopulate.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),

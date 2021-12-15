@@ -302,3 +302,14 @@ export const getPaginatedOrganizationUsers = `
         }
     }
 `;
+
+export const meQueryReq1 = `{ me {
+    avatar
+	email
+	phone
+	user_id
+	username
+	given_name
+	family_name
+    }
+}`;
