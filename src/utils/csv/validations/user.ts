@@ -16,6 +16,7 @@ import { Role } from '../../../entities/role'
 import { School } from '../../../entities/school'
 import { Class } from '../../../entities/class'
 import { OrganizationMembership } from '../../../entities/organizationMembership'
+import { PermissionName } from '../../../permissions/permissionNames'
 
 // CSV rows generally contain a mix of properties from various entities, so we need to define
 // custom validation schemas for them, reusing validation rules from the entity
@@ -96,12 +97,12 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
     },
 }
 
-interface ValidatedCSVEntities {
-    orgs: Organization[]
-    orgRoles: Role[]
-    orgMemberships: OrganizationMembership[]
-    schools: School[]
-    classes: Class[]
+export interface ValidatedCSVEntities {
+    orgs?: Organization[]
+    orgRoles?: Role[]
+    orgMemberships?: OrganizationMembership[]
+    schools?: School[]
+    classes?: Class[]
 }
 
 export class ValidationStateAndEntities {
@@ -185,41 +186,54 @@ export async function validateOrgsInCSV(
         rowNumber += 1
     }
 
-    // Add validated unique orgs to validation state object
-    validationStateAndEntities.validatedEntities.orgs.push(...validOrgs)
+    // Update validation state object with valid orgs
+    validationStateAndEntities.validatedEntities.orgs = validOrgs
 
     return validationStateAndEntities
 }
 
-// export async function validateOrgUploadPermsForCSV(
-//     userRows: UserRow[],
-//     userPermissions: UserPermissions,
-//     rowErrors: CSVError[]
-// ): Promise<CSVError[]> {
-//     let rowNumber = 1
-//     const orgNamesInCSV = userRows.map((row) => row.organization_name)
-//     const uniqueOrgNames = new Set(orgNamesInCSV)
-//     const invalidOrgNames: string[] = []
+export async function validateOrgUploadPermsForCSV(
+    userRows: UserRow[],
+    userPermissions: UserPermissions,
+    validationStateAndEntities: ValidationStateAndEntities
+): Promise<ValidationStateAndEntities> {
+    const validatedOrgs = validationStateAndEntities.validatedEntities.orgs
+    const orgNamesWithNoUploadPerms: string[] = []
 
-//     for (const orgName of uniqueOrgNames) {
-//     }
+    for (const org of validatedOrgs!) {
+        try {
+            await userPermissions.rejectIfNotAllowed(
+                { organization_ids: [org.organization_id] },
+                PermissionName.upload_users_40880
+            )
+        } catch (e) {
+            orgNamesWithNoUploadPerms.push(org.organization_name!)
+        }
+    }
 
-//     try {
-//         await userPermissions.rejectIfNotAllowed(
-//             { organization_ids: [org.organization_id] },
-//             PermissionName.upload_users_40880
-//         )
-//     } catch (e) {
-//         addCsvError(
-//             rowErrors,
-//             customErrors.unauthorized_org_upload.code,
-//             rowNumber,
-//             'organization_name',
-//             customErrors.unauthorized_org_upload.message,
-//             {
-//                 entity: 'user',
-//                 organizationName: row.organization_name,
-//             }
-//         )
-//     }
-// }
+    // Record row errors and add to validation state object
+    let rowNumber = 1
+    for (const row of userRows) {
+        if (orgNamesWithNoUploadPerms.includes(row.organization_name)) {
+            addCsvError(
+                validationStateAndEntities.rowErrors,
+                customErrors.unauthorized_org_upload.code,
+                rowNumber,
+                'organization_name',
+                customErrors.unauthorized_org_upload.message,
+                {
+                    entity: 'user',
+                    organizationName: row.organization_name,
+                }
+            )
+        }
+        rowNumber += 1
+    }
+
+    // Update validation state object with valid orgs
+    validationStateAndEntities.validatedEntities.orgs = validatedOrgs!.filter(
+        (org) => !orgNamesWithNoUploadPerms.includes(org.organization_name!)
+    )
+
+    return validationStateAndEntities
+}
