@@ -1,20 +1,26 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, createQueryBuilder } from 'typeorm'
+import { Connection } from 'typeorm'
 import { ICreateScopeArgs } from '../../../../src/directives/isAdmin'
+import { AgeRange } from '../../../../src/entities/ageRange'
 import { Class } from '../../../../src/entities/class'
 import { Organization } from '../../../../src/entities/organization'
-import { OrganizationMembership } from '../../../../src/entities/organizationMembership'
 import { User } from '../../../../src/entities/user'
+import { AgeRangesInitializer } from '../../../../src/initializers/ageRanges'
 import {
     childConnectionLoader,
     IChildConnectionDataloaderKey,
 } from '../../../../src/loaders/childConnectionLoader'
 import { Model } from '../../../../src/model'
 import {
+    ageRangeConnectionQuery,
+    ageRangesConnectionSortingConfig,
+    mapAgeRangeToAgeRangeConnectionNode,
+} from '../../../../src/pagination/ageRangesConnection'
+import {
     classesConnectionQuery,
-    mapClassToClassConnectionNode,
     classesConnectionSortingConfig,
+    mapClassToClassConnectionNode,
 } from '../../../../src/pagination/classesConnection'
 import {
     userConnectionSortingConfig,
@@ -25,6 +31,7 @@ import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createServer } from '../../../../src/utils/createServer'
 import { IChildPaginationArgs } from '../../../../src/utils/pagination/paginate'
 import { ISortingConfig } from '../../../../src/utils/pagination/sorting'
+import { createAgeRange } from '../../../factories/ageRange.factory'
 import { createClass } from '../../../factories/class.factory'
 import { createOrganization } from '../../../factories/organization.factory'
 import { createOrganizationMembership } from '../../../factories/organizationMembership.factory'
@@ -37,7 +44,6 @@ import {
     createTestClient,
 } from '../../../utils/createTestClient'
 import { isStringArraySortedAscending } from '../../../utils/sorting'
-import { getAdminAuthToken } from '../../../utils/testConfig'
 import { createTestConnection } from '../../../utils/testConnection'
 import {
     createAdminUser,
@@ -76,6 +82,7 @@ describe('child connections', () => {
     const pageSize = 5
 
     let args: IChildPaginationArgs
+    let adminPermissions: UserPermissions
 
     const mapFunc = (user: User) => {
         return { userId: user.user_id, givenName: user.given_name }
@@ -88,7 +95,7 @@ describe('child connections', () => {
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
         const adminUser = await createAdminUser(testClient)
-        const adminPermissions = new UserPermissions({
+        adminPermissions = new UserPermissions({
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
@@ -411,6 +418,62 @@ describe('child connections', () => {
 
             expect(response[0].edges).to.have.lengthOf(1)
             expect(response[1].edges).to.have.lengthOf(2)
+        })
+    })
+
+    context('system entities', () => {
+        let orgAgeRanges: AgeRange[]
+        let systemAgeRanges: AgeRange[]
+        beforeEach(async () => {
+            await new AgeRangesInitializer().run()
+            orgAgeRanges = [await createAgeRange(orgs[0]).save()]
+            systemAgeRanges = await AgeRange.find({
+                where: { system: true },
+            })
+        })
+
+        function fetchOrgAgeRanges(includeSystemEntities = false) {
+            return childConnectionLoader(
+                [
+                    {
+                        args: { count: 50 },
+                        includeTotalCount: true,
+                        parent: {
+                            id: orgs[0].organization_id,
+                            filterKey: 'organizationId',
+                            pivot: '"Organization"."organization_id"',
+                        },
+                        primaryColumn: 'id',
+                        systemColumn: includeSystemEntities
+                            ? 'system'
+                            : undefined,
+                    },
+                ],
+                ageRangeConnectionQuery,
+                mapAgeRangeToAgeRangeConnectionNode,
+                ageRangesConnectionSortingConfig,
+                { permissions: adminPermissions, entity: 'ageRange' }
+            )
+        }
+        it('does not return system entities by default', async () => {
+            const response = await fetchOrgAgeRanges()
+            expect(response).to.have.lengthOf(1)
+            expect(response[0].totalCount).to.eq(orgAgeRanges.length)
+            expect(
+                response[0].edges.map((e) => e.node.id)
+            ).to.deep.equalInAnyOrder(orgAgeRanges.map((c) => c.id))
+        })
+        it('fetches system entities if requested', async () => {
+            const response = await fetchOrgAgeRanges(true)
+            expect(response).to.have.lengthOf(1)
+            expect(response[0].totalCount).to.eq(
+                orgAgeRanges.length + systemAgeRanges.length
+            )
+            expect(
+                response[0].edges.map((e) => e.node.id)
+            ).to.deep.equalInAnyOrder(
+                orgAgeRanges.concat(systemAgeRanges).map((c) => c.id)
+            )
         })
     })
 })

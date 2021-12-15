@@ -417,7 +417,7 @@ describe('acceptance.subcategory', () => {
                 iss: 'calmid-debug',
             })
         })
-        it('as a child of categories', async () => {
+        it('returns subcategories per category', async () => {
             const query = `
             query categoriesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: CategoryFilter, $sortArgs: CategorySortInput){
                 categoriesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
@@ -463,7 +463,7 @@ describe('acceptance.subcategory', () => {
                     .subcategoriesConnection.totalCount
             ).to.be.gte(1)
         })
-        it('as a child of organizations', async () => {
+        it('returns subcategories per organization as well as system subcategories', async () => {
             const query = `
             query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
                 organizationsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
@@ -486,6 +486,10 @@ describe('acceptance.subcategory', () => {
                 }
             }`
 
+            const sytemSubcategoryCount = await Subcategory.count({
+                where: { system: true },
+            })
+
             const response = await makeRequest(
                 request,
                 query,
@@ -501,11 +505,7 @@ describe('acceptance.subcategory', () => {
             expect(
                 response.body.data.organizationsConnection.edges[0].node
                     .subcategoriesConnection.totalCount
-            ).to.eq(1)
-            expect(
-                response.body.data.organizationsConnection.edges[0].node
-                    .subcategoriesConnection.edges[0].node.id
-            ).to.eq(subcategory.id)
+            ).to.eq(1 + sytemSubcategoryCount)
         })
     })
 })

@@ -63,6 +63,7 @@ describe('subcategoriesConnection', () => {
     let subcategories2: Subcategory[]
     let categories1: Category[]
     let subcategoriesCount: number
+    let systemSubcategories: Subcategory[]
     let systemSubcategoriesCount: number
     let scope: SelectQueryBuilder<Subcategory>
     let adminPermissions: UserPermissions
@@ -180,10 +181,11 @@ describe('subcategoriesConnection', () => {
             roles: [teacherRole],
         }).save()
 
-        systemSubcategoriesCount = await Subcategory.count({
+        systemSubcategories = await Subcategory.find({
             where: { system: true },
         })
 
+        systemSubcategoriesCount = systemSubcategories.length
         subcategoriesCount =
             systemSubcategoriesCount + orgSubcategoriesCount * 2
 
@@ -489,15 +491,17 @@ describe('subcategoriesConnection', () => {
         })
 
         context('as child of an organization', () => {
-            it('returns subcategories per organization', async () => {
+            it('returns subcategories per organization and system subcategories', async () => {
                 const result = await loadSubcategoriesForOrganization(
                     ctx,
                     organization1.organization_id
                 )
-                expect(result.edges).to.have.lengthOf(subcategories1.length)
-                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
-                    subcategories1.map((m) => m.id)
+                expect(result.totalCount).to.eq(
+                    subcategories1.length + systemSubcategoriesCount
                 )
+                expect(
+                    subcategories1.concat(systemSubcategories).map((m) => m.id)
+                ).include.members(result.edges.map((e) => e.node.id))
             })
             it('returns totalCount when requested', async () => {
                 fakeInfo.fieldNodes[0].selectionSet?.selections.push({
@@ -510,7 +514,9 @@ describe('subcategoriesConnection', () => {
                     ctx,
                     fakeInfo
                 )
-                expect(result.totalCount).to.eq(subcategories1.length)
+                expect(result.totalCount).to.eq(
+                    subcategories1.length + systemSubcategoriesCount
+                )
             })
             it('omits totalCount when not requested', async () => {
                 const result = await resolverForOrganization(

@@ -30,6 +30,8 @@ export interface IChildConnectionDataloaderKey<Entity extends BaseEntity> {
     readonly args: IChildPaginationArgs
     readonly includeTotalCount: boolean
     readonly primaryColumn: keyof Entity
+    // specify the system entity column to include system entities in the results
+    readonly systemColumn?: keyof Entity
 }
 
 // most child connections filter on their parents using a single column (normally the parents primary key)
@@ -55,6 +57,7 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
                 args: k.args,
                 includeTotalCount: k.includeTotalCount,
                 primaryColumn: k.primaryColumn,
+                systemColumn: k.systemColumn,
             }
         }
     )
@@ -83,6 +86,7 @@ export interface ICompositeIdChildConnectionDataloaderKey<
     readonly args: IChildPaginationArgs
     readonly includeTotalCount: boolean
     readonly primaryColumn: keyof Entity
+    readonly systemColumn?: keyof Entity
 }
 interface IChildConnectionRequest<Node, Entity extends BaseEntity> {
     // the unique request properties
@@ -95,6 +99,14 @@ interface IChildConnectionRequest<Node, Entity extends BaseEntity> {
 
     // used for deduplication
     primaryColumn: keyof Entity
+
+    // specify the system entity column to include system entities in the results
+    systemColumn?: keyof Entity
+}
+
+interface ISystemEntity {
+    system?: boolean
+    system_role?: boolean
 }
 
 // returns a deterministic request identifier for a dataloader object key
@@ -127,7 +139,7 @@ function getRequestIdentifier<Entity extends BaseEntity>(
 
 // this is used to create a single string for composite keys
 // which is useful for Map objects
-function createSingleLookUpKey(compositeId: string[]): string {
+function createSingleLookUpKey(compositeId: unknown[]): string {
     return JSON.stringify(compositeId)
 }
 
@@ -164,6 +176,7 @@ export const multiKeyChildConnectionLoader = async <
                 parentCompositeIds: [key.parent.compositeId],
                 result: new Map(),
                 primaryColumn: key.primaryColumn,
+                systemColumn: key.systemColumn,
             })
         }
     }
@@ -186,6 +199,7 @@ export const multiKeyChildConnectionLoader = async <
             const parent = request.key.parent
             const includeTotalCount = request.key.includeTotalCount
             const primaryColumn = request.primaryColumn
+            const systemColumnString = `${scope.alias}.${request.systemColumn}`
 
             // not allowed to filter by the parent entity
             for (const filterKey of parent.filterKeys) {
@@ -226,6 +240,9 @@ export const multiKeyChildConnectionLoader = async <
             }
 
             const baseScope = await connectionQuery(scope, filter)
+            if (request.systemColumn) {
+                baseScope.orWhere(`${systemColumnString} = true`)
+            }
             const table = baseScope.expressionMap.mainAlias?.name
 
             //
@@ -240,6 +257,7 @@ export const multiKeyChildConnectionLoader = async <
                 groupBys.push(`piviot${index}`)
             }
             if (includeTotalCount) {
+                const systemColumnAlias = 'systemColumn'
                 // Create the query to get total children counts per parent (ignores pagination filters etc)
                 const countScope = baseScope
                     .clone()
@@ -247,13 +265,19 @@ export const multiKeyChildConnectionLoader = async <
                     .addSelect(`COUNT(DISTINCT "${table}"."${primaryColumn}")`)
                     .groupBy(groupByString)
 
+                if (request.systemColumn) {
+                    countScope.addGroupBy(systemColumnString)
+                    countScope.addSelect(systemColumnString, systemColumnAlias)
+                }
+
                 // Get the counts and update the dataloader map
                 const parentCounts: {
-                    [groupBy: string]: string
+                    [groupBy: string]: unknown
+                    [systemColumnAlias]?: boolean
                     count: string
                 }[] = await countScope.getRawMany()
                 for (const parentCount of parentCounts) {
-                    const piviotValues: string[] = groupBys.map(
+                    const piviotValues = groupBys.map(
                         (column) => parentCount[column]
                     )
 
@@ -262,6 +286,24 @@ export const multiKeyChildConnectionLoader = async <
                     )
                     if (children) {
                         children.totalCount = parseInt(parentCount.count)
+                    }
+                }
+
+                if (request.systemColumn) {
+                    // add total system entity count to each parent
+                    const systemEntityCounts = parentCounts.filter(
+                        (p) => p[systemColumnAlias] === true
+                    )
+                    if (systemEntityCounts.length > 0) {
+                        const totalSystemCount = systemEntityCounts.reduce(
+                            (prev, curr) => prev + parseInt(curr.count),
+                            0
+                        )
+                        parentMap.forEach((value) => {
+                            value.totalCount = value.totalCount
+                                ? value.totalCount + totalSystemCount
+                                : totalSystemCount
+                        })
                     }
                 }
             }
@@ -323,23 +365,38 @@ export const multiKeyChildConnectionLoader = async <
             const parentToChildMap = new Map<string, Entity[]>(
                 uniqueParentLookUpKeys.map((id) => [id, []])
             )
+            function addChild(parentKey: string, child: Entity) {
+                const children = parentToChildMap.get(parentKey)
+                const isDupe = children?.find((c) => {
+                    return c[primaryColumn] === child[primaryColumn!]
+                })
+                // there may be duplicates across parents (e.g same user across orgs)
+                // but we must deduplicate per parent (e.g. unique users per org)
+                if (!isDupe) {
+                    children?.push(child)
+                    parentToChildMap.set(parentKey, children || [])
+                }
+            }
             childrenRaw.forEach((childRaw, index) => {
                 const entity = entities[index]
                 if (entity) {
-                    const piviotValues: string[] = groupBys.map(
-                        (column) => childRaw[column]
-                    )
-                    const parentLookUpKey = createSingleLookUpKey(piviotValues)
-                    const children = parentToChildMap.get(parentLookUpKey)
-
-                    // there may be duplicates across parents (e.g same user across orgs)
-                    // but we must deduplicate per parent (e.g. unique users per org)
-                    const isDupe = children?.find((c) => {
-                        return c[primaryColumn] === entity[primaryColumn!]
-                    })
-                    if (!isDupe) {
-                        children?.push(entity)
-                        parentToChildMap.set(parentLookUpKey, children || [])
+                    // check if this is a system entity
+                    // if so, add to all parents
+                    const isSystemEntity =
+                        (entity as ISystemEntity).system ||
+                        (entity as ISystemEntity).system_role
+                    if (request.systemColumn && isSystemEntity) {
+                        parentToChildMap.forEach((children, key) => {
+                            addChild(key, entity)
+                        })
+                    } else {
+                        const piviotValues: string[] = groupBys.map(
+                            (column) => childRaw[column]
+                        )
+                        const parentLookUpKey = createSingleLookUpKey(
+                            piviotValues
+                        )
+                        addChild(parentLookUpKey, entity)
                     }
                 }
             })

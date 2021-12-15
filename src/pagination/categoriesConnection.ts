@@ -60,7 +60,7 @@ export async function categoryConnectionQuery(
 ) {
     if (filter) {
         if (filterHasProperty('organizationId', filter)) {
-            scope.innerJoin('Category.organization', 'Organization')
+            scope.leftJoin('Category.organization', 'Organization')
         }
         if (filterHasProperty('subjectId', filter)) {
             scope.innerJoin('Category.subjects', 'Subject')

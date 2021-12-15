@@ -441,6 +441,7 @@ export async function rolesConnectionChild(
             pivot: '"Role"."organizationOrganizationId"',
         },
         primaryColumn: 'role_id',
+        systemColumn: 'system_role',
     })
 }
 
@@ -642,6 +643,7 @@ export async function loadCategoriesForOrganization(
             pivot: '"Organization"."organization_id"',
         },
         primaryColumn: 'id',
+        systemColumn: 'system',
     }
     return context.loaders.categoriesConnectionChild.instance.load(key)
 }
@@ -676,6 +678,7 @@ export async function loadAgeRangesForOrganization(
             pivot: '"Organization"."organization_id"',
         },
         primaryColumn: 'id',
+        systemColumn: 'system',
     }
     return context.loaders.ageRangesConnectionChild.instance.load(key)
 }
@@ -710,6 +713,7 @@ export async function loadSubcategoriesForOrganization(
             pivot: '"Organization"."organization_id"',
         },
         primaryColumn: 'id',
+        systemColumn: 'system',
     }
     return context.loaders.subcategoriesConnectionChild.instance.load(key)
 }

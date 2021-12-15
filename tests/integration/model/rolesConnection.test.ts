@@ -69,6 +69,7 @@ describe('rolesConnection', () => {
     let roles: Role[] = []
     let scope: SelectQueryBuilder<Role>
     let info: GraphQLResolveInfo
+    let systemRoles: Role[]
     let systemRolesCount = 0
     const ownedRolesCount = 10
     const pageSize = 10
@@ -101,7 +102,12 @@ describe('rolesConnection', () => {
                 },
             ],
         } as unknown) as GraphQLResolveInfo
-        systemRolesCount = await Role.count()
+        systemRoles = await Role.find({
+            where: {
+                system_role: true,
+            },
+        })
+        systemRolesCount = systemRoles.length
         admin = await createAdminUser(testClient)
         org1 = createOrganization(admin)
         org2 = createOrganization(admin)
@@ -640,7 +646,7 @@ describe('rolesConnection', () => {
                 beforeEach(() => {
                     args = {
                         direction: 'FORWARD',
-                        count: 5,
+                        count: 50,
                         sort: {
                             field: 'given_name',
                             order: 'ASC',
@@ -660,6 +666,7 @@ describe('rolesConnection', () => {
                     )
 
                     const sorted = org1Roles
+                        .concat(systemRoles)
                         .map((r) => r[entityProperty])
                         .sort((a, b) => {
                             // pagination sorting sorts in a case insensitive way
@@ -701,7 +708,7 @@ describe('rolesConnection', () => {
                 ctx = { loaders: createContextLazyLoaders(permissions) }
             })
 
-            it('returns correct roles per organization', async () => {
+            it('returns roles per organization and system roles', async () => {
                 const args: IChildPaginationArgs = {
                     direction: 'FORWARD',
                     count: org1Roles.length,
@@ -711,12 +718,15 @@ describe('rolesConnection', () => {
                     org1.organization_id,
                     args,
                     ctx.loaders,
-                    false
+                    true
                 )
 
-                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
-                    org1Roles.map((r) => r.role_id)
+                expect(result.totalCount).to.be.eq(
+                    org1Roles.length + systemRolesCount
                 )
+                expect(
+                    org1Roles.concat(systemRoles).map((m) => m.role_id)
+                ).include.members(result.edges.map((e) => e.node.id))
             })
 
             context('totalCount', async () => {
@@ -740,7 +750,9 @@ describe('rolesConnection', () => {
                     )
 
                     const result = await callResolver(fakeResolverInfo)
-                    expect(result.totalCount).to.eq(org1Roles.length)
+                    expect(result.totalCount).to.eq(
+                        org1Roles.length + systemRolesCount
+                    )
                 })
 
                 it('doesnt return total count', async () => {

@@ -580,15 +580,17 @@ describe('model', () => {
         })
 
         context('as child of an organization', () => {
-            it('returns ageRanges per organization', async () => {
+            it('returns ageRanges per organization and system age ranges', async () => {
                 const result = await loadAgeRangesForOrganization(
                     ctx,
                     org1.organization_id
                 )
-                expect(result.edges).to.have.lengthOf(org1AgeRanges.length)
-                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
-                    org1AgeRanges.map((m) => m.id)
+                expect(result.totalCount).to.eq(
+                    org1AgeRanges.length + systemAgeRanges.length
                 )
+                expect(
+                    org1AgeRanges.concat(systemAgeRanges).map((m) => m.id)
+                ).include.members(result.edges.map((e) => e.node.id))
             })
             it('returns totalCount when requested', async () => {
                 fakeInfo.fieldNodes[0].selectionSet?.selections.push({
@@ -601,7 +603,9 @@ describe('model', () => {
                     ctx,
                     fakeInfo
                 )
-                expect(result.totalCount).to.eq(org1AgeRanges.length)
+                expect(result.totalCount).to.eq(
+                    org1AgeRanges.length + systemAgeRanges.length
+                )
             })
             it('omits totalCount when not requested', async () => {
                 const result = await resolverForOrganization(

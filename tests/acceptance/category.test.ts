@@ -566,7 +566,7 @@ describe('acceptance.category', () => {
                 iss: 'calmid-debug',
             })
         })
-        it('as a child of subjects', async () => {
+        it('returns categories per subject', async () => {
             const query = `
             query subjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: SubjectSortInput){
                 subjectsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
@@ -612,7 +612,7 @@ describe('acceptance.category', () => {
                     .categoriesConnection.totalCount
             ).to.be.gte(1)
         })
-        it('as a child of organizations', async () => {
+        it('returns categories per organizations as well as system categories', async () => {
             const query = `
             query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
                 organizationsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
@@ -650,7 +650,7 @@ describe('acceptance.category', () => {
             expect(
                 response.body.data.organizationsConnection.edges[0].node
                     .categoriesConnection.totalCount
-            ).to.eq(1)
+            ).to.eq(1 + systemcategoriesCount)
         })
     })
 })

@@ -54,6 +54,7 @@ describe('model', () => {
     let categories: Category[] = []
     let scope: SelectQueryBuilder<Category>
     let info: GraphQLResolveInfo
+    let systemCategories: Category[]
     let systemCategoriesCount = 0
     const ownedCategoriesCount = 10
     const pageSize = 10
@@ -86,7 +87,13 @@ describe('model', () => {
                 },
             ],
         } as unknown) as GraphQLResolveInfo
-        systemCategoriesCount = await Category.count()
+
+        systemCategories = await Category.find({
+            where: {
+                system: true,
+            },
+        })
+        systemCategoriesCount = systemCategories.length
 
         admin = await createAdminUser(testClient)
         org1 = createOrganization(admin)
@@ -284,15 +291,17 @@ describe('model', () => {
         })
 
         context('as child of an organization', () => {
-            it('returns categories per organization', async () => {
+            it('returns categories per organization and system categories', async () => {
                 const result = await loadCategoriesForOrganization(
                     ctx,
                     org1.organization_id
                 )
-                expect(result.edges).to.have.lengthOf(org1Categories.length)
-                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
-                    org1Categories.map((m) => m.id)
+                expect(result.totalCount).to.eq(
+                    org1Categories.length + systemCategoriesCount
                 )
+                expect(
+                    org1Categories.concat(systemCategories).map((m) => m.id)
+                ).include.members(result.edges.map((e) => e.node.id))
             })
             it('returns totalCount when requested', async () => {
                 fakeInfo.fieldNodes[0].selectionSet?.selections.push({

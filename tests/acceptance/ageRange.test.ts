@@ -270,7 +270,7 @@ describe('acceptance.ageRange', () => {
                 iss: 'calmid-debug',
             })
         })
-        it('as a child of programs', async () => {
+        it('returns age ranges per program', async () => {
             const query = `
             query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: ProgramSortInput){
                 programsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
@@ -309,7 +309,7 @@ describe('acceptance.ageRange', () => {
                     .ageRangesConnection.totalCount
             ).to.be.gte(1)
         })
-        it('as a child of organizations', async () => {
+        it('returns age ranges per organization as well as system age ranges', async () => {
             const query = `
             query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $sortArgs: OrganizationSortInput) {
                 organizationsConnection(direction: $direction, directionArgs: $directionArgs, sort: $sortArgs) {
@@ -347,7 +347,7 @@ describe('acceptance.ageRange', () => {
             expect(
                 response.body.data.organizationsConnection.edges[0].node
                     .ageRangesConnection.totalCount
-            ).to.eq(1)
+            ).to.eq(1 + systemAgeRangesCount)
         })
     })
 })

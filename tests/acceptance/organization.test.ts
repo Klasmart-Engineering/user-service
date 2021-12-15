@@ -34,6 +34,9 @@ import { createClass } from '../factories/class.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { Role } from '../../src/entities/role'
+import { IEdge } from '../../src/utils/pagination/paginate'
+import { RoleConnectionNode } from '../../src/types/graphQL/role'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -229,6 +232,7 @@ describe('acceptance.organization', () => {
                         edges {
                             node {
                                 rolesConnection{
+                                    totalCount
                                     edges{
                                         node{
                                             id
@@ -241,6 +245,9 @@ describe('acceptance.organization', () => {
                 }`
 
             const role = await roleFactory('role', organization).save()
+            const sytemRolesCount = await Role.count({
+                where: { system_role: true },
+            })
 
             const token = generateToken({
                 id: user.user_id,
@@ -259,8 +266,8 @@ describe('acceptance.organization', () => {
             expect(response.status).to.eq(200)
             expect(
                 response.body.data.organizationsConnection.edges[0].node
-                    .rolesConnection.edges[0].node.id
-            ).to.eq(role.role_id)
+                    .rolesConnection.totalCount
+            ).to.eq(1 + sytemRolesCount)
         })
 
         it('has classesConnection as a child', async () => {
