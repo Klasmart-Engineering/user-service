@@ -20,7 +20,7 @@ export class DeleteSchools extends DeleteMutation<
     protected readonly EntityPrimaryKey = School
     protected readonly inputTypeName = 'DeleteSchoolInput'
     protected readonly mainEntityIds: string[]
-    protected readonly output: SchoolsMutationResult
+    protected readonly output: SchoolsMutationResult = { schools: [] }
 
     constructor(
         input: DeleteSchoolInput[],
@@ -28,7 +28,6 @@ export class DeleteSchools extends DeleteMutation<
     ) {
         super(input, context)
         this.mainEntityIds = input.map((val) => val.id)
-        this.output = { schools: [] }
     }
 
     protected async generateEntityMaps(): Promise<EntityMap<School>> {

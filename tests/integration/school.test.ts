@@ -72,7 +72,6 @@ describe('school', () => {
     let user: User
     let userWithPermission: User
     let userWithoutPermission: User
-    let userWithoutMembership: User
     let admin: User
     let organization: Organization
     let organization2: Organization
@@ -125,7 +124,6 @@ describe('school', () => {
         admin = await createAdmin().save()
         userWithPermission = await createUser().save()
         userWithoutPermission = await createUser().save()
-        userWithoutMembership = await createUser().save()
         await createOrganizationMembership({
             user: userWithoutPermission,
             organization: organization,
@@ -1318,89 +1316,26 @@ describe('school', () => {
                 })
             })
 
-            context('and has wrong permissions', () => {
-                beforeEach(() => {
-                    user = userWithPermission
-                })
-
-                context(
-                    'and tries to update schools in an organization which does not belong',
-                    () => {
-                        it('throws a permission error', async () => {
-                            const schoolsToDelete = [school2]
-                            const input = buildDeleteSchoolInputArray(
-                                schoolsToDelete
-                            )
-
-                            const operation = deleteSchoolsFromResolver(
-                                user,
-                                input
-                            )
-
-                            await expect(operation).to.be.rejectedWith(
-                                permError(user, [organization2])
-                            )
-
-                            await expectSchools(schoolsCount)
-                        })
-                    }
-                )
-            })
-
             context('and does not have permissions', () => {
+                user = userWithoutPermission
                 context('and has membership', () => {
                     beforeEach(() => {
                         user = userWithoutPermission
                     })
 
-                    context(
-                        'and tries to delete schools in its organization',
-                        () => {
-                            it('throws a permission error', async () => {
-                                const schoolsToDelete = [school]
-                                const input = buildDeleteSchoolInputArray(
-                                    schoolsToDelete
-                                )
+                    it('throws a permission error', async () => {
+                        const schoolsToDelete = [school]
+                        const input = buildDeleteSchoolInputArray(
+                            schoolsToDelete
+                        )
 
-                                const operation = deleteSchoolsFromResolver(
-                                    user,
-                                    input
-                                )
+                        const operation = deleteSchoolsFromResolver(user, input)
 
-                                await expect(operation).to.be.rejectedWith(
-                                    permError(user, [organization])
-                                )
+                        await expect(operation).to.be.rejectedWith(
+                            permError(user, [organization])
+                        )
 
-                                await expectSchools(schoolsCount)
-                            })
-                        }
-                    )
-                })
-
-                context('and does not have membership', () => {
-                    beforeEach(() => {
-                        user = userWithoutMembership
-                    })
-
-                    context('and tries to delete any categories', () => {
-                        it('throws a permission error', async () => {
-                            const schoolsToDelete = [school, school2]
-
-                            const input = buildDeleteSchoolInputArray(
-                                schoolsToDelete
-                            )
-
-                            const operation = deleteSchoolsFromResolver(
-                                user,
-                                input
-                            )
-
-                            await expect(operation).to.be.rejectedWith(
-                                permError(user)
-                            )
-
-                            await expectSchools(schoolsCount)
-                        })
+                        await expectSchools(schoolsCount)
                     })
                 })
             })
