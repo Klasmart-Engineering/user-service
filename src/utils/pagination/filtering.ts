@@ -31,11 +31,6 @@ interface IMultipleColumn {
     operator: 'AND' | 'OR'
 }
 
-export type ScopeBuilder<T = unknown> = (
-    scope: SelectQueryBuilder<T>,
-    filter?: IEntityFilter
-) => SelectQueryBuilder<T>
-
 type ColumnAliasValue = string | IMultipleColumn
 type CommonValue = string | number | boolean | string[]
 type ComposedValue = Record<string, CommonValue>
