@@ -442,7 +442,7 @@ export const processUsersFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation<
         validationStateAndEntities
     )
     if (validationStateAndEntities.rowErrors.length > 0) {
-        throw rowErrors
+        throw validationStateAndEntities.rowErrors
     }
 
     // More validation methods to come!
