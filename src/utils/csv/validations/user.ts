@@ -12,6 +12,10 @@ import { CSVError } from '../../../types/csv/csvError'
 import { Organization } from '../../../entities/organization'
 import { addCsvError } from '../csvUtils'
 import { customErrors } from '../../../types/errors/customError'
+import { Role } from '../../../entities/role'
+import { School } from '../../../entities/school'
+import { Class } from '../../../entities/class'
+import { OrganizationMembership } from '../../../entities/organizationMembership'
 
 // CSV rows generally contain a mix of properties from various entities, so we need to define
 // custom validation schemas for them, reusing validation rules from the entity
@@ -92,35 +96,81 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
     },
 }
 
+interface ValidatedCSVEntities {
+    orgs: Organization[]
+    orgRoles: Role[]
+    orgMemberships: OrganizationMembership[]
+    schools: School[]
+    classes: Class[]
+}
+
+export class ValidationStateAndEntities {
+    rowErrors: CSVError[]
+    validatedEntities: ValidatedCSVEntities
+
+    constructor(
+        rowErrors?: CSVError[],
+        validatedEntities?: ValidatedCSVEntities
+    ) {
+        if (rowErrors) {
+            this.rowErrors = rowErrors
+        } else {
+            this.rowErrors = []
+        }
+
+        if (validatedEntities) {
+            this.validatedEntities = validatedEntities
+        } else {
+            this.validatedEntities = {
+                orgs: [],
+                orgRoles: [],
+                orgMemberships: [],
+                schools: [],
+                classes: [],
+            }
+        }
+    }
+}
+
 // For each unique org name, check if client user is member + check if org name exists
 export async function validateOrgsInCSV(
     userRows: UserRow[],
     userPermissions: UserPermissions,
-    rowErrors: CSVError[]
-): Promise<CSVError[]> {
-    let rowNumber = 1
-    const orgNamesInCSV = userRows.map((row) => row.organization_name)
-    const uniqueOrgNames = new Set(orgNamesInCSV)
-    const invalidOrgNames: string[] = []
-    for (const orgName of uniqueOrgNames) {
-        const org = await Organization.createQueryBuilder('Organization')
+    validationStateAndEntities: ValidationStateAndEntities
+): Promise<ValidationStateAndEntities> {
+    const uniqueOrgNamesInCSV = Array.from(
+        new Set(userRows.map((row) => row.organization_name))
+    )
+    const validOrgs: Organization[] = []
+
+    // Get all unique orgs named in the CSV
+    if (uniqueOrgNamesInCSV) {
+        const validOrgsInCSV = await Organization.createQueryBuilder(
+            'Organization'
+        )
             .innerJoin('Organization.memberships', 'OrganizationMembership')
             .where('OrganizationMembership.user_id = :user_id', {
                 user_id: userPermissions.getUserId(),
             })
-            .andWhere('Organization.organization_name = :organization_name', {
-                organization_name: orgName,
+            .andWhere('Organization.organization_name IN (:...orgNames)', {
+                orgNames: uniqueOrgNamesInCSV,
             })
-            .getOne()
-
-        if (!org) {
-            invalidOrgNames.push(orgName)
-        }
+            .getMany()
+        validOrgs.push(...validOrgsInCSV)
     }
+
+    // Compare this list of unique orgs from the DB to what's provided in the CSV to detect invalid orgs
+    const validOrgNames = validOrgs.map((_) => _.organization_name!)
+    const invalidOrgNames = uniqueOrgNamesInCSV.filter(
+        (name) => !validOrgNames.includes(name)
+    )
+
+    // Record row errors and add to validation state object
+    let rowNumber = 1
     for (const row of userRows) {
-        if (row.organization_name in invalidOrgNames) {
+        if (invalidOrgNames.includes(row.organization_name)) {
             addCsvError(
-                rowErrors,
+                validationStateAndEntities.rowErrors,
                 customErrors.nonexistent_entity.code,
                 rowNumber,
                 'organization_name',
@@ -134,5 +184,42 @@ export async function validateOrgsInCSV(
         }
         rowNumber += 1
     }
-    return rowErrors
+
+    // Add validated unique orgs to validation state object
+    validationStateAndEntities.validatedEntities.orgs.push(...validOrgs)
+
+    return validationStateAndEntities
 }
+
+// export async function validateOrgUploadPermsForCSV(
+//     userRows: UserRow[],
+//     userPermissions: UserPermissions,
+//     rowErrors: CSVError[]
+// ): Promise<CSVError[]> {
+//     let rowNumber = 1
+//     const orgNamesInCSV = userRows.map((row) => row.organization_name)
+//     const uniqueOrgNames = new Set(orgNamesInCSV)
+//     const invalidOrgNames: string[] = []
+
+//     for (const orgName of uniqueOrgNames) {
+//     }
+
+//     try {
+//         await userPermissions.rejectIfNotAllowed(
+//             { organization_ids: [org.organization_id] },
+//             PermissionName.upload_users_40880
+//         )
+//     } catch (e) {
+//         addCsvError(
+//             rowErrors,
+//             customErrors.unauthorized_org_upload.code,
+//             rowNumber,
+//             'organization_name',
+//             customErrors.unauthorized_org_upload.message,
+//             {
+//                 entity: 'user',
+//                 organizationName: row.organization_name,
+//             }
+//         )
+//     }
+// }

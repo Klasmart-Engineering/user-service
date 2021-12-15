@@ -12,7 +12,11 @@ import { generateShortCode } from '../shortcode'
 import { v4 as uuid_v4 } from 'uuid'
 import { addCsvError, validateRow } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import { userRowValidation, validateOrgsInCSV } from './validations/user'
+import {
+    userRowValidation,
+    validateOrgsInCSV,
+    ValidationStateAndEntities,
+} from './validations/user'
 import { customErrors } from '../../types/errors/customError'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { PermissionName } from '../../permissions/permissionNames'
@@ -415,10 +419,30 @@ export const processUsersFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation<
     userRows: UserRow[],
     rowErrors: CSVError[]
 ) => {
-    rowErrors = await validateOrgsInCSV(userRows, userPermissions, rowErrors)
-    if (rowErrors.length > 0) {
-        throw rowErrors
+    // This object will have two responsibilities throughout validation:
+    // #1 Record rowErrors
+    // #2 Build up a dictionary of validated entities for use across multiple validation methods
+    let validationStateAndEntities = new ValidationStateAndEntities()
+
+    // Do the unique orgs exist, and is the client user a member of them?
+    validationStateAndEntities = await validateOrgsInCSV(
+        userRows,
+        userPermissions,
+        validationStateAndEntities
+    )
+    if (validationStateAndEntities.rowErrors.length > 0) {
+        throw validationStateAndEntities.rowErrors
     }
+
+    // Is the client user authorized to upload to these orgs?
+    // rowErrors = await validateOrgUploadPermsForCSV(
+    //     userRows,
+    //     userPermissions,
+    //     rowErrors
+    // )
+    // if (rowErrors.length > 0) {
+    //     throw rowErrors
+    // }
 
     // More validation methods to come!
 

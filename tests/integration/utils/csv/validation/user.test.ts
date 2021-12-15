@@ -4,7 +4,7 @@ import { User } from '../../../../../src/entities/user'
 import { Model } from '../../../../../src/model'
 import { UserPermissions } from '../../../../../src/permissions/userPermissions'
 import { CSVError } from '../../../../../src/types/csv/csvError'
-import { UserRow } from '../../../../../src/types/csv/userRow'
+import { ValidationStateAndEntities } from '../../../../../src/utils/csv/validations/user'
 import { customErrors } from '../../../../../src/types/errors/customError'
 import { createServer } from '../../../../../src/utils/createServer'
 import { addCsvError } from '../../../../../src/utils/csv/csvUtils'
@@ -80,29 +80,31 @@ describe('validateOrgsInCSV', () => {
         })
 
         it('returns no errors when client user is a member of them', async () => {
-            await createOrganizationMembership({
+            const org1Membership = createOrganizationMembership({
                 user: user,
                 organization: org1,
-            }).save()
-            await createOrganizationMembership({
+            })
+            const org2Membership = createOrganizationMembership({
                 user: user,
                 organization: org2,
-            }).save()
+            })
+            await connection.manager.save([org1Membership, org2Membership])
 
-            expect(
-                await validateOrgsInCSV(
-                    userRowsInCSV,
-                    userPermissions,
-                    rowErrors
-                )
-            ).to.be.empty
+            const result = await validateOrgsInCSV(
+                userRowsInCSV,
+                userPermissions,
+                new ValidationStateAndEntities()
+            )
+
+            expect(result.rowErrors).to.be.empty
         })
 
         it('returns an error if client user is not a member of an org', async () => {
-            await createOrganizationMembership({
+            const org1Membership = createOrganizationMembership({
                 user: user,
                 organization: org1,
-            }).save()
+            })
+            await connection.manager.save(org1Membership)
 
             addCsvError(
                 rowErrors,
@@ -117,16 +119,16 @@ describe('validateOrgsInCSV', () => {
                 }
             )
 
-            expect(
-                await validateOrgsInCSV(
-                    userRowsInCSV,
-                    userPermissions,
-                    rowErrors
-                )
-            ).to.deep.equal(rowErrors)
+            const result = await validateOrgsInCSV(
+                userRowsInCSV,
+                userPermissions,
+                new ValidationStateAndEntities()
+            )
+
+            expect(result.rowErrors).to.deep.equal(rowErrors)
         })
 
-        it('makes one DB call per unique org name', async () => {
+        it('makes one DB call for all unique org names in CSV together', async () => {
             await createOrganizationMembership({
                 user: user,
                 organization: org1,
@@ -137,8 +139,12 @@ describe('validateOrgsInCSV', () => {
             }).save()
 
             connection.logger.reset()
-            await validateOrgsInCSV(userRowsInCSV, userPermissions, rowErrors)
-            expect(connection.logger.count).to.equal(2)
+            await validateOrgsInCSV(
+                userRowsInCSV,
+                userPermissions,
+                new ValidationStateAndEntities()
+            )
+            expect(connection.logger.count).to.equal(1)
         })
     })
 
@@ -159,7 +165,7 @@ describe('validateOrgsInCSV', () => {
             await connection.manager.save(uniqueExistentOrgs)
         })
 
-        it('returns an error if an org named in the CSV does not exist', async () => {
+        it('returns an error if an org named in the CSV does not exist (to the client user)', async () => {
             await createOrganizationMembership({
                 user: user,
                 organization: org1,
@@ -178,13 +184,13 @@ describe('validateOrgsInCSV', () => {
                 }
             )
 
-            expect(
-                await validateOrgsInCSV(
-                    userRowsInCSV,
-                    userPermissions,
-                    rowErrors
-                )
-            ).to.deep.equal(rowErrors)
+            const result = await validateOrgsInCSV(
+                userRowsInCSV,
+                userPermissions,
+                new ValidationStateAndEntities()
+            )
+
+            expect(result.rowErrors).to.deep.equal(rowErrors)
         })
     })
 })
