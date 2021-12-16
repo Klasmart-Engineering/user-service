@@ -161,18 +161,16 @@ async function uploadFakeUsersFromCSV(
     connection: TestConnection,
     clientOrg: Organization
 ) {
-    let file: ReadStream
-    let testClient: ApolloServerTestClient
     const mimetype = 'text/csv'
     const encoding = '7bit'
     const filename = 'users100.csv'
 
     // Set up server and test client
     const server = await createServer(new Model(connection))
-    testClient = await createTestClient(server)
+    const testClient = await createTestClient(server)
 
     // Fetch users CSV file
-    file = fs.createReadStream(resolve(`tests/fixtures/${filename}`))
+    const file = fs.createReadStream(resolve(`tests/fixtures/${filename}`))
 
     // Create user to be the uploading user - they must be part of the org
     const clientUser = await createUser({
@@ -200,16 +198,16 @@ async function populate() {
     // await makeSchoolsWithRangeOfMemberCounts(connection)
     const clientOrg = await createFakeOrgWithUsersSchoolsClasses(
         connection,
-        10000,
+        4000,
         20,
         20
     )
-    // console.log('START LOGGING CALL COUNTS TO DB')
-    // connection.logger.reset()
+    console.log('START LOGGING CALL COUNTS TO DB')
+    connection.logger.reset()
     await uploadFakeUsersFromCSV(connection, clientOrg)
-    // console.log('END:')
-    // console.log(connection.logger.count)
-    // connection.logger.reset()
+    console.log('END:')
+    console.log(connection.logger.count)
+    connection.logger.reset()
     await truncateTables(connection)
 }
 
