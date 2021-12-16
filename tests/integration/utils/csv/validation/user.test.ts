@@ -6,6 +6,7 @@ import { UserPermissions } from '../../../../../src/permissions/userPermissions'
 import { CSVError } from '../../../../../src/types/csv/csvError'
 import {
     ValidatedCSVEntities,
+    validateOrgRoleNamesInCSV,
     validateOrgUploadPermsForCSV,
     ValidationStateAndEntities,
 } from '../../../../../src/utils/csv/validations/user'
@@ -29,6 +30,7 @@ import { createRole } from '../../../../factories/role.factory'
 import { PermissionName } from '../../../../../src/permissions/permissionNames'
 import { OrganizationMembership } from '../../../../../src/entities/organizationMembership'
 import { addRoleToOrganizationMembership } from '../../../../utils/operations/organizationMembershipOps'
+import { Role } from '../../../../../src/entities/role'
 
 describe('processUsersFromCSVRows validation', () => {
     let connection: TestConnection
@@ -324,6 +326,105 @@ describe('processUsersFromCSVRows validation', () => {
                     {
                         entity: 'user',
                         organizationName: org2.organization_name,
+                    }
+                )
+
+                expect(result.rowErrors).to.deep.equal(rowErrors)
+            })
+        })
+    })
+
+    describe('validateOrgRoleNamesInCSV', () => {
+        const userRowsInCSV = [
+            {
+                organization_name: 'Org1',
+                user_given_name: 'Test',
+                user_family_name: 'User1',
+                user_gender: 'Female',
+                organization_role_name: 'Bread Role',
+            },
+            {
+                organization_name: 'Org1',
+                user_given_name: 'Test',
+                user_family_name: 'User2',
+                user_gender: 'Male',
+                organization_role_name: 'Lobster Role',
+            },
+            {
+                organization_name: 'Org2',
+                user_given_name: 'Test',
+                user_family_name: 'User3',
+                user_gender: 'Female',
+                organization_role_name: 'Spring Role',
+            },
+        ]
+
+        context('orgs with roles', () => {
+            let uniqueExistentOrgs: Organization[] = []
+            let org1: Organization
+            let org2: Organization
+            let user: User
+            let role1: Role
+            let role2: Role
+            let role3: Role
+            let validatedCSVEntities: ValidatedCSVEntities
+            const rowErrors: CSVError[] = []
+
+            beforeEach(async () => {
+                user = await createUser().save()
+                org1 = createOrganization()
+                org1.organization_name = 'Org1'
+                org2 = createOrganization()
+                org2.organization_name = 'Org2'
+                uniqueExistentOrgs = [org1, org2]
+                await connection.manager.save(uniqueExistentOrgs)
+                validatedCSVEntities = { orgs: [org1, org2] } // At this stage in validation, orgs should be validated
+            })
+
+            it('returns no errors when all org roles exist in their respective orgs', async () => {
+                role1 = createRole('Bread Role', org1, {})
+                role2 = createRole('Lobster Role', org1, {})
+                role3 = createRole('Spring Role', org2, {})
+                await connection.manager.save([role1, role2, role3])
+
+                const result = await validateOrgRoleNamesInCSV(
+                    userRowsInCSV,
+                    new ValidationStateAndEntities(
+                        undefined,
+                        validatedCSVEntities
+                    ),
+                    connection.manager
+                )
+
+                expect(result.rowErrors).to.be.empty
+            })
+
+            it('returns an error if an org role in the CSV does not exist in its org', async () => {
+                role1 = createRole('Bread Role', org1, {})
+                role2 = createRole('Lobster Role', org1, {})
+                // Spring Role is not a role in the DB, and therefore sadly not on the menu.
+                await connection.manager.save([role1, role2])
+
+                const result = await validateOrgRoleNamesInCSV(
+                    userRowsInCSV,
+                    new ValidationStateAndEntities(
+                        undefined,
+                        validatedCSVEntities
+                    ),
+                    connection.manager
+                )
+
+                addCsvError(
+                    rowErrors,
+                    customErrors.nonexistent_child.code,
+                    3,
+                    'organization_role_name',
+                    customErrors.nonexistent_child.message,
+                    {
+                        entity: 'Organization Role',
+                        entityName: role3.role_name,
+                        parentEntity: 'Organization',
+                        parentName: org2.organization_name,
                     }
                 )
 

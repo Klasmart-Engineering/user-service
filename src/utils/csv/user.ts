@@ -14,6 +14,7 @@ import { addCsvError, validateRow } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import {
     userRowValidation,
+    validateOrgRoleNamesInCSV,
     validateOrgsInCSV,
     validateOrgUploadPermsForCSV,
     ValidationStateAndEntities,
@@ -435,7 +436,7 @@ export const processUsersFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation<
         throw validationStateAndEntities.rowErrors
     }
 
-    //Is the client user authorized to upload to these orgs?
+    // Is the client user authorized to upload to these orgs?
     validationStateAndEntities = await validateOrgUploadPermsForCSV(
         userRows,
         userPermissions,
@@ -444,6 +445,13 @@ export const processUsersFromCSVRows: ProcessEntitiesFromCSVRowsBatchValidation<
     if (validationStateAndEntities.rowErrors.length > 0) {
         throw validationStateAndEntities.rowErrors
     }
+
+    // Do the provided roles for the uploaded users exist?
+    validationStateAndEntities = await validateOrgRoleNamesInCSV(
+        userRows,
+        validationStateAndEntities,
+        manager
+    )
 
     // More validation methods to come!
 

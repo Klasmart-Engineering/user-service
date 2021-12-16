@@ -17,6 +17,7 @@ import { School } from '../../../entities/school'
 import { Class } from '../../../entities/class'
 import { OrganizationMembership } from '../../../entities/organizationMembership'
 import { PermissionName } from '../../../permissions/permissionNames'
+import { EntityManager } from 'typeorm'
 
 // CSV rows generally contain a mix of properties from various entities, so we need to define
 // custom validation schemas for them, reusing validation rules from the entity
@@ -133,6 +134,11 @@ export class ValidationStateAndEntities {
     }
 }
 
+export interface OrgAndRoleCSVRow {
+    org: Organization
+    orgRoleName: string
+}
+
 // For each unique org name, check if client user is member + check if org name exists
 export async function validateOrgsInCSV(
     userRows: UserRow[],
@@ -197,11 +203,12 @@ export async function validateOrgUploadPermsForCSV(
     userPermissions: UserPermissions,
     validationStateAndEntities: ValidationStateAndEntities
 ): Promise<ValidationStateAndEntities> {
-    const validatedOrgs = validationStateAndEntities.validatedEntities.orgs
+    const validatedOrgs = validationStateAndEntities.validatedEntities.orgs!
     const orgNamesWithNoUploadPerms: string[] = []
 
     for (const org of validatedOrgs!) {
         try {
+            // eslint-disable-next-line no-await-in-loop
             await userPermissions.rejectIfNotAllowed(
                 { organization_ids: [org.organization_id] },
                 PermissionName.upload_users_40880
@@ -234,6 +241,78 @@ export async function validateOrgUploadPermsForCSV(
     validationStateAndEntities.validatedEntities.orgs = validatedOrgs!.filter(
         (org) => !orgNamesWithNoUploadPerms.includes(org.organization_name!)
     )
+
+    return validationStateAndEntities
+}
+
+export async function validateOrgRoleNamesInCSV(
+    userRows: UserRow[],
+    validationStateAndEntities: ValidationStateAndEntities,
+    manager: EntityManager
+): Promise<ValidationStateAndEntities> {
+    const validatedOrgs = validationStateAndEntities.validatedEntities.orgs!
+    const invalidOrgRoleNames = []
+    const validOrgRoles: Role[] = []
+
+    // Gather all unique combinations of orgNames/orgs and orgRoles
+    // orgRole presumed to exist for every row, due to legacy UserRow interface field typing
+    const orgNamesAndRoles: OrgAndRoleCSVRow[] = userRows.map((row) => ({
+        org: validatedOrgs.find(
+            (org) => row.organization_name == org.organization_name
+        )!,
+        orgRoleName: row.organization_role_name,
+    }))
+    const orgs = orgNamesAndRoles.map((o) => o.org)
+    const uniqueOrgNamesAndRoles = orgNamesAndRoles.filter(
+        ({ org }, index) => !orgs.includes(org, index + 1)
+    )
+
+    for (const orgNameRolePair of uniqueOrgNamesAndRoles) {
+        // eslint-disable-next-line no-await-in-loop
+        const organizationRole = await manager.findOne(Role, {
+            where: [
+                {
+                    role_name: orgNameRolePair.orgRoleName,
+                    system_role: true,
+                    organization: null,
+                },
+                {
+                    role_name: orgNameRolePair.orgRoleName,
+                    organization: {
+                        organization_id: orgNameRolePair.org.organization_id,
+                    },
+                },
+            ],
+        })
+        if (organizationRole) {
+            validOrgRoles.push(organizationRole)
+        } else {
+            invalidOrgRoleNames.push(orgNameRolePair.orgRoleName)
+        }
+    }
+
+    let rowNumber = 1
+    for (const row of userRows) {
+        if (invalidOrgRoleNames.includes(row.organization_role_name)) {
+            addCsvError(
+                validationStateAndEntities.rowErrors,
+                customErrors.nonexistent_child.code,
+                rowNumber,
+                'organization_role_name',
+                customErrors.nonexistent_child.message,
+                {
+                    entity: 'Organization Role',
+                    entityName: row.organization_role_name,
+                    parentEntity: 'Organization',
+                    parentName: row.organization_name,
+                }
+            )
+        }
+        rowNumber += 1
+    }
+
+    // Update validation state object with valid org role names
+    validationStateAndEntities.validatedEntities.orgRoles = validOrgRoles
 
     return validationStateAndEntities
 }
