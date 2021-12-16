@@ -163,7 +163,7 @@ async function uploadFakeUsersFromCSV(
 ) {
     const mimetype = 'text/csv'
     const encoding = '7bit'
-    const filename = 'users100.csv'
+    const filename = 'users100_differentOrgs.csv'
 
     // Set up server and test client
     const server = await createServer(new Model(connection))
@@ -186,10 +186,34 @@ async function uploadFakeUsersFromCSV(
         roles: [uploadRole],
     }).save()
 
+    console.log('START LOGGING CALL COUNTS TO DB')
+    connection.logger.reset()
+    const timeBefore = Date.now()
     // Simulate uploading users CSV
-    await uploadUsers(testClient, file, filename, mimetype, encoding, false, {
-        authorization: generateToken(userToPayload(clientUser)),
-    })
+
+    try {
+        await uploadUsers(
+            testClient,
+            file,
+            filename,
+            mimetype,
+            encoding,
+            false,
+            {
+                authorization: generateToken(userToPayload(clientUser)),
+            }
+        )
+    } catch (e) {
+        console.log('ERRORS THROWN')
+    }
+
+    console.log('END:')
+    console.log(connection.logger.count)
+    connection.logger.reset()
+
+    const timeAfter = Date.now()
+    console.log()
+    console.log(`TIME TAKEN: ${timeAfter - timeBefore}ms`)
 }
 
 async function populate() {
@@ -202,12 +226,7 @@ async function populate() {
         20,
         20
     )
-    console.log('START LOGGING CALL COUNTS TO DB')
-    connection.logger.reset()
     await uploadFakeUsersFromCSV(connection, clientOrg)
-    console.log('END:')
-    console.log(connection.logger.count)
-    connection.logger.reset()
     await truncateTables(connection)
 }
 
