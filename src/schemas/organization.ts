@@ -6,7 +6,10 @@ import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { IDataLoaders } from '../loaders/setup'
 import { Context } from '../main'
 import { Model } from '../model'
-import { AddUsersToOrganizations } from '../resolvers/organization'
+import {
+    AddUsersToOrganizations,
+    RemoveUsersFromOrganizations,
+} from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { RoleConnectionNode } from '../types/graphQL/role'
 import { GraphQLSchemaModule } from '../types/schemaModule'
@@ -28,6 +31,9 @@ const typeDefs = gql`
     extend type Mutation {
         addUsersToOrganizations(
             input: [AddUsersToOrganizationInput!]!
+        ): OrganizationsMutationResult
+        removeUsersFromOrganizations(
+            input: [RemoveUsersFromOrganizationInput!]!
         ): OrganizationsMutationResult
         organization(
             organization_id: ID!
@@ -132,7 +138,7 @@ const typeDefs = gql`
         setPrimaryContact(user_id: ID!): User
         addUser(user_id: ID!, shortcode: String): OrganizationMembership
             @deprecated(
-                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2419261457/"
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2462417870/"
             )
         inviteUser(
             email: String
@@ -224,6 +230,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2440790112"
             )
         leave(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 13/03/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2484240385/"
+            )
     }
 
     type OrganizationOwnership {
@@ -253,6 +262,11 @@ const typeDefs = gql`
         organizationRoleIds: [ID!]!
         userIds: [ID!]!
         shortcode: String
+    }
+
+    input RemoveUsersFromOrganizationInput {
+        organizationId: ID!
+        userIds: [ID!]!
     }
 
     type OrganizationsMutationResult {
@@ -514,6 +528,8 @@ export default function getDefault(
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
                     mutate(AddUsersToOrganizations, args, ctx),
+                removeUsersFromOrganizations: (_parent, args, ctx, _info) =>
+                    mutate(RemoveUsersFromOrganizations, args, ctx),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>

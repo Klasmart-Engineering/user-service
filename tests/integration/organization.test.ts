@@ -1,16 +1,9 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
-import {
-    Connection,
-    createQueryBuilder,
-    getManager,
-    getRepository,
-    In,
-    Not,
-} from 'typeorm'
+import { createQueryBuilder, getManager, getRepository, In } from 'typeorm'
 import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
 import { Model } from '../../src/model'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
@@ -75,8 +68,14 @@ import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
 import { createCategory } from '../factories/category.factory'
 import { createSubcategory } from '../factories/subcategory.factory'
-import { createOrganization } from '../factories/organization.factory'
-import { createRole as roleFactory } from '../factories/role.factory'
+import {
+    createOrganization,
+    createOrganizations,
+} from '../factories/organization.factory'
+import {
+    createRole as roleFactory,
+    createRoles,
+} from '../factories/role.factory'
 import { createSchool as schoolFactory } from '../factories/school.factory'
 import { createSubject } from '../factories/subject.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
@@ -100,22 +99,38 @@ import {
 } from '../../src/operations/organization'
 import { Headers } from 'node-mocks-http'
 import { expectAPIError, expectToBeAPIErrorCollection } from '../utils/apiError'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { AddUsersToOrganizationInput } from '../../src/types/graphQL/organization'
+import {
+    createOrganizationMembership,
+    createOrganizationMemberships,
+} from '../factories/organizationMembership.factory'
+import {
+    AddUsersToOrganizationInput,
+    OrganizationsMutationResult,
+    RemoveUsersFromOrganizationInput,
+} from '../../src/types/graphQL/organization'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { AddUsersToOrganizations } from '../../src/resolvers/organization'
+import {
+    AddUsersToOrganizations,
+    RemoveUsersFromOrganizations,
+} from '../../src/resolvers/organization'
 import { mutate } from '../../src/utils/mutations/commonStructure'
+import { buildPermissionError } from '../utils/errors'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('organization', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
-    let user: User
     let organization: Organization
     let role: Role
+    let adminUser: User
+    let nonAdminUser: User
+    let orgs: Organization[]
+    let users: User[]
+    let roles: Role[]
     const shortcode_re = /^[A-Z|0-9]+$/
+
     before(async () => {
         connection = await createTestConnection()
         const server = await createServer(new Model(connection))
@@ -138,12 +153,12 @@ describe('organization', () => {
         let arbitraryUserToken: string
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
+            adminUser = await createAdminUser(testClient)
             await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
             organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             organizationId = organization.organization_id
         })
@@ -254,24 +269,24 @@ describe('organization', () => {
         ]
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
+            adminUser = await createAdminUser(testClient)
             organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
         })
 
         it('should assign the old user to the exsting user', async () => {
-            const email = user.email ?? ''
+            const email = adminUser.email ?? ''
             const oldUser: User = await organization['updateOrCreateUser']({
-                user_id: user.user_id,
+                user_id: adminUser.user_id,
                 email,
-                given_name: user.given_name!,
-                family_name: user.family_name!,
-                gender: user.gender!,
+                given_name: adminUser.given_name!,
+                family_name: adminUser.family_name!,
+                gender: adminUser.gender!,
             })
             expect(oldUser).to.exist
-            expect(oldUser.user_id).to.equal(user.user_id)
+            expect(oldUser.user_id).to.equal(adminUser.user_id)
         })
         it('should assign the new user to a new user with an email', async () => {
             const newUser: User = await organization['updateOrCreateUser']({
@@ -356,15 +371,14 @@ describe('organization', () => {
 
     describe('membershipOrganization', async () => {
         context('we have a user and an organization', () => {
-            let userId: string
+            let adminUserId: string
             let organizationId: string
-            let schoolId: string
             beforeEach(async () => {
-                user = await createAdminUser(testClient)
-                userId = user.user_id
+                adminUser = await createAdminUser(testClient)
+                adminUserId = adminUser.user_id
                 organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id
+                    adminUser.user_id
                 )
                 organizationId = organization.organization_id
                 role = await createRole(
@@ -375,29 +389,29 @@ describe('organization', () => {
             })
             it('Should set the user as a member of the organization', async () => {
                 const membership = await organization['membershipOrganization'](
-                    user,
+                    adminUser,
                     new Array(role)
                 )
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
-                expect(membership.user_id).to.equal(userId)
+                expect(membership.user_id).to.equal(adminUserId)
             })
         })
     })
 
     describe('createClass', async () => {
-        let userId: string
+        let adminUserId: string
         let organizationId: string
         const classInfo = (cls: any) => {
             return cls.class_id
         }
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
-            userId = user.user_id
+            adminUser = await createAdminUser(testClient)
+            adminUserId = adminUser.user_id
             organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             organizationId = organization.organization_id
         })
@@ -631,18 +645,16 @@ describe('organization', () => {
     })
 
     describe('createSchool', async () => {
-        let userId: string
         let organizationId: string
         const schoolInfo = (school: any) => {
             return school.school_id
         }
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
-            userId = user.user_id
+            adminUser = await createAdminUser(testClient)
             organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             organizationId = organization.organization_id
         })
@@ -942,15 +954,15 @@ describe('organization', () => {
 
     describe('membershipSchools', async () => {
         context('when user is a member of an organization', () => {
-            let userId: string
+            let adminUserId: string
             let organizationId: string
             let school: School
             beforeEach(async () => {
-                user = await createAdminUser(testClient)
-                userId = user.user_id
+                adminUser = await createAdminUser(testClient)
+                adminUserId = adminUser.user_id
                 organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id
+                    adminUser.user_id
                 )
                 organizationId = organization.organization_id
                 role = await createRole(
@@ -967,7 +979,7 @@ describe('organization', () => {
                 )
                 await addUserToOrganizationAndValidate(
                     testClient,
-                    userId,
+                    adminUserId,
                     organizationId,
                     { authorization: getAdminAuthToken() }
                 )
@@ -975,17 +987,17 @@ describe('organization', () => {
 
             it('should set the school in the schools membership for the user', async () => {
                 const [
-                    schoolmemberships,
+                    schoolMemberships,
                     oldSchoolMemberships,
                 ]: SchoolMembership[][] = await organization[
                     'membershipSchools'
-                ](user, [school], new Array(role))
+                ](adminUser, [school], new Array(role))
                 expect(oldSchoolMemberships).to.exist
                 expect(oldSchoolMemberships).to.be.empty
-                expect(schoolmemberships).to.exist
-                expect(schoolmemberships.length).to.equal(1)
-                expect(schoolmemberships[0].user_id).to.equal(userId)
-                expect(schoolmemberships[0].school_id).to.equal(
+                expect(schoolMemberships).to.exist
+                expect(schoolMemberships.length).to.equal(1)
+                expect(schoolMemberships[0].user_id).to.equal(adminUserId)
+                expect(schoolMemberships[0].school_id).to.equal(
                     school.school_id
                 )
             })
@@ -1512,7 +1524,6 @@ describe('organization', () => {
     }
 
     describe('inviteUser', () => {
-        let userId: string
         let organizationId: string
         let oldSchoolId: string
         let adminToken: string
@@ -1549,13 +1560,12 @@ describe('organization', () => {
         }
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
-            adminToken = generateToken(userToPayload(user))
+            adminUser = await createAdminUser(testClient)
+            adminToken = generateToken(userToPayload(adminUser))
             await createNonAdminUser(testClient)
-            userId = user.user_id
             organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             organizationId = organization.organization_id
             role = await Role.findOneOrFail({
@@ -1570,7 +1580,7 @@ describe('organization', () => {
                     { authorization: adminToken }
                 )
             ).school_id
-            await addUserToSchool(testClient, userId, oldSchoolId, {
+            await addUserToSchool(testClient, adminUser.user_id, oldSchoolId, {
                 authorization: adminToken,
             })
             defaultArguments = {
@@ -1755,7 +1765,7 @@ describe('organization', () => {
                         {
                             where: {
                                 organization_id: organizationId,
-                                user_id: userId,
+                                user_id: adminUser.user_id,
                             },
                         }
                     )
@@ -6984,14 +6994,14 @@ describe('organization', () => {
 
     describe('.memberships', () => {
         beforeEach(async () => {
-            user = await createUser().save()
+            nonAdminUser = await createUser().save()
             organization = await createOrganization().save()
         })
 
         context('when there is a membership on the organisation', () => {
             beforeEach(async () => {
                 await createOrganizationMembership({
-                    user,
+                    user: nonAdminUser,
                     organization,
                 }).save()
             })
@@ -6999,11 +7009,11 @@ describe('organization', () => {
             it('finds the membership', async () => {
                 const res: OrganizationMembership = await expect(
                     organization.membership({
-                        user_id: user.user_id,
+                        user_id: nonAdminUser.user_id,
                     })
                 ).to.be.fulfilled
                 expect(res).to.be.instanceOf(OrganizationMembership)
-                expect(res.user_id).to.equal(user.user_id)
+                expect(res.user_id).to.equal(nonAdminUser.user_id)
                 expect(res.organization_id).to.equal(
                     organization.organization_id
                 )
@@ -7014,7 +7024,7 @@ describe('organization', () => {
             it('throws an EntityNotFound error', async () => {
                 const res: EntityNotFoundError = await expect(
                     organization.membership({
-                        user_id: user.user_id,
+                        user_id: nonAdminUser.user_id,
                     })
                 ).to.be.rejected
                 expect(res).to.be.instanceOf(EntityNotFoundError)
@@ -7025,7 +7035,7 @@ describe('organization', () => {
     describe('.roles', () => {
         let res: Role[]
         beforeEach(async () => {
-            user = await createUser().save()
+            await createUser().save()
             organization = await createOrganization().save()
         })
 
@@ -7068,18 +7078,7 @@ describe('organization', () => {
         })
     })
 
-    describe('.addUsersToOrganizations', () => {
-        let adminUser: User
-        let nonAdminUser: User
-        let organization1: Organization
-        let organization2: Organization
-        let organization3: Organization
-        let user1: User
-        let user2: User
-        let user3: User
-        let role1: Role
-        let role2: Role
-        let role3: Role
+    describe('AddUsersToOrganizations', () => {
         let input: AddUsersToOrganizationInput[]
 
         function addUsers(authUser = adminUser) {
@@ -7100,6 +7099,7 @@ describe('organization', () => {
                     where: {
                         organization_id: organizationId,
                         user_id: In(userIds),
+                        status: Status.ACTIVE,
                     },
                 })
 
@@ -7119,91 +7119,51 @@ describe('organization', () => {
                     const dbRoles = new Set(
                         (await membership.roles)?.map((val) => val.role_id)
                     )
-                    const roles = new Set(organizationRoleIds)
-                    expect(dbRoles.size).to.equal(roles.size)
-                    dbRoles.forEach((val) => expect(roles.has(val)).to.be.true)
+                    const inputRoles = new Set(organizationRoleIds)
+                    expect(dbRoles.size).to.equal(inputRoles.size)
+                    dbRoles.forEach(
+                        (val) => expect(inputRoles.has(val)).to.be.true
+                    )
                 }
             }
         }
 
-        function checkNotFoundErrors(
-            actualError: Error,
-            expectedErrors: {
-                entity: string
-                id: string
-                entryIndex: number
-            }[]
-        ) {
-            expectedErrors.forEach((val, errorIndex) => {
-                expectAPIError.nonexistent_entity(
-                    actualError,
-                    {
-                        entity: val.entity,
-                        entityName: val.id,
-                        index: val.entryIndex,
+        async function checkNoChangesMade() {
+            expect(
+                await OrganizationMembership.find({
+                    where: {
+                        organization_id: In(orgs.map((o) => o.organization_id)),
+                        user_id: In(users.map((u) => u.user_id)),
+                        status: Status.ACTIVE,
                     },
-                    ['id'],
-                    errorIndex,
-                    expectedErrors.length
-                )
-            })
-        }
-
-        async function checkNoChangesMade(useAdminUser = true) {
-            it('does not add the users', async () => {
-                await expect(addUsers(useAdminUser ? adminUser : nonAdminUser))
-                    .to.be.rejected
-                expect(
-                    await OrganizationMembership.find({
-                        where: {
-                            organization_id: In(
-                                [
-                                    organization1,
-                                    organization2,
-                                    organization3,
-                                ].map((v) => v.organization_id)
-                            ),
-                            user_id: Not(nonAdminUser.user_id),
-                        },
-                    })
-                ).to.be.empty
-            })
+                })
+            ).to.be.empty
         }
 
         beforeEach(async () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
-            organization1 = await createOrganization().save()
-            organization2 = await createOrganization().save()
-            organization3 = await createOrganization().save()
-            ;[user1, user2, user3] = createUsers(3)
-            role1 = roleFactory('Role 1')
-            role2 = roleFactory('Role 2')
-            role3 = roleFactory('Role 3')
-            await connection.manager.save([
-                user1,
-                user2,
-                user3,
-                role1,
-                role2,
-                role3,
-            ])
+            orgs = createOrganizations(3)
+            users = createUsers(3)
+            roles = createRoles(3)
+            await Organization.save(orgs)
+            await connection.manager.save([...users, ...roles])
 
             input = [
                 {
-                    organizationId: organization1.organization_id,
-                    userIds: [user1.user_id],
-                    organizationRoleIds: [role1.role_id, role2.role_id],
+                    organizationId: orgs[0].organization_id,
+                    userIds: [users[0].user_id],
+                    organizationRoleIds: [roles[0].role_id, roles[1].role_id],
                 },
                 {
-                    organizationId: organization2.organization_id,
-                    userIds: [user2.user_id, user3.user_id],
-                    organizationRoleIds: [role2.role_id, role3.role_id],
+                    organizationId: orgs[1].organization_id,
+                    userIds: [users[1].user_id, users[2].user_id],
+                    organizationRoleIds: [roles[1].role_id, roles[2].role_id],
                 },
                 {
-                    organizationId: organization3.organization_id,
-                    userIds: [user1.user_id, user3.user_id],
-                    organizationRoleIds: [role3.role_id],
+                    organizationId: orgs[2].organization_id,
+                    userIds: [users[0].user_id, users[2].user_id],
+                    organizationRoleIds: [roles[2].role_id],
                 },
             ]
         })
@@ -7216,28 +7176,65 @@ describe('organization', () => {
                         await expect(addUsers()).to.be.fulfilled
                         await checkOutput()
                     })
+
+                    it('makes the expected number of db calls', async () => {
+                        connection.logger.reset()
+                        await expect(addUsers()).to.be.fulfilled
+                        expect(connection.logger.count).to.equal(10) // preload: 4, authorize: 1, save: 1 per membership
+                    })
+
+                    context('when removing 1 user then 50 users', () => {
+                        it('makes the same number of database calls', async () => {
+                            input = [
+                                {
+                                    organizationId: orgs[0].organization_id,
+                                    userIds: [users[0].user_id],
+                                    organizationRoleIds: [roles[0].role_id],
+                                },
+                            ]
+                            connection.logger.reset()
+                            await expect(addUsers()).to.be.fulfilled
+                            const baseCount = connection.logger.count
+
+                            const fiftyUsers = createUsers(50)
+                            await connection.manager.save([
+                                ...fiftyUsers,
+                                ...roles,
+                            ])
+                            input = [
+                                {
+                                    organizationId: orgs[0].organization_id,
+                                    userIds: fiftyUsers.map((u) => u.user_id),
+                                    organizationRoleIds: roles.map(
+                                        (r) => r.role_id
+                                    ),
+                                },
+                            ]
+                            connection.logger.reset()
+                            await expect(addUsers()).to.be.fulfilled
+                            expect(connection.logger.count).to.equal(baseCount)
+                        })
+                    })
                 })
 
                 context('and one of the users was already added', () => {
                     beforeEach(async () => {
                         await createOrganizationMembership({
-                            user: user1,
-                            organization: organization1,
-                            roles: [role2, role3],
+                            user: users[0],
+                            organization: orgs[0],
+                            roles: [roles[1], roles[2]],
                         }).save()
                     })
 
-                    it('returns a duplicate user error', async () => {
+                    it('returns a duplicate_child_entity error', async () => {
                         const res = await expect(addUsers()).to.be.rejected
                         expectAPIError.duplicate_child_entity(
                             res,
                             {
                                 entity: 'User',
-                                entityName: user1.username || '',
-                                parentEntity:
-                                    'OrganizationMembership in Organization',
-                                parentName:
-                                    organization1.organization_name || '',
+                                entityName: users[0].user_name() || '',
+                                parentEntity: 'Organization',
+                                parentName: orgs[0].organization_name || '',
                                 index: 0,
                             },
                             ['organization_id', 'user_id'],
@@ -7247,94 +7244,93 @@ describe('organization', () => {
                     })
                 })
 
-                context(
-                    'and one of the organizations is inactive',
-                    async () => {
-                        beforeEach(
-                            async () =>
-                                await organization3.inactivate(getManager())
-                        )
-
-                        it('returns an nonexistent organization error', async () => {
-                            const res = await expect(addUsers()).to.be.rejected
-                            checkNotFoundErrors(res, [
-                                {
-                                    entity: 'Organization',
-                                    id: organization3.organization_id,
-                                    entryIndex: 2,
-                                },
-                            ])
-                        })
-
-                        await checkNoChangesMade()
-                    }
-                )
-
                 context('and one of the users is inactive', async () => {
-                    beforeEach(async () => await user2.inactivate(getManager()))
+                    beforeEach(
+                        async () => await users[1].inactivate(getManager())
+                    )
 
-                    it('returns an nonexistent user error', async () => {
+                    it('returns an nonexistent_entity error', async () => {
                         const res = await expect(addUsers()).to.be.rejected
-                        checkNotFoundErrors(res, [
+                        expectAPIError.nonexistent_entity(
+                            res,
                             {
                                 entity: 'User',
-                                id: user2.user_id,
-                                entryIndex: 1,
+                                entityName: users[1].user_id,
+                                index: 1,
                             },
-                        ])
+                            ['id'],
+                            0,
+                            1
+                        )
+                        await checkNoChangesMade()
                     })
-
-                    await checkNoChangesMade()
                 })
 
                 context('and one of the roles is inactive', async () => {
-                    beforeEach(async () => await role1.inactivate(getManager()))
+                    beforeEach(
+                        async () => await roles[0].inactivate(getManager())
+                    )
 
-                    it('returns an nonexistent role error', async () => {
+                    it('returns an nonexistent_entity error', async () => {
                         const res = await expect(addUsers()).to.be.rejected
-                        checkNotFoundErrors(res, [
+                        expectAPIError.nonexistent_entity(
+                            res,
                             {
                                 entity: 'Role',
-                                id: role1.role_id,
-                                entryIndex: 0,
+                                entityName: roles[0].role_id,
+                                index: 0,
                             },
-                        ])
+                            ['id'],
+                            0,
+                            1
+                        )
+                        await checkNoChangesMade()
                     })
-
-                    await checkNoChangesMade()
                 })
 
                 context('and one of each attribute is inactive', async () => {
                     beforeEach(async () => {
                         await Promise.all([
-                            organization3.inactivate(getManager()),
-                            user2.inactivate(getManager()),
-                            role1.inactivate(getManager()),
+                            orgs[2].inactivate(getManager()),
+                            users[1].inactivate(getManager()),
+                            roles[0].inactivate(getManager()),
                         ])
                     })
 
-                    it('returns several nonexistent errors', async () => {
+                    it('returns several nonexistent_entity errors', async () => {
                         const res = await expect(addUsers()).to.be.rejected
-                        checkNotFoundErrors(res, [
+                        const expectedErrors = [
                             {
                                 entity: 'Role',
-                                id: role1.role_id,
+                                id: roles[0].role_id,
                                 entryIndex: 0,
                             },
                             {
                                 entity: 'User',
-                                id: user2.user_id,
+                                id: users[1].user_id,
                                 entryIndex: 1,
                             },
                             {
                                 entity: 'Organization',
-                                id: organization3.organization_id,
+                                id: orgs[2].organization_id,
                                 entryIndex: 2,
                             },
-                        ])
+                        ]
+                        expectedErrors.forEach((ee, errorIndex) => {
+                            expectAPIError.nonexistent_entity(
+                                res,
+                                {
+                                    entity: ee.entity,
+                                    entityName: ee.id,
+                                    index: ee.entryIndex,
+                                },
+                                ['id'],
+                                errorIndex,
+                                expectedErrors.length
+                            )
+                        })
+                        await checkNoChangesMade()
                     })
-
-                    await checkNoChangesMade()
                 })
             }
         )
@@ -7342,32 +7338,292 @@ describe('organization', () => {
         context(
             'when caller does not have permissions to add users to all organizations',
             async () => {
+                const permission = PermissionName.send_invitation_40882
                 beforeEach(async () => {
                     const nonAdminRole = await roleFactory(
                         'Non Admin Role',
-                        organization1,
-                        {
-                            permissions: [PermissionName.send_invitation_40882],
-                        }
+                        orgs[0],
+                        { permissions: [permission] }
                     ).save()
                     await createOrganizationMembership({
                         user: nonAdminUser,
-                        organization: organization1,
+                        organization: orgs[0],
                         roles: [nonAdminRole],
                     }).save()
                 })
 
                 it('returns a permission error', async () => {
-                    const orgIds = [
-                        organization2.organization_id,
-                        organization3.organization_id,
-                    ]
+                    const permOrgs = [orgs[1], orgs[2]]
                     await expect(addUsers(nonAdminUser)).to.be.rejectedWith(
-                        `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.send_invitation_40882}) in Organizations(${orgIds})`
+                        buildPermissionError(permission, nonAdminUser, permOrgs)
                     )
+                    await checkNoChangesMade()
+                })
+            }
+        )
+    })
+
+    describe('RemoveUsersFromOrganizations', () => {
+        let input: RemoveUsersFromOrganizationInput[]
+
+        function removeUsers(authUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            const ctx = { permissions }
+            return mutate(RemoveUsersFromOrganizations, { input }, ctx)
+        }
+
+        async function checkOutput() {
+            for (const orgInputs of input) {
+                const { organizationId, userIds } = orgInputs
+
+                const dbMemberships = await OrganizationMembership.find({
+                    where: {
+                        organization_id: organizationId,
+                        user_id: In(userIds),
+                        status: Status.INACTIVE,
+                    },
                 })
 
-                await checkNoChangesMade(false)
+                // Check that user ids match
+                const dbUserIds = new Set(
+                    dbMemberships.map((val) => val.user_id)
+                )
+                const userIdsSet = new Set(userIds)
+
+                expect(dbUserIds.size).to.equal(userIdsSet.size)
+                dbUserIds.forEach(
+                    (val) => expect(userIdsSet.has(val)).to.be.true
+                )
+            }
+        }
+
+        async function checkNoChangesMade(inactivateCount = 0) {
+            expect(
+                await OrganizationMembership.find({
+                    where: {
+                        organization_id: In(orgs.map((o) => o.organization_id)),
+                        user_id: In(users.map((u) => u.user_id)),
+                        status: Status.INACTIVE,
+                    },
+                })
+            ).to.have.length(inactivateCount)
+        }
+
+        async function inactivateMembership(
+            user_id: string,
+            organization_id: string
+        ) {
+            const membership = await OrganizationMembership.findOneOrFail({
+                where: { organization_id, user_id },
+            })
+            await membership.inactivate(getManager())
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
+            orgs = createOrganizations(3)
+            users = createUsers(3)
+            await Organization.save(orgs)
+            await User.save(users)
+
+            // Generate input & create memberships
+            input = []
+            const memberships: OrganizationMembership[] = []
+            const userIndexGroups = [[0], [1, 2], [0, 2]]
+            for (const [orgIdx, userIndexes] of userIndexGroups.entries()) {
+                const org = orgs[orgIdx]
+                const userIds: string[] = []
+                for (const uIdx of userIndexes) {
+                    userIds.push(users[uIdx].user_id)
+                    memberships.push(
+                        createOrganizationMembership({
+                            user: users[uIdx],
+                            organization: org,
+                        })
+                    )
+                }
+                input.push({ organizationId: org.organization_id, userIds })
+            }
+            await OrganizationMembership.save(memberships)
+        })
+
+        context(
+            'when caller has permissions to remove users from organizations',
+            () => {
+                context('and all attributes are valid', () => {
+                    it('removes all the users', async () => {
+                        await expect(removeUsers()).to.be.fulfilled
+                        await checkOutput()
+                    })
+
+                    it('returns the expected output', async () => {
+                        const res: OrganizationsMutationResult = await expect(
+                            removeUsers()
+                        ).to.be.fulfilled
+                        const orgIds = new Set(
+                            res.organizations.map((o) => o.id)
+                        )
+                        expect(orgIds).to.have.length(input.length)
+                        input.forEach(
+                            (i) =>
+                                expect(orgIds.has(i.organizationId)).to.be.true
+                        )
+                    })
+
+                    it('makes the expected number of database calls', async () => {
+                        connection.logger.reset()
+                        await expect(removeUsers()).to.be.fulfilled
+                        expect(connection.logger.count).to.equal(5) // preload: 3, authorize: 1, save: 1
+                    })
+
+                    context('when removing 1 user then 50 users', () => {
+                        it('makes the same number of database calls', async () => {
+                            input = [
+                                {
+                                    organizationId: orgs[0].organization_id,
+                                    userIds: [users[0].user_id],
+                                },
+                            ]
+                            connection.logger.reset()
+                            await expect(removeUsers()).to.be.fulfilled
+                            const baseCount = connection.logger.count
+
+                            const fiftyUsers = await User.save(createUsers(50))
+                            await OrganizationMembership.save(
+                                createOrganizationMemberships(
+                                    fiftyUsers,
+                                    orgs[0]
+                                )
+                            )
+                            input = [
+                                {
+                                    organizationId: orgs[0].organization_id,
+                                    userIds: fiftyUsers.map((u) => u.user_id),
+                                },
+                            ]
+                            connection.logger.reset()
+                            await expect(removeUsers()).to.be.fulfilled
+                            expect(connection.logger.count).to.equal(baseCount)
+                        })
+                    })
+                })
+
+                context('and one of the users was already removed', () => {
+                    beforeEach(() =>
+                        inactivateMembership(
+                            users[0].user_id,
+                            orgs[0].organization_id
+                        )
+                    )
+
+                    it('returns a nonexistent_child error', async () => {
+                        const res = await expect(removeUsers()).to.be.rejected
+                        expectAPIError.nonexistent_child(
+                            res,
+                            {
+                                entity: 'User',
+                                entityName: users[0].user_name() || '',
+                                parentEntity: 'Organization',
+                                parentName: orgs[0].organization_name || '',
+                                index: 0,
+                            },
+                            ['organization_id', 'user_id'],
+                            0,
+                            1
+                        )
+                        await checkNoChangesMade(1)
+                    })
+
+                    it('does not perform any changes', async () => {
+                        await checkNoChangesMade(1) // one membership is inactivated in the beforeEach
+                        await expect(removeUsers()).to.be.rejected
+                        await checkNoChangesMade(1)
+                    })
+                })
+
+                context('and one of the users is inactive', async () => {
+                    beforeEach(() => users[1].inactivate(getManager()))
+
+                    it('returns a nonexistent_entity error', async () => {
+                        const res = await expect(removeUsers()).to.be.rejected
+                        expectAPIError.nonexistent_entity(
+                            res,
+                            {
+                                entity: 'User',
+                                entityName: users[1].user_id,
+                                index: 1,
+                            },
+                            ['id'],
+                            0,
+                            1
+                        )
+                        await checkNoChangesMade(1) // inactivating a user also inactivates its memberships
+                    })
+                })
+
+                context('and one of each attribute is inactive', async () => {
+                    beforeEach(async () => {
+                        await Promise.all([
+                            orgs[2].inactivate(getManager()),
+                            users[1].inactivate(getManager()),
+                        ])
+                    })
+
+                    it('returns several nonexistent_entity errors', async () => {
+                        const res = await expect(removeUsers()).to.be.rejected
+                        expectAPIError.nonexistent_entity(
+                            res,
+                            {
+                                entity: 'User',
+                                entityName: users[1].user_id,
+                                index: 1,
+                            },
+                            ['id'],
+                            0,
+                            2
+                        )
+                        expectAPIError.nonexistent_entity(
+                            res,
+                            {
+                                entity: 'Organization',
+                                entityName: orgs[2].organization_id,
+                                index: 2,
+                            },
+                            ['id'],
+                            1,
+                            2
+                        )
+                        await checkNoChangesMade(3) // 2 from orgs[2] + 1 from users[1]
+                    })
+                })
+            }
+        )
+
+        context(
+            'when caller does not have permissions to remove users from all organizations',
+            async () => {
+                const permission = PermissionName.edit_this_organization_10330
+                beforeEach(async () => {
+                    const nonAdminRole = await roleFactory(
+                        'Non Admin Role',
+                        orgs[0],
+                        { permissions: [permission] }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: orgs[0],
+                        roles: [nonAdminRole],
+                    }).save()
+                })
+
+                it('returns a permission error', async () => {
+                    const permOrgs = [orgs[1], orgs[2]]
+                    await expect(removeUsers(nonAdminUser)).to.be.rejectedWith(
+                        buildPermissionError(permission, nonAdminUser, permOrgs)
+                    )
+                    await checkNoChangesMade()
+                })
             }
         )
     })

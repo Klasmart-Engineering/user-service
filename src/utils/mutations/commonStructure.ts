@@ -1,4 +1,4 @@
-import { getManager, In } from 'typeorm'
+import { getManager } from 'typeorm'
 import { config } from '../../config/config'
 import { CustomBaseEntity } from '../../entities/customBaseEntity'
 import { Status } from '../../entities/status'
@@ -235,18 +235,16 @@ export abstract class DeleteMutation<
     InputType,
     OutputType
 > extends Mutation<EntityType, InputType, OutputType> {
-    readonly partialEntity: Pick<EntityType, 'status' | 'deleted_at'>
+    private readonly partialEntity = {
+        status: Status.INACTIVE,
+        deleted_at: new Date(),
+    }
 
     constructor(input: InputType[], context: Pick<Context, 'permissions'>) {
         super(input, context)
-        this.partialEntity = {
-            status: Status.INACTIVE,
-            deleted_at: new Date(),
-        }
-        this.normalize = () => Promise.resolve(input)
     }
 
-    protected normalize: () => Promise<InputType[]>
+    protected normalize = () => Promise.resolve(this.input)
     protected validate = () => []
 
     protected process(currentEntity: EntityType): EntityType[] {
@@ -259,23 +257,22 @@ export abstract class DeleteMutation<
             .createQueryBuilder()
             .update(this.EntityType)
             .set(this.partialEntity)
-            .where({ id: In(this.mainEntityIds) })
+            .whereInIds(this.mainEntityIds)
             .execute()
     }
 }
 
-abstract class AddRemoveMutation<
+export abstract class AddRemoveMutation<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType,
-    ModifiedEntityType extends CustomBaseEntity
+    ModifiedEntityType extends CustomBaseEntity = EntityType
 > extends Mutation<EntityType, InputType, OutputType, ModifiedEntityType> {
     constructor(input: InputType[], context: Pick<Context, 'permissions'>) {
         super(input, context)
-        this.normalize = () => Promise.resolve(input)
     }
 
-    protected normalize: () => Promise<InputType[]>
+    protected normalize = () => Promise.resolve(this.input)
 
     protected async applyToDatabase(
         processedEntities: ModifiedEntityType[]
@@ -285,3 +282,50 @@ abstract class AddRemoveMutation<
 }
 export const AddMutation = AddRemoveMutation
 export const RemoveMutation = AddRemoveMutation
+
+/**
+ * This abstract class is a variation on AddMutation for when
+ * a mutation with a name like `AddXsFromYs` actually requires
+ * creating a membership. These mutations
+ * should be called `CreateYMemberships`, but we chose not to
+ * give memberships (i.e. `OrganizationMembership` and
+ * `SchoolMembership`) their own mutations.
+ */
+export const AddMembershipMutation = AddRemoveMutation
+
+/**
+ * This abstract class is a variation on RemoveMutation for when
+ * a mutation with a name like `RemoveXsFromYs` actually requires
+ * deleting a membership. These mutations
+ * should be called `DeleteYMemberships`, but we chose not to
+ * give memberships (i.e. `OrganizationMembership` and
+ * `SchoolMembership`) their own mutations.
+ */
+export abstract class RemoveMembershipMutation<
+    EntityType extends CustomBaseEntity,
+    InputType,
+    OutputType,
+    MembershipType extends CustomBaseEntity
+> extends Mutation<EntityType, InputType, OutputType, MembershipType> {
+    protected readonly partialEntity = {
+        status: Status.INACTIVE,
+        deleted_at: new Date(),
+    }
+    protected abstract readonly MembershipType: typeof CustomBaseEntity
+    protected abstract readonly saveIds: Record<string, string>[]
+
+    constructor(input: InputType[], context: Pick<Context, 'permissions'>) {
+        super(input, context)
+    }
+
+    protected normalize = () => Promise.resolve(this.input)
+
+    protected async applyToDatabase(): Promise<void> {
+        await getManager()
+            .createQueryBuilder()
+            .update(this.MembershipType)
+            .set(this.partialEntity)
+            .whereInIds(this.saveIds)
+            .execute()
+    }
+}

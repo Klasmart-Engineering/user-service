@@ -35,6 +35,7 @@ import clean from '../utils/clean'
 import {
     createInputLengthAPIError,
     createUnauthorizedAPIError,
+    getMembershipMapKey,
 } from '../utils/resolvers'
 import { config } from '../config/config'
 
@@ -116,7 +117,7 @@ async function modifyOrganizationRoles(
     )
     const preloadedMemberships = new Map(
         (await preloadedMembershipArray).map((i) => [
-            [i.organization_id, i.user_id].toString(),
+            getMembershipMapKey(i.organization_id, i.user_id),
             i,
         ])
     )
@@ -186,7 +187,7 @@ async function modifyOrganizationRoles(
         // Organization Membership validation
         if (!org || !user) continue
         const dbMembership = preloadedMemberships.get(
-            [organizationId, userId].toString()
+            getMembershipMapKey(organizationId, userId)
         )
         if (!dbMembership) {
             errors.push(
@@ -196,7 +197,7 @@ async function modifyOrganizationRoles(
                     variables: ['organization_id', 'user_id'],
                     entity: 'User',
                     entityName: user?.user_name() || userId,
-                    parentEntity: 'OrganizationMembership in Organization',
+                    parentEntity: 'Organization',
                     parentName: org?.organization_name || organizationId,
                     index,
                 })

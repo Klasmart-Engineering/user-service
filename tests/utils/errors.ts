@@ -1,12 +1,6 @@
 import { Organization } from '../../src/entities/organization'
 import { School } from '../../src/entities/school'
 import { User } from '../../src/entities/user'
-import { CustomError } from '../../src/types/csv/csvError'
-import {
-    APIErrorCollection,
-    apiErrorConstants,
-} from '../../src/types/errors/apiError'
-import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 
 export function buildPermissionError(
     permission: string,

@@ -415,8 +415,8 @@ export class DeleteCategories extends DeleteMutation<
 > {
     protected readonly EntityType = Category
     protected readonly inputTypeName = 'DeleteCategoryInput'
+    protected readonly output: CategoriesMutationResult = { categories: [] }
     protected readonly mainEntityIds: string[]
-    protected readonly output: CategoriesMutationResult
 
     constructor(
         input: DeleteCategoryInput[],
@@ -424,7 +424,6 @@ export class DeleteCategories extends DeleteMutation<
     ) {
         super(input, context)
         this.mainEntityIds = input.map((val) => val.id)
-        this.output = { categories: [] }
     }
 
     protected async generateEntityMaps(): Promise<EntityMap<Category>> {

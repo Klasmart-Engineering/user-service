@@ -34,3 +34,8 @@ export function createOrganizationMembership({
     }
     return membership
 }
+
+export const createOrganizationMemberships = (
+    users: User[],
+    organization: Organization
+) => users.map((user) => createOrganizationMembership({ user, organization }))

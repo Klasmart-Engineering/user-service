@@ -1912,8 +1912,7 @@ describe('user', () => {
                             {
                                 entity: 'User',
                                 entityName: user1.user_name(),
-                                parentEntity:
-                                    'OrganizationMembership in Organization',
+                                parentEntity: 'Organization',
                                 parentName:
                                     organization1.organization_name || '',
                                 index: 0,
@@ -1969,8 +1968,7 @@ describe('user', () => {
                             {
                                 entity: 'User',
                                 entityName: user3.user_name(),
-                                parentEntity:
-                                    'OrganizationMembership in Organization',
+                                parentEntity: 'Organization',
                                 parentName:
                                     organization3.organization_name || '',
                                 index: 2,

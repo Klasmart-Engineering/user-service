@@ -457,6 +457,14 @@ export const ADD_USERS_TO_ORGANIZATIONS = `
     }
 `
 
+export const REMOVE_USERS_FROM_ORGANIZATIONS = `
+    mutation myMutation($input: [RemoveUsersFromOrganizationInput!]!) {
+        removeUsersFromOrganizations(input: $input) {
+            ${ORGANIZATIONS_MUTATION_RESULT}
+        }
+    }
+`
+
 export async function createClass(
     testClient: ApolloServerTestClient,
     organizationId: string,

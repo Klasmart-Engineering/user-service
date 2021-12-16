@@ -1,19 +1,17 @@
 import faker from 'faker'
-
-import { createOrganization } from './organization.factory'
 import { Organization } from '../../src/entities/organization'
 import { Role } from '../../src/entities/role'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { Permission } from '../../src/entities/permission'
 
 export function createRole(
-    role_name: string = faker.random.word(),
+    roleName: string = faker.random.word(),
     org?: Organization,
     { permissions }: { permissions?: PermissionName[] } = {}
 ) {
     const role = new Role()
 
-    role.role_name = role_name
+    role.role_name = roleName
     if (org) {
         role.organization = Promise.resolve(org)
     }
@@ -28,3 +26,8 @@ export function createRole(
 
     return role
 }
+
+export const createRoles = (length: number) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createRole())

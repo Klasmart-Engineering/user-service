@@ -174,4 +174,5 @@ export function createEntityAPIError(
     return new APIError(errorDetails)
 }
 
-// TODO: standardise error handling for permissions
+export const getMembershipMapKey = (organisationId: string, userId: string) =>
+    [organisationId, userId].toString()

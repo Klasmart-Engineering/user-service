@@ -1284,7 +1284,7 @@ describe('category', () => {
         })
     })
 
-    context('deleteCategories', () => {
+    context('DeleteCategories', () => {
         const deleteCategoriesFromResolver = async (
             user: User,
             input: DeleteCategoryInput[]

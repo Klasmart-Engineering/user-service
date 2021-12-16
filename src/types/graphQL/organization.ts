@@ -21,9 +21,14 @@ export interface CreateOrganizationInput {
 
 export interface AddUsersToOrganizationInput {
     organizationId: string
-    organizationRoleIds: string[]
     userIds: string[]
+    organizationRoleIds: string[]
     shortcode?: string
+}
+
+export interface RemoveUsersFromOrganizationInput {
+    organizationId: string
+    userIds: string[]
 }
 
 export interface OrganizationConnectionNode {
