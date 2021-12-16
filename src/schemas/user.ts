@@ -410,7 +410,7 @@ export default function getDefault(
             },
             Mutation: {
                 me: (_parent, _args, ctx: Context, _info) =>
-                    model.getMyUser(ctx.token),
+                    model.getMyUser(ctx.permissions),
                 user: (_parent, args, _context, _info) => model.setUser(args),
                 switch_user: (_parent, args, ctx, info) => {
                     throw new Error('Deprecated')
@@ -431,7 +431,7 @@ export default function getDefault(
             },
             Query: {
                 me: (_, _args, ctx: Context, _info) =>
-                    model.getMyUser(ctx.token),
+                    model.getMyUser(ctx.permissions),
                 usersConnection: (_parent, args, ctx: Context, info) => {
                     // Create loaders specific to usersConnection to auto filter children
                     ctx.loaders.usersConnection = {
@@ -455,7 +455,7 @@ export default function getDefault(
                     return ctx.loaders.user.user.instance.load(user_id)
                 },
                 my_users: (_parent, _args, ctx: Context, info) =>
-                    model.myUsers(ctx.token),
+                    model.myUsers(ctx.permissions),
             },
             User: {
                 memberships: (user: User, _args, ctx: Context, info) => {

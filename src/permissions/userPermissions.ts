@@ -40,18 +40,24 @@ export class UserPermissions {
     private readonly email?: string
     private readonly phone?: string
     private user?: User
-    public readonly isAdmin?: boolean
+    public isAdmin?: boolean
+    public apiKeyAuth?: boolean
 
-    public constructor(token?: { id: string; email?: string; phone?: string }) {
-        this.user_id = token?.id
-        if (typeof token?.email == 'string' && token?.email?.length > 0) {
-            this.email = token.email
-            this.isAdmin = this.isAdminEmail(this.email!)
+    public constructor(token?: { id: string; email?: string; phone?: string }, apiKeyAuth?: boolean ) {
+        if (apiKeyAuth == true) {
+            this.apiKeyAuth = true
         } else {
-            this.isAdmin = false
-        }
-        if (typeof token?.phone == 'string' && token?.phone?.length > 0) {
-            this.phone = token?.phone
+            this.apiKeyAuth = false
+            this.user_id = token?.id
+            if (typeof token?.email == 'string' && token?.email?.length > 0) {
+                this.email = token?.email
+                this.isAdmin = this.isAdminEmail(this.email!)
+            } else {
+                this.isAdmin = false
+            }
+            if (typeof token?.phone == 'string' && token?.phone?.length > 0) {
+                this.phone = token?.phone
+            }
         }
     }
 
@@ -86,7 +92,7 @@ export class UserPermissions {
     }
 
     public rejectIfNotAdmin(): void {
-        if (!this.isAdmin) {
+        if (!this.isAdmin && !this.apiKeyAuth) {
             throw new Error(
                 `User(${this.user_id}) does not have Admin permissions`
             )
@@ -94,7 +100,7 @@ export class UserPermissions {
     }
 
     public rejectIfNotAuthenticated(): void {
-        if (!this.user_id) {
+        if (!this.user_id && !this.apiKeyAuth) {
             throw new Error(
                 `User not authenticated. Please authenticate to proceed`
             )
@@ -105,10 +111,9 @@ export class UserPermissions {
         user: User | undefined,
         permission_name: PermissionName
     ): boolean {
-        return (
-            this.isAdminEmail(user?.email || '') &&
+        return <boolean>(
+            this.isAdminEmail(user?.email || '') || this.apiKeyAuth) &&
             superAdminRole.permissions.includes(permission_name)
-        )
     }
 
     private isUserActive(user: User | undefined) {
@@ -150,6 +155,7 @@ export class UserPermissions {
         permission_context: PermissionContext,
         permission_name: PermissionName
     ): Promise<PermissionCheckOutput> {
+        if (this.apiKeyAuth) return { passed: true }
         // Clean & fetch data
         const cpc = cleanPermissionContext(permission_context)
         const userId = cpc.user_id

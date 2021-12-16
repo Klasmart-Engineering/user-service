@@ -106,7 +106,7 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
         resolvers: {
             MyUser: {
                 node: async (_parent, _args, ctx: Context, _info) => {
-                    const user = await model.getMyUser(ctx.token)
+                    const user = await model.getMyUser(ctx.permissions)
                     if (!user) {
                         throw new APIErrorCollection([
                             new APIError({
@@ -122,7 +122,7 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                     return mapUserToUserConnectionNode(user)
                 },
                 profiles: async (_parent, _args, ctx: Context, info) => {
-                    const users = await model.myUsers(ctx.token)
+                    const users = await model.myUsers(ctx.permissions)
                     return users.map(mapUserToUserConnectionNode)
                 },
                 hasPermissionsInOrganization: async (

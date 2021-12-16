@@ -162,13 +162,19 @@ export function checkIssuerAuthorization(
     next()
 }
 
+export async function validateAPIKey(req: express.Request) {
+    // TODO: check API key in req against AWS api key
+
+    return false
+}
+
 export async function validateToken(
     req: express.Request,
     res: express.Response,
     next: express.NextFunction
 ) {
     try {
-        if (process.env.NODE_ENV !== 'development') {
+        if (process.env.NODE_ENV !== 'development' && !validateAPIKey(req)) {// Check API key in headers
             await checkToken(req)
         }
         next()
