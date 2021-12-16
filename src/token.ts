@@ -134,13 +134,49 @@ export async function checkToken(
     return tokenPayload
 }
 
+export function checkIssuerAuthorization(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    const token = req.headers?.authorization
+
+    if (token) {
+        const payload = decode(token)
+
+        if (payload && typeof payload !== 'string') {
+            const issuer = payload['iss']
+
+            if (
+                !issuer ||
+                typeof issuer !== 'string' ||
+                blackListIssuers.includes(issuer)
+            ) {
+                res.status(401)
+                return res.send({ message: 'User not authorized' })
+            }
+        }
+    }
+
+    next()
+}
+
+export async function validateAPIKey(req: express.Request) {
+    // TODO: check API key in req against AWS api key
+
+    return false
+}
+
 export async function validateToken(
     req: express.Request,
     res: express.Response,
     next: express.NextFunction
 ) {
     try {
-        res.locals.token = await checkToken(req)
+        if (process.env.NODE_ENV !== 'development' && !validateAPIKey(req)) {// Check API key in headers
+            await checkToken(req)
+        }
+        next()
     } catch (e) {
         const { code, message } = customErrors.invalid_token
 

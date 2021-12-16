@@ -3,7 +3,7 @@ import depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
 import { Context } from '../main'
 import { Model } from '../model'
-import { TokenPayload } from '../token'
+import { checkToken, TokenPayload, validateAPIKey } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
 import { CustomError } from '../types/csv/csvError'
@@ -51,6 +51,19 @@ export function maxQueryDepth(): number {
     }
 }
 
+export async function authenticate(req: Request) {
+    let permissions: UserPermissions
+    if (validateAPIKey(req)) {
+        permissions = new UserPermissions(undefined, true)
+    } else {
+        const token: TokenPayload = await checkToken(req)
+        permissions = new UserPermissions(token)
+    }
+
+    return permissions
+}
+// validate api key function
+
 async function createContext({
     res,
     req,
@@ -59,16 +72,18 @@ async function createContext({
     res: Response<any, { token: TokenPayload | undefined }>
     req: Request
 }): Promise<Context> {
-    const token = res.locals.token
-
-    const permissions = new UserPermissions(token)
+    const permissions = await authenticate(req)
 
     return {
-        token,
         permissions,
         res,
         req,
-        loaders: createContextLazyLoaders(permissions),
+        // prefer the request logger as it has a correlationId
+        // but if it's not set, use the general logger
+        // this is the case in tests where we do not setup the whole
+        // express app
+        logger: req.logger ?? logger,
+        loaders: createContextLazyLoaders(permissions)
     }
 }
 

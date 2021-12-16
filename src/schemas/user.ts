@@ -435,12 +435,8 @@ export default function getDefault(
                 },
             },
             Mutation: {
-                me: (_parent, _args, ctx: Context, _info) => {
-                    if (ctx.token === undefined) {
-                        throw new AuthenticationError('No authentication token')
-                    }
-                    return model.getMyUser(ctx.token)
-                },
+                me: (_parent, _args, ctx: Context, _info) =>
+                    model.getMyUser(ctx.permissions),
                 user: (_parent, args, _context, _info) => model.setUser(args),
                 switch_user: (_parent, args, ctx, info) => {
                     throw new Error('Deprecated')
@@ -460,12 +456,8 @@ export default function getDefault(
                     updateUsers(args, ctx),
             },
             Query: {
-                me: (_parent, _args, ctx: Context, _info) => {
-                    if (ctx.token === undefined) {
-                        throw new AuthenticationError('No authentication token')
-                    }
-                    return model.getMyUser(ctx.token)
-                },
+                me: (_, _args, ctx: Context, _info) =>
+                    model.getMyUser(ctx.permissions),
                 usersConnection: (_parent, args, ctx: Context, info) => {
                     // Create loaders specific to usersConnection to auto filter children
                     ctx.loaders.usersConnection = {
@@ -488,24 +480,8 @@ export default function getDefault(
                 user: (_parent, { user_id }, ctx: Context, _info) => {
                     return ctx.loaders.user.user.instance.load(user_id)
                 },
-                my_users: (_parent, _args, ctx: Context, _info) => {
-                    if (ctx.token === undefined) {
-                        throw new AuthenticationError('No authentication token')
-                    }
-                    return model.myUsers(ctx.token)
-                },
-                eligibleTeachersConnection: (
-                    _parent,
-                    args,
-                    ctx: Context,
-                    info
-                ) => model.eligibleTeachersConnection(ctx, info, args),
-                eligibleStudentsConnection: (
-                    _parent,
-                    args,
-                    ctx: Context,
-                    info
-                ) => model.eligibleStudentsConnection(ctx, info, args),
+                my_users: (_parent, _args, ctx: Context, info) =>
+                    model.myUsers(ctx.permissions),
             },
             User: {
                 memberships: (user: User, _args, ctx: Context, info) => {

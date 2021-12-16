@@ -50,6 +50,7 @@ import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
+import { UserPermissions } from '../../src/permissions/userPermissions'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -78,7 +79,8 @@ describe('model', () => {
                 email: user.email,
                 iss: 'calmid-debug',
             }
-            const result = await model.getMyUser(token)
+            const permissions = new UserPermissions(token)
+            const result = await model.getMyUser(permissions)
             expect(result?.user_id).to.deep.eq(user.user_id)
         })
         it('returns the user with matching user ID and phone', async () => {
@@ -88,7 +90,8 @@ describe('model', () => {
                 phone: user.phone,
                 iss: 'calmid-debug',
             }
-            const result = await model.getMyUser(token)
+            const permissions = new UserPermissions(token)
+            const result = await model.getMyUser(permissions)
             expect(result?.user_id).to.deep.eq(user.user_id)
         })
     })
@@ -98,6 +101,7 @@ describe('model', () => {
         let clientUser: User
         let profile: User
         let userToken: TokenPayload
+        let permissions: UserPermissions
 
         beforeEach(async () => {
             organization = await createOrganization().save()
@@ -110,6 +114,8 @@ describe('model', () => {
                 phone: clientUser.phone,
                 iss: 'calmid-debug',
             }
+            permissions = new UserPermissions(userToken)
+
 
             for (const user of [clientUser, profile]) {
                 await createOrganizationMembership({
@@ -120,7 +126,7 @@ describe('model', () => {
         })
 
         it('returns the expected users', async () => {
-            const users = await model.myUsers(userToken)
+            const users = await model.myUsers(permissions)
             expect(users).to.have.length(2)
         })
         context('when user membership is inactive', () => {
@@ -138,7 +144,7 @@ describe('model', () => {
             })
 
             it('is excluded from results', async () => {
-                const users = await model.myUsers(userToken)
+                const users = await model.myUsers(permissions)
                 expect(users.length).to.equal(1)
             })
         })
@@ -149,7 +155,7 @@ describe('model', () => {
             })
 
             it('is excluded from results', async () => {
-                const users = await model.myUsers(userToken)
+                const users = await model.myUsers(permissions)
                 expect(users.length).to.equal(1)
             })
         })

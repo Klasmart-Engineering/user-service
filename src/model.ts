@@ -86,6 +86,7 @@ import { gradesConnectionResolver } from './pagination/gradesConnection'
 import { ageRangesConnectionResolver } from './pagination/ageRangesConnection'
 import { subjectsConnectionResolver } from './pagination/subjectsConnection'
 import { TokenPayload } from './token'
+import { UserPermissions } from './permissions/userPermissions'
 import {
     eligibleMembersConnectionResolver,
     EligibleMembersPaginationArgs,
@@ -173,14 +174,14 @@ export class Model {
         )
     }
 
-    public async getMyUser(token: TokenPayload) {
-        const user_id = token.id
+    public async getMyUser(permissions: UserPermissions) {
+        const user_id = permissions.getUserId()
         if (!user_id) {
             return undefined
         }
 
-        const email = token?.email
-        const phone = token?.phone
+        const email = permissions.getEmail()
+        const phone = permissions.getPhone()
 
         const user = await this.userRepository.findOne({
             where: [
@@ -304,9 +305,9 @@ export class Model {
         return user
     }
 
-    public async myUsers(token: TokenPayload) {
-        const userEmail = token?.email
-        const userPhone = token?.phone
+    public async myUsers(permissions: UserPermissions) {
+        const userEmail = permissions.getEmail()
+        const userPhone = permissions.getPhone()
         let users: User[] = []
 
         const scope = getRepository(User)
