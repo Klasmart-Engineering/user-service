@@ -23,8 +23,12 @@ import {
     listPrograms,
     updateSchool,
     deleteSchool,
+    buildDeleteSchoolInputArray,
 } from '../utils/operations/schoolOps'
-import { createOrganizationAndValidate } from '../utils/operations/userOps'
+import {
+    createOrganizationAndValidate,
+    userToPayload,
+} from '../utils/operations/userOps'
 import { createTestConnection } from '../utils/testConnection'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
@@ -42,13 +46,94 @@ import { addSchoolToClass } from '../utils/operations/classOps'
 import { createUserAndValidate } from '../utils/operations/modelOps'
 import { createProgram } from '../factories/program.factory'
 import chaiAsPromised from 'chai-as-promised'
+import {
+    DeleteSchoolInput,
+    SchoolsMutationResult,
+} from '../../src/types/graphQL/school'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { mutate } from '../../src/utils/mutations/commonStructure'
+import { DeleteSchools } from '../../src/resolvers/school'
+import { permErrorMeta } from '../utils/errors'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import {
+    createUser,
+    createAdminUser as createAdmin,
+} from '../factories/user.factory'
+import { createOrganization } from '../factories/organization.factory'
 
 use(chaiAsPromised)
 
 describe('school', () => {
     let connection: Connection
-    let originalAdmins: string[]
     let testClient: ApolloServerTestClient
+
+    let school: School
+    let school2: School
+    let user: User
+    let userWithPermission: User
+    let userWithoutPermission: User
+    let admin: User
+    let organization: Organization
+    let organization2: Organization
+
+    const createInitialSchools = async () => {
+        const orgOwner = await createAdminUser(testClient)
+        user = await createNonAdminUser(testClient)
+        organization = await createOrganizationAndValidate(
+            testClient,
+            orgOwner.user_id
+        )
+        const organizationId = organization?.organization_id
+        await addUserToOrganizationAndValidate(
+            testClient,
+            user.user_id,
+            organization.organization_id,
+            { authorization: getAdminAuthToken() }
+        )
+        school = await createSchool(
+            testClient,
+            organizationId,
+            'school 1',
+            undefined,
+            { authorization: getAdminAuthToken() }
+        )
+        const schoolId = school?.school_id
+        const cls = await createClassAndValidate(testClient, organizationId)
+        const classId = cls?.class_id
+        await addSchoolToClass(testClient, classId, schoolId, {
+            authorization: getAdminAuthToken(),
+        })
+
+        organization2 = await createOrganization().save()
+        school2 = await createSchool(
+            testClient,
+            organization2.organization_id,
+            'school 2',
+            undefined,
+            { authorization: getAdminAuthToken() }
+        )
+
+        const role = await createRole(testClient, organization.organization_id)
+        await grantPermission(
+            testClient,
+            role.role_id,
+            PermissionName.delete_school_20440,
+            { authorization: getAdminAuthToken() }
+        )
+
+        admin = await createAdmin().save()
+        userWithPermission = await createUser().save()
+        userWithoutPermission = await createUser().save()
+        await createOrganizationMembership({
+            user: userWithoutPermission,
+            organization: organization,
+        }).save()
+        await createOrganizationMembership({
+            user: userWithPermission,
+            organization,
+            roles: [role],
+        }).save()
+    }
 
     before(async () => {
         connection = await createTestConnection()
@@ -754,37 +839,8 @@ describe('school', () => {
     })
 
     describe('delete', () => {
-        let school: School
-        let user: User
-        let organization: Organization
-
         beforeEach(async () => {
-            const orgOwner = await createAdminUser(testClient)
-            user = await createNonAdminUser(testClient)
-            organization = await createOrganizationAndValidate(
-                testClient,
-                orgOwner.user_id
-            )
-            const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(
-                testClient,
-                user.user_id,
-                organization.organization_id,
-                { authorization: getAdminAuthToken() }
-            )
-            school = await createSchool(
-                testClient,
-                organizationId,
-                'school 1',
-                undefined,
-                { authorization: getAdminAuthToken() }
-            )
-            const schoolId = school?.school_id
-            const cls = await createClassAndValidate(testClient, organizationId)
-            const classId = cls?.class_id
-            await addSchoolToClass(testClient, classId, schoolId, {
-                authorization: getAdminAuthToken(),
-            })
+            await createInitialSchools()
         })
 
         context('when not authenticated', () => {
@@ -1182,6 +1238,104 @@ describe('school', () => {
 
                         const dbPrograms = (await school.programs) || []
                         expect(dbPrograms).to.be.empty
+                    })
+                })
+            })
+        })
+    })
+
+    context('deleteSchools', () => {
+        const schoolsCount = 2
+        const deleteSchoolsFromResolver = async (
+            user: User,
+            input: DeleteSchoolInput[]
+        ): Promise<SchoolsMutationResult> => {
+            const permissions = new UserPermissions(userToPayload(user))
+            const ctx = { permissions }
+            return mutate(DeleteSchools, { input }, ctx)
+        }
+
+        const expectSchoolsDeleted = async (
+            user: User,
+            schoolsToDelete: School[]
+        ) => {
+            const input = buildDeleteSchoolInputArray(schoolsToDelete)
+            const { schools } = await deleteSchoolsFromResolver(user, input)
+
+            expect(schools).to.have.lengthOf(input.length)
+            schools.forEach((c, i) => {
+                expect(c.id).to.eq(input[i].id)
+                expect(c.status).to.eq(Status.INACTIVE)
+            })
+
+            const schoolsDB = await School.findByIds(input.map((i) => i.id))
+
+            expect(schoolsDB).to.have.lengthOf(input.length)
+            schoolsDB.forEach((cdb) => {
+                const inputRelated = input.find((i) => i.id === cdb.school_id)
+                expect(inputRelated).to.exist
+                expect(cdb.school_id).to.eq(inputRelated?.id)
+                expect(cdb.status).to.eq(Status.INACTIVE)
+            })
+        }
+
+        const expectSchools = async (quantity: number) => {
+            const schools = await School.count({
+                where: { status: Status.ACTIVE },
+            })
+
+            expect(schools).to.eq(quantity)
+        }
+
+        beforeEach(async () => {
+            await createInitialSchools()
+        })
+
+        context('when user is admin', () => {
+            it('should delete any school', async () => {
+                const schoolsToDelete = [school, school2]
+
+                await expectSchoolsDeleted(admin, schoolsToDelete)
+                await expectSchools(0)
+            })
+        })
+
+        context('when user is not admin', () => {
+            let user: User
+            const permError = permErrorMeta(PermissionName.delete_school_20440)
+
+            context('and has permission', () => {
+                it('should delete schools in its organization', async () => {
+                    const schoolsToDelete = [school]
+                    await expectSchoolsDeleted(
+                        userWithPermission,
+                        schoolsToDelete
+                    )
+
+                    expect(schoolsCount - schoolsToDelete.length)
+                })
+            })
+
+            context('and does not have permissions', () => {
+                user = userWithoutPermission
+                context('and has membership', () => {
+                    beforeEach(() => {
+                        user = userWithoutPermission
+                    })
+
+                    it('throws a permission error', async () => {
+                        const schoolsToDelete = [school]
+                        const input = buildDeleteSchoolInputArray(
+                            schoolsToDelete
+                        )
+
+                        const operation = deleteSchoolsFromResolver(user, input)
+
+                        await expect(operation).to.be.rejectedWith(
+                            permError(user, [organization])
+                        )
+
+                        await expectSchools(schoolsCount)
                     })
                 })
             })

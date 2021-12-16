@@ -60,9 +60,9 @@ import { Context } from '../../src/main'
 import faker from 'faker'
 import CategoriesInitializer from '../../src/initializers/categories'
 import { buildDeleteCategoryInputArray } from '../utils/operations/categoryOps'
-import { buildPermissionError } from '../utils/errors'
 import { compareErrors } from '../utils/apiError'
 import { mutate } from '../../src/utils/mutations/commonStructure'
+import { permErrorMeta } from '../utils/errors'
 
 interface CategoryAndSubcategories {
     id: string
@@ -74,11 +74,6 @@ type NoUpdateProp = 'name' | 'subcategories' | 'both'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
-
-const permErrorMeta = (permission: string) => {
-    return (usr: User, orgs?: Organization[]): string =>
-        buildPermissionError(permission, usr, orgs)
-}
 
 const expectAPIErrorCollection = async (
     resolverCall: Promise<any>,
@@ -1387,25 +1382,28 @@ describe('category', () => {
                     })
                 })
 
-                context('and tries to update system categories', () => {
-                    it('throws a permission error', async () => {
-                        const catsToDelete = org2Categories
-                        const input = buildDeleteCategoryInputArray(
-                            catsToDelete
-                        )
+                context(
+                    'and tries to update categories in an organization which does not belong',
+                    () => {
+                        it('throws a permission error', async () => {
+                            const catsToDelete = org2Categories
+                            const input = buildDeleteCategoryInputArray(
+                                catsToDelete
+                            )
 
-                        const operation = deleteCategoriesFromResolver(
-                            user,
-                            input
-                        )
+                            const operation = deleteCategoriesFromResolver(
+                                user,
+                                input
+                            )
 
-                        await expect(operation).to.be.rejectedWith(
-                            permError(user, [org2])
-                        )
+                            await expect(operation).to.be.rejectedWith(
+                                permError(user, [org2])
+                            )
 
-                        await expectCategories(categoriesTotalCount)
-                    })
-                })
+                            await expectCategories(categoriesTotalCount)
+                        })
+                    }
+                )
             })
 
             context('and does not have permissions', () => {

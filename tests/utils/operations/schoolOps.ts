@@ -6,6 +6,8 @@ import { School } from '../../../src/entities/school'
 import { Organization } from '../../../src/entities/organization'
 import { Program } from '../../../src/entities/program'
 import { Class } from '../../../src/entities/class'
+import { DeleteSchoolInput } from '../../../src/types/graphQL/school'
+import gql from 'graphql-tag'
 
 const GET_ORGANIZATION = `
     query myQuery($school_id: ID!) {
@@ -108,6 +110,17 @@ const DELETE_SCHOOL = `
     mutation myMutation($school_id: ID!) {
         school(school_id: $school_id) {
             delete
+        }
+    }
+`
+
+export const DELETE_SCHOOLS = gql`
+    mutation deleteSchools($input: [DeleteSchoolInput!]!) {
+        deleteSchools(input: $input) {
+            schools {
+                id
+                name
+            }
         }
     }
 `
@@ -251,6 +264,14 @@ export async function deleteSchool(
     const res = await gqlTry(operation)
     const gqlSchool = res.data?.school.delete as boolean
     return gqlSchool
+}
+
+export function buildDeleteSchoolInputArray(
+    schools: School[]
+): DeleteSchoolInput[] {
+    return Array.from(schools, (c) => {
+        return { id: c.school_id }
+    })
 }
 
 export async function listPrograms(
