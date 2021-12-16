@@ -13,12 +13,19 @@ definitions:
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
   steps:
+      - step: &dependencies
+          name: "Install NPM dependencies"
+          caches:
+            - node
+          script:
+            - npm ci
+          artifacts:
+            - node_modules/**
       - step: &checks
           name: "static checks"
           caches:
             - node
           script:
-            - npm install
             - npm run prettier-check
             - npm run lint
             - if test $BITBUCKET_BRANCH -eq "master";  then npm run commitlint-check -- --from=HEAD~1; else npm run commitlint-check -- --from=origin/master; fi
@@ -29,7 +36,6 @@ definitions:
           caches:
             - node
           script:
-            - npm install
             - npm test
       - step: &acceptance
           name: "Acceptance tests"
@@ -40,7 +46,6 @@ definitions:
           script:
             - curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             - chmod +x /usr/local/bin/docker-compose
-            - npm install
             - docker-compose up -d && sleep 20
             - docker-compose ps
             - npm run test:acceptance
@@ -76,11 +81,13 @@ definitions:
 
 pipelines:
   default:
+    - step: *dependencies
     - step: *tests
     - step: *acceptance
 
   pull-requests:
     '**': # This runs as default for any branch not elsewhere defined.
+    - step: *dependencies
     - step: *checks
     - step:
         name: "Check PR title format"
@@ -93,11 +100,13 @@ pipelines:
 
   tags:
       v*:
+        - step: *dependencies
         - step: *tests
         - step: *acceptance
         - step: *docker
   branches:
     master:
+      - step: *dependencies
       - step: *checks
       - step: *tests
       - step: *acceptance

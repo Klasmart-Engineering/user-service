@@ -5,8 +5,12 @@ import * as Sentry from '@sentry/node'
 import { UserPermissions } from './permissions/userPermissions'
 import express from 'express'
 import { IDataLoaders } from './loaders/setup'
-import logger, { Logger } from './logging'
+import logger from './logging'
 import { TokenPayload } from './token'
+import { KLLogger, NewRelicLogDeliveryAgent } from 'kidsloop-nodejs-logger'
+
+NewRelicLogDeliveryAgent.initialize()
+NewRelicLogDeliveryAgent.configure({})
 
 const port = process.env.PORT || 8080
 
@@ -14,7 +18,7 @@ export interface Context {
     token: TokenPayload
     res: express.Response
     req: express.Request
-    logger: Logger
+    logger: KLLogger
     permissions: UserPermissions
     loaders: IDataLoaders
     complexity?: { limit: number; score: number }
@@ -39,6 +43,6 @@ initApp()
     })
     .catch((e) => {
         Sentry.captureException(e)
-        logger.fatal(e)
+        logger.error(e)
         process.exit(-1)
     })

@@ -4,21 +4,18 @@ import escapeStringRegexp from 'escape-string-regexp'
 import express from 'express'
 import expressPlayground from 'graphql-playground-middleware-express'
 import { graphqlUploadExpress } from 'graphql-upload'
+import {
+    correlationMiddleware,
+    DEFAULT_CORRELATION_HEADER,
+} from 'kidsloop-nodejs-logger'
 import path from 'path'
 import appPackage from '../package.json'
-import logger, { Logger } from './logging'
-import {
-    correlationIdMiddleware,
-    CORRELATION_ID_HEADER,
-    loggerMiddlewareFactory,
-} from './middlewares'
 import { Model } from './model'
 import { checkIssuerAuthorization, validateToken } from './token'
 import { createServer } from './utils/createServer'
 
 interface AppOptions {
     routePrefix?: string
-    logger?: Logger
 }
 
 export const DOMAIN = process.env.DOMAIN || 'kidsloop.net'
@@ -32,7 +29,11 @@ const domainRegex = new RegExp(
 export const ROUTE_PREFIX = process.env.ROUTE_PREFIX ?? ''
 
 const corsOptions: CorsOptions = {
-    allowedHeaders: ['Authorization', 'Content-Type', CORRELATION_ID_HEADER],
+    allowedHeaders: [
+        'Authorization',
+        'Content-Type',
+        DEFAULT_CORRELATION_HEADER,
+    ],
     credentials: true,
     maxAge: 60 * 60 * 24, // 1 day
     origin: domainRegex,
@@ -40,7 +41,6 @@ const corsOptions: CorsOptions = {
 
 const defaultExpressOptions: Required<AppOptions> = {
     routePrefix: ROUTE_PREFIX,
-    logger,
 }
 
 export function createExpressApp(opts: AppOptions = {}): express.Express {
@@ -52,8 +52,8 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(graphqlUploadExpress({ maxFileSize: 2000000, maxFiles: 1 }))
     app.use(cookieParser())
     app.use(express.json())
-    app.use(correlationIdMiddleware)
-    app.use(loggerMiddlewareFactory(options.logger))
+    app.use(correlationMiddleware())
+
     app.use(checkIssuerAuthorization)
     app.use(cors(corsOptions))
 

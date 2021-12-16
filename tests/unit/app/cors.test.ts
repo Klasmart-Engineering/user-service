@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import http from 'http'
 import request from 'supertest'
 import { createExpressApp, DOMAIN } from '../../../src/app'
-import { CORRELATION_ID_HEADER } from '../../../src/middlewares/correlationId'
+import { DEFAULT_CORRELATION_HEADER } from 'kidsloop-nodejs-logger'
 
 context('cors', () => {
     let server: http.Server
@@ -47,7 +47,7 @@ context('cors', () => {
             .options('')
             .expect(
                 'Access-Control-Allow-Headers',
-                `Authorization,Content-Type,${CORRELATION_ID_HEADER}`
+                `Authorization,Content-Type,${DEFAULT_CORRELATION_HEADER}`
             )
             .expect('Access-Control-Allow-Credentials', 'true')
             .expect('Access-Control-Max-Age', `${60 * 60 * 24}`)

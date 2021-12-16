@@ -67,11 +67,7 @@ async function createContext({
         permissions,
         res,
         req,
-        // prefer the request logger as it has a correlationId
-        // but if it's not set, use the general logger
-        // this is the case in tests where we do not setup the whole
-        // express app
-        logger: req.logger ?? logger,
+        logger,
         loaders: createContextLazyLoaders(permissions),
     }
 }

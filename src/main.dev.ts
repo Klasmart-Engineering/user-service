@@ -33,6 +33,6 @@ initApp()
         })
     })
     .catch((e) => {
-        logger.fatal(e)
+        logger.error(e)
         process.exit(-1)
     })

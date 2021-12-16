@@ -21,6 +21,5 @@ docker-compose.yml
 coverage
 dist
 documents
-**/node_modules
 scripts
 tests

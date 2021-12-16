@@ -95,7 +95,7 @@ export class Model {
                 synchronize: false,
                 logger:
                     process.env.DATABASE_LOGGING === 'true'
-                        ? new TypeORMLogger(logger)
+                        ? new TypeORMLogger()
                         : undefined,
                 entities: ['src/entities/*{.ts,.js}'],
                 migrations: ['migrations/*{.ts,.js}'],

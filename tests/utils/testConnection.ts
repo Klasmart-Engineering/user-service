@@ -1,5 +1,5 @@
 import { Connection, createConnection, QueryRunner } from 'typeorm'
-import logger, { TypeORMLogger } from '../../src/logging'
+import { TypeORMLogger } from '../../src/logging'
 
 class QueryMetricsLogger extends TypeORMLogger {
     private counter = 0
@@ -44,7 +44,7 @@ export const createTestConnection = async ({
         synchronize: synchronize,
         dropSchema: drop,
         entities: ['src/entities/*{.ts,.js}'],
-        logger: new QueryMetricsLogger(logger),
+        logger: new QueryMetricsLogger(),
         replication: {
             master: {
                 url:
@@ -77,6 +77,6 @@ export const createMigrationsTestConnection = async (
         dropSchema: drop,
         migrations: ['migrations/*{.ts,.js}'],
         entities: ['src/entities/*{.ts,.js}'],
-        logger: new QueryMetricsLogger(logger),
+        logger: new QueryMetricsLogger(),
     }) as Promise<TestConnection>
 }
