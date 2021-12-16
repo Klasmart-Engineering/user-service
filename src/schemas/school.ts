@@ -56,7 +56,7 @@ const typeDefs = gql`
         editPrograms(program_ids: [ID!]): [Program]
         delete(_: Int): Boolean
             @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/HhhZ2uD4"
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
             )
     }
     type SchoolMembership {
