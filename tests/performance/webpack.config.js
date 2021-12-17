@@ -19,7 +19,8 @@ module.exports = {
         getPaginatedUsersFilter: `./getPaginatedUsersFilters.ts`,
         getPaginatedUsersMixed: `./getPaginatedUsersMixed.ts`,
         scenario9ASchoolAdmin: `./Scenarios/Scenario 9/scenario9ASchoolAdmin.ts`,
-        liveClassPopulate: `./liveClassPopulate.ts`
+        liveClassPopulate: `./liveClassPopulate.ts`,
+        parallelScheduleSearch: `./parallelScheduleSearch.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),
