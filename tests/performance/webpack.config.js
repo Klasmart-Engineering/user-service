@@ -20,7 +20,16 @@ module.exports = {
         getPaginatedUsersMixed: `./getPaginatedUsersMixed.ts`,
         scenario9ASchoolAdmin: `./Scenarios/Scenario 9/scenario9ASchoolAdmin.ts`,
         liveClassPopulate: `./liveClassPopulate.ts`,
-        parallelScheduleSearch: `./parallelScheduleSearch.ts`
+        parallelScheduleSearch: `./parallelScheduleSearch.ts`,
+        hitLandingHome1: `./hitLandingHome1.ts`,
+        hitLandingHome2: `./hitLandingHome2.ts`,
+        hitLandingHome3: `./hitLandingHome3.ts`,
+        hitLandingHome4: `./hitLandingHome4.ts`,
+        hitLandingHome5: `./hitLandingHome5.ts`,
+        hitLandingHome6: `./hitLandingHome6.ts`,
+        hitLandingHome7: `./hitLandingHome7.ts`,
+        hitLandingSchedule1: `./hitLandingSchedule1.ts`,
+        hitLandingSchedule2: `./hitLandingSchedule2.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),

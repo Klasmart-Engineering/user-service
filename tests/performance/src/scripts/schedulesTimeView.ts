@@ -21,7 +21,8 @@ export default function (roleType?: string) {
             "class_types": [],
             "class_ids": [],
             "subject_ids": [],
-            "program_ids": []
+            "program_ids": [],
+            "user_id": []
         }
     );
 

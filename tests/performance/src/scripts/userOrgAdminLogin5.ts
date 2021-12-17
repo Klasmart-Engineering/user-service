@@ -1,14 +1,14 @@
 import { sleep } from "k6";
 import switchUser from "./switchUser";
 import testLogin from "./testLogin";
-import hitHomeRequest1 from "./hitHomeRequest1"
+import hitHomeRequest5 from "./hitHomeRequest5";
 
 export default function() {
     testLogin();
     sleep(2);
     switchUser();
     sleep(1);
-    hitHomeRequest1('Org admin');
-    
+    hitHomeRequest5('Org admin');
+
     
 }

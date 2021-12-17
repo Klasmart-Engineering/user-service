@@ -302,3 +302,44 @@ export const getPaginatedOrganizationUsers = `
         }
     }
 `;
+
+export const meQueryReq1 = `{ me {
+    avatar
+	email
+	phone
+	user_id
+	username
+	given_name
+	family_name
+    }
+}`;
+
+export const getUserNode = `{ getUserNode($id: ID!, $organizationId: UUID!) {
+    userNode(id: $id) {
+        id
+        givenName
+        familyName
+        gender
+        dateOfBirth
+        roles {
+          id
+          name
+          organizationId
+          schoolId
+          status
+        }
+        contactInfo {
+          email
+          phone
+        }
+        organizationMembershipsConnection(count: 1, filter: {organizationId: {value: $organizationId, operator: eq}}) {
+          edges {
+            node {
+              userId
+              shortCode
+            }
+          }
+        }
+      }
+    }
+}`;
