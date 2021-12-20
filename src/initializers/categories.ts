@@ -737,6 +737,66 @@ export class CategoriesInitializer {
                 '144a3478-1946-4460-a965-0d7d74e63d65',
             ],
         },
+        {
+            id: '0f4810e7-5ce1-47e1-8aeb-43b73f15b007',
+            name: 'Speech & Language Skills',
+            subcategories: [
+                'c06b848d-8769-44e9-8dc7-929588cec0bc', // Speaking
+                'ddf87dff-1eb0-4971-9b27-2aaa534f34b1', // Listening
+                '843e4fea-7f4d-4746-87ff-693f5a44b467', // Communication
+                '38c17083-2ef7-402b-824a-20c38e3c57f4', // Phonological Awareness & Phonics
+                '2d1152a3-fb03-4c4e-aeba-98856c3241bd', // Vocabulary
+                '644ba535-904c-4919-8b8c-688df2b6f7ee', // Emergent Reading
+                '9b955fb9-8eda-4469-bd31-4e8f91192663', // Emergent Writing
+                'b2cc7a69-4e64-4e97-9587-0078dccd845a', // Language Support
+            ],
+        },
+        {
+            id: 'd5995392-11cb-4d28-a96d-8bdcd3f0436b',
+            name: 'Fine Motor Skills',
+            subcategories: [
+                '7d3b5cb0-d9d2-42e8-b1f7-f58743edffdf', // Sensory Play
+                'bf89c192-93dd-4192-97ab-f37198548ead', // Hand-Eye Coordination
+                '8eb1ba6c-4bac-457c-a798-821ddafcedee', // Self-Care
+                '223f3157-feb2-41ea-8c03-8a355b67343c', // Academic Skills
+                '94a39407-035c-46e0-a039-357a33e9723a', // Learning Tools
+            ],
+        },
+        {
+            id: '94013867-72d1-44e2-a43d-7336818f35d0',
+            name: 'Gross Motor Skills',
+            subcategories: ['144a3478-1946-4460-a965-0d7d74e63d65'], // Physical Coordination
+        },
+        {
+            id: '2b9d6317-298b-4aa5-9aea-aed56bd07823',
+            name: 'Cognitive Skills',
+            subcategories: [
+                '6ff4c1af-252b-4e07-9537-94eaa20e0958', // Logic & Reasoning
+                '1a99684a-ff8c-44f4-9793-de96cd4ce0a4', // Memory
+                'f385c1ec-6cfa-4f49-a219-fd28374cf2a6', // Visual
+            ],
+        },
+        {
+            id: 'fc447234-af24-4768-b617-ac1b80ebae9b',
+            name: 'Social & Emotional Skills',
+            subcategories: ['e754e22c-fd2a-43f3-a4ec-1904848f9bd6'], // Personal Development
+        },
+        {
+            id: 'd68c6c5d-c739-46d8-be70-e70d6c565949',
+            name: 'Core Subjects',
+            subcategories: [
+                'cd06e622-a323-40f3-8409-5384395e00d2', // Science
+                '6fb79402-2fb6-4415-874c-338c949332ed', // Art
+                '49e73e4f-8ffc-47e3-9b87-0f9686d361d7', // Technology
+                '81b09f61-4509-4ce0-b099-c208e62870f9', // Math
+                '5b405510-384a-4721-a526-e12b3cbf2092', // Engineering
+                'f4b07251-1d67-4a84-bcda-86c71cbf9cfd', // Social Studies
+                '4114f381-a7c5-4e88-be84-2bef4eb04ad0', // Health
+                '9a52fb0a-6ce8-45df-92a0-f25b5d3d2344', // Music
+                '852c3495-1ced-4580-a584-9d475217f3d5', // Character Education
+                '3b148168-31d0-4bef-9152-63c3ff516180', // Miscellaneous
+            ],
+        },
     ]
 
     public async run() {

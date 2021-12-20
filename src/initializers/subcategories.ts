@@ -307,6 +307,38 @@ export class SubcategoriesInitializer {
             id: '5fff3596-42e9-416d-a2d2-29bc885fbb76',
             name: 'Social Emotional',
         },
+        {
+            id: '38c17083-2ef7-402b-824a-20c38e3c57f4',
+            name: 'Phonological Awareness & Phonics',
+        },
+        {
+            id: '7d3b5cb0-d9d2-42e8-b1f7-f58743edffdf',
+            name: 'Sensory Play',
+        },
+        {
+            id: '8eb1ba6c-4bac-457c-a798-821ddafcedee',
+            name: 'Self-Care',
+        },
+        {
+            id: '223f3157-feb2-41ea-8c03-8a355b67343c',
+            name: 'Academic Skills',
+        },
+        {
+            id: '94a39407-035c-46e0-a039-357a33e9723a',
+            name: 'Learning Tools',
+        },
+        {
+            id: '6ff4c1af-252b-4e07-9537-94eaa20e0958',
+            name: 'Logic & Reasoning',
+        },
+        {
+            id: '1a99684a-ff8c-44f4-9793-de96cd4ce0a4',
+            name: 'Memory',
+        },
+        {
+            id: 'e754e22c-fd2a-43f3-a4ec-1904848f9bd6',
+            name: 'Personal Development',
+        },
     ]
 
     public async run() {

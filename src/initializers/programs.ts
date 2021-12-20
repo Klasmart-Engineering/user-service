@@ -184,6 +184,13 @@ export class ProgramsInitializer {
                 '9d3e591d-06a6-4fc4-9714-cf155a15b415',
             ],
         },
+        {
+            id: '3f98d4a7-6ceb-4a9a-b13a-4f4307ff64d7',
+            name: 'C ECE',
+            subjects: ['51189ac9-f206-469c-941c-3cda28af8788'], // ESL/EFL
+            age_ranges: ['7965d220-619d-400f-8cab-42bd98c7d23c'], // 3-4
+            grades: ['4b9c1e70-0178-4c68-897b-dac052a38a80'], // Preschool
+        },
     ]
 
     public async run() {

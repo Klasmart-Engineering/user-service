@@ -91,6 +91,12 @@ export class GradesInitializer {
             progress_from_grade: '100f774a-3d7e-4be5-9c2c-ae70f40f0b50',
             progress_to_grade: '98461ca1-06a1-432a-97d0-4e1dff33e1a5',
         },
+        {
+            id: '4b9c1e70-0178-4c68-897b-dac052a38a80',
+            name: 'Preschool',
+            progress_from_grade: '98461ca1-06a1-432a-97d0-4e1dff33e1a5', // None Specified
+            progress_to_grade: 'a9f0217d-f7ec-4add-950d-4e8986ab2c82', // Kindergarten
+        },
     ]
 
     public async run() {
