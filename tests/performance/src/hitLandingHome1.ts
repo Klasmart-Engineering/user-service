@@ -15,7 +15,7 @@ https://api.loadtest.kidsloop.live/user/
 */
 
 export const options: Options = {
-    vus: 1,
+    vus: 300,
     duration: '1m',
 };
 

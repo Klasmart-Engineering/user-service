@@ -1,6 +1,10 @@
-import { sleep } from 'k6';
+import http from 'k6/http';
 import { Options } from 'k6/options';
-import userOrgAdminLogin5 from './scripts/userOrgAdminLogin5';
+import loginSetup from './utils/loginSetup';
+import hitHomeRequest5 from './scripts/hitHomeRequest5';
+import testLogin from './scripts/testLogin';
+import switchUser from './scripts/switchUser';
+import { sleep } from 'k6';
 
 /*
 
@@ -24,8 +28,36 @@ export const options: Options = {
     duration: '1m',
 };
 
-export default function() {
-    userOrgAdminLogin5();
-    sleep(1);
-   
+export function setup() {
+    let data = {};
+    const orgAdminLoginPayload = {
+        deviceId: "webpage",
+        deviceName: "k6",
+        email: process.env.EMAIL_ORG_ADMIN_1 as string,
+        pw: process.env.PW_ORG_ADMIN_1 as string,
+    };
+    
+    const orgAdminLoginData = loginSetup(orgAdminLoginPayload);
+    data = { 
+        ...data, 
+        [`orgAdmin`]: orgAdminLoginData,
+    };    
+
+    return data;
+}
+
+export default function(data: { [key: string]: { res: any, userId: string }}) {
+    
+    const jar = http.cookieJar();
+    jar.set(process.env.SERVICE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
+    jar.set(process.env.SERVICE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
+
+    jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
+    jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
+    
+    testLogin();
+    sleep(2);
+    switchUser();
+    sleep(2)
+    hitHomeRequest5('Org admin');
 }

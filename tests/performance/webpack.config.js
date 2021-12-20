@@ -28,6 +28,7 @@ module.exports = {
         hitLandingHome7: `./hitLandingHome7.ts`,
         hitLandingSchedule1: `./hitLandingSchedule1.ts`,
         hitLandingSchedule2: `./hitLandingSchedule2.ts`,
+        hitLandingSchedule3: `./hitLandingSchedule3.ts`,
         liveClassPopulate: `./liveClassPopulate.ts`
     },
     output: {

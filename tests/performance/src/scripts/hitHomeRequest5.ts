@@ -17,15 +17,16 @@ export default function (roleType?: string) {
     const userPayload = JSON.stringify(
         {
             "view_type": "full_view",
-            "page": 9,
+            "page": 1,
             "page_size": 20,
             "time_at": 0,
             "start_at_ge": 1639623600,
-            "end_at_le": 1640919540,
+            "end_at_le": 1641005940,
             "time_zone_offset": -10800,
             "order_by": "start_at",
-            "time_boundary": "union"
+            "time_boundary": "union",
         }
+
     );
     
     const res = http.post(`${process.env.CMS_TIME_VIEW_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);

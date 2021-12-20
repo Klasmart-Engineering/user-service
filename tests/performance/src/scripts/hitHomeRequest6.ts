@@ -17,7 +17,6 @@ export default function (roleType?: string) {
 
     const res = http.get(`${process.env.CMS_CONTENT_FOLDER_URL}?content_type=2&order_by=-create_at&org_id=${process.env.ORG_ID}&page=1&page_size=100&path=&publish_status=published` as string, params);
     
-    console.log(JSON.stringify(res))
 
     check(res, {
         'status is 200 meQueryReq6': () => res.status === 200,
