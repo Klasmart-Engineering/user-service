@@ -20,7 +20,7 @@ interface AppOptions {
 
 export const DOMAIN = process.env.DOMAIN || 'kidsloop.net'
 if (!DOMAIN) {
-    throw Error(`The DOMAIN enviroment variable was not set`)
+    throw Error(`The DOMAIN environment variable was not set`)
 }
 const domainRegex = new RegExp(
     `^https://(.*\\.)?${escapeStringRegexp(DOMAIN)}(:\\d{1,5})?$`

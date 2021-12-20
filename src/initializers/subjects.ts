@@ -152,6 +152,18 @@ export class SubjectsInitializer {
                 'dafb0af8-877f-4af4-99b1-79d1a67de059',
             ],
         },
+        {
+            id: '51189ac9-f206-469c-941c-3cda28af8788',
+            name: 'ESL/EFL',
+            categories: [
+                '0f4810e7-5ce1-47e1-8aeb-43b73f15b007', // Speech & Language Skills
+                'd5995392-11cb-4d28-a96d-8bdcd3f0436b', // Fine Motor Skills
+                '94013867-72d1-44e2-a43d-7336818f35d0', // Gross Motor Skills
+                '2b9d6317-298b-4aa5-9aea-aed56bd07823', // Cognitive Skills
+                'fc447234-af24-4768-b617-ac1b80ebae9b', // Social & Emotional Skills
+                'd68c6c5d-c739-46d8-be70-e70d6c565949', // Core Subjects
+            ],
+        },
     ]
 
     public async run() {
