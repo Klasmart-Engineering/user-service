@@ -99,10 +99,7 @@ import {
 } from '../../src/operations/organization'
 import { Headers } from 'node-mocks-http'
 import { expectAPIError, expectToBeAPIErrorCollection } from '../utils/apiError'
-import {
-    createOrganizationMembership,
-    createOrganizationMemberships,
-} from '../factories/organizationMembership.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import {
     AddUsersToOrganizationInput,
     OrganizationsMutationResult,
@@ -7182,39 +7179,6 @@ describe('organization', () => {
                         await expect(addUsers()).to.be.fulfilled
                         expect(connection.logger.count).to.equal(10) // preload: 4, authorize: 1, save: 1 per membership
                     })
-
-                    context('when removing 1 user then 50 users', () => {
-                        it('makes the same number of database calls', async () => {
-                            input = [
-                                {
-                                    organizationId: orgs[0].organization_id,
-                                    userIds: [users[0].user_id],
-                                    organizationRoleIds: [roles[0].role_id],
-                                },
-                            ]
-                            connection.logger.reset()
-                            await expect(addUsers()).to.be.fulfilled
-                            const baseCount = connection.logger.count
-
-                            const fiftyUsers = createUsers(50)
-                            await connection.manager.save([
-                                ...fiftyUsers,
-                                ...roles,
-                            ])
-                            input = [
-                                {
-                                    organizationId: orgs[0].organization_id,
-                                    userIds: fiftyUsers.map((u) => u.user_id),
-                                    organizationRoleIds: roles.map(
-                                        (r) => r.role_id
-                                    ),
-                                },
-                            ]
-                            connection.logger.reset()
-                            await expect(addUsers()).to.be.fulfilled
-                            expect(connection.logger.count).to.equal(baseCount)
-                        })
-                    })
                 })
 
                 context('and one of the users was already added', () => {
@@ -7475,37 +7439,6 @@ describe('organization', () => {
                         connection.logger.reset()
                         await expect(removeUsers()).to.be.fulfilled
                         expect(connection.logger.count).to.equal(5) // preload: 3, authorize: 1, save: 1
-                    })
-
-                    context('when removing 1 user then 50 users', () => {
-                        it('makes the same number of database calls', async () => {
-                            input = [
-                                {
-                                    organizationId: orgs[0].organization_id,
-                                    userIds: [users[0].user_id],
-                                },
-                            ]
-                            connection.logger.reset()
-                            await expect(removeUsers()).to.be.fulfilled
-                            const baseCount = connection.logger.count
-
-                            const fiftyUsers = await User.save(createUsers(50))
-                            await OrganizationMembership.save(
-                                createOrganizationMemberships(
-                                    fiftyUsers,
-                                    orgs[0]
-                                )
-                            )
-                            input = [
-                                {
-                                    organizationId: orgs[0].organization_id,
-                                    userIds: fiftyUsers.map((u) => u.user_id),
-                                },
-                            ]
-                            connection.logger.reset()
-                            await expect(removeUsers()).to.be.fulfilled
-                            expect(connection.logger.count).to.equal(baseCount)
-                        })
                     })
                 })
 
