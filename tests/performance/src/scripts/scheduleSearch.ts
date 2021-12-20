@@ -1,5 +1,3 @@
-// https://kl2.loadtest.kidsloop.live/v1/schedules?org_id=c611ece6-cd8c-4bcc-8975-fa0a8163ee7b
-
 import generateClassPayload from "../utils/generateClassPayload";
 import { check } from 'k6';
 import http from 'k6/http';
@@ -11,8 +9,13 @@ const params = {
 };
 
 export default function () {
-    const payload = JSON.stringify(generateClassPayload());
-    const res = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, payload, params);
+    const res = http.get(`${process.env.SCHEDULES_URL}?
+        teacher_name=edgardo&page=1
+        &page_size=10&time_zone_offset=-21600&start_at=${new Date().getTime() / 1000}
+        &order_by=schedule_at
+        &org_id=${process.env.ORG_ID}`, params);
+
+    console.log(JSON.stringify(res));
 
     check(res, {
         'CREATE LIVE CLASS status is 200': () => res.status === 200,
