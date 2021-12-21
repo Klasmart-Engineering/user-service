@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
-import hitHomeRequest4 from './scripts/endPointHomeRequest4';
+import endPointHomeRequest4 from './scripts/endPointHomeRequest4';
 
 /*
 
@@ -42,5 +42,5 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
     jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
     jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
     
-    hitHomeRequest4('Org admin');
+    endPointHomeRequest4('Org admin');
 }
