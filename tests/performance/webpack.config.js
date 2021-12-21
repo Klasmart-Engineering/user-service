@@ -34,7 +34,7 @@ module.exports = {
         testEndPointLandingSchedule4: `./testEndPointLandingSchedule4.ts`,
         testEndPointLandingSchedule5: `./testEndPointLandingSchedule5.ts`,
         testEndPointLandingSchedule6: `./testEndPointLandingSchedule6.ts`,
-        testEndPointLandingSchedule7: `./testEndPointLandingchedule7.ts`,
+        testEndPointLandingSchedule7: `./testEndPointLandingSchedule7.ts`,
         testEndPointLandingSchedule8: `./testEndPointLandingSchedule8.ts`,
         liveClassPopulate: `./liveClassPopulate.ts`,
         parallelScheduleFilter: `./parallelScheduleFilter.ts`
