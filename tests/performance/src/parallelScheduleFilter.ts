@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import scheduleSearch from "./scripts/scheduleSearch";
+import scheduleFilter from "./scripts/scheduleFilter";
 import generateClassPayload from './utils/generateClassPayload';
 import loginSetup from './utils/loginSetup';
 
@@ -59,5 +59,5 @@ export function orgAdmin(data: { [key: string]: { res: any, userId: string }}) {
 
     jar.set(process.env.CMS_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
     jar.set(process.env.CMS_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
-    scheduleSearch();
+    scheduleFilter();
 }
