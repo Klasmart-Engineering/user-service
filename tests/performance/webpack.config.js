@@ -21,7 +21,7 @@ module.exports = {
         scenario9ASchoolAdmin: `./Scenarios/Scenario 9/scenario9ASchoolAdmin.ts`,
         liveClassPopulate: `./liveClassPopulate.ts`,
         parallelScheduleSearch: `./parallelScheduleSearch.ts`,
-        testEndPointLandingHome1: `./hitLandingHome1.ts`,
+        testEndPointLandingHome1: `./testEndPointLandingHome1.ts`,
         testEndPointLandingHome2: `./testEndPointLandingHome2.ts`,
         testEndPointLandingHome3: `./testEndPointLandingHome3.ts`,
         testEndPointLandingHome4: `./testEndPointLandingHome4.ts`,
@@ -36,7 +36,9 @@ module.exports = {
         testEndPointLandingSchedule6: `./testEndPointLandingSchedule6.ts`,
         testEndPointLandingSchedule7: `./testEndPointLandingchedule7.ts`,
         testEndPointLandingSchedule8: `./testEndPointLandingSchedule8.ts`,
-        liveClassPopulate: `./liveClassPopulate.ts`
+        liveClassPopulate: `./liveClassPopulate.ts`,
+        parallelScheduleFilter: `./parallelScheduleFilter.ts`
+      
     },
     output: {
         path: path.join(__dirname, `dist`),
