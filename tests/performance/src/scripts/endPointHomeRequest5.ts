@@ -3,10 +3,6 @@ import http from 'k6/http';
 import { Options } from 'k6/options';
 
 
-export const options:Options = {
-    vus: 1,
-};
-
 const params = {
     headers: {
         'Content-Type': `application/json`,
@@ -33,7 +29,7 @@ export default function (roleType?: string) {
     
     check(res, {
         'status is 200 meQueryReq5': () => res.status === 200,
-        '"meQueryReq5" query returns data': (r) => JSON.parse(r.body as string).data ?? false, // como verifico el array
+        '"meQueryReq5" query returns data': (r) => JSON.parse(r.body as string).data !== undefined, // como verifico el array
 
     }, {
         userRoleType: roleType

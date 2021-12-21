@@ -1,22 +1,13 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
-import hitHomeRequest6 from './scripts/hitHomeRequest6';
-import switchUser from './scripts/switchUser';
-import { sleep } from 'k6';
+import hitHomeRequest4 from './scripts/endPointHomeRequest4';
 
 /*
 
 Script that evaluates the endPoint:
-https://cms.loadtest.kidsloop.live/v1/contents_folders
-   Params:
-    content_type: 2
-    order_by: -create_at
-    org_id: 360b46fe-3579-42d4-9a39-dc48726d033f
-    page: 1
-    page_size: 100
-    path: 
-    publish_status:
+https://kl2.loadtest.kidsloop.live/v1/schedules_time_view?end_at_le=1640746740&org_id=360b46fe-3579-42d4-9a39-dc48726d033f&start_at_ge=1639450800&time_zone_offset=-10800&view_type=full_view
+
 */
 
 export const options: Options = {
@@ -51,8 +42,5 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
     jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
     jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
     
-    
-    switchUser();
-    sleep(1);
-    hitHomeRequest6('Org admin');
+    hitHomeRequest4('Org admin');
 }

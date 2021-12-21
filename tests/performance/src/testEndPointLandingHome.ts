@@ -1,21 +1,30 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
-import hitHomeRequest1 from "./scripts/hitHomeRequest1";
+import hitHomeRequest5 from './scripts/endPointHomeRequest5';
+import testLogin from './scripts/testLogin';
+import switchUser from './scripts/switchUser';
+import { sleep } from 'k6';
 
 /*
 
 Script that evaluates the endPoint:
-https://api.loadtest.kidsloop.live/user/
-    {
-        "operationName": "me",
-        "variables": {},
-
+https://cms.loadtest.kidsloop.live/v1/schedules_time_view/list
+   {
+    "view_type": "full_view",
+    "page": 1,
+    "page_size": 20,
+    "time_at": 0,
+    "start_at_ge": 1639623600,
+    "end_at_le": 1640919540,
+    "time_zone_offset": -10800,
+    "order_by": "start_at",
+    "time_boundary": "union"
     }
 */
 
 export const options: Options = {
-    vus: 300,
+    vus: 1,
     duration: '1m',
 };
 
@@ -46,5 +55,8 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
     jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
     jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
     
-    hitHomeRequest1('Org admin');
+    jar.set(process.env.CMS_TIME_VIEW_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
+    jar.set(process.env.CMS_TIME_VIEW_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
+
+    hitHomeRequest5('Org admin');
 }

@@ -3,12 +3,6 @@ import http from 'k6/http';
 import { Options } from 'k6/options';
 import {getUserQuery, meQueryReq1 } from '../queries/users';
 
-
-
-export const options:Options = {
-    vus: 1,
-};
-
 const params = {
     headers: {
         'Content-Type': `application/json`,

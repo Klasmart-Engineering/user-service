@@ -1,17 +1,13 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
-import hitHomeRequest7 from "./scripts/hitHomeRequest7";
+import hitHomeRequest3 from './scripts/endPointHomeRequest3';
 
 /*
 
 Script that evaluates the endPoint:
-https://api.loadtest.kidsloop.live/user/
-    
-    operationName:getUserNode
+https://kl2.loadtest.kidsloop.live/v1/assessments_summary?org_id=360b46fe-3579-42d4-9a39-dc48726d033f
 
-    query: getUserNode
-   
 */
 
 export const options: Options = {
@@ -38,6 +34,7 @@ export function setup() {
     return data;
 }
 
+
 export default function(data: { [key: string]: { res: any, userId: string }}) {
     
     const jar = http.cookieJar();
@@ -47,5 +44,5 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
     jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
     jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
     
-    hitHomeRequest7('Org admin');
+    hitHomeRequest3('Org admin');
 }

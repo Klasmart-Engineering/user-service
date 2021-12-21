@@ -4,11 +4,6 @@ import { Options } from 'k6/options';
 import {getUserQuery, meQueryReq1 } from '../queries/users';
 
 
-
-export const options:Options = {
-    vus: 1,
-};
-
 const params = {
     headers: {
         'Content-Type': `application/json`,
@@ -16,10 +11,10 @@ const params = {
 };
 
 export default function (roleType?: string) {
-    const res = http.get(`${process.env.SCHEDULES_TIME_VIEW_URL_ONLY}?end_at_le=1640746740&org_id=${process.env.ORG_ID}&start_at_ge=1639450800&time_zone_offset=-10800&view_type=full_view` as string, params);
+    const res = http.get(`${process.env.ASSESSMENT_SUMMARY_URL}?org_id=${process.env.ORG_ID}` as string, params);
 
     check(res, {
-        'status is 200 meQueryReq4': () => res.status === 200,
+        'status is 200 meQueryReq3': () => res.status === 200,
     }, {
         userRoleType: roleType
     });

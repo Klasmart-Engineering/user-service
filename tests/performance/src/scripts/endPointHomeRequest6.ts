@@ -3,9 +3,6 @@ import http from 'k6/http';
 import { Options } from 'k6/options';
 import { stringify } from 'uuid';
 
-export const options:Options = {
-    vus: 1,
-};
 
 const params = {
     headers: {

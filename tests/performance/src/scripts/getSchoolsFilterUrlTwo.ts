@@ -32,7 +32,7 @@ export default function (roleType?: string) {
         query: getSchoolsFilterList,
     });
 
-    const res = http.post(`${process.env.SERVICE_URL}//user?org_id=${process.env.ORG_ID}` as string, userPayload, params);
+    const res = http.post(`${process.env.SERVICE_URL}/user/?org_id=${process.env.ORG_ID}` as string, userPayload, params);
 
     check(res, {
         '"Get school filter list URL TWO " status is 200': () => res.status === 200,

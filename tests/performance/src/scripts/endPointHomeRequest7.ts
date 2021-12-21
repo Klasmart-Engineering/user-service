@@ -3,27 +3,23 @@ import http from 'k6/http';
 import { Options } from 'k6/options';
 import { getUserNode } from '../queries/users';
 
-export const options:Options = {
-    vus: 1,
-};
-
 const params = {
     headers: {
         'Content-Type': `application/json`,
     },
 };
 
-const userPayload = JSON.stringify({
+/* const userPayload = JSON.stringify({
     operationName: "getUserNode",
     variables: {},
     query: getUserNode
-});
+}); */
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
         operationName: "getUserNode",
         variables: {},
-    query: getUserNode
+        query: getUserNode
     });
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);

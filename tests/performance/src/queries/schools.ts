@@ -85,36 +85,54 @@ export const meMembership =`
 
 // Query for meMemership 2 used in the Schedule section
 export const meMembership2 =`
-    query meMembership2 { 
+    query meMembership { 
         me {
             membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
-                attend_live_class_as_a_student_187: checkAllowed(
-                permission_name: "attend_live_class_as_a_student_187")
+                attend_live_class_as_a_student_187: checkAllowed
+                (permission_name: "attend_live_class_as_a_student_187")
                 view_my_calendar_510: checkAllowed
                 (permission_name: "view_my_calendar_510")
-                create_schedule_page_501: checkAllowed(
-                    permission_name: "create_schedule_page_501")
+                create_schedule_page_501: checkAllowed
+                (permission_name: "create_schedule_page_501")
             }
         }
     }
 `;
 
-// Query for meMemership 3 used in the Schedule section
+// Query for meMemership 4 used in the Schedule section
 export const meMembership3 =`
-    query meMembership3 { 
+    query meMembership { 
         me {
-            membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
-                attend_live_class_as_a_student_187: checkAllowed(
-                permission_name: "attend_live_class_as_a_student_187")
-                attend_live_class_as_a_teacher_186: checkAllowed
-                (permission_name: "attend_live_class_as_a_teacher_186")
-                create_event_520: checkAllowed
-        		(permission_name: "create_event_520")
-        		create_my_schedule_events_521: checkAllowed
-        		(permission_name: "create_my_schedule_events_521")
-        		create_my_schools_schedule_events_522: checkAllowed
-        		(permission_name: "create_my_schools_schedule_events_522")
+                membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f")
+                {
+                    attend_live_class_as_a_student_187: checkAllowed
+                    (permission_name: "attend_live_class_as_a_student_187")
+                    view_my_calendar_510: checkAllowed
+                    (permission_name: "view_my_calendar_510")
+                    create_schedule_page_501: checkAllowed
+                    (permission_name: "create_schedule_page_501")
+                }
             }
         }
-    }
+`;
+
+// Query for meMemership 4 used in the Schedule section
+export const meMembership4 =`
+    query meMembership { 
+        me {
+                membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f")
+                {
+                    create_event_520: checkAllowed
+                    (permission_name: "create_event_520")
+                    create_my_schools_schedule_events_522: checkAllowed
+                    (permission_name: "create_my_schools_schedule_events_522")
+                    create_my_schedule_events_521: checkAllowed
+                    (permission_name: "create_my_schedule_events_521")
+                    attend_live_class_as_a_student_187: checkAllowed
+                    (permission_name: "attend_live_class_as_a_student_187")
+                    view_subjects_20115: checkAllowed
+                    (permission_name: "view_subjects_20115")
+                }
+            }
+        }
 `;

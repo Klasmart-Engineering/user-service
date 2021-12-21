@@ -1,13 +1,17 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
-import hitHomeRequest4 from './scripts/hitHomeRequest4';
+import hitHomeRequest2 from './scripts/endPointHomeRequest2';
+
 
 /*
 
 Script that evaluates the endPoint:
-https://kl2.loadtest.kidsloop.live/v1/schedules_time_view?end_at_le=1640746740&org_id=360b46fe-3579-42d4-9a39-dc48726d033f&start_at_ge=1639450800&time_zone_offset=-10800&view_type=full_view
-
+https://api.loadtest.kidsloop.live/user/
+   {
+    "operationName": "myUser",
+    "variables": {},
+}
 */
 
 export const options: Options = {
@@ -33,14 +37,15 @@ export function setup() {
     return data;
 }
 
+
 export default function(data: { [key: string]: { res: any, userId: string }}) {
     
-    const jar = http.cookieJar();
-    jar.set(process.env.SERVICE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
-    jar.set(process.env.SERVICE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
-
-    jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
-    jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
+        const jar = http.cookieJar();
+        jar.set(process.env.SERVICE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
+        jar.set(process.env.SERVICE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
     
-    hitHomeRequest4('Org admin');
-}
+        jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
+        jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
+        
+        hitHomeRequest2('Org admin');
+    }
