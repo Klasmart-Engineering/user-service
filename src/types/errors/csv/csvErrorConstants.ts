@@ -8,6 +8,8 @@ export default {
     ERR_CSV_EMPTY_FILE: 'ERR_CSV_EMPTY_FILE',
     MSG_ERR_CSV_EMPTY_FILE: 'The {filename} file is empty.',
 
+    MSG_ERR_CSV_FILE_ENCODING: 'File must be encoded as UTF-8.',
+
     ERR_CSV_FILE_FORMAT: 'ERR_CSV_FILE_FORMAT',
     MSG_ERR_CSV_FILE_FORMAT: 'File must be in .csv format.',
 

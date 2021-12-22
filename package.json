@@ -82,6 +82,7 @@
     "faker": "5.5.3",
     "https-localhost": "4.7.0",
     "husky": "^7.0.4",
+    "iconv-lite": "^0.6.3",
     "istanbul-badges-readme": "1.4.0",
     "js-yaml": "4.1.0",
     "mocha": "9.1.1",

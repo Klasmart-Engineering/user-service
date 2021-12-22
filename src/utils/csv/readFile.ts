@@ -14,6 +14,7 @@ import { customErrors } from '../../types/errors/customError'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import logger from '../../logging'
 import { config } from '../../config/config'
+import stream = require('stream')
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
@@ -47,7 +48,7 @@ function checkFileType(mimetype: string) {
 }
 
 function checkFileSize(
-    readStream: Stream,
+    readStream: Stream.Readable,
     maxSize: number,
     filename: string,
     fileErrors: CSVError[]
@@ -98,7 +99,6 @@ function checkFileSize(
         })
         readStream.on('error', (err) => {
             readStream.removeAllListeners()
-            rejectIfNoData()
             reject(err)
         })
     })
@@ -135,7 +135,7 @@ async function checkHeaders(
 }
 
 async function validateFile(
-    readStream: Stream,
+    readStream: Stream.Readable,
     reReadable: ReReadable,
     headersCallback: CreateEntityHeadersCallback | undefined,
     filename: string,
@@ -158,6 +158,41 @@ async function validateFile(
     if (fileErrors.length) throw fileErrors
 }
 
+function decodeUtf8Callback(
+    decode: () => string,
+    callback: (error?: Error | undefined, data?: string) => void
+): void {
+    let decoded: string
+    try {
+        decoded = decode()
+    } catch {
+        callback(new Error(constants.MSG_ERR_CSV_FILE_ENCODING), undefined)
+        return
+    }
+    callback(undefined, decoded)
+    return
+}
+
+function decodeUtf8() {
+    const decoder = new TextDecoder('utf-8', { fatal: true })
+
+    return new stream.Transform({
+        transform: (
+            chunk: Buffer,
+            _encoding: string,
+            callback: Stream.TransformCallback
+        ) => {
+            return decodeUtf8Callback(
+                () => decoder.decode(chunk, { stream: true }),
+                callback
+            )
+        },
+        flush: (callback) => {
+            return decodeUtf8Callback(() => decoder.decode(), callback)
+        },
+    })
+}
+
 export async function readCSVFile(
     manager: EntityManager,
     file: Upload,
@@ -165,12 +200,13 @@ export async function readCSVFile(
     userPermissions: UserPermissions,
     headersCallback: CreateEntityHeadersCallback | undefined = undefined
 ) {
+    // we don't respect the encoding the client claims and instead
+    // always try to decode as UTF-8
     const { filename, mimetype, encoding } = file
     let rowCounter = 0
-    let csvStream
+    let csvStream: Transform
     const fileErrors: CSVError[] = []
-
-    const readStream = file.createReadStream()
+    const readStream = file.createReadStream().pipe(decodeUtf8())
     const rereadableStream = readStream.pipe(new ReReadable())
 
     await validateFile(

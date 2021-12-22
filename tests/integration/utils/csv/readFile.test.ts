@@ -1,28 +1,22 @@
 import { expect, use } from 'chai'
 import { Connection, EntityManager } from 'typeorm'
-import { Subject } from '../../../../src/entities/subject'
 import { Model } from '../../../../src/model'
 import { createServer } from '../../../../src/utils/createServer'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
-import { uploadSubjects } from '../../../utils/operations/csv/uploadSubjects'
 import { createTestConnection } from '../../../utils/testConnection'
 import { resolve } from 'path'
-import { ReadStream } from 'fs'
 import fs from 'fs'
 import chaiAsPromised from 'chai-as-promised'
-import { processSubjectFromCSVRow } from '../../../../src/utils/csv/subject'
 import { readCSVFile } from '../../../../src/utils/csv/readFile'
 import { Upload } from '../../../../src/types/upload'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { CreateEntityRowCallback } from '../../../../src/types/csv/createEntityRowCallback'
-import { processOrganizationFromCSVRow } from '../../../../src/utils/csv/organization'
 import { CSVError } from '../../../../src/types/csv/csvError'
 import { processUserFromCSVRow } from '../../../../src/utils/csv/user'
-import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 
 use(chaiAsPromised)
 
@@ -58,7 +52,7 @@ describe('read file', () => {
             return []
         }
         it('should throw an error', async () => {
-            const upload = {
+            const upload: Upload = {
                 filename: filename,
                 mimetype: mimetype,
                 encoding: encoding,
@@ -67,7 +61,7 @@ describe('read file', () => {
                         resolve(`tests/fixtures/empty.csv`)
                     )
                 },
-            } as Upload
+            }
 
             await expect(
                 readCSVFile(
@@ -124,7 +118,7 @@ describe('read file', () => {
             return []
         }
         it('should throw an error', async () => {
-            const upload = {
+            const upload: Upload = {
                 filename: filename,
                 mimetype: mimetype,
                 encoding: encoding,
@@ -133,7 +127,7 @@ describe('read file', () => {
                         resolve(`tests/fixtures/onlyHeader.csv`)
                     )
                 },
-            } as Upload
+            }
 
             try {
                 await readCSVFile(
@@ -164,7 +158,7 @@ describe('read file', () => {
             return []
         }
         it('should throw an error', async () => {
-            const upload = {
+            const upload: Upload = {
                 filename: filename,
                 mimetype: mimetype,
                 encoding: encoding,
@@ -173,7 +167,7 @@ describe('read file', () => {
                         resolve(`tests/fixtures/${filename}`)
                     )
                 },
-            } as Upload
+            }
 
             try {
                 await readCSVFile(

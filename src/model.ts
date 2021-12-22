@@ -6,6 +6,7 @@ import {
     EntityManager,
     Repository,
     SelectQueryBuilder,
+    getConnection,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
@@ -697,18 +698,14 @@ export class Model {
         return true
     }
 
-    public async uploadOrganizationsFromCSV(
+    public static async uploadOrganizationsFromCSV(
         args: Record<string, unknown>,
-        context: Context,
-        info: GraphQLResolveInfo
+        context: Pick<Context, 'permissions'>
     ) {
-        if (info.operation.operation !== 'mutation') {
-            return null
-        }
-
         const { file } = await (args.file as Promise<{ file: Upload }>)
+
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            getConnection(),
             file,
             [processOrganizationFromCSVRow],
             context.permissions

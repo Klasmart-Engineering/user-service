@@ -533,7 +533,7 @@ export default function getDefault(
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>
-                    model.uploadOrganizationsFromCSV(args, ctx, info),
+                    Model.uploadOrganizationsFromCSV(args, ctx),
                 renameDuplicateOrganizations: (_parent, args, ctx, info) =>
                     model.renameDuplicateOrganizations(args, ctx, info),
                 setBranding: (_parent, args, ctx, info) =>

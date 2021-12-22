@@ -10,7 +10,7 @@ import { getAdminAuthToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
 import { Program } from '../../../src/entities/program'
-import { Stream } from 'stream'
+import { Readable } from 'stream'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { ISortField } from '../../../src/utils/pagination/sorting'
 import { IPaginatedResponse } from '../../../src/utils/pagination/paginate'
@@ -1801,7 +1801,7 @@ export async function getProgram(
 }
 
 export function fileMockInput(
-    file: Stream,
+    file: Readable,
     filename: string,
     mimetype: string,
     encoding: string

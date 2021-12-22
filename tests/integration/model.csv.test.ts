@@ -91,7 +91,11 @@ import { customErrors } from '../../src/types/errors/customError'
 import { buildCsvError } from '../../src/utils/csv/csvUtils'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import _ from 'lodash'
+import { fileMockInput } from '../utils/operations/modelOps'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { Readable } from 'stream'
+import { Upload } from '../../src/types/upload'
+import iconv from 'iconv-lite'
 
 use(chaiAsPromised)
 
@@ -119,6 +123,112 @@ describe('model.csv', () => {
             .to.have.property('errors')
             .to.have.deep.members([expectedError])
     }
+
+    describe('file encoding', () => {
+        let ctx: { permissions: UserPermissions }
+        const encoder = new TextEncoder()
+        const fileContents = fs.readFileSync(
+            `tests/fixtures/organizationsExample.csv`
+        )
+        const expectedOrgsCreated = 20
+
+        beforeEach(() => {
+            const uploader = createUser()
+            const token = { id: uploader.user_id }
+            const permissions = new UserPermissions(token)
+            ctx = { permissions }
+        })
+
+        const uploadFile = (file: Readable): Promise<Upload> => {
+            const fileUpload = fileMockInput(
+                file,
+                'mycsvfile.csv',
+                'text/csv',
+                ''
+            )
+
+            return Model.uploadOrganizationsFromCSV(
+                {
+                    file: fileUpload,
+                },
+                ctx
+            )
+        }
+
+        it('accepts UTF-8 with bom', async () => {
+            const file = new Readable({
+                read: () => {
+                    // BOM bytes
+                    //https://stackoverflow.com/a/2223926
+                    // file.push(Buffer.from([0xef, 0xbb, 0xbf]))
+                    file.push(fileContents)
+                    file.push(null)
+                },
+            })
+
+            await uploadFile(file)
+
+            await expect(Organization.count()).to.eventually.eq(
+                expectedOrgsCreated
+            )
+        })
+
+        it('accepts files with a multi-byte character is split across chunks', async () => {
+            // arbitary postion in the file
+            const highWaterMark = 100
+
+            const file = new Readable({
+                read: () => {
+                    file.push(fileContents.subarray(0, highWaterMark - 1))
+                    // inject a multibyte character
+                    // that spans the chunk boundary
+                    // it's first byte in the first chunk
+                    // and the rest in the second chunk
+                    file.push(encoder.encode('占'))
+                    file.push(fileContents.subarray(highWaterMark - 1))
+                    file.push(null)
+                },
+                highWaterMark,
+            })
+
+            await uploadFile(file)
+
+            await expect(Organization.count()).to.eventually.eq(
+                expectedOrgsCreated
+            )
+        })
+
+        it('rejects files that with an incomplete multi-byte character', async () => {
+            const file = new Readable({
+                read: () => {
+                    file.push(fileContents)
+                    file.push(encoder.encode('占').subarray(0, 1))
+                    file.push(null)
+                },
+            })
+
+            await expect(uploadFile(file)).to.eventually.be.rejectedWith(
+                'File must be encoded as UTF-8.'
+            )
+
+            await expect(Organization.count()).to.eventually.eq(0)
+        })
+
+        it('rejects files that use a non-UTF-8 encoding', async () => {
+            const file = new Readable({
+                read: () => {
+                    file.push(iconv.encode('占', 'euc-kr'))
+                    file.push(null)
+                },
+            })
+
+            await expect(uploadFile(file)).to.eventually.be.rejectedWith(
+                'File must be encoded as UTF-8.'
+            )
+
+            await expect(Organization.count()).to.eventually.eq(0)
+        })
+    })
 
     describe('uploadFileSizeExceededCSV', () => {
         let file: ReadStream
