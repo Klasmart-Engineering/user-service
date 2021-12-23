@@ -1,25 +1,33 @@
+import { In } from 'typeorm'
+import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
+import { Status } from '../entities/status'
 import { Context } from '../main'
 import {
     schoolConnectionNodeFields,
     mapSchoolToSchoolConnectionNode,
 } from '../pagination/schoolsConnection'
 import { PermissionName } from '../permissions/permissionNames'
+import { APIError } from '../types/errors/apiError'
 import {
+    CreateSchoolInput,
     DeleteSchoolInput,
     SchoolsMutationResult,
     AddClassesToSchoolInput,
 } from '../types/graphQL/school'
 import {
+    CreateMutation,
     DeleteMutation,
     EntityMap,
     AddMutation,
 } from '../utils/mutations/commonStructure'
 import { Class } from '../entities/class'
-import { Status } from '../entities/status'
-import { APIError } from '../types/errors/apiError'
-import { createEntityAPIError, getMembershipMapKey } from '../utils/resolvers'
-import { Organization } from '../entities/organization'
+import {
+    createEntityAPIError,
+    getMembershipMapKey,
+    createNonExistentOrInactiveEntityAPIError,
+} from '../utils/resolvers'
+import { formatShortCode, generateShortCode } from '../utils/shortcode'
 
 export class DeleteSchools extends DeleteMutation<
     School,
@@ -243,4 +251,185 @@ function processForAdd(
         ...newClasses,
     ])
     return [currentEntity]
+}
+
+export class CreateSchools extends CreateMutation<
+    School,
+    CreateSchoolInput,
+    SchoolsMutationResult
+> {
+    protected readonly EntityType = School
+    protected inputTypeName = 'CreateSchoolInput'
+    protected mainEntityIds: string[] = []
+    protected orgIds: string[]
+    protected output: SchoolsMutationResult = { schools: [] }
+
+    constructor(
+        input: CreateSchoolInput[],
+        context: Pick<Context, 'permissions'>
+    ) {
+        super(input, context)
+        this.orgIds = Array.from(
+            new Set(input.map((val) => val.organizationId).flat())
+        )
+        for (const val of input) {
+            this.mainEntityIds.push([val.organizationId, val.name].toString())
+        }
+    }
+
+    generateEntityMaps = (
+        input: CreateSchoolInput[]
+    ): Promise<EntityMap<School>> => generateMapsForCreate(input, this.orgIds)
+
+    protected authorize(): Promise<void> {
+        return this.context.permissions.rejectIfNotAllowed(
+            { organization_ids: this.orgIds },
+            PermissionName.create_school_20220
+        )
+    }
+
+    protected validate(
+        index: number,
+        _entity: School,
+        currentInput: CreateSchoolInput,
+        maps: EntityMap<School>
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { organizationId, name, shortCode } = currentInput
+
+        const organization = maps.organizations.get(organizationId)
+
+        if (!organization) {
+            errors.push(
+                createNonExistentOrInactiveEntityAPIError(
+                    index,
+                    ['organization_id'],
+                    'ID',
+                    'Organization',
+                    organizationId
+                )
+            )
+        }
+
+        const schoolExist = maps.mainEntity.get(
+            [organizationId, name].toString()
+        )
+
+        if (schoolExist) {
+            errors.push(
+                createEntityAPIError(
+                    'duplicateChild',
+                    index,
+                    'School',
+                    name,
+                    'Organization',
+                    organizationId,
+                    ['organizationId', 'name']
+                )
+            )
+        }
+        const matchingOrgAndShortcode = maps.matchingOrgsAndShortcodes.get(
+            [organizationId, shortCode].toString()
+        )
+        if (matchingOrgAndShortcode) {
+            errors.push(
+                createEntityAPIError(
+                    'duplicateChild',
+                    index,
+                    'School',
+                    shortCode,
+                    'Organization',
+                    organizationId,
+                    ['organizationId', 'shortCode']
+                )
+            )
+        }
+        return errors
+    }
+
+    protected process(
+        _entity: School,
+        currentInput: CreateSchoolInput,
+        maps: EntityMap<School>
+    ): School[] {
+        const { organizationId, name, shortCode } = currentInput
+
+        const school = new School()
+        school.school_name = name
+        school.shortcode = shortCode
+            ? formatShortCode(shortCode)
+            : generateShortCode(name)
+        school.organization = Promise.resolve(
+            maps.organizations.get(organizationId) as Organization
+        )
+
+        return [school]
+    }
+
+    protected async buildOutput(): Promise<void> {
+        this.output.schools = []
+        for (const proccesedEntity of this.processedEntities) {
+            // eslint-disable-next-line no-await-in-loop
+            const schoolConnectionNode = await mapSchoolToSchoolConnectionNode(
+                proccesedEntity
+            )
+            this.output.schools.push(schoolConnectionNode)
+        }
+    }
+}
+
+async function generateMapsForCreate(
+    input: CreateSchoolInput[],
+    organizationIds: string[]
+): Promise<EntityMap<School>> {
+    const {
+        matchingOrgsAndNames,
+        matchingOrgsAndShortcodes,
+    } = await getMatchingEntities(organizationIds, input)
+
+    const preloadedOrgArray = Organization.find({
+        where: {
+            status: Status.ACTIVE,
+            organization_id: In(organizationIds),
+        },
+    })
+
+    return {
+        mainEntity: matchingOrgsAndNames,
+        matchingOrgsAndShortcodes,
+        organizations: new Map(
+            (await preloadedOrgArray).map((i) => [i.organization_id, i])
+        ),
+    }
+}
+
+const getMatchingEntities = async (
+    orgIds: string[],
+    input: CreateSchoolInput[]
+) => {
+    const names = input.map((val) => val.name)
+    const shortCodes = input.map((val) => val.shortCode)
+    const statusAndOrgs = { status: Status.ACTIVE, organization: In(orgIds) }
+    const matchingPreloadedSchoolArray = School.find({
+        where: [
+            {
+                school_name: In(names),
+                ...statusAndOrgs,
+            },
+            {
+                shortcode: In(shortCodes),
+                ...statusAndOrgs,
+            },
+        ],
+        relations: ['organization'],
+    })
+
+    const matchingOrgsAndNames = new Map<string, School>()
+    const matchingOrgsAndShortcodes = new Map<string, School>()
+    for (const s of await matchingPreloadedSchoolArray) {
+        const orgId = (await s.organization)?.organization_id || ''
+        matchingOrgsAndNames.set([orgId, s.school_name].toString(), s)
+        matchingOrgsAndShortcodes.set([orgId, s.shortcode].toString(), s)
+    }
+    return { matchingOrgsAndNames, matchingOrgsAndShortcodes }
 }

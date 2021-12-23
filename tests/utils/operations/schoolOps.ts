@@ -114,13 +114,15 @@ const DELETE_SCHOOL = `
     }
 `
 
+const SCHOOLS_MUTATION_RESULT = `schools {
+                id
+                name
+            }`
+
 export const DELETE_SCHOOLS = gql`
     mutation deleteSchools($input: [DeleteSchoolInput!]!) {
         deleteSchools(input: $input) {
-            schools {
-                id
-                name
-            }
+            ${SCHOOLS_MUTATION_RESULT}
         }
     }
 `
@@ -133,6 +135,14 @@ export const ADD_CLASSES_TO_SCHOOLS = `
                 name,
                 status
             }
+        }
+    }
+`
+
+export const CREATE_SCHOOLS = gql`
+    mutation createSchools($input: [CreateSchoolInput!]!) {
+        createSchools(input: $input) {
+            ${SCHOOLS_MUTATION_RESULT}
         }
     }
 `
@@ -279,6 +289,14 @@ export async function deleteSchool(
 }
 
 export function buildDeleteSchoolInputArray(
+    schools: School[]
+): DeleteSchoolInput[] {
+    return Array.from(schools, (c) => {
+        return { id: c.school_id }
+    })
+}
+
+export function buildCreateSchoolInputArray(
     schools: School[]
 ): DeleteSchoolInput[] {
     return Array.from(schools, (c) => {

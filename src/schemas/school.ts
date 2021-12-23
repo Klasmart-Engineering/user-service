@@ -12,8 +12,8 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Program } from '../entities/program'
-import { DeleteSchools } from '../resolvers/school'
 import { AddClassesToSchools } from '../resolvers/school'
+import { CreateSchools, DeleteSchools } from '../resolvers/school'
 import { mutate } from '../utils/mutations/commonStructure'
 
 const typeDefs = gql`
@@ -25,6 +25,7 @@ const typeDefs = gql`
         addClassesToSchools(
             input: [AddClassesToSchoolInput!]!
         ): SchoolsMutationResult
+        createSchools(input: [CreateSchoolInput!]!): SchoolsMutationResult
     }
     extend type Query {
         school(school_id: ID!): School
@@ -172,6 +173,12 @@ const typeDefs = gql`
         id: ID!
     }
 
+    input CreateSchoolInput {
+        name: String!
+        shortCode: String
+        organizationId: String!
+    }
+
     type SchoolsMutationResult {
         schools: [SchoolConnectionNode!]!
     }
@@ -257,6 +264,8 @@ export default function getDefault(
                     mutate(DeleteSchools, args, ctx),
                 addClassesToSchools: (_parent, args, ctx, _info) =>
                     mutate(AddClassesToSchools, args, ctx),
+                createSchools: (_parent, args, ctx, _info) =>
+                    mutate(CreateSchools, args, ctx),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>

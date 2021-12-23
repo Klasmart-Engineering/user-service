@@ -36,3 +36,9 @@ export interface AddClassesToSchoolInput {
 export interface SchoolsMutationResult {
     schools: ISchoolsConnectionNode[]
 }
+
+export interface CreateSchoolInput {
+    name: string
+    shortCode?: string
+    organizationId: string
+}

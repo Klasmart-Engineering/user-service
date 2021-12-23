@@ -16,11 +16,7 @@ export type EntityMap<EntityType extends CustomBaseEntity> = {
     [key: string]: Map<string, CustomBaseEntity | CustomBaseEntity[]>
 }
 
-type InputLoopResults<
-    ModifiedEntityType extends CustomBaseEntity,
-    OutputType
-> = {
-    processedEntities: ModifiedEntityType[]
+type InputLoopResults<OutputType> = {
     mutationOutput: OutputType
 }
 
@@ -40,6 +36,7 @@ abstract class Mutation<
     protected readonly input: InputType[]
     protected readonly context: Pick<Context, 'permissions'>
     protected entityMaps?: EntityMap<EntityType>
+    protected processedEntities: ModifiedEntityType[] = []
 
     protected constructor(
         input: InputType[],
@@ -77,7 +74,7 @@ abstract class Mutation<
      */
     protected abstract validate(
         index: number,
-        currentEntity: EntityType,
+        currentEntity: EntityType | undefined,
         currentInput: InputType,
         entityMaps: EntityMap<EntityType>
     ): APIError[]
@@ -87,7 +84,7 @@ abstract class Mutation<
      * should also populate the output variable.
      */
     protected abstract process(
-        currentEntity: EntityType,
+        currentEntity: EntityType | undefined,
         currentInput: InputType,
         entityMaps: EntityMap<EntityType>
     ): ModifiedEntityType[]
@@ -96,14 +93,12 @@ abstract class Mutation<
      * Formats the current entity for output and pushes it the
      * list in `this.output`
      */
-    protected abstract buildOutput(currentEntity: EntityType): void
+    protected abstract buildOutput(currentEntity?: EntityType): void
 
     /**
      * Performs a save/update on the database.
      */
-    protected abstract applyToDatabase(
-        processedEntities: ModifiedEntityType[]
-    ): Promise<void>
+    protected abstract applyToDatabase(): Promise<void>
 
     private validateInputLength() {
         if (this.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
@@ -120,7 +115,7 @@ abstract class Mutation<
         id: string,
         idsSet: Set<string>,
         entityMaps: EntityMap<EntityType>
-    ): EntityType | APIError {
+    ): EntityType | APIError | undefined {
         // Check for duplicates
         if (idsSet.has(id)) {
             return createDuplicateInputAPIError(
@@ -131,8 +126,10 @@ abstract class Mutation<
         } else {
             idsSet.add(id)
         }
-        // Check for missing entries
-        const mainEntity: EntityType | undefined = entityMaps.mainEntity.get(id)
+
+        if (this.inputTypeName.startsWith('Create')) return undefined
+
+        const mainEntity = entityMaps.mainEntity.get(id)
         if (!mainEntity || mainEntity.status !== Status.ACTIVE) {
             return createEntityAPIError(
                 'nonExistent',
@@ -147,10 +144,9 @@ abstract class Mutation<
     private inputLoop(
         normalizedInput: InputType[],
         entityMaps: EntityMap<EntityType>
-    ): InputLoopResults<ModifiedEntityType, OutputType> {
+    ): InputLoopResults<OutputType> {
         const idsSet = new Set<string>()
         const errors: APIError[] = []
-        const processedEntities: ModifiedEntityType[] = []
         for (const [index, entry] of normalizedInput.entries()) {
             // Validation stage
             const id = this.mainEntityIds[index]
@@ -163,19 +159,20 @@ abstract class Mutation<
 
             // Processing stage
             if (errors.length) continue
-            processedEntities.push(...this.process(entity, entry, entityMaps))
-            this.buildOutput(entity)
+            this.processedEntities.push(
+                ...this.process(entity, entry, entityMaps)
+            )
+            if (entity) this.buildOutput(entity)
         }
         if (errors.length) throw new APIErrorCollection(errors)
         return {
             mutationOutput: this.output,
-            processedEntities,
         }
     }
 
-    private async saveWrapper(processedEntities: ModifiedEntityType[]) {
+    private async saveWrapper() {
         try {
-            await this.applyToDatabase(processedEntities)
+            await this.applyToDatabase()
         } catch (e) {
             let message = 'Unknown Error'
             if (e instanceof Error) {
@@ -192,7 +189,7 @@ abstract class Mutation<
         const entityMaps = await this.generateEntityMaps(this.input)
         await this.authorize(normalizedInput, entityMaps)
         const loopResults = this.inputLoop(normalizedInput, entityMaps)
-        await this.saveWrapper(loopResults.processedEntities)
+        await this.saveWrapper()
         return loopResults.mutationOutput
     }
 }
@@ -214,21 +211,31 @@ export function mutate<
     return mutationClass.run()
 }
 
-abstract class CreateUpdateMutation<
+export abstract class CreateMutation<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType
 > extends Mutation<EntityType, InputType, OutputType> {
-    abstract normalize(input: InputType[]): Promise<InputType[]>
+    protected normalize = () => Promise.resolve(this.input)
+    protected abstract buildOutput(): Promise<void>
 
-    protected async applyToDatabase(
-        processedEntities: EntityType[]
-    ): Promise<void> {
-        await getManager().save(processedEntities)
+    protected async applyToDatabase(): Promise<void> {
+        await getManager().save(this.processedEntities)
+        await this.buildOutput()
     }
 }
-export const CreateMutation = CreateUpdateMutation
-export const UpdateMutation = CreateUpdateMutation
+
+export abstract class UpdateMutation<
+    EntityType extends CustomBaseEntity,
+    InputType,
+    OutputType
+> extends Mutation<EntityType, InputType, OutputType> {
+    abstract normalize = () => Promise.resolve(this.input)
+
+    protected async applyToDatabase(): Promise<void> {
+        await getManager().save(this.processedEntities)
+    }
+}
 
 export abstract class DeleteMutation<
     EntityType extends CustomBaseEntity,
@@ -274,10 +281,8 @@ export abstract class AddRemoveMutation<
 
     protected normalize = () => Promise.resolve(this.input)
 
-    protected async applyToDatabase(
-        processedEntities: ModifiedEntityType[]
-    ): Promise<void> {
-        await getManager().save(processedEntities)
+    protected async applyToDatabase(): Promise<void> {
+        await getManager().save(this.processedEntities)
     }
 }
 export const AddMutation = AddRemoveMutation

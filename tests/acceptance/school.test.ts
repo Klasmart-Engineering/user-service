@@ -10,6 +10,7 @@ import { User } from '../../src/entities/user'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import {
     AddClassesToSchoolInput,
+    CreateSchoolInput,
     ISchoolsConnectionNode,
 } from '../../src/types/graphQL/school'
 import { createClass } from '../factories/class.factory'
@@ -36,7 +37,7 @@ import { makeRequest } from './utils'
 import ProgramsInitializer from '../../src/initializers/programs'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { DeleteSchoolInput } from '../../src/types/graphQL/school'
-import { DELETE_SCHOOLS } from '../utils/operations/schoolOps'
+import { CREATE_SCHOOLS, DELETE_SCHOOLS } from '../utils/operations/schoolOps'
 import { Status } from '../../src/entities/status'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { userToPayload } from '../utils/operations/userOps'
@@ -84,6 +85,7 @@ describe('acceptance.school', () => {
     let schoolId: string
     let clientUser: User
     let schoolMember: User
+    let organizationId: string
 
     before(async () => {
         connection = await createTestConnection()
@@ -101,11 +103,10 @@ describe('acceptance.school', () => {
             org_name,
             getAdminAuthToken()
         )
-        const {
-            organization_id,
-        } = createOrgResponse.body.data.user.createOrganization
+        organizationId =
+            createOrgResponse.body.data.user.createOrganization.organization_id
         const createSchoolResponse = await createSchool(
-            organization_id,
+            organizationId,
             `school x`,
             getAdminAuthToken()
         )
@@ -427,6 +428,58 @@ describe('acceptance.school', () => {
                     response.body.data.addClassesToSchools.schools
                 expect(response.status).to.eq(200)
                 expect(resSchools.length).to.equal(schoolsCount)
+            })
+        })
+    })
+
+    context('createSchools', () => {
+        const makeCreateSchoolsMutation = async (
+            input: CreateSchoolInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(CREATE_SCHOOLS),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        context('when input is sent in a correct way', () => {
+            it('should respond succesfully', async () => {
+                const input = [
+                    { organizationId, name: 'Test x' },
+                    { organizationId, name: 'Test y' },
+                ]
+
+                const response = await makeCreateSchoolsMutation(input)
+                const schools = response.body.data.createSchools.schools
+                expect(response.status).to.eq(200)
+                expect(schools).to.exist
+                expect(schools).to.be.an('array')
+                expect(schools.length).to.eq(input.length)
+                const schoolCreatedNames = schools.map(
+                    (schoolNode: ISchoolsConnectionNode) => schoolNode.name
+                )
+
+                const inputNames = input.map((i) => i.name)
+
+                expect(schoolCreatedNames).to.deep.equalInAnyOrder(inputNames)
+            })
+        })
+
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                const input = [
+                    { organizationId: NIL_UUID, name: 'Test x' },
+                    { organizationId, name: 'Test y' },
+                ]
+                const response = await makeCreateSchoolsMutation(input)
+                const schoolsCreated = response.body.data.createSchools
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(schoolsCreated).to.be.null
+                expect(errors).to.exist
             })
         })
     })
