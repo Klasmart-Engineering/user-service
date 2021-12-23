@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { Connection, getConnection, getManager } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -29,7 +29,7 @@ import {
     createOrganizationAndValidate,
     userToPayload,
 } from '../utils/operations/userOps'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
@@ -50,21 +50,31 @@ import {
     DeleteSchoolInput,
     SchoolsMutationResult,
 } from '../../src/types/graphQL/school'
-import { UserPermissions } from '../../src/permissions/userPermissions'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { DeleteSchools } from '../../src/resolvers/school'
-import { permErrorMeta } from '../utils/errors'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { buildPermissionError, permErrorMeta } from '../utils/errors'
 import {
     createUser,
     createAdminUser as createAdmin,
 } from '../factories/user.factory'
+import { AddClassesToSchoolInput } from '../../src/types/graphQL/school'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { AddClassesToSchools } from '../../src/resolvers/school'
+import { expectAPIError } from '../utils/apiError'
+import {
+    createMultipleSchools,
+    createSchool as createSchoolFactory,
+} from '../factories/school.factory'
+import { createClass, createClasses } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
+import { createRole as roleFactory } from '../factories/role.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
 
 use(chaiAsPromised)
 
 describe('school', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     let school: School
@@ -1243,7 +1253,6 @@ describe('school', () => {
             })
         })
     })
-
     context('deleteSchools', () => {
         const schoolsCount = 2
         const deleteSchoolsFromResolver = async (
@@ -1340,5 +1349,261 @@ describe('school', () => {
                 })
             })
         })
+    })
+    describe('AddClassesToSchools', () => {
+        let adminUser: User
+        let nonAdminUser: User
+        let organization: Organization
+        let schools: School[]
+        let classes: Class[]
+        let input: AddClassesToSchoolInput[]
+
+        function addClasses(authUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            const ctx = { permissions }
+            return mutate(AddClassesToSchools, { input }, ctx)
+        }
+
+        async function checkOutput() {
+            for (const schoolInputs of input) {
+                const { schoolId, classIds } = schoolInputs
+
+                const school = await School.findOne(schoolId)
+                const dbClasses = await school?.classes
+
+                const dbClassIds = new Set(
+                    dbClasses?.map((val) => val.class_id)
+                )
+                const classIdsSet = new Set(classIds)
+
+                expect(dbClassIds.size).to.equal(classIdsSet.size)
+                dbClassIds.forEach(
+                    (val) => expect(classIdsSet.has(val)).to.be.true
+                )
+            }
+        }
+
+        function checkNotFoundErrors(
+            actualError: Error,
+            expectedErrors: {
+                entity: string
+                id: string
+                entryIndex: number
+            }[]
+        ) {
+            expectedErrors.forEach((val, errorIndex) => {
+                expectAPIError.nonexistent_entity(
+                    actualError,
+                    {
+                        entity: val.entity,
+                        entityName: val.id,
+                        index: val.entryIndex,
+                    },
+                    ['id'],
+                    errorIndex,
+                    expectedErrors.length
+                )
+            })
+        }
+
+        async function checkNoChangesMade(useAdminUser = true) {
+            it('does not add the classes', async () => {
+                await expect(
+                    addClasses(useAdminUser ? adminUser : nonAdminUser)
+                ).to.be.rejected
+                const insertedClasses: Class[] = []
+                for (const school of schools) {
+                    const insertedClasses = await school.classes
+                    if (insertedClasses) classes.push(...insertedClasses)
+                }
+                expect(insertedClasses).to.have.lengthOf(0)
+            })
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
+            organization = await createOrganization().save()
+            schools = createMultipleSchools(3)
+            classes = createClasses(3, organization)
+            await connection.manager.save([...schools, ...classes])
+            input = [
+                {
+                    schoolId: schools[0].school_id,
+                    classIds: [classes[0].class_id],
+                },
+                {
+                    schoolId: schools[1].school_id,
+                    classIds: [classes[1].class_id, classes[2].class_id],
+                },
+                {
+                    schoolId: schools[2].school_id,
+                    classIds: [classes[0].class_id, classes[2].class_id],
+                },
+            ]
+        })
+
+        context('when caller has permissions to add classes to schools', () => {
+            context('and all attributes are valid', () => {
+                it('adds all the classes', async () => {
+                    await expect(addClasses()).to.be.fulfilled
+                    await checkOutput()
+                })
+            })
+
+            context('and one of the classes was already added', () => {
+                beforeEach(async () => {
+                    schools[0].classes = Promise.resolve([classes[0]])
+                    await schools[0].save()
+                })
+
+                it('returns a duplicate user error', async () => {
+                    const res = await expect(addClasses()).to.be.rejected
+                    expectAPIError.duplicate_child_entity(
+                        res,
+                        {
+                            entity: 'Class',
+                            entityName: classes[0].class_name || '',
+                            parentEntity: 'School',
+                            parentName: schools[0].school_name || '',
+                            index: 0,
+                        },
+                        [''],
+                        0,
+                        1
+                    )
+                })
+            })
+
+            context('and one of the schools is inactive', async () => {
+                beforeEach(
+                    async () => await schools[2].inactivate(getManager())
+                )
+
+                it('returns an nonexistent school error', async () => {
+                    const res = await expect(addClasses()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'School',
+                            id: schools[2].school_id,
+                            entryIndex: 2,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of the classes is inactive', async () => {
+                beforeEach(
+                    async () => await classes[1].inactivate(getManager())
+                )
+
+                it('returns an nonexistent class error', async () => {
+                    const res = await expect(addClasses()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Class',
+                            id: classes[1].class_id,
+                            entryIndex: 1,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        schools[2].inactivate(getManager()),
+                        classes[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent errors', async () => {
+                    const res = await expect(addClasses()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Class',
+                            id: classes[1].class_id,
+                            entryIndex: 1,
+                        },
+                        {
+                            entity: 'School',
+                            id: schools[2].school_id,
+                            entryIndex: 2,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('when adding 1 class then 20 classes', () => {
+                it('makes the same number of database calls', async () => {
+                    const twentyClasses = createClasses(20, organization)
+                    connection.logger.reset()
+                    input = [
+                        {
+                            schoolId: schools[0].school_id,
+                            classIds: [classes[0].class_id],
+                        },
+                    ]
+                    await expect(addClasses()).to.be.fulfilled
+                    const baseCount = connection.logger.count
+                    await connection.manager.save([...twentyClasses])
+                    input = [
+                        {
+                            schoolId: schools[0].school_id,
+                            classIds: twentyClasses.map((c) => c.class_id),
+                        },
+                    ]
+                    connection.logger.reset()
+                    await expect(addClasses()).to.be.fulfilled
+                    expect(connection.logger.count).to.equal(baseCount)
+                })
+            })
+        })
+
+        context(
+            'when caller does not have permissions to add classes to all schools',
+            async () => {
+                beforeEach(async () => {
+                    const nonAdminRole = await roleFactory(
+                        'Non Admin Role',
+                        organization,
+                        {
+                            permissions: [PermissionName.edit_school_20330],
+                        }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: organization,
+                        roles: [nonAdminRole],
+                    }).save()
+                    await createSchoolMembership({
+                        user: nonAdminUser,
+                        school: schools[0],
+                        roles: [nonAdminRole],
+                    }).save()
+                })
+
+                it('returns a permission error', async () => {
+                    const sc = [schools[1], schools[2]]
+                    const errorMessage = buildPermissionError(
+                        PermissionName.edit_school_20330,
+                        nonAdminUser,
+                        undefined,
+                        sc
+                    )
+                    await expect(addClasses(nonAdminUser)).to.be.rejectedWith(
+                        errorMessage
+                    )
+                })
+
+                await checkNoChangesMade(false)
+            }
+        )
     })
 })

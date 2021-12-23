@@ -8,7 +8,10 @@ import { Program } from '../../src/entities/program'
 import { School } from '../../src/entities/school'
 import { User } from '../../src/entities/user'
 import { PermissionName } from '../../src/permissions/permissionNames'
-import { ISchoolsConnectionNode } from '../../src/types/graphQL/school'
+import {
+    AddClassesToSchoolInput,
+    ISchoolsConnectionNode,
+} from '../../src/types/graphQL/school'
 import { createClass } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
@@ -35,6 +38,9 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { DeleteSchoolInput } from '../../src/types/graphQL/school'
 import { DELETE_SCHOOLS } from '../utils/operations/schoolOps'
 import { Status } from '../../src/entities/status'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { userToPayload } from '../utils/operations/userOps'
+import { ADD_CLASSES_TO_SCHOOLS } from '../utils/operations/schoolOps'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -370,6 +376,57 @@ describe('acceptance.school', () => {
                 expect(response.status).to.eq(200)
                 expect(schoolsDeleted).to.be.null
                 expect(errors).to.exist
+            })
+        })
+    })
+    context('addClassesToSchools', () => {
+        let adminUser: User
+        let input: AddClassesToSchoolInput[]
+        const classesCount = 20
+        const schoolsCount = 50
+        const classes: Class[] = []
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            for (let x = 0; x < classesCount; x++) {
+                const cls = await createClass().save()
+                classes.push(cls)
+            }
+
+            const schools = []
+            for (let i = 0; i < schoolsCount; i++) {
+                schools.push(await createFactorySchool().save())
+            }
+
+            input = []
+            for (let i = 0; i < schoolsCount; i++) {
+                input.push({
+                    schoolId: schools[i].school_id,
+                    classIds: classes.slice(8, 15).map((v) => v.class_id),
+                })
+            }
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should respond with status 200', async () => {
+                const response = await request
+                    .post('/user')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: generateToken(userToPayload(adminUser)),
+                    })
+                    .send({
+                        query: ADD_CLASSES_TO_SCHOOLS,
+                        variables: {
+                            input,
+                        },
+                    })
+                const resSchools =
+                    response.body.data.addClassesToSchools.schools
+                expect(response.status).to.eq(200)
+                expect(resSchools.length).to.equal(schoolsCount)
             })
         })
     })

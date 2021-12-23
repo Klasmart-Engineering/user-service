@@ -125,6 +125,18 @@ export const DELETE_SCHOOLS = gql`
     }
 `
 
+export const ADD_CLASSES_TO_SCHOOLS = `
+    mutation myMutation($input: [AddClassesToSchoolInput!]!) {
+        addClassesToSchools(input: $input) {
+            schools{
+                id,
+                name,
+                status
+            }
+        }
+    }
+`
+
 export async function getSchoolOrganization(
     testClient: ApolloServerTestClient,
     schoolId: string,

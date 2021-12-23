@@ -13,6 +13,7 @@ import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Program } from '../entities/program'
 import { DeleteSchools } from '../resolvers/school'
+import { AddClassesToSchools } from '../resolvers/school'
 import { mutate } from '../utils/mutations/commonStructure'
 
 const typeDefs = gql`
@@ -21,6 +22,9 @@ const typeDefs = gql`
         uploadSchoolsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         deleteSchools(input: [DeleteSchoolInput!]!): SchoolsMutationResult
+        addClassesToSchools(
+            input: [AddClassesToSchoolInput!]!
+        ): SchoolsMutationResult
     }
     extend type Query {
         school(school_id: ID!): School
@@ -128,6 +132,11 @@ const typeDefs = gql`
             filter: ProgramFilter
             sort: ProgramSortInput
         ): ProgramsConnectionResponse
+    }
+
+    input AddClassesToSchoolInput {
+        schoolId: ID!
+        classIds: [ID!]!
     }
 
     input SchoolFilter {
@@ -246,6 +255,8 @@ export default function getDefault(
                     model.uploadSchoolsFromCSV(args, ctx, info),
                 deleteSchools: (_parent, args, ctx, _info) =>
                     mutate(DeleteSchools, args, ctx),
+                addClassesToSchools: (_parent, args, ctx, _info) =>
+                    mutate(AddClassesToSchools, args, ctx),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>

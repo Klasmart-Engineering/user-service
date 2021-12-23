@@ -17,3 +17,11 @@ export function createSchool(
     school.status = Status.ACTIVE
     return school
 }
+
+export const createMultipleSchools = (length: number): School[] => {
+    const schools: School[] = []
+    for (let x = 0; x < length; x++) {
+        schools.push(createSchool())
+    }
+    return schools
+}

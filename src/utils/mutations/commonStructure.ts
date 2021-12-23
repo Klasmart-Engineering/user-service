@@ -13,7 +13,7 @@ import {
 
 export type EntityMap<EntityType extends CustomBaseEntity> = {
     mainEntity: Map<string, EntityType>
-    [key: string]: Map<string, CustomBaseEntity>
+    [key: string]: Map<string, CustomBaseEntity | CustomBaseEntity[]>
 }
 
 type InputLoopResults<

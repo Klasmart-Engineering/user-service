@@ -28,6 +28,11 @@ export interface DeleteSchoolInput {
     id: string
 }
 
+export interface AddClassesToSchoolInput {
+    schoolId: string
+    classIds: string[]
+}
+
 export interface SchoolsMutationResult {
     schools: ISchoolsConnectionNode[]
 }

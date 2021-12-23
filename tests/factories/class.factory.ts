@@ -30,7 +30,7 @@ export function createClass(
     return cls
 }
 
-export const createClasses = (length: number) =>
+export const createClasses = (length: number, org?: Organization) =>
     Array(length)
         .fill(undefined)
-        .map(() => createClass())
+        .map(() => (org ? createClass(undefined, org) : createClass()))

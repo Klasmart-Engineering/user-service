@@ -211,6 +211,9 @@ const typeDefs = gql`
         removeStudent(user_id: ID!): Boolean
         editSchools(school_ids: [ID!]): [School]
         addSchool(school_id: ID!): School
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
+            )
         editPrograms(program_ids: [ID!]): [Program]
         editAgeRanges(age_range_ids: [ID!]): [AgeRange]
         editGrades(grade_ids: [ID!]): [Grade]
