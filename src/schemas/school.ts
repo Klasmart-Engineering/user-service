@@ -13,7 +13,11 @@ import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Program } from '../entities/program'
 import { AddClassesToSchools } from '../resolvers/school'
-import { CreateSchools, DeleteSchools } from '../resolvers/school'
+import {
+    CreateSchools,
+    DeleteSchools,
+    UpdateSchools,
+} from '../resolvers/school'
 import { mutate } from '../utils/mutations/commonStructure'
 
 const typeDefs = gql`
@@ -26,6 +30,7 @@ const typeDefs = gql`
             input: [AddClassesToSchoolInput!]!
         ): SchoolsMutationResult
         createSchools(input: [CreateSchoolInput!]!): SchoolsMutationResult
+        updateSchools(input: [UpdateSchoolInput!]!): SchoolsMutationResult
     }
     extend type Query {
         school(school_id: ID!): School
@@ -179,6 +184,13 @@ const typeDefs = gql`
         organizationId: String!
     }
 
+    input UpdateSchoolInput {
+        id: ID!
+        organizationId: ID!
+        name: String!
+        shortCode: String!
+    }
+
     type SchoolsMutationResult {
         schools: [SchoolConnectionNode!]!
     }
@@ -266,6 +278,8 @@ export default function getDefault(
                     mutate(AddClassesToSchools, args, ctx),
                 createSchools: (_parent, args, ctx, _info) =>
                     mutate(CreateSchools, args, ctx),
+                updateSchools: (_parent, args, ctx, _info) =>
+                    mutate(UpdateSchools, args, ctx),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>

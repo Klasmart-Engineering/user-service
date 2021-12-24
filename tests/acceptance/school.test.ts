@@ -12,6 +12,7 @@ import {
     AddClassesToSchoolInput,
     CreateSchoolInput,
     ISchoolsConnectionNode,
+    UpdateSchoolInput,
 } from '../../src/types/graphQL/school'
 import { createClass } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
@@ -37,7 +38,11 @@ import { makeRequest } from './utils'
 import ProgramsInitializer from '../../src/initializers/programs'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { DeleteSchoolInput } from '../../src/types/graphQL/school'
-import { CREATE_SCHOOLS, DELETE_SCHOOLS } from '../utils/operations/schoolOps'
+import {
+    CREATE_SCHOOLS,
+    DELETE_SCHOOLS,
+    UPDATE_SCHOOLS,
+} from '../utils/operations/schoolOps'
 import { Status } from '../../src/entities/status'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { userToPayload } from '../utils/operations/userOps'
@@ -479,6 +484,73 @@ describe('acceptance.school', () => {
 
                 expect(response.status).to.eq(200)
                 expect(schoolsCreated).to.be.null
+                expect(errors).to.exist
+            })
+        })
+    })
+    context('updateSchools', () => {
+        let input: UpdateSchoolInput[]
+
+        beforeEach(async () => {
+            const school = await School.findOne(schoolId)
+            input = [
+                {
+                    organizationId: (await school?.organization)
+                        ?.organization_id as string,
+                    name: school?.school_name as string,
+                    id: school?.school_id as string,
+                    shortCode: school?.shortcode as string,
+                },
+            ]
+        })
+
+        const makeUpdateSchoolsMutation = async (
+            input: UpdateSchoolInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(UPDATE_SCHOOLS),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        context('when input is sent in a correct way', () => {
+            it('should respond succesfully', async () => {
+                const response = await makeUpdateSchoolsMutation(input)
+                const schools = response.body.data.updateSchools.schools
+                expect(response.status).to.eq(200)
+                expect(schools).to.exist
+                expect(schools).to.be.an('array')
+                expect(schools.length).to.eq(input.length)
+                const schoolUpdatedIds = schools.map(
+                    (cd: ISchoolsConnectionNode) => cd.id
+                )
+
+                const inputIds = input.map((i) => i.id)
+
+                expect(schoolUpdatedIds).to.deep.equalInAnyOrder(inputIds)
+            })
+        })
+
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                const badInput = [
+                    input[0],
+                    {
+                        id: NIL_UUID,
+                        name: 'test',
+                        organizationId: 'test',
+                        shortCode: 'test',
+                    },
+                ]
+
+                const response = await makeUpdateSchoolsMutation(badInput)
+                const schoolsUpdated = response.body.data.updateSchools
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(schoolsUpdated).to.be.null
                 expect(errors).to.exist
             })
         })

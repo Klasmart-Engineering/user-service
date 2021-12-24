@@ -230,10 +230,15 @@ export abstract class UpdateMutation<
     InputType,
     OutputType
 > extends Mutation<EntityType, InputType, OutputType> {
-    abstract normalize = () => Promise.resolve(this.input)
+    constructor(input: InputType[], context: Pick<Context, 'permissions'>) {
+        super(input, context)
+    }
+    protected normalize = () => Promise.resolve(this.input)
+    protected abstract buildOutput(): Promise<void>
 
     protected async applyToDatabase(): Promise<void> {
         await getManager().save(this.processedEntities)
+        await this.buildOutput()
     }
 }
 

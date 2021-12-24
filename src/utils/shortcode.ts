@@ -44,9 +44,12 @@ export function validateShortCode(
     return false
 }
 
-export function formatShortCode(code?: string): string | undefined {
+export function formatShortCode(
+    code?: string,
+    length?: number
+): string | undefined {
     code = clean.shortcode(code)
-    return validateShortCode(code, config.limits.SHORTCODE_MAX_LENGTH)
+    return validateShortCode(code, length ?? config.limits.SHORTCODE_MAX_LENGTH)
         ? code
         : undefined
 }

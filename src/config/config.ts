@@ -14,6 +14,7 @@ export const config = {
         EMAIL_MAX_LENGTH: 250,
         ROLE_NAME_MAX_LENGTH: 20,
         SHORTCODE_MAX_LENGTH: 16,
+        SCHOOL_SHORTCODE_MAX_LENGTH: 10,
         GENDER_MIN_LENGTH: 3,
         GENDER_MAX_LENGTH: 16,
         USERNAME_MAX_LEN: 35,

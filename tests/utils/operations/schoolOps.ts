@@ -116,7 +116,8 @@ const DELETE_SCHOOL = `
 
 const SCHOOLS_MUTATION_RESULT = `schools {
                 id
-                name
+                name,
+                status
             }`
 
 export const DELETE_SCHOOLS = gql`
@@ -130,11 +131,7 @@ export const DELETE_SCHOOLS = gql`
 export const ADD_CLASSES_TO_SCHOOLS = `
     mutation myMutation($input: [AddClassesToSchoolInput!]!) {
         addClassesToSchools(input: $input) {
-            schools{
-                id,
-                name,
-                status
-            }
+            ${SCHOOLS_MUTATION_RESULT}
         }
     }
 `
@@ -142,6 +139,14 @@ export const ADD_CLASSES_TO_SCHOOLS = `
 export const CREATE_SCHOOLS = gql`
     mutation createSchools($input: [CreateSchoolInput!]!) {
         createSchools(input: $input) {
+            ${SCHOOLS_MUTATION_RESULT}
+        }
+    }
+`
+
+export const UPDATE_SCHOOLS = gql`
+    mutation updateSchools($input: [UpdateSchoolInput!]!) {
+        updateSchools(input: $input) {
             ${SCHOOLS_MUTATION_RESULT}
         }
     }

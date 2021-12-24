@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection, getConnection, getManager } from 'typeorm'
+import { Connection, getManager } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -47,39 +47,40 @@ import { createUserAndValidate } from '../utils/operations/modelOps'
 import { createProgram } from '../factories/program.factory'
 import chaiAsPromised from 'chai-as-promised'
 import {
+    AddClassesToSchoolInput,
     CreateSchoolInput,
     DeleteSchoolInput,
     SchoolsMutationResult,
+    UpdateSchoolInput,
 } from '../../src/types/graphQL/school'
+import { UserPermissions } from '../../src/permissions/userPermissions'
 import { mutate } from '../../src/utils/mutations/commonStructure'
+import {
+    AddClassesToSchools,
+    CreateSchools,
+    DeleteSchools,
+    UpdateSchools,
+} from '../../src/resolvers/school'
 import { buildPermissionError, permErrorMeta } from '../utils/errors'
-import { CreateSchools, DeleteSchools } from '../../src/resolvers/school'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import {
     createUser,
     createAdminUser as createAdmin,
 } from '../factories/user.factory'
-import { AddClassesToSchoolInput } from '../../src/types/graphQL/school'
-import { UserPermissions } from '../../src/permissions/userPermissions'
-import { AddClassesToSchools } from '../../src/resolvers/school'
-import { expectAPIError } from '../utils/apiError'
-import {
-    createMultipleSchools,
-    createSchool as createSchoolFactory,
-} from '../factories/school.factory'
-import { createClass, createClasses } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
-import { createRole as roleFactory } from '../factories/role.factory'
-import { createSchoolMembership } from '../factories/schoolMembership.factory'
-import { NIL_UUID } from '../utils/database'
+import { formatShortCode, generateShortCode } from '../../src/utils/shortcode'
 import { APIErrorCollection } from '../../src/types/errors/apiError'
-import { compareErrors } from '../utils/apiError'
+import { compareErrors, expectAPIError } from '../utils/apiError'
 import {
     createEntityAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../../src/utils/resolvers'
-import { generateShortCode } from '../../src/utils/shortcode'
 import faker from 'faker'
+import { NIL_UUID } from '../utils/database'
+import { createMultipleSchools } from '../factories/school.factory'
+import { createClasses } from '../factories/class.factory'
+import { createRole as roleFactory } from '../factories/role.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
 
 use(chaiAsPromised)
 
@@ -127,11 +128,24 @@ describe('school', () => {
             PermissionName.delete_school_20440,
             { authorization: getAdminAuthToken() }
         )
-        const role2 = await createRole(testClient, organization.organization_id)
+        const roleCreate = await createRole(
+            testClient,
+            organization.organization_id
+        )
         await grantPermission(
             testClient,
-            role2.role_id,
+            roleCreate.role_id,
             PermissionName.create_school_20220,
+            { authorization: getAdminAuthToken() }
+        )
+        const editRole = await createRole(
+            testClient,
+            organization.organization_id
+        )
+        await grantPermission(
+            testClient,
+            editRole.role_id,
+            PermissionName.edit_school_20330,
             { authorization: getAdminAuthToken() }
         )
 
@@ -145,7 +159,7 @@ describe('school', () => {
         await createOrganizationMembership({
             user: userWithPermission,
             organization,
-            roles: [role, role2],
+            roles: [role, roleCreate, editRole],
         }).save()
     }
 
@@ -1286,6 +1300,7 @@ describe('school', () => {
             })
         })
     })
+
     context('deleteSchools', () => {
         const schoolsCount = 2
         const deleteSchoolsFromResolver = async (
@@ -1383,6 +1398,350 @@ describe('school', () => {
             })
         })
     })
+
+    context('updateSchools', () => {
+        const schoolsCount = 2
+        let input: UpdateSchoolInput[]
+
+        const updateSchoolsFromResolver = async (
+            user: User,
+            input: UpdateSchoolInput[]
+        ): Promise<SchoolsMutationResult> => {
+            const permissions = new UserPermissions(userToPayload(user))
+            const ctx = { permissions }
+            return mutate(UpdateSchools, { input }, ctx)
+        }
+
+        const expectSchoolsUpdated = async (
+            user: User,
+            input: UpdateSchoolInput[]
+        ) => {
+            const { schools } = await updateSchoolsFromResolver(user, input)
+            expect(schools).to.have.lengthOf(input.length)
+            schools.forEach((c, i) => {
+                expect(c.id).to.eq(input[i].id)
+                expect(c.name).to.eq(input[i].name)
+                expect(c.shortCode).to.eq(
+                    formatShortCode(input[i].shortCode) || c.shortCode
+                )
+            })
+
+            const schoolsDB = await School.findByIds(input.map((i) => i.id))
+
+            expect(schoolsDB).to.have.lengthOf(input.length)
+            schoolsDB.forEach((cdb) => {
+                const inputRelated = input.find((i) => i.id === cdb.school_id)
+                expect(inputRelated).to.exist
+                expect(cdb.school_id).to.eq(inputRelated?.id)
+            })
+        }
+
+        const expectSchools = async (quantity: number) => {
+            const schools = await School.count({
+                where: { status: Status.ACTIVE },
+            })
+
+            expect(schools).to.eq(quantity)
+        }
+
+        beforeEach(async () => {
+            await createInitialSchools()
+            input = [
+                {
+                    id: school.school_id,
+                    name: school.school_name,
+                    shortCode: ``,
+                    organizationId: organization.organization_id,
+                },
+                {
+                    id: school2.school_id,
+                    name: school2.school_name,
+                    shortCode: ``,
+                    organizationId: (await school2.organization)
+                        ?.organization_id as string,
+                },
+            ]
+        })
+
+        context('when user is admin', () => {
+            it('should update any school', async () => {
+                await expectSchoolsUpdated(admin, input)
+                await expectSchools(schoolsCount)
+            })
+        })
+
+        context('when user is not admin', () => {
+            const permError = permErrorMeta(PermissionName.edit_school_20330)
+
+            it('should update schools if the caller has organization membership', async () => {
+                await expectSchoolsUpdated(userWithPermission, [input[0]])
+            })
+
+            it('when caller does not have permissions to update schools for all organizations', async () => {
+                const operation = expectSchoolsUpdated(
+                    userWithPermission,
+                    input
+                )
+
+                await expect(operation).to.be.rejectedWith(
+                    permError(userWithPermission, [organization2])
+                )
+            })
+        })
+        context('custom validation', () => {
+            let newSchool: School
+            context(
+                'when it exists a school with the same name or the same shortcode for the organization',
+                () => {
+                    beforeEach(async () => {
+                        await createInitialSchools()
+                        newSchool = await createSchool(
+                            testClient,
+                            organization?.organization_id,
+                            faker.random.word(),
+                            undefined,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    })
+
+                    it('should throw an ErrorCollection when a record with the same name exists', async () => {
+                        input = [
+                            {
+                                id: school.school_id,
+                                name: newSchool.school_name,
+                                shortCode: ``,
+                                organizationId: organization.organization_id,
+                            },
+                        ]
+                        await expectAPIErrorCollection(
+                            updateSchoolsFromResolver(admin, input),
+                            new APIErrorCollection([
+                                createEntityAPIError(
+                                    'duplicateChild',
+                                    0,
+                                    'School',
+                                    newSchool.school_name,
+                                    'Organization',
+                                    organization.organization_id,
+                                    ['organizationId', 'name']
+                                ),
+                            ])
+                        )
+                    })
+
+                    it('should throw an ErrorCollection when a record with the same shortcode exists', async () => {
+                        input = [
+                            {
+                                id: newSchool.school_id,
+                                name: faker.random.word(),
+                                shortCode: shortCode,
+                                organizationId: organization.organization_id,
+                            },
+                        ]
+                        await expectAPIErrorCollection(
+                            updateSchoolsFromResolver(admin, input),
+                            new APIErrorCollection([
+                                createEntityAPIError(
+                                    'duplicateChild',
+                                    0,
+                                    'School',
+                                    shortCode,
+                                    'Organization',
+                                    organization.organization_id,
+                                    ['organizationId', 'shortCode']
+                                ),
+                            ])
+                        )
+                    })
+                }
+            )
+        })
+    })
+
+    context('CreateSchools', () => {
+        let input: CreateSchoolInput[]
+        const createSchoolsFromResolver = async (
+            user: User,
+            input: CreateSchoolInput[]
+        ): Promise<SchoolsMutationResult> => {
+            const permissions = new UserPermissions(userToPayload(user))
+            const ctx = { permissions }
+            return mutate(CreateSchools, { input }, ctx)
+        }
+
+        const expectSchoolsCreated = async (
+            user: User,
+            input: CreateSchoolInput[]
+        ) => {
+            const { schools } = await createSchoolsFromResolver(user, input)
+
+            expect(schools).to.have.lengthOf(input.length)
+            schools.forEach((c, i) => {
+                expect(c.name).to.eq(input[i].name)
+                expect(c.status).to.eq(Status.ACTIVE)
+            })
+
+            const schoolsDB = await School.find()
+
+            expect(schoolsDB).to.have.lengthOf(input.length)
+            schoolsDB.forEach((cdb) => {
+                const inputRelated = input.find(
+                    (i) => i.name === cdb.school_name
+                )
+                expect(inputRelated).to.exist
+                expect(cdb.school_name).to.eq(inputRelated?.name)
+                expect(cdb.status).to.eq(Status.ACTIVE)
+            })
+        }
+
+        const expectSchools = async (quantity: number) => {
+            const schools = await School.count({
+                where: { status: Status.ACTIVE },
+            })
+
+            expect(schools).to.eq(quantity)
+        }
+
+        beforeEach(async () => {
+            await orgUsersAndPermissions()
+            input = [
+                {
+                    organizationId: organization.organization_id,
+                    name: 'test',
+                },
+                {
+                    organizationId: organization2.organization_id,
+                    name: 'test2',
+                },
+            ]
+        })
+
+        context('when user is admin', () => {
+            it('should create any school', async () => {
+                await expectSchoolsCreated(admin, input)
+                await expectSchools(2)
+            })
+        })
+
+        context('when user is not admin', () => {
+            const permError = permErrorMeta(PermissionName.create_school_20220)
+
+            it('should create schools if the caller has organization membership', async () => {
+                await expectSchoolsCreated(userWithPermission, [
+                    {
+                        organizationId: organization.organization_id,
+                        name: 'test',
+                    },
+                ])
+
+                await expectSchools(1)
+            })
+
+            it('when caller does not have permissions to create schools for all organizations', async () => {
+                const operation = expectSchoolsCreated(
+                    userWithPermission,
+                    input
+                )
+
+                await expect(operation).to.be.rejectedWith(
+                    permError(userWithPermission, [organization2])
+                )
+                await expectSchools(0)
+            })
+        })
+
+        context('custom validation', () => {
+            context(
+                "when an organization with the received 'organizationId' does not exists",
+                () => {
+                    it('should throw an ErrorCollection', async () => {
+                        input = [
+                            {
+                                organizationId: NIL_UUID,
+                                name: 'test',
+                            },
+                        ]
+
+                        await expectAPIErrorCollection(
+                            createSchoolsFromResolver(admin, input),
+                            new APIErrorCollection([
+                                createNonExistentOrInactiveEntityAPIError(
+                                    0,
+                                    ['organization_id'],
+                                    'ID',
+                                    'Organization',
+                                    NIL_UUID
+                                ),
+                            ])
+                        )
+
+                        await expectSchools(0)
+                    })
+                }
+            )
+
+            context(
+                'when it exists a school with the same name or the same shortcode for the organization',
+                () => {
+                    beforeEach(async () => {
+                        await createInitialSchools()
+                    })
+
+                    it('should throw an ErrorCollection when a record with the same name exists', async () => {
+                        input = [
+                            {
+                                organizationId: organization.organization_id,
+                                name: school.school_name,
+                            },
+                        ]
+                        await expectAPIErrorCollection(
+                            createSchoolsFromResolver(admin, input),
+                            new APIErrorCollection([
+                                createEntityAPIError(
+                                    'duplicateChild',
+                                    0,
+                                    'School',
+                                    school.school_name,
+                                    'Organization',
+                                    organization.organization_id,
+                                    ['organizationId', 'name']
+                                ),
+                            ])
+                        )
+
+                        await expectSchools(2)
+                    })
+
+                    it('should throw an ErrorCollection when a record with the same shortcode exists', async () => {
+                        input = [
+                            {
+                                organizationId: organization.organization_id,
+                                name: faker.random.word(),
+                                shortCode: shortCode,
+                            },
+                        ]
+                        await expectAPIErrorCollection(
+                            createSchoolsFromResolver(admin, input),
+                            new APIErrorCollection([
+                                createEntityAPIError(
+                                    'duplicateChild',
+                                    0,
+                                    'School',
+                                    shortCode,
+                                    'Organization',
+                                    organization.organization_id,
+                                    ['organizationId', 'shortCode']
+                                ),
+                            ])
+                        )
+
+                        await expectSchools(2)
+                    })
+                }
+            )
+        })
+    })
+
     describe('AddClassesToSchools', () => {
         let adminUser: User
         let nonAdminUser: User
@@ -1638,189 +1997,5 @@ describe('school', () => {
                 await checkNoChangesMade(false)
             }
         )
-    })
-
-    context('CreateSchools', () => {
-        let input: CreateSchoolInput[]
-        const createSchoolsFromResolver = async (
-            user: User,
-            input: CreateSchoolInput[]
-        ): Promise<SchoolsMutationResult> => {
-            const permissions = new UserPermissions(userToPayload(user))
-            const ctx = { permissions }
-            return mutate(CreateSchools, { input }, ctx)
-        }
-
-        const expectSchoolsCreated = async (
-            user: User,
-            input: CreateSchoolInput[]
-        ) => {
-            const { schools } = await createSchoolsFromResolver(user, input)
-
-            expect(schools).to.have.lengthOf(input.length)
-            schools.forEach((c, i) => {
-                expect(c.name).to.eq(input[i].name)
-                expect(c.status).to.eq(Status.ACTIVE)
-            })
-
-            const schoolsDB = await School.find()
-
-            expect(schoolsDB).to.have.lengthOf(input.length)
-            schoolsDB.forEach((cdb) => {
-                const inputRelated = input.find(
-                    (i) => i.name === cdb.school_name
-                )
-                expect(inputRelated).to.exist
-                expect(cdb.school_name).to.eq(inputRelated?.name)
-                expect(cdb.status).to.eq(Status.ACTIVE)
-            })
-        }
-
-        const expectSchools = async (quantity: number) => {
-            const schools = await School.count({
-                where: { status: Status.ACTIVE },
-            })
-
-            expect(schools).to.eq(quantity)
-        }
-
-        beforeEach(async () => {
-            await orgUsersAndPermissions()
-            input = [
-                {
-                    organizationId: organization.organization_id,
-                    name: 'test',
-                },
-                {
-                    organizationId: organization2.organization_id,
-                    name: 'test2',
-                },
-            ]
-        })
-
-        context('when user is admin', () => {
-            it('should create any school', async () => {
-                await expectSchoolsCreated(admin, input)
-                await expectSchools(2)
-            })
-        })
-
-        context('when user is not admin', () => {
-            const permError = permErrorMeta(PermissionName.create_school_20220)
-
-            it('should create schools if the caller has organization membership', async () => {
-                await expectSchoolsCreated(userWithPermission, [
-                    {
-                        organizationId: organization.organization_id,
-                        name: 'test',
-                    },
-                ])
-
-                await expectSchools(1)
-            })
-
-            it('when caller does not have permissions to create schools for all organizations', async () => {
-                const operation = expectSchoolsCreated(
-                    userWithPermission,
-                    input
-                )
-
-                await expect(operation).to.be.rejectedWith(
-                    permError(userWithPermission, [organization2])
-                )
-                await expectSchools(0)
-            })
-        })
-
-        context('custom validation', () => {
-            context(
-                "when an organization with the received 'organizationId' does not exists",
-                () => {
-                    it('should throw an ErrorCollection', async () => {
-                        input = [
-                            {
-                                organizationId: NIL_UUID,
-                                name: 'test',
-                            },
-                        ]
-
-                        await expectAPIErrorCollection(
-                            createSchoolsFromResolver(admin, input),
-                            new APIErrorCollection([
-                                createNonExistentOrInactiveEntityAPIError(
-                                    0,
-                                    ['organization_id'],
-                                    'ID',
-                                    'Organization',
-                                    NIL_UUID
-                                ),
-                            ])
-                        )
-
-                        await expectSchools(0)
-                    })
-                }
-            )
-
-            context(
-                'when it exists a school with the same name or the same shortcode for the organization',
-                () => {
-                    beforeEach(async () => {
-                        await createInitialSchools()
-                    })
-
-                    it('should throw an ErrorCollection when a record with the same name exists', async () => {
-                        input = [
-                            {
-                                organizationId: organization.organization_id,
-                                name: school.school_name,
-                            },
-                        ]
-                        await expectAPIErrorCollection(
-                            createSchoolsFromResolver(admin, input),
-                            new APIErrorCollection([
-                                createEntityAPIError(
-                                    'duplicateChild',
-                                    0,
-                                    'School',
-                                    school.school_name,
-                                    'Organization',
-                                    organization.organization_id,
-                                    ['organizationId', 'name']
-                                ),
-                            ])
-                        )
-
-                        await expectSchools(2)
-                    })
-
-                    it('should throw an ErrorCollection when a record with the same shortcode exists', async () => {
-                        input = [
-                            {
-                                organizationId: organization.organization_id,
-                                name: faker.random.word(),
-                                shortCode: shortCode,
-                            },
-                        ]
-                        await expectAPIErrorCollection(
-                            createSchoolsFromResolver(admin, input),
-                            new APIErrorCollection([
-                                createEntityAPIError(
-                                    'duplicateChild',
-                                    0,
-                                    'School',
-                                    shortCode,
-                                    'Organization',
-                                    organization.organization_id,
-                                    ['organizationId', 'shortCode']
-                                ),
-                            ])
-                        )
-
-                        await expectSchools(2)
-                    })
-                }
-            )
-        })
     })
 })

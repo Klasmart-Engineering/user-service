@@ -14,12 +14,14 @@ import {
     DeleteSchoolInput,
     SchoolsMutationResult,
     AddClassesToSchoolInput,
+    UpdateSchoolInput,
 } from '../types/graphQL/school'
 import {
     CreateMutation,
     DeleteMutation,
     EntityMap,
     AddMutation,
+    UpdateMutation,
 } from '../utils/mutations/commonStructure'
 import { Class } from '../entities/class'
 import {
@@ -28,6 +30,7 @@ import {
     createNonExistentOrInactiveEntityAPIError,
 } from '../utils/resolvers'
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
+import { config } from '../config/config'
 
 export class DeleteSchools extends DeleteMutation<
     School,
@@ -432,4 +435,156 @@ const getMatchingEntities = async (
         matchingOrgsAndShortcodes.set([orgId, s.shortcode].toString(), s)
     }
     return { matchingOrgsAndNames, matchingOrgsAndShortcodes }
+}
+
+export class UpdateSchools extends UpdateMutation<
+    School,
+    UpdateSchoolInput,
+    SchoolsMutationResult
+> {
+    protected readonly EntityType = School
+    protected readonly EntityPrimaryKey = School
+    protected readonly inputTypeName = 'UpdateSchoolInput'
+    protected readonly mainEntityIds: string[]
+    protected readonly output: SchoolsMutationResult = { schools: [] }
+
+    constructor(
+        input: UpdateSchoolInput[],
+        context: Pick<Context, 'permissions'>
+    ) {
+        super(input, context)
+        this.mainEntityIds = input.map((val) => val.id)
+    }
+
+    protected async generateEntityMaps(
+        input: UpdateSchoolInput[]
+    ): Promise<EntityMap<School>> {
+        const names = input.map((val) => val.name)
+        const shortCodes = input.map((val) => val.shortCode)
+
+        const preloadedSchoolArray = School.find({
+            where: {
+                school_id: In(this.mainEntityIds),
+            },
+            relations: ['organization'],
+        })
+
+        const matchingPreloadedSchoolArray = School.find({
+            where: [
+                {
+                    school_name: In(names),
+                },
+                {
+                    shortcode: In(shortCodes),
+                },
+            ],
+            relations: ['organization'],
+        })
+
+        const matchingOrgsAndNames = new Map<string, School>()
+        const matchingOrgsAndShortcodes = new Map<string, School>()
+        for (const s of await matchingPreloadedSchoolArray) {
+            const orgId = (await s.organization)?.organization_id || ''
+            matchingOrgsAndNames.set([orgId, s.school_name].toString(), s)
+            matchingOrgsAndShortcodes.set([orgId, s.shortcode].toString(), s)
+        }
+
+        return {
+            mainEntity: new Map(
+                (await preloadedSchoolArray).map((s) => [s.school_id, s])
+            ),
+            matchingOrgsAndNames,
+            matchingOrgsAndShortcodes,
+        }
+    }
+
+    protected async authorize(
+        _input: UpdateSchoolInput[],
+        entityMaps: EntityMap<School>
+    ) {
+        const organizationIds: string[] = []
+        for (const c of entityMaps.mainEntity.values()) {
+            const organizationId = (await c.organization)?.organization_id
+            if (organizationId) organizationIds.push(organizationId)
+        }
+        await this.context.permissions.rejectIfNotAllowed(
+            { organization_ids: organizationIds },
+            PermissionName.edit_school_20330
+        )
+    }
+
+    protected validate(
+        index: number,
+        currentEntity: School,
+        currentInput: UpdateSchoolInput,
+        maps: EntityMap<School>
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { organizationId, name, shortCode } = currentInput
+
+        const matchingOrgAndName = maps.matchingOrgsAndNames.get(
+            [organizationId, name].toString()
+        )
+        const matchingOrgAndShortcode = maps.matchingOrgsAndShortcodes.get(
+            [organizationId, shortCode].toString()
+        )
+
+        if (
+            matchingOrgAndName &&
+            (matchingOrgAndName as School).school_id !== currentEntity.school_id
+        ) {
+            errors.push(
+                createEntityAPIError(
+                    'duplicateChild',
+                    index,
+                    'School',
+                    name,
+                    'Organization',
+                    organizationId,
+                    ['organizationId', 'name']
+                )
+            )
+        }
+        if (
+            matchingOrgAndShortcode &&
+            (matchingOrgAndShortcode as School).school_id !==
+                currentEntity.school_id
+        ) {
+            errors.push(
+                createEntityAPIError(
+                    'duplicateChild',
+                    index,
+                    'School',
+                    shortCode,
+                    'Organization',
+                    organizationId,
+                    ['organizationId', 'shortCode']
+                )
+            )
+        }
+        return errors
+    }
+
+    protected process(
+        currentEntity: School,
+        currentInput: UpdateSchoolInput
+    ): School[] {
+        const { name, shortCode } = currentInput
+        currentEntity.school_name = name
+        currentEntity.shortcode =
+            formatShortCode(
+                shortCode,
+                config.limits.SCHOOL_SHORTCODE_MAX_LENGTH
+            ) || currentEntity.shortcode
+        return [currentEntity]
+    }
+
+    protected async buildOutput(): Promise<void> {
+        this.output.schools = []
+        for (const proccesedEntity of this.processedEntities) {
+            this.output.schools.push(
+                await mapSchoolToSchoolConnectionNode(proccesedEntity)
+            )
+        }
+    }
 }
