@@ -53,7 +53,7 @@ export function maxQueryDepth(): number {
 
 export async function authenticate(req: Request) {
     let permissions: UserPermissions
-    if (validateAPIKey(req)) {
+    if (await validateAPIKey(req)) {
         permissions = new UserPermissions(undefined, true)
     } else {
         const token: TokenPayload = await checkToken(req)
