@@ -7081,7 +7081,7 @@ describe('organization', () => {
         function addUsers(authUser = adminUser) {
             const permissions = new UserPermissions(userToPayload(authUser))
             const ctx = { permissions }
-            return mutate(AddUsersToOrganizations, { input }, ctx)
+            return mutate(AddUsersToOrganizations, { input }, ctx.permissions)
         }
 
         async function checkOutput() {
@@ -7333,7 +7333,11 @@ describe('organization', () => {
         function removeUsers(authUser = adminUser) {
             const permissions = new UserPermissions(userToPayload(authUser))
             const ctx = { permissions }
-            return mutate(RemoveUsersFromOrganizations, { input }, ctx)
+            return mutate(
+                RemoveUsersFromOrganizations,
+                { input },
+                ctx.permissions
+            )
         }
 
         async function checkOutput() {

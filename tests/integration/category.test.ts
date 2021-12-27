@@ -1286,7 +1286,7 @@ describe('category', () => {
         ): Promise<CategoriesMutationResult> => {
             const permissions = new UserPermissions(userToPayload(user))
             const ctx = { permissions }
-            return mutate(DeleteCategories, { input }, ctx)
+            return mutate(DeleteCategories, { input }, ctx.permissions)
         }
 
         const expectCategoriesDeleted = async (

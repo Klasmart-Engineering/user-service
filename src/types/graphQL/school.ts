@@ -24,13 +24,10 @@ export interface SchoolSummaryNode {
     userStatus?: Status
 }
 
-export interface DeleteSchoolInput {
-    id: string
-}
-
-export interface AddClassesToSchoolInput {
-    schoolId: string
-    classIds: string[]
+export interface CreateSchoolInput {
+    name: string
+    shortCode?: string
+    organizationId: string
 }
 
 export interface UpdateSchoolInput {
@@ -40,12 +37,20 @@ export interface UpdateSchoolInput {
     shortCode: string
 }
 
-export interface SchoolsMutationResult {
-    schools: ISchoolsConnectionNode[]
+export interface DeleteSchoolInput {
+    id: string
 }
 
-export interface CreateSchoolInput {
-    name: string
-    shortCode?: string
-    organizationId: string
+export interface RemoveUsersFromSchoolInput {
+    schoolId: string
+    userIds: string[]
+}
+
+export interface AddClassesToSchoolInput {
+    schoolId: string
+    classIds: string[]
+}
+
+export interface SchoolsMutationResult {
+    schools: ISchoolsConnectionNode[]
 }

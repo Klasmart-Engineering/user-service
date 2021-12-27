@@ -71,7 +71,7 @@ describe('commonStructure', () => {
         const ctx = {
             permissions: new UserPermissions(userToPayload(admin)),
         }
-        return mutate(DeleteCategories, { input }, ctx)
+        return mutate(DeleteCategories, { input }, ctx.permissions)
     }
 
     function generateDeleteInput() {
@@ -314,10 +314,8 @@ describe('commonStructure', () => {
         async function addMemberships(
             input: AddUsersToOrganizationInput[]
         ): Promise<OrganizationsMutationResult> {
-            const ctx = {
-                permissions: new UserPermissions(userToPayload(admin)),
-            }
-            return mutate(AddUsersToOrganizations, { input }, ctx)
+            const permissions = new UserPermissions(userToPayload(admin))
+            return mutate(AddUsersToOrganizations, { input }, permissions)
         }
 
         beforeEach(async () => {
@@ -405,10 +403,8 @@ describe('commonStructure', () => {
         async function removeMemberships(
             input: RemoveUsersFromOrganizationInput[]
         ): Promise<OrganizationsMutationResult> {
-            const ctx = {
-                permissions: new UserPermissions(userToPayload(admin)),
-            }
-            return mutate(RemoveUsersFromOrganizations, { input }, ctx)
+            const permissions = new UserPermissions(userToPayload(admin))
+            return mutate(RemoveUsersFromOrganizations, { input }, permissions)
         }
 
         context('#run', () => {

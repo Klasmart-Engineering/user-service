@@ -35,9 +35,9 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
 
     constructor(
         input: AddUsersToOrganizationInput[],
-        context: Pick<Context, 'permissions'>
+        permissions: Context['permissions']
     ) {
-        super(input, context)
+        super(input, permissions)
         this.mainEntityIds = input.map((val) => val.organizationId)
     }
 
@@ -47,7 +47,7 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
         generateMaps(this.mainEntityIds, input)
 
     protected authorize(): Promise<void> {
-        return this.context.permissions.rejectIfNotAllowed(
+        return this.permissions.rejectIfNotAllowed(
             { organization_ids: this.mainEntityIds },
             PermissionName.send_invitation_40882
         )
@@ -162,9 +162,9 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
 
     constructor(
         input: RemoveUsersFromOrganizationInput[],
-        context: Pick<Context, 'permissions'>
+        permissions: Context['permissions']
     ) {
-        super(input, context)
+        super(input, permissions)
         this.mainEntityIds = input.map((val) => val.organizationId)
         this.saveIds = input.flatMap((i) =>
             i.userIds.map((user_id) => {
@@ -182,7 +182,7 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
         generateMaps(this.mainEntityIds, input)
 
     protected authorize(): Promise<void> {
-        return this.context.permissions.rejectIfNotAllowed(
+        return this.permissions.rejectIfNotAllowed(
             { organization_ids: this.mainEntityIds },
             PermissionName.edit_this_organization_10330
         )

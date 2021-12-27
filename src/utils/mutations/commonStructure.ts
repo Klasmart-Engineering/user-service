@@ -34,16 +34,16 @@ abstract class Mutation<
 
     // Concrete variables
     protected readonly input: InputType[]
-    protected readonly context: Pick<Context, 'permissions'>
+    protected readonly permissions: Context['permissions']
     protected entityMaps?: EntityMap<EntityType>
     protected processedEntities: ModifiedEntityType[] = []
 
     protected constructor(
         input: InputType[],
-        context: Pick<Context, 'permissions'>
+        permissions: Context['permissions']
     ) {
         this.input = input
-        this.context = context
+        this.permissions = permissions
     }
 
     // Abstract methods
@@ -202,12 +202,12 @@ export function mutate<
 >(
     mutation: new (
         argsInput: InputType[],
-        ctx: Pick<Context, 'permissions'>
+        permissions: Context['permissions']
     ) => Mutation<EntityType, InputType, OutputType, ModifiedEntityType>,
     args: Record<'input', InputType[]>,
-    context: Pick<Context, 'permissions'>
+    permissions: Context['permissions']
 ): Promise<OutputType> {
-    const mutationClass = new mutation(args.input, context)
+    const mutationClass = new mutation(args.input, permissions)
     return mutationClass.run()
 }
 
@@ -230,8 +230,8 @@ export abstract class UpdateMutation<
     InputType,
     OutputType
 > extends Mutation<EntityType, InputType, OutputType> {
-    constructor(input: InputType[], context: Pick<Context, 'permissions'>) {
-        super(input, context)
+    constructor(input: InputType[], permissions: Context['permissions']) {
+        super(input, permissions)
     }
     protected normalize = () => Promise.resolve(this.input)
     protected abstract buildOutput(): Promise<void>
@@ -252,8 +252,8 @@ export abstract class DeleteMutation<
         deleted_at: new Date(),
     }
 
-    constructor(input: InputType[], context: Pick<Context, 'permissions'>) {
-        super(input, context)
+    constructor(input: InputType[], permissions: Context['permissions']) {
+        super(input, permissions)
     }
 
     protected normalize = () => Promise.resolve(this.input)
@@ -280,8 +280,8 @@ export abstract class AddRemoveMutation<
     OutputType,
     ModifiedEntityType extends CustomBaseEntity = EntityType
 > extends Mutation<EntityType, InputType, OutputType, ModifiedEntityType> {
-    constructor(input: InputType[], context: Pick<Context, 'permissions'>) {
-        super(input, context)
+    constructor(input: InputType[], permissions: Context['permissions']) {
+        super(input, permissions)
     }
 
     protected normalize = () => Promise.resolve(this.input)
@@ -324,8 +324,8 @@ export abstract class RemoveMembershipMutation<
     protected abstract readonly MembershipType: typeof CustomBaseEntity
     protected abstract readonly saveIds: Record<string, string>[]
 
-    constructor(input: InputType[], context: Pick<Context, 'permissions'>) {
-        super(input, context)
+    constructor(input: InputType[], permissions: Context['permissions']) {
+        super(input, permissions)
     }
 
     protected normalize = () => Promise.resolve(this.input)

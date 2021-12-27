@@ -420,9 +420,9 @@ export class DeleteCategories extends DeleteMutation<
 
     constructor(
         input: DeleteCategoryInput[],
-        context: Pick<Context, 'permissions'>
+        permissions: Context['permissions']
     ) {
-        super(input, context)
+        super(input, permissions)
         this.mainEntityIds = input.map((val) => val.id)
     }
 
@@ -447,7 +447,7 @@ export class DeleteCategories extends DeleteMutation<
             const organizationId = (await c.organization)?.organization_id
             if (organizationId) organizationIds.push(organizationId)
         }
-        await this.context.permissions.rejectIfNotAllowed(
+        await this.permissions.rejectIfNotAllowed(
             { organization_ids: organizationIds },
             PermissionName.delete_subjects_20447
         )

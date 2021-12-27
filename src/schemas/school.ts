@@ -17,6 +17,7 @@ import {
     CreateSchools,
     DeleteSchools,
     UpdateSchools,
+    RemoveUsersFromSchools,
 } from '../resolvers/school'
 import { mutate } from '../utils/mutations/commonStructure'
 
@@ -25,12 +26,15 @@ const typeDefs = gql`
         school(school_id: ID!): School
         uploadSchoolsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        createSchools(input: [CreateSchoolInput!]!): SchoolsMutationResult
+        updateSchools(input: [UpdateSchoolInput!]!): SchoolsMutationResult
         deleteSchools(input: [DeleteSchoolInput!]!): SchoolsMutationResult
+        removeUsersFromSchools(
+            input: [RemoveUsersFromSchoolInput!]!
+        ): SchoolsMutationResult
         addClassesToSchools(
             input: [AddClassesToSchoolInput!]!
         ): SchoolsMutationResult
-        createSchools(input: [CreateSchoolInput!]!): SchoolsMutationResult
-        updateSchools(input: [UpdateSchoolInput!]!): SchoolsMutationResult
     }
     extend type Query {
         school(school_id: ID!): School
@@ -89,6 +93,9 @@ const typeDefs = gql`
         addRoles(role_ids: [ID!]!): [Role]
         removeRole(role_id: ID!): SchoolMembership
         leave(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 21/03/22 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
     }
     type MembershipUpdate {
         user: User
@@ -140,11 +147,6 @@ const typeDefs = gql`
         ): ProgramsConnectionResponse
     }
 
-    input AddClassesToSchoolInput {
-        schoolId: ID!
-        classIds: [ID!]!
-    }
-
     input SchoolFilter {
         # table columns
         schoolId: UUIDFilter
@@ -174,10 +176,7 @@ const typeDefs = gql`
         order: SortOrder!
     }
 
-    input DeleteSchoolInput {
-        id: ID!
-    }
-
+    # Mutation related definitions
     input CreateSchoolInput {
         name: String!
         shortCode: String
@@ -189,6 +188,20 @@ const typeDefs = gql`
         organizationId: ID!
         name: String!
         shortCode: String!
+    }
+
+    input DeleteSchoolInput {
+        id: ID!
+    }
+
+    input RemoveUsersFromSchoolInput {
+        schoolId: ID!
+        userIds: [ID!]!
+    }
+
+    input AddClassesToSchoolInput {
+        schoolId: ID!
+        classIds: [ID!]!
     }
 
     type SchoolsMutationResult {
@@ -272,14 +285,16 @@ export default function getDefault(
                     model.getSchool(args, ctx),
                 uploadSchoolsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSchoolsFromCSV(args, ctx, info),
-                deleteSchools: (_parent, args, ctx, _info) =>
-                    mutate(DeleteSchools, args, ctx),
-                addClassesToSchools: (_parent, args, ctx, _info) =>
-                    mutate(AddClassesToSchools, args, ctx),
                 createSchools: (_parent, args, ctx, _info) =>
-                    mutate(CreateSchools, args, ctx),
+                    mutate(CreateSchools, args, ctx.permissions),
                 updateSchools: (_parent, args, ctx, _info) =>
-                    mutate(UpdateSchools, args, ctx),
+                    mutate(UpdateSchools, args, ctx.permissions),
+                deleteSchools: (_parent, args, ctx, _info) =>
+                    mutate(DeleteSchools, args, ctx.permissions),
+                removeUsersFromSchools: (_parent, args, ctx, _info) =>
+                    mutate(RemoveUsersFromSchools, args, ctx.permissions),
+                addClassesToSchools: (_parent, args, ctx, _info) =>
+                    mutate(AddClassesToSchools, args, ctx.permissions),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>

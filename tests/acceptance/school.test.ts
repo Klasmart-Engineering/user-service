@@ -9,6 +9,7 @@ import { School } from '../../src/entities/school'
 import { User } from '../../src/entities/user'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import {
+    RemoveUsersFromSchoolInput,
     AddClassesToSchoolInput,
     CreateSchoolInput,
     ISchoolsConnectionNode,
@@ -42,11 +43,14 @@ import {
     CREATE_SCHOOLS,
     DELETE_SCHOOLS,
     UPDATE_SCHOOLS,
+    REMOVE_USERS_FROM_SCHOOLS,
 } from '../utils/operations/schoolOps'
 import { Status } from '../../src/entities/status'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { userToPayload } from '../utils/operations/userOps'
 import { ADD_CLASSES_TO_SCHOOLS } from '../utils/operations/schoolOps'
+import { Role } from '../../src/entities/role'
+import { SchoolMembership } from '../../src/entities/schoolMembership'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -385,6 +389,7 @@ describe('acceptance.school', () => {
             })
         })
     })
+
     context('addClassesToSchools', () => {
         let adminUser: User
         let input: AddClassesToSchoolInput[]
@@ -424,7 +429,7 @@ describe('acceptance.school', () => {
                         Authorization: generateToken(userToPayload(adminUser)),
                     })
                     .send({
-                        query: ADD_CLASSES_TO_SCHOOLS,
+                        query: print(ADD_CLASSES_TO_SCHOOLS),
                         variables: {
                             input,
                         },
@@ -551,6 +556,88 @@ describe('acceptance.school', () => {
 
                 expect(response.status).to.eq(200)
                 expect(schoolsUpdated).to.be.null
+                expect(errors).to.exist
+            })
+        })
+    })
+
+    context('removeUsersFromSchools', () => {
+        let users: User[]
+
+        const makeRemoveUsersFromSchoolsMutation = async (
+            input: RemoveUsersFromSchoolInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(REMOVE_USERS_FROM_SCHOOLS),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        beforeEach(async () => {
+            const school = await School.findOneOrFail(schoolId)
+            const studentRole = await Role.findOneOrFail({
+                where: { role_name: 'Student' },
+            })
+
+            users = await User.save(
+                Array.from(new Array(6), () => createUser())
+            )
+
+            await SchoolMembership.save(
+                Array.from(users, (user) =>
+                    createSchoolMembership({
+                        user,
+                        school,
+                        roles: [studentRole],
+                    })
+                )
+            )
+        })
+
+        context('when input is sent in a correct way', () => {
+            it('should respond successfully', async () => {
+                const input = [
+                    {
+                        schoolId,
+                        userIds: users.slice(0, 3).map((u) => u.user_id),
+                    },
+                ]
+
+                const response = await makeRemoveUsersFromSchoolsMutation(input)
+                const schools =
+                    response.body.data.removeUsersFromSchools.schools
+
+                expect(response.status).to.eq(200)
+                expect(schools).to.exist
+                expect(schools).to.be.an('array')
+                expect(schools.length).to.eq(input.length)
+                const schoolEditedIds = schools.map(
+                    (cd: ISchoolsConnectionNode) => cd.id
+                )
+
+                const inputIds = input.map((i) => i.schoolId)
+
+                expect(schoolEditedIds).to.deep.equalInAnyOrder(inputIds)
+            })
+        })
+
+        context('when user in userIds input does not exists', () => {
+            it('should respond with errors', async () => {
+                const input = [
+                    {
+                        schoolId,
+                        userIds: [NIL_UUID],
+                    },
+                ]
+
+                const response = await makeRemoveUsersFromSchoolsMutation(input)
+                const schoolsEdited = response.body.data.removeUsersFromSchools
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(schoolsEdited).to.be.null
                 expect(errors).to.exist
             })
         })

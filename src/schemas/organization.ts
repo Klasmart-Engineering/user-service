@@ -527,9 +527,9 @@ export default function getDefault(
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
-                    mutate(AddUsersToOrganizations, args, ctx),
+                    mutate(AddUsersToOrganizations, args, ctx.permissions),
                 removeUsersFromOrganizations: (_parent, args, ctx, _info) =>
-                    mutate(RemoveUsersFromOrganizations, args, ctx),
+                    mutate(RemoveUsersFromOrganizations, args, ctx.permissions),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>

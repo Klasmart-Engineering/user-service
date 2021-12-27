@@ -31,3 +31,18 @@ export function createSchoolMembership({
     }
     return schoolMembership
 }
+
+export const createSchoolMemberships = (
+    users: User[],
+    school: School,
+    roles?: Role[]
+) => users.map((user) => createSchoolMembership({ user, school, roles }))
+
+export const createSchoolMembershipsInManySchools = (
+    users: User[],
+    schools: School[],
+    roles?: Role[]
+) =>
+    schools
+        .map((school) => createSchoolMemberships(users, school, roles))
+        .flat()

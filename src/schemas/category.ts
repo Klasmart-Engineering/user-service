@@ -219,7 +219,7 @@ export default function getDefault(
                 createCategories: (_parent, args, ctx, _info) =>
                     createCategories(args, ctx),
                 deleteCategories: (_parent, args, ctx, _info) =>
-                    mutate(DeleteCategories, args, ctx),
+                    mutate(DeleteCategories, args, ctx.permissions),
                 updateCategories: (_parent, args, ctx, _info) =>
                     updateCategories(args, ctx),
                 addSubcategoriesToCategories: (_parent, args, ctx) =>

@@ -114,40 +114,71 @@ const DELETE_SCHOOL = `
     }
 `
 
-const SCHOOLS_MUTATION_RESULT = `schools {
-                id
-                name,
-                status
-            }`
+const SCHOOL_FIELDS = gql`
+    fragment schoolFields on SchoolConnectionNode {
+        id
+        name
+        status
+        shortCode
+    }
+`
 
 export const DELETE_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
     mutation deleteSchools($input: [DeleteSchoolInput!]!) {
         deleteSchools(input: $input) {
-            ${SCHOOLS_MUTATION_RESULT}
+            schools {
+                ...schoolFields
+            }
         }
     }
 `
 
-export const ADD_CLASSES_TO_SCHOOLS = `
+export const ADD_CLASSES_TO_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
     mutation myMutation($input: [AddClassesToSchoolInput!]!) {
         addClassesToSchools(input: $input) {
-            ${SCHOOLS_MUTATION_RESULT}
+            schools {
+                ...schoolFields
+            }
         }
     }
 `
 
 export const CREATE_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
     mutation createSchools($input: [CreateSchoolInput!]!) {
         createSchools(input: $input) {
-            ${SCHOOLS_MUTATION_RESULT}
+            schools {
+                ...schoolFields
+            }
         }
     }
 `
 
 export const UPDATE_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
     mutation updateSchools($input: [UpdateSchoolInput!]!) {
         updateSchools(input: $input) {
-            ${SCHOOLS_MUTATION_RESULT}
+            schools {
+                ...schoolFields
+            }
+        }
+    }
+`
+
+export const REMOVE_USERS_FROM_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
+    mutation removeUsersFromSchools($input: [RemoveUsersFromSchoolInput!]!) {
+        removeUsersFromSchools(input: $input) {
+            schools {
+                ...schoolFields
+            }
         }
     }
 `
