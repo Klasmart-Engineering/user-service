@@ -1,6 +1,5 @@
 import { check } from 'k6';
 import http from 'k6/http';
-import { Options } from 'k6/options';
 import { getUserNode } from '../queries/users';
 
 const params = {
@@ -18,7 +17,10 @@ const params = {
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
         operationName: "getUserNode",
-        variables: {},
+        variables: {
+            id: process.env.ID_ORG_ADMIN_1,
+            organizationId: process.env.ORG_ID
+        },
         query: getUserNode
     });
 
