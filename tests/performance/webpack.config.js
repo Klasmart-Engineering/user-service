@@ -6,7 +6,6 @@ module.exports = {
     mode: `production`,
     context: path.join(__dirname, `src`),
     entry: {
-        sequentialLogin: `./sequentialLogin.ts`,
         parallelLogin: `./parallelLogin.ts`,
         createUserBasic: `./createUserBasic`,
         createUsersAllRoles: `./createUsersAllRoles`,
@@ -36,7 +35,6 @@ module.exports = {
         testEndPointLandingSchedule6: `./testEndPointLandingSchedule6.ts`,
         testEndPointLandingSchedule7: `./testEndPointLandingSchedule7.ts`,
         testEndPointLandingSchedule8: `./testEndPointLandingSchedule8.ts`,
-        liveClassPopulate: `./liveClassPopulate.ts`,
         parallelScheduleFilter: `./parallelScheduleFilter.ts`
       
     },

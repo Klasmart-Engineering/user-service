@@ -40,11 +40,12 @@ export function setup() {
     };
 
     const jar = http.cookieJar();
-    jar.set(process.env.SERVICE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
-    jar.set(process.env.SERVICE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
-
-    jar.set(process.env.CMS_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
-    jar.set(process.env.CMS_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
+    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
 
     const payload = JSON.stringify(generateClassPayload());
     http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, payload, params);
@@ -54,10 +55,12 @@ export function setup() {
 
 export function orgAdmin(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
-    jar.set(process.env.SERVICE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
-    jar.set(process.env.SERVICE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
+    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
 
-    jar.set(process.env.CMS_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
-    jar.set(process.env.CMS_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
     scheduleSearch();
 }
