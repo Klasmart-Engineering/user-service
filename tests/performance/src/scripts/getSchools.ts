@@ -9,23 +9,13 @@ const params = {
     },
 };
 
-export default function (payload: SchoolsPayload, loginData?: { res: any, userId: string }) {
-    if (loginData) {
-        const jar = http.cookieJar();
-        jar.set(process.env.COOKIE_URL as string, 'access', loginData.res.cookies?.access[0].Value, {
-            domain: process.env.COOKIE_DOMAIN,
-        });
-        jar.set(process.env.COOKIE_URL as string, 'refresh', loginData.res.cookies?.refresh[0].Value, {
-            domain: process.env.COOKIE_DOMAIN,
-        });
-    }
-
+export default function (payload?: SchoolsPayload) {
     const userPayload = JSON.stringify({
         variables: {
             direction: 'FORWARD',
-            count: payload.count,
+            count: payload?.count || 10,
             order: 'ASC',
-            orderBy: payload.orderBy || 'name',
+            orderBy: payload?.orderBy || 'name',
             filter: {
                 organizationId: {
                     value: process.env.ORG_ID,
@@ -36,14 +26,14 @@ export default function (payload: SchoolsPayload, loginData?: { res: any, userId
                         {
                             name: {
                                 operator: 'contains',
-                                value: payload.name || '',
+                                value: payload?.name || '',
                                 caseInsensitive: true,
                             }
                         },
                         {
                             shortCode: {
                                 operator: 'contains',
-                                value: payload.shortCode || '',
+                                value: payload?.shortCode || '',
                                 caseInsensitive: true,
                             }
                         },

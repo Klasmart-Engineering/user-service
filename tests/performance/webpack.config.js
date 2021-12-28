@@ -35,8 +35,11 @@ module.exports = {
         testEndPointLandingSchedule6: `./testEndPointLandingSchedule6.ts`,
         testEndPointLandingSchedule7: `./testEndPointLandingSchedule7.ts`,
         testEndPointLandingSchedule8: `./testEndPointLandingSchedule8.ts`,
-        parallelScheduleFilter: `./parallelScheduleFilter.ts`
-      
+        parallelScheduleFilter: `./parallelScheduleFilter.ts`,
+        getRoles: `./getRoles.ts`,
+        getRolesPermissions: `./getRolesPermissions.ts`,
+        getSchools: `./getSchools.ts`,
+        getAgeRanges: `./getAgeRanges.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),
