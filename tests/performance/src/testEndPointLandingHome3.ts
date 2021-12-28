@@ -8,6 +8,8 @@ import endPointHomeRequest3 from './scripts/endPointHomeRequest3';
 Script that evaluates the endPoint:
 https://kl2.loadtest.kidsloop.live/v1/assessments_summary?org_id=360b46fe-3579-42d4-9a39-dc48726d033f
 
+Method: GET
+
 */
 
 export const options: Options = {

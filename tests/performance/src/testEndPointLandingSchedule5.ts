@@ -9,6 +9,8 @@ Script that evaluates the endPoint:
 https://api.loadtest.kidsloop.live/user//user
    Params:
     ?org_id=360b46fe-3579-42d4-9a39-dc48726d033f
+
+    Method: POST
     
     Query: GetSchoolFilter (URL is wrong //user)
 

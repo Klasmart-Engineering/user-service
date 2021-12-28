@@ -1,8 +1,5 @@
 import { check } from 'k6';
 import http from 'k6/http';
-import { Options } from 'k6/options';
-import {getUserQuery, meQueryReq1 } from '../queries/users';
-
 
 const params = {
     headers: {
