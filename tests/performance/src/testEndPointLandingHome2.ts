@@ -3,7 +3,6 @@ import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
 import endPointHomeRequest2 from './scripts/endPointHomeRequest2';
 
-
 /*
 
 Script that evaluates the endPoint:
