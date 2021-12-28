@@ -12,8 +12,12 @@ const params = {
 export default function (payload: SchoolsPayload, loginData?: { res: any, userId: string }) {
     if (loginData) {
         const jar = http.cookieJar();
-        jar.set(process.env.SERVICE_URL as string, 'access', loginData.res.cookies?.access[0].Value);
-        jar.set(process.env.SERVICE_URL as string, 'refresh', loginData.res.cookies?.refresh[0].Value);
+        jar.set(process.env.COOKIE_URL as string, 'access', loginData.res.cookies?.access[0].Value, {
+            domain: process.env.COOKIE_DOMAIN,
+        });
+        jar.set(process.env.COOKIE_URL as string, 'refresh', loginData.res.cookies?.refresh[0].Value, {
+            domain: process.env.COOKIE_DOMAIN,
+        });
     }
 
     const userPayload = JSON.stringify({

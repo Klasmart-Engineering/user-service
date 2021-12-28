@@ -36,13 +36,13 @@ export function setup() {
 }
 
 export default function(data: { [key: string]: { res: any, userId: string }}) {
-    
     const jar = http.cookieJar();
-    jar.set(process.env.SERVICE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
-    jar.set(process.env.SERVICE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
-
-    jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
-    jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
+    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
     
     scheduleFilterProgram('Org admin');
 }

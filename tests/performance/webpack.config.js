@@ -6,7 +6,6 @@ module.exports = {
     mode: `production`,
     context: path.join(__dirname, `src`),
     entry: {
-        sequentialLogin: `./sequentialLogin.ts`,
         parallelLogin: `./parallelLogin.ts`,
         createUserBasic: `./createUserBasic`,
         createUsersAllRoles: `./createUsersAllRoles`,
