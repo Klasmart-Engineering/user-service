@@ -1,20 +1,17 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import meMembershipsForReq5Schedule from './scripts/meMembershipsForReq5Schedule';
 import loginSetup from './utils/loginSetup';
+import endPointOrganizationRequest5 from "./scripts/endPointOrganizationRequest5";
 
 /*
 
 Script that evaluates the endPoint:
-https://api.loadtest.kidsloop.live/user//user
-   Params:
-    ?org_id=360b46fe-3579-42d4-9a39-dc48726d033f
+https://api.loadtest.kidsloop.live/user/
+    {
+        variables: {},
+        query: meQueryOrganizationReq6,
 
-    Method: POST
-    
-    Query: GetSchoolFilter (URL is wrong //user)
-
-    Payload: meMembership (meMembershipsForReq5Schedule)
+    }
 */
 
 export const options: Options = {
@@ -49,5 +46,5 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
     jar.set(process.env.LIVE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value);
     jar.set(process.env.LIVE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value);
     
-    meMembershipsForReq5Schedule('Org admin');
+    endPointOrganizationRequest5('Org admin');
 }

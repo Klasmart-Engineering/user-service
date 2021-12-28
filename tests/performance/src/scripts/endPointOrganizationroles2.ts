@@ -1,6 +1,6 @@
 import { check } from 'k6';
 import http from 'k6/http';
-import {getUserQuery} from '../queries/users';
+import { get_organization_roles } from '../queries/organizations';
 
 const params = {
     headers: {
@@ -10,18 +10,19 @@ const params = {
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
-        operationName: "user",
         variables: {
-            user_id: '1c27b63a-9815-4719-bf64-cad3ab783adf',
+            organizationId: process.env.ORG_ID
         },
-        query: getUserQuery //check if the query is it ok.
+        query: get_organization_roles,
     });
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
 
+    console.log(JSON.stringify(res)),
+
     check(res, {
-        'status is 200 meQueryReq2': () => res.status === 200,
-        '"meQueryReq2" query returns data': (r) => JSON.parse(r.body as string).data?.user ?? false,
+        'status is 200 meQueryOrganizationReq2': () => res.status === 200,
+        '"meQueryOrganizationReq2" query returns data': (r) => JSON.parse(r.body as string).data !== undefined,
 
     }, {
         userRoleType: roleType

@@ -10,7 +10,7 @@ https://api.loadtest.kidsloop.live/user//user
    Params:
     ?org_id=360b46fe-3579-42d4-9a39-dc48726d033f
 
-    Payload: meMembership2 (meMembershipsForReq7Schedule)
+    Payload: meMembership4 (meMembershipsForReq8Schedule)
 */
 
 export const options: Options = {

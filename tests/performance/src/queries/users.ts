@@ -343,3 +343,40 @@ export const getUserNode = `{ getUserNode($id: ID!, $organizationId: UUID!) {
       }
     }
 }`;
+
+
+export const meQueryOrganizationReq3 = `{ me {
+    user_id
+    user_name
+    organization_ownerships {
+        organization_id
+        status
+        organization {
+            organization_id
+            organization_name
+            phone
+            roles {
+                role_id
+                role_name
+                status
+            }
+        }
+        user {
+            email
+        }
+    }
+    }
+}`;
+
+
+export const meQueryOrganizationReq5 = `{ me {
+        memberships {
+            organization_id
+            roles {
+                permissions {
+                    permission_id
+                }
+            }
+        }
+    }
+}`;
