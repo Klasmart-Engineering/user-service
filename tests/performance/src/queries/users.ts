@@ -379,3 +379,34 @@ export const meQueryOrganizationReq5 = `{ me {
         }
     }
 }`;
+
+
+export const getSchoolsOnsUser1 = `{ 
+    query getOrganizationSchools (
+        $direction: ConnectionDirection!
+        $count: PageSize
+        $order: String
+        $orderBy: String
+        $cursor: String
+        $filter: SchoolFilter
+    ){
+        schoolsConnection(
+                filter: $filter
+                direction: $direction
+                directionArgs: $directionArgs
+            ) {
+                totalCount
+                edges {
+                    cursor
+                    node {
+                        id
+                        name
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                }
+            }
+    }
+
+}`;

@@ -33,7 +33,7 @@
       "test:endpoint:LandingSchedule8": "k6 run ./dist/testEndPointLandingSchedule8.js",
       "test:endpoint:LandingOrganization2": "k6 run ./dist/testEndPointLandingOrganization2.js",
       "test:endpoint:LandingOrganization3": "k6 run ./dist/testEndPointLandingOrganization3.js",
-      "test:endpoint:LandingRoles2": "k6 run ./dist/testEndPointLandingRoles2.js"
+      "test:endpoint:LandingUser1": "k6 run ./dist/testEndPointLandingUser1.js"
       
     },
     "dependencies": {
