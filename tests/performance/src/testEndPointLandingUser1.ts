@@ -83,5 +83,5 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    getSchoolsOnUserSection1();
+    getSchoolsOnUserSection1("Org admin");
 }
