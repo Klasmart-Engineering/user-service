@@ -22,6 +22,8 @@ import { config } from '../config/config'
 import { generateMapsForAdding } from '../utils/mutations/maps/adding'
 import { Program } from '../entities/program'
 import { AddMutation, EntityMap } from '../utils/mutations/commonStructure'
+import { validateAddingRemove } from '../utils/mutations/validations/addingRemove'
+import { processAdding } from '../utils/mutations/process/adding'
 
 export async function deleteClasses(
     args: { input: DeleteClassInput[] },
@@ -169,40 +171,18 @@ export class AddProgramsToClasses extends AddMutation<
         currentInput: AddProgramsToClassInput,
         maps: EntityMap<Class>
     ): APIError[] => {
-        const errors: APIError[] = []
-        const { classId, programIds } = currentInput
-
-        for (const programId of programIds) {
-            const program = maps.subitems.get(programId) as Program
-            if (!program) {
-                errors.push(
-                    createEntityAPIError(
-                        'nonExistent',
-                        index,
-                        'Program',
-                        programId
-                    )
-                )
-            }
-            if (!program) continue
-
-            const classHasProgram = maps.itemsSubitems.has(
-                getMembershipMapKey(classId, programId)
-            )
-            if (classHasProgram) {
-                errors.push(
-                    createEntityAPIError(
-                        'duplicateChild',
-                        index,
-                        'Program',
-                        program.name,
-                        'Class',
-                        currentEntity.class_name
-                    )
-                )
-            }
-        }
-        return errors
+        return validateAddingRemove<Class, 'class_name', Program, 'name'>(
+            index,
+            currentEntity,
+            'Class',
+            'Program',
+            'class_name',
+            'name',
+            'AddClassesToProgramInput',
+            currentInput.classId,
+            currentInput.programIds,
+            maps
+        )
     }
 
     protected process = (
@@ -210,19 +190,13 @@ export class AddProgramsToClasses extends AddMutation<
         currentInput: AddProgramsToClassInput,
         maps: EntityMap<Class>
     ): Class[] => {
-        const { classId, programIds } = currentInput
-
-        const newPrograms: Program[] = []
-        for (const programId of programIds) {
-            const program = maps.subitems.get(programId) as Program
-            newPrograms.push(program)
-        }
-        const preexistentPrograms = maps.itemsWithExistentSubitems.get(classId)
-        currentEntity.programs = Promise.resolve([
-            ...(preexistentPrograms as Program[]),
-            ...newPrograms,
-        ])
-        return [currentEntity]
+        return processAdding<Class, 'programs', Program>(
+            currentEntity,
+            'programs',
+            currentInput.classId,
+            currentInput.programIds,
+            maps
+        )
     }
 
     protected buildOutput = async (currentEntity: Class): Promise<void> => {
