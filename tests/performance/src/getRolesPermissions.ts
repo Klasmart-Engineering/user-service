@@ -4,17 +4,8 @@ import getOrganizationRolesPermissions from './scripts/getOrganizationRolesPermi
 import loginSetup from './utils/loginSetup';
 
 export const options: Options = {
-    scenarios: {
-        orgAdmin1: {
-            executor: 'per-vu-iterations',
-            exec: 'orgAdmin',
-            startTime: '0s',
-            gracefulStop: '5s',
-            vus: 1,
-            iterations: 1,
-            maxDuration: '30s',
-        },
-    }
+    vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
+    duration: __ENV.DURATION ?? '1m',
 };
 
 export function setup() {
@@ -35,7 +26,7 @@ export function setup() {
     return data;
 }
 
-export function orgAdmin(data: { [key: string]: { res: any, userId: string }}) {
+export default function(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
