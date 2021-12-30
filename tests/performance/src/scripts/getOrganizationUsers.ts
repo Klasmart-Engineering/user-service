@@ -12,7 +12,7 @@ const params = {
 };
 
 export default function (
-    payload: UserPayload,
+    payload?: UserPayload,
     loginData?: { res: any, userId: string },
     filters?: Array<Filter> | null,
     cursor?: string
@@ -33,9 +33,9 @@ export default function (
     const userPayload = JSON.stringify({
         variables: {
             direction: 'FORWARD',
-            count: payload.count,
+            count: payload?.count || 10,
             order: 'ASC',
-            orderBy: payload.orderBy || 'givenName',
+            orderBy: payload?.orderBy || 'givenName',
             cursor: cursor || '',
             filter: {
                 organizationId: {
@@ -48,28 +48,28 @@ export default function (
                             {
                                 givenName: {
                                     operator: 'contains',
-                                    value: payload.givenName || payload.search || '',
+                                    value: payload?.givenName || payload?.search || '',
                                     caseInsensitive: true,
                                 }
                             },
                             {
                                 familyName: {
                                     operator: 'contains',
-                                    value: payload.familyName || payload.search || '',
+                                    value: payload?.familyName || payload?.search || '',
                                     caseInsensitive: true,
                                 }
                             },
                             {
                                 email: {
                                     operator: 'contains',
-                                    value: payload.email|| payload.search || '',
+                                    value: payload?.email|| payload?.search || '',
                                     caseInsensitive: true,
                                 }
                             },
                             {
                                 phone: {
                                     operator: 'contains',
-                                    value: payload.phone || payload.search || '',
+                                    value: payload?.phone || payload?.search || '',
                                     caseInsensitive: true,
                                 }
                             },

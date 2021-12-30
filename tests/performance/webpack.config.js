@@ -44,8 +44,8 @@ module.exports = {
         getRoles: `./getRoles.ts`,
         getRolesPermissions: `./getRolesPermissions.ts`,
         getSchools: `./getSchools.ts`,
-        getAgeRanges: `./getAgeRanges.ts`
-      
+        getAgeRanges: `./getAgeRanges.ts`,
+        getUsers: `./getUsers.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),
