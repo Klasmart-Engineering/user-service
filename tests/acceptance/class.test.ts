@@ -1196,9 +1196,9 @@ describe('acceptance.class', () => {
             it('should respond with status 200', async () => {
                 const response = await makeAddProgramsToClassesMutation(input)
                 const resClasses =
-                    response.body.data.addProgramsToClasses.schools
+                    response.body.data.addProgramsToClasses.classes
                 expect(response.status).to.eq(200)
-                expect(resClasses.length).to.equal(schoolsCount)
+                expect(resClasses.length).to.equal(classCount)
             })
         })
         context('when input is sent in an incorrect way', () => {
