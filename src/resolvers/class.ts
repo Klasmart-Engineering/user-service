@@ -15,7 +15,6 @@ import {
     createDuplicateInputAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
-    getMembershipMapKey,
 } from '../utils/resolvers'
 import { mapClassToClassConnectionNode } from '../pagination/classesConnection'
 import { config } from '../config/config'
