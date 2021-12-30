@@ -41,8 +41,6 @@ export default function (payload?: SchoolsPayload) {
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
 
-    console.log(JSON.stringify(res));
-
     check(res, {
         '"Get paginated age ranges" status is 200': () => res.status === 200,
         '"Get paginated age ranges" query returns data': (r) => JSON.parse(r.body as string).data?.ageRangesConnection?.edges ?? false,
