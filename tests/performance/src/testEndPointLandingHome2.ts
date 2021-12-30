@@ -14,8 +14,8 @@ https://api.loadtest.kidsloop.live/user/
 */
 
 export const options: Options = {
-    vus: 1,
-    duration: '1m',
+    vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
+    duration: __ENV.DURATION ?? '1m',
 };
 
 export function setup() {

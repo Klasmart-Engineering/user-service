@@ -11,8 +11,8 @@ https://kl2.loadtest.kidsloop.live/v1/schedules_time_view?end_at_le=1640746740&o
 */
 
 export const options: Options = {
-    vus: 1,
-    duration: '1m',
+    vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
+    duration: __ENV.DURATION ?? '1m',
 };
 
 export function setup() {
