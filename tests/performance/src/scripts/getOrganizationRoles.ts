@@ -13,7 +13,7 @@ export default function () {
 
     const userPayload = JSON.stringify({
         variables: {
-           organization_id: process.env.ORG_ID,
+            organization_id: process.env.ORG_ID,
         },
         operationName: 'getOrganizationRoles',
         query: getOrganizationRoles,

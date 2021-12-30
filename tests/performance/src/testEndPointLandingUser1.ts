@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
-import getSchoolsOnUserSection1 from './scripts/getSchoolsOnUserSection1';
+import endPointUserRequest1 from './scripts/endPointUserRequest1';
 
 /*
 
@@ -83,5 +83,5 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    getSchoolsOnUserSection1("Org admin");
+    endPointUserRequest1("Org admin");
 }

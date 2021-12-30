@@ -39,6 +39,7 @@ module.exports = {
         testEndPointLandingOrganization3: `./testEndPointLandingOrganization3.ts`,
         testEndPointLandingOrganization5: `./testEndPointLandingOrganization5.ts`,
         testEndPointLandingUser1: `./testEndPointLandingUser1.ts`,
+        testEndPointLandingUser2: `./testEndPointLandingUser2.ts`,
         parallelScheduleFilter: `./parallelScheduleFilter.ts`,
         getRoles: `./getRoles.ts`,
         getRolesPermissions: `./getRolesPermissions.ts`,
