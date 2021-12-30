@@ -314,7 +314,7 @@ export const meQueryReq1 = `{ me {
     }
 }`;
 
-export const getUserNode = `{ getUserNode($id: ID!, $organizationId: UUID!) {
+export const getUserNode = `query getUserNode($id: ID!, $organizationId: UUID!) {
     userNode(id: $id) {
         id
         givenName
@@ -322,25 +322,24 @@ export const getUserNode = `{ getUserNode($id: ID!, $organizationId: UUID!) {
         gender
         dateOfBirth
         roles {
-          id
-          name
-          organizationId
-          schoolId
-          status
+            id
+            name
+            organizationId
+            schoolId
+            status
         }
         contactInfo {
-          email
-          phone
+            email
+            phone
         }
-        organizationMembershipsConnection(count: 1, filter: {organizationId: {value: $organizationId, operator: eq}}) {
-          edges {
-            node {
-              userId
-              shortCode
+        organizationMembershipsConnection(count: 1, filter: { organizationId: { value: $organizationId, operator: eq }}) {
+            edges {
+                node {
+                    userId
+                    shortCode
+                }
             }
-          }
         }
-      }
     }
 }`;
 
