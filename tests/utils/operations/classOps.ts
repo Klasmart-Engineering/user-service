@@ -12,6 +12,7 @@ import {
 import { ApolloServerTestClient } from '../createTestClient'
 import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
+import { gql } from 'graphql-tag'
 
 const UPDATE_CLASS = `
     mutation myMutation(
@@ -272,6 +273,14 @@ const CLASSES_MUTATION_RESULT = `classes {
 export const DELETE_CLASSES = `
     mutation myMutation($input: [DeleteClassInput!]!) {
         deleteClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
+export const ADD_PROGRAMS_TO_CLASSES = gql`
+    mutation myMutation($input: [AddProgramsToClassInput!]!) {
+        addProgramsToClasses(input: $input) {
             ${CLASSES_MUTATION_RESULT}
         }
     }

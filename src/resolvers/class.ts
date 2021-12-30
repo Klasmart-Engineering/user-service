@@ -4,6 +4,7 @@ import {
     DeleteClassInput,
     ClassesMutationResult,
     ClassConnectionNode,
+    AddProgramsToClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -14,9 +15,13 @@ import {
     createDuplicateInputAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
+    getMembershipMapKey,
 } from '../utils/resolvers'
 import { mapClassToClassConnectionNode } from '../pagination/classesConnection'
 import { config } from '../config/config'
+import { generateMapsForAdding } from '../utils/mutations/maps/adding'
+import { Program } from '../entities/program'
+import { AddMutation, EntityMap } from '../utils/mutations/commonStructure'
 
 export async function deleteClasses(
     args: { input: DeleteClassInput[] },
@@ -102,4 +107,125 @@ export async function deleteClasses(
     }
 
     return { classes: output }
+}
+
+export class AddProgramsToClasses extends AddMutation<
+    Class,
+    AddProgramsToClassInput,
+    ClassesMutationResult
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'AddProgramsToClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: AddProgramsToClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    generateEntityMaps = async (
+        input: AddProgramsToClassInput[]
+    ): Promise<EntityMap<Class>> =>
+        generateMapsForAdding<
+            AddProgramsToClassInput,
+            'programIds',
+            Class,
+            'class_id',
+            'programs',
+            Program,
+            'id'
+        >(
+            Class,
+            'class_id',
+            'classes',
+            'programs',
+            this.mainEntityIds,
+            input,
+            'programIds',
+            'programs',
+            Program,
+            'id'
+        )
+
+    protected async authorize(
+        _input: AddProgramsToClassInput[],
+        maps: EntityMap<Class>
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            {
+                organization_ids: [...maps.organizations.keys()],
+            },
+            PermissionName.edit_class_20334
+        )
+    }
+
+    protected validate = (
+        index: number,
+        currentEntity: Class,
+        currentInput: AddProgramsToClassInput,
+        maps: EntityMap<Class>
+    ): APIError[] => {
+        const errors: APIError[] = []
+        const { classId, programIds } = currentInput
+
+        for (const programId of programIds) {
+            const program = maps.subitems.get(programId) as Program
+            if (!program) {
+                errors.push(
+                    createEntityAPIError(
+                        'nonExistent',
+                        index,
+                        'Program',
+                        programId
+                    )
+                )
+            }
+            if (!program) continue
+
+            const classHasProgram = maps.itemsSubitems.has(
+                getMembershipMapKey(classId, programId)
+            )
+            if (classHasProgram) {
+                errors.push(
+                    createEntityAPIError(
+                        'duplicateChild',
+                        index,
+                        'Program',
+                        program.name,
+                        'Class',
+                        currentEntity.class_name
+                    )
+                )
+            }
+        }
+        return errors
+    }
+
+    protected process = (
+        currentEntity: Class,
+        currentInput: AddProgramsToClassInput,
+        maps: EntityMap<Class>
+    ): Class[] => {
+        const { classId, programIds } = currentInput
+
+        const newPrograms: Program[] = []
+        for (const programId of programIds) {
+            const program = maps.subitems.get(programId) as Program
+            newPrograms.push(program)
+        }
+        const preexistentPrograms = maps.itemsWithExistentSubitems.get(classId)
+        currentEntity.programs = Promise.resolve([
+            ...(preexistentPrograms as Program[]),
+            ...newPrograms,
+        ])
+        return [currentEntity]
+    }
+
+    protected buildOutput = async (currentEntity: Class): Promise<void> => {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
+    }
 }

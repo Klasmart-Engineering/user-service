@@ -156,3 +156,26 @@ export async function expectAPIErrorCollection(
     for (let x = 0; x < errors.length; x++)
         compareErrors(errors[x], expectedErrors.errors[x])
 }
+
+export function checkNotFoundErrors(
+    actualError: Error,
+    expectedErrors: {
+        entity: string
+        id: string
+        entryIndex: number
+    }[]
+) {
+    expectedErrors.forEach((val, errorIndex) => {
+        expectAPIError.nonexistent_entity(
+            actualError,
+            {
+                entity: val.entity,
+                entityName: val.id,
+                index: val.entryIndex,
+            },
+            ['id'],
+            errorIndex,
+            expectedErrors.length
+        )
+    })
+}

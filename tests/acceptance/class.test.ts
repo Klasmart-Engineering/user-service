@@ -7,6 +7,7 @@ import { Status } from '../../src/entities/status'
 import { User } from '../../src/entities/user'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import {
+    AddProgramsToClassInput,
     ClassConnectionNode,
     DeleteClassInput,
 } from '../../src/types/graphQL/class'
@@ -28,7 +29,11 @@ import {
     IAgeRangeDetail,
     inviteUserToOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
-import { DELETE_CLASS, DELETE_CLASSES } from '../utils/operations/classOps'
+import {
+    DELETE_CLASS,
+    DELETE_CLASSES,
+    ADD_PROGRAMS_TO_CLASSES,
+} from '../utils/operations/classOps'
 import {
     CLASSES_CONNECTION,
     CLASS_NODE,
@@ -47,6 +52,11 @@ import ProgramsInitializer from '../../src/initializers/programs'
 import { makeRequest } from './utils'
 import { CoreSubjectConnectionNode } from '../../src/pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../../src/pagination/programsConnection'
+import { createUser } from '../factories/user.factory'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { createProgram } from '../factories/program.factory'
+import { createClass as createClassFactory } from '../factories/class.factory'
+import { NIL_UUID } from '../utils/database'
 
 interface IClassEdge {
     node: ClassConnectionNode
@@ -1137,6 +1147,71 @@ describe('acceptance.class', () => {
                     where: { class_id: In(class1Ids), status: Status.ACTIVE },
                 })
                 expect(remainingClasses.length).to.equal(0)
+            })
+        })
+    })
+
+    context('addProgramsToClasses', () => {
+        let adminUser: User
+        let input: AddProgramsToClassInput[]
+        const programsCount = 20
+        const classCount = 50
+        const programs: Program[] = []
+
+        const makeAddProgramsToClassesMutation = async (
+            input: AddProgramsToClassInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(ADD_PROGRAMS_TO_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+        }
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            for (let x = 0; x < programsCount; x++) {
+                const cls = await createProgram().save()
+                programs.push(cls)
+            }
+
+            const classes = []
+            for (let i = 0; i < classCount; i++) {
+                classes.push(await createClassFactory().save())
+            }
+
+            input = []
+            for (let i = 0; i < classCount; i++) {
+                input.push({
+                    classId: classes[i].class_id,
+                    programIds: programs.slice(8, 15).map((v) => v.id),
+                })
+            }
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should respond with status 200', async () => {
+                const response = await makeAddProgramsToClassesMutation(input)
+                const resClasses =
+                    response.body.data.addProgramsToClasses.schools
+                expect(response.status).to.eq(200)
+                expect(resClasses.length).to.equal(schoolsCount)
+            })
+        })
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                input[0].classId = NIL_UUID
+
+                const response = await makeAddProgramsToClassesMutation(input)
+                const classesUpdated = response.body.data.addProgramsToClasses
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(classesUpdated).to.be.null
+                expect(errors).to.exist
             })
         })
     })
