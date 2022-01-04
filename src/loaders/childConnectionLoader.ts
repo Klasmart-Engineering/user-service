@@ -10,6 +10,7 @@ import {
     IPaginatedResponse,
 } from '../utils/pagination/paginate'
 import { ISortingConfig } from '../utils/pagination/sorting'
+import { objectToKey } from '../utils/stringUtils'
 import { convertRawToEntities } from '../utils/typeorm'
 
 // This file exposes a generic batch function for child connection dataloaders
@@ -125,16 +126,13 @@ function getRequestIdentifier<Entity extends BaseEntity>(
         direction: key.args.direction,
         count: key.args.count,
         cursor: key.args.cursor,
-        filter: JSON.stringify(key.args.filter),
-        sort: JSON.stringify(key.args.sort),
+        filter: objectToKey(key.args.filter || {}),
+        sort: objectToKey(key.args.sort || {}),
         includeTotalCount: key.includeTotalCount,
         parentPivot: key.parent.pivots,
         parentFilterKey: key.parent.filterKeys,
     }
-    return crypto
-        .createHash('md5')
-        .update(JSON.stringify(flatObj))
-        .digest('hex')
+    return crypto.createHash('md5').update(objectToKey(flatObj)).digest('hex')
 }
 
 // this is used to create a single string for composite keys

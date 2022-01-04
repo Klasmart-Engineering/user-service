@@ -65,3 +65,10 @@ export function stringInject(str: string, data: any) {
 export function isHexadecimalColor(hex: string): boolean {
     return !!hex.match(/#([0-9a-fA-F]{2}){3,4}$/)
 }
+
+/**
+ * A deterministic version of JSON.stringify() that ignores the order of properties.
+ */
+export function objectToKey<T extends Record<string, unknown>>(obj: T) {
+    return JSON.stringify(obj, Object.keys(obj).sort())
+}

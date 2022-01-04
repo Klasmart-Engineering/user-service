@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import {
     stringInject,
     isHexadecimalColor,
+    objectToKey,
 } from '../../../src/utils/stringUtils'
 
 describe('stringInject', () => {
@@ -172,5 +173,19 @@ describe('isHexadecimalColor', () => {
                 expect(isHexadecimalColor(hexUppercase)).to.be.false
             }
         }
+    })
+})
+
+describe('objectToKey', () => {
+    it('converts an object to a string', () => {
+        const obj = {
+            a: 1,
+            b: 2,
+        }
+        const key = objectToKey(obj)
+        expect(key).to.equal('{"a":1,"b":2}')
+    })
+    it('ignores the order of properties', () => {
+        expect(objectToKey({ a: 1, b: 2 })).eq(objectToKey({ b: 2, a: 1 }))
     })
 })
