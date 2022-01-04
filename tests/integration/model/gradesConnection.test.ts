@@ -414,6 +414,29 @@ describe('model', () => {
             toGradeIds.every((ids) => ids.includes(toGradeId))
         })
 
+        it('supports filtering by program ID', async () => {
+            const programGrades = org1Grades.slice(0, 2)
+            const program = await createProgram(org1, [], programGrades).save()
+            const filter: IEntityFilter = {
+                programId: {
+                    operator: 'eq',
+                    value: program.id,
+                },
+            }
+
+            const result = await gradesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+            expect(result.totalCount).to.eq(2)
+            expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                programGrades.map((g) => g.id)
+            )
+        })
+
         it('fails if search value is longer than 250 characters', async () => {
             const longValue =
                 'hOfLDx5hwPm1KnwNEaAHUddKjN62yGEk4ZycRB7UjmZXMtm2ODnQCycCmylMDsVDCztWgrepOaQ9itKx94g2rELPj8w533bGpKqUT9a25NuKrzs5R3OfTUprOkCLE1PBHYOAUpSU289e4BhZzR40ncGsKwKtIFHQ9fzy1hlPr3gWMK8H6s5JGtO0oQrl8Lf0co5IlKWRaeEY4eaUUIWVHRiSdsaaXgM5ffW1zgZCrhOYCPZrBrP8uYaiPGsn1GjE8Chf'
