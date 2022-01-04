@@ -8,6 +8,8 @@ import { RoleConnectionNode } from '../types/graphQL/role'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Permission } from '../entities/permission'
+import { mutate } from '../utils/mutations/commonStructure'
+import { DeleteRoles } from '../resolvers/role'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -20,6 +22,7 @@ const typeDefs = gql`
             new_role_id: ID!
             organization_id: ID!
         ): Role
+        deleteRoles(input: [DeleteRoleInput!]!): RolesMutationResult
     }
 
     # pagination extension types start here
@@ -121,6 +124,18 @@ const typeDefs = gql`
         deny(permission_name: String!): Permission @isAdmin
 
         delete_role(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 27/03/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
+    }
+
+    # mutation types
+    input DeleteRoleInput {
+        id: ID!
+    }
+
+    type RolesMutationResult {
+        roles: [RoleConnectionNode!]!
     }
 `
 
@@ -170,6 +185,8 @@ export default function getDefault(
                     model.uploadRolesFromCSV(args, ctx, info),
                 replaceRole: (_parent, args, ctx, info) =>
                     model.replaceRole(args, ctx, info),
+                deleteRoles: (_parent, args, ctx) =>
+                    mutate(DeleteRoles, args, ctx.permissions),
             },
             Query: {
                 roles: (_parent, _args, ctx) => model.getRoles(ctx),

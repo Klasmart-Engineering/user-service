@@ -1329,8 +1329,7 @@ describe('school', () => {
             input: DeleteSchoolInput[]
         ): Promise<SchoolsMutationResult> => {
             const permissions = new UserPermissions(userToPayload(user))
-            const ctx = { permissions }
-            return mutate(DeleteSchools, { input }, ctx.permissions)
+            return mutate(DeleteSchools, { input }, permissions)
         }
 
         const expectSchoolsDeleted = async (

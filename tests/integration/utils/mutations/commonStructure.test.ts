@@ -68,10 +68,8 @@ describe('commonStructure', () => {
     async function deleteEntity(
         input: DeleteCategoryInput[]
     ): Promise<CategoriesMutationResult> {
-        const ctx = {
-            permissions: new UserPermissions(userToPayload(admin)),
-        }
-        return mutate(DeleteCategories, { input }, ctx.permissions)
+        const permissions = new UserPermissions(userToPayload(admin))
+        return mutate(DeleteCategories, { input }, permissions)
     }
 
     function generateDeleteInput() {

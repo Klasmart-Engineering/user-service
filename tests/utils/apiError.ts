@@ -143,3 +143,14 @@ export function compareErrors(error: APIError, expectedError: APIError) {
     expect(error.min).to.eq(expectedError.min)
     expect(error.max).to.eq(expectedError.max)
 }
+
+export async function expectAPIErrorCollection(
+    resolverCall: Promise<any>,
+    expectedErrors: APIErrorCollection
+) {
+    const { errors } = (await expect(resolverCall).to.be
+        .rejected) as APIErrorCollection
+    expect(errors).to.exist
+    for (let x = 0; x < errors.length; x++)
+        compareErrors(errors[x], expectedErrors.errors[x])
+}

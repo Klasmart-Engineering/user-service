@@ -1,5 +1,4 @@
 import { expect } from 'chai'
-import faker from 'faker'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Role } from '../../src/entities/role'
@@ -9,13 +8,20 @@ import { ROLES_CONNECTION, ROLE_NODE } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { createRole } from '../factories/role.factory'
-import { RoleConnectionNode } from '../../src/types/graphQL/role'
+import {
+    DeleteRoleInput,
+    RoleConnectionNode,
+} from '../../src/types/graphQL/role'
 import { NIL_UUID } from '../utils/database'
 import { print } from 'graphql'
 import { createUser } from '../factories/user.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { makeRequest } from './utils'
 import { createPermission } from '../factories/permission.factory'
+import { DELETE_ROLES } from '../utils/operations/roleOps'
+import { User } from '../../src/entities/user'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { userToPayload } from '../utils/operations/userOps'
 
 interface IRoleEdge {
     node: RoleConnectionNode
@@ -24,6 +30,8 @@ interface IRoleEdge {
 describe('acceptance.role', () => {
     let connection: Connection
     let systemRolesCount = 0
+    let orgRoles: Role[]
+    let orgAdmin: User
     const url = 'http://localhost:8080/user'
     const request = supertest(url)
     const rolesCount = 12
@@ -72,7 +80,19 @@ describe('acceptance.role', () => {
     beforeEach(async () => {
         await loadFixtures('users', connection)
 
-        const organization = createOrganization()
+        orgAdmin = await createUser().save()
+        const organization = await createOrganization(orgAdmin).save()
+        const roleForDeleteRoles = await createRole(
+            'Delete Roles',
+            organization,
+            { permissions: [PermissionName.delete_role_30440] }
+        ).save()
+
+        await createOrganizationMembership({
+            user: orgAdmin,
+            organization,
+            roles: [roleForDeleteRoles],
+        }).save()
 
         for (let i = 1; i <= rolesCount; i++) {
             const role = createRole(`role ${i}`, organization)
@@ -80,9 +100,11 @@ describe('acceptance.role', () => {
             await role.save()
         }
 
-        for (let i = 1; i <= rolesCount; i++) {
-            await createRole(`role ${i}`, organization).save()
-        }
+        orgRoles = await Role.save(
+            Array.from(new Array(rolesCount), (_, i) =>
+                createRole(`role ${i + 1}`, organization)
+            )
+        )
 
         systemRolesCount = await connection.manager.count(Role, {
             where: { system_role: true },
@@ -206,5 +228,59 @@ describe('acceptance.role', () => {
             response.body.data.rolesConnection.edges[0].node
                 .permissionsConnection.edges[0].node.id
         ).to.eq(permission.permission_id)
+    })
+
+    context('deleteRoles', () => {
+        const makeDeleteRolesMutation = async (input: DeleteRoleInput[]) => {
+            return await makeRequest(
+                request,
+                print(DELETE_ROLES),
+                { input },
+                generateToken(userToPayload(orgAdmin))
+            )
+        }
+
+        context('when input is sent in a correct way', () => {
+            it('should respond successfully', async () => {
+                const input = [
+                    {
+                        id: orgRoles[0].role_id,
+                    },
+                ]
+
+                const response = await makeDeleteRolesMutation(input)
+                const roles = response.body.data.deleteRoles.roles
+
+                expect(response.status).to.eq(200)
+                expect(roles).to.exist
+                expect(roles).to.be.an('array')
+                expect(roles).to.have.lengthOf(input.length)
+
+                const inputIds = input.map((i) => i.id)
+                const roleDeletedIds = roles.map(
+                    (rd: RoleConnectionNode) => rd.id
+                )
+
+                expect(roleDeletedIds).to.deep.equalInAnyOrder(inputIds)
+            })
+        })
+
+        context('when id in input does not exist', () => {
+            it('should respond with errors', async () => {
+                const input = [
+                    {
+                        id: NIL_UUID,
+                    },
+                ]
+
+                const response = await makeDeleteRolesMutation(input)
+                const rolesDeleted = response.body.data.deleteRoles
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(rolesDeleted).to.be.null
+                expect(errors).to.exist
+            })
+        })
     })
 })

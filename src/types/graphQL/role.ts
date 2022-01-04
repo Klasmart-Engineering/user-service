@@ -18,3 +18,11 @@ export interface RoleSummaryNode {
     schoolId?: string
     status: Status
 }
+
+export interface DeleteRoleInput {
+    id: string
+}
+
+export interface RolesMutationResult {
+    roles: RoleConnectionNode[]
+}

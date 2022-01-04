@@ -1,5 +1,4 @@
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -14,8 +13,11 @@ import {
     addUserToOrganizationAndValidate,
     createRole,
 } from '../utils/operations/organizationOps'
-import { createOrganizationAndValidate } from '../utils/operations/userOps'
-import { createTestConnection } from '../utils/testConnection'
+import {
+    createOrganizationAndValidate,
+    userToPayload,
+} from '../utils/operations/userOps'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import {
@@ -33,12 +35,38 @@ import { Role } from '../../src/entities/role'
 import { Status } from '../../src/entities/status'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
-import { expectAPIError } from '../utils/apiError'
+import { expectAPIError, expectAPIErrorCollection } from '../utils/apiError'
 import _ from 'lodash'
+import { User } from '../../src/entities/user'
+import { Organization } from '../../src/entities/organization'
+import {
+    createAdminUser as createAdmin,
+    createUser,
+} from '../factories/user.factory'
+import { createRole as createARole } from '../factories/role.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { DeleteRoleInput } from '../../src/types/graphQL/role'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { mutate } from '../../src/utils/mutations/commonStructure'
+import { DeleteRoles } from '../../src/resolvers/role'
+import { permErrorMeta } from '../utils/errors'
+import {
+    createDuplicateInputAPIError,
+    createEntityAPIError,
+} from '../../src/utils/resolvers'
+import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
+import { NIL_UUID } from '../utils/database'
+
 chai.use(chaiAsPromised)
 
+interface OrgData {
+    org: Organization
+    roles: Role[]
+}
+
 describe('role', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let originalAdmins: string[]
 
@@ -1371,6 +1399,311 @@ describe('role', () => {
                     `User(${userId}) does not have Permission(${PermissionName.delete_role_30440}) in Organizations(${organizationId})`
                 )
                 await checkRoleRemoved(false)
+            })
+        })
+    })
+
+    describe('deleteRoles', () => {
+        let admin: User
+        let memberWithPermission: User
+        let memberWithoutPermission: User
+        let nonMember: User
+        let orgsData: OrgData[]
+        let systemRoles: Role[]
+        let rolesTotalCount: number
+        const orgsCount = 2
+        const rolesCount = 5
+
+        const deleteRolesFromResolver = async (
+            caller: User,
+            input: DeleteRoleInput[]
+        ) => {
+            const permissions = new UserPermissions(userToPayload(caller))
+            return mutate(DeleteRoles, { input }, permissions)
+        }
+
+        const buildInputArray = (roles: Role[]) =>
+            Array.from(roles, (r) => {
+                return {
+                    id: r.role_id,
+                }
+            })
+
+        const expectRolesDeleted = async (
+            caller: User,
+            rolesToDelete: Role[]
+        ) => {
+            const input = buildInputArray(rolesToDelete)
+            const { roles } = await deleteRolesFromResolver(caller, input)
+
+            expect(roles).to.have.lengthOf(input.length)
+            roles.forEach((r, i) => {
+                expect(r.id).to.eq(input[i].id)
+                expect(r.status).to.eq(Status.INACTIVE)
+            })
+
+            const rolesDB = await Role.findByIds(input.map((i) => i.id))
+
+            expect(rolesDB).to.have.lengthOf(input.length)
+            rolesDB.forEach((rdb) => {
+                const inputRelated = input.find((i) => i.id === rdb.role_id)
+                expect(inputRelated).to.exist
+                expect(rdb.role_id).to.eq(inputRelated?.id)
+                expect(rdb.status).to.eq(Status.INACTIVE)
+            })
+        }
+
+        const expectRoles = async (quantity: number) => {
+            const roleCount = await Role.count({
+                where: { status: Status.ACTIVE },
+            })
+
+            expect(roleCount).to.eq(quantity)
+        }
+
+        const expectPermissionError = async (
+            caller: User,
+            rolesToDelete: Role[]
+        ) => {
+            const permError = permErrorMeta(PermissionName.delete_role_30440)
+            const input = buildInputArray(rolesToDelete)
+            const operation = deleteRolesFromResolver(caller, input)
+
+            await expect(operation).to.be.rejectedWith(permError(caller))
+        }
+
+        const expectInputErrors = async (
+            input: DeleteRoleInput[],
+            expectedErrors: APIError[],
+            finalCount: number
+        ) => {
+            const operation = deleteRolesFromResolver(admin, input)
+
+            await expectAPIErrorCollection(
+                operation,
+                new APIErrorCollection(expectedErrors)
+            )
+
+            await expectRoles(finalCount)
+        }
+
+        const expectDBCalls = async (
+            rolesToDelete: Role[],
+            caller: User,
+            expectedCalls: number,
+            message: string
+        ) => {
+            const input = buildInputArray(rolesToDelete)
+            connection.logger.reset()
+            await deleteRolesFromResolver(caller, input)
+            const callsToDB = connection.logger.count
+
+            expect(callsToDB).to.eq(expectedCalls, message)
+        }
+
+        beforeEach(async () => {
+            orgsData = []
+            admin = await createAdmin().save()
+            systemRoles = await Role.find({ take: rolesCount })
+
+            const roleForDeleteRoles = createARole('Delete Roles', undefined, {
+                permissions: [PermissionName.delete_role_30440],
+            })
+
+            roleForDeleteRoles.system_role = true
+            await roleForDeleteRoles.save()
+
+            for (let i = 0; i < orgsCount; i += 1) {
+                const org = await createOrganization().save()
+                const roles = await Role.save(
+                    Array.from(new Array(rolesCount), (_, i) =>
+                        createARole(`Role ${i}`, org)
+                    )
+                )
+
+                orgsData.push({ org, roles })
+            }
+
+            memberWithPermission = await createUser().save()
+            memberWithoutPermission = await createUser().save()
+            nonMember = await createUser().save()
+
+            await createOrganizationMembership({
+                user: memberWithPermission,
+                organization: orgsData[0].org,
+                roles: [roleForDeleteRoles],
+            }).save()
+
+            await createOrganizationMembership({
+                user: memberWithoutPermission,
+                organization: orgsData[0].org,
+            }).save()
+
+            rolesTotalCount = await Role.count()
+        })
+
+        context('permissions', () => {
+            context('successful cases', () => {
+                context('when caller is admin', () => {
+                    it('should delete any roles', async () => {
+                        const rolesToDelete = orgsData
+                            .map((d) => d.roles)
+                            .flat()
+
+                        await expectRolesDeleted(admin, rolesToDelete)
+                        await expectRoles(
+                            rolesTotalCount - rolesToDelete.length
+                        )
+                    })
+                })
+
+                context('when caller is not admin', () => {
+                    context('but has permission', () => {
+                        it('should delete roles from the organization which belongs', async () => {
+                            const rolesToDelete = orgsData[0].roles
+
+                            await expectRolesDeleted(
+                                memberWithPermission,
+                                rolesToDelete
+                            )
+
+                            await expectRoles(
+                                rolesTotalCount - rolesToDelete.length
+                            )
+                        })
+                    })
+                })
+            })
+
+            context('error handling', () => {
+                context('when caller is not admin', () => {
+                    context('but has permission', () => {
+                        context(
+                            'and tries to delete roles from an organization which does not belongs',
+                            () => {
+                                it('should throw a permission error', async () => {
+                                    const caller = memberWithPermission
+                                    const rolesToDelete = orgsData[1].roles
+                                    await expectPermissionError(
+                                        caller,
+                                        rolesToDelete
+                                    )
+                                })
+                            }
+                        )
+                    })
+
+                    context('has not permission', () => {
+                        context('but has membership', () => {
+                            context(
+                                'and tries to delete roles from the organization which belongs',
+                                () => {
+                                    it('should throw a permission error', async () => {
+                                        const caller = memberWithoutPermission
+                                        const rolesToDelete = orgsData[0].roles
+                                        await expectPermissionError(
+                                            caller,
+                                            rolesToDelete
+                                        )
+                                    })
+                                }
+                            )
+                        })
+
+                        context('has not membership', () => {
+                            context('and tries to delete any role', () => {
+                                it('should throw a permission error', async () => {
+                                    const caller = nonMember
+                                    const rolesToDelete = orgsData
+                                        .map((d) => d.roles)
+                                        .flat()
+
+                                    await expectPermissionError(
+                                        caller,
+                                        rolesToDelete
+                                    )
+                                })
+                            })
+                        })
+                    })
+                })
+            })
+        })
+
+        context('input', () => {
+            context('error handling', () => {
+                context(
+                    "a role with the given input 'id' field does not exist",
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const nonExistentId = NIL_UUID
+                            const rolesToDelete = orgsData[0].roles
+                            const input = buildInputArray(rolesToDelete)
+                            input.push({ id: nonExistentId })
+                            const expectedErrors = [
+                                createEntityAPIError(
+                                    'nonExistent',
+                                    input.length - 1,
+                                    'Role',
+                                    nonExistentId
+                                ),
+                            ]
+
+                            await expectInputErrors(
+                                input,
+                                expectedErrors,
+                                rolesTotalCount
+                            )
+                        })
+                    }
+                )
+            })
+        })
+
+        context('DB Calls', () => {
+            context('when caller is admin', () => {
+                context('when roles belong to the same organization', () => {
+                    it('should do 3 DB calls', async () => {
+                        const rolesToDelete = orgsData[0].roles
+                        await expectDBCalls(
+                            rolesToDelete,
+                            admin,
+                            3,
+                            '1 for get roles; 1 for get caller user; and 1 for save changes'
+                        )
+                    })
+                })
+
+                context(
+                    'when roles belong to more than one organization or are system',
+                    () => {
+                        it('should do 3 DB calls', async () => {
+                            const rolesToDelete = [
+                                ...systemRoles,
+                                ...orgsData.map((d) => d.roles).flat(),
+                            ]
+
+                            await expectDBCalls(
+                                rolesToDelete,
+                                admin,
+                                3,
+                                '1 for get roles; 1 for get caller user; and 1 for save changes'
+                            )
+                        })
+                    }
+                )
+            })
+
+            context('when caller is not admin', () => {
+                it('should do 4 DB calls', async () => {
+                    const rolesToDelete = orgsData[0].roles
+                    await expectDBCalls(
+                        rolesToDelete,
+                        memberWithPermission,
+                        4,
+                        '1 for get roles; 1 for get caller user; 1 for check permissions; and 1 for save changes'
+                    )
+                })
             })
         })
     })

@@ -3,6 +3,7 @@ import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
 import { Role } from '../../../src/entities/role'
 import { Permission } from '../../../src/entities/permission'
+import { gql } from 'apollo-server-core'
 
 const UPDATE_ROLE = `
     mutation myMutation(
@@ -106,6 +107,28 @@ const DELETE_ROLE = `
             $role_id: ID!) {
         role(role_id: $role_id) {
             delete_role
+        }
+    }
+`
+
+const ROLE_FIELDS = gql`
+    fragment roleFields on RoleConnectionNode {
+        id
+        name
+        description
+        status
+        system
+    }
+`
+
+export const DELETE_ROLES = gql`
+    ${ROLE_FIELDS}
+
+    mutation DeleteRoles($input: [DeleteRoleInput!]!) {
+        deleteRoles(input: $input) {
+            roles {
+                ...roleFields
+            }
         }
     }
 `
