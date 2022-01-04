@@ -45,6 +45,7 @@ const typeDefs = gql`
 
         # joined columns
         organizationId: UUIDFilter
+        programId: UUIDFilter
 
         AND: [AgeRangeFilter!]
         OR: [AgeRangeFilter!]

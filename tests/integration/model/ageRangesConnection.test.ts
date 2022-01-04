@@ -499,6 +499,30 @@ describe('model', () => {
                 expect(ar.highValueUnit).eq(unit)
             })
         })
+
+        it('supports filtering by program ID', async () => {
+            const programAgeRanges = org1AgeRanges.slice(0, 2)
+            const program = await createProgram(org1, programAgeRanges).save()
+            const filter: IEntityFilter = {
+                programId: {
+                    operator: 'eq',
+                    value: program.id,
+                },
+            }
+
+            const result = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                true,
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+            expect(result.totalCount).to.eq(2)
+            expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                programAgeRanges.map((a) => a.id)
+            )
+        })
     })
 
     context('when totalCount is not requested', () => {
