@@ -3,7 +3,7 @@ import depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
 import { Context } from '../main'
 import { Model } from '../model'
-import { checkToken, TokenPayload } from '../token'
+import { TokenPayload } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
 import { CustomError } from '../types/csv/csvError'
@@ -56,10 +56,12 @@ async function createContext({
     res,
     req,
 }: {
-    res: Response
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    res: Response<any, { token: TokenPayload | undefined }>
     req: Request
 }): Promise<Context> {
-    const token: TokenPayload = await checkToken(req)
+    const token = res.locals.token
+
     const permissions = new UserPermissions(token)
 
     return {

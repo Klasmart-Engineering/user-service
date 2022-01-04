@@ -35,12 +35,12 @@ describe('API docs', () => {
             })
         })
         context('when non authenticated', () => {
-            // auth token is not required when NODE_ENV=development...
+            // todo: unskip when auth token is mandatory
             it.skip('returns 401 status with error message', async () => {
                 const response = await request.get('/user')
                 expect(response.status).to.eq(401)
                 expect(response.body.message).to.contain(
-                    customErrors.missing_token.message
+                    customErrors.invalid_token.message
                 )
             })
         })
@@ -58,12 +58,12 @@ describe('API docs', () => {
             })
         })
         context('when non authenticated', () => {
-            // auth token is not required when NODE_ENV=development...
+            // todo: unskip when auth token is mandatory
             it.skip('returns 401 status with error message', async () => {
                 const response = await request.get('/user/explorer')
                 expect(response.status).to.eq(401)
                 expect(response.body.message).to.contain(
-                    customErrors.missing_token.message
+                    customErrors.invalid_token.message
                 )
             })
         })
@@ -81,12 +81,12 @@ describe('API docs', () => {
             })
         })
         context('when non authenticated', () => {
-            // auth token is not required when NODE_ENV=development...
+            // todo: unskip when auth token is mandatory
             it.skip('returns 401 status with error message', async () => {
                 const response = await request.get('/user/playground')
                 expect(response.status).to.eq(401)
                 expect(response.body.message).to.contain(
-                    customErrors.missing_token.message
+                    customErrors.invalid_token.message
                 )
             })
         })

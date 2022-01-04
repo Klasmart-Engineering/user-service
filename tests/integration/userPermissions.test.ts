@@ -72,7 +72,7 @@ describe('userPermissions', () => {
         beforeEach(async () => {
             const encodedToken = getNonAdminAuthToken()
             req.headers = { authorization: encodedToken }
-            token = await checkToken(req)
+            token = (await checkToken(req)) as TokenPayload
             userPermissions = new UserPermissions(token)
         })
 
@@ -84,7 +84,7 @@ describe('userPermissions', () => {
             beforeEach(async () => {
                 const encodedToken = getAdminAuthToken()
                 req.headers = { authorization: encodedToken }
-                token = await checkToken(req)
+                token = (await checkToken(req)) as TokenPayload
                 userPermissions = new UserPermissions(token)
             })
 
@@ -647,7 +647,7 @@ describe('userPermissions', () => {
             nonAdmin = await createNonAdminUser(testClient)
             const encodedToken = getNonAdminAuthToken()
             req.headers = { authorization: encodedToken }
-            const token = await checkToken(req)
+            const token = (await checkToken(req)) as TokenPayload
             token.id = nonAdmin.user_id
             userPermissions = new UserPermissions(token)
 

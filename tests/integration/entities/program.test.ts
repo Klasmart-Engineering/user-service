@@ -71,19 +71,6 @@ describe('program', () => {
     })
 
     describe('delete', () => {
-        context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlResult = deleteProgram(testClient, program.id, {
-                    authorization: undefined,
-                })
-
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
-
         context('when user is logged in', () => {
             let otherUserId: string
             let roleId: string
@@ -484,19 +471,6 @@ describe('program', () => {
             await ageRange.save()
         })
 
-        context('when not authenticated', () => {
-            it('throws a permission error', async () => {
-                await expect(
-                    editAgeRanges(testClient, program.id, [ageRange.id], {
-                        authorization: undefined,
-                    })
-                ).to.be.rejected
-
-                const dbAgeRanges = (await program.age_ranges) || []
-                expect(dbAgeRanges).to.be.empty
-            })
-        })
-
         context('when authenticated', () => {
             let role: any
 
@@ -614,19 +588,6 @@ describe('program', () => {
             await grade.save()
         })
 
-        context('when not authenticated', () => {
-            it('throws a permission error', async () => {
-                await expect(
-                    editGrades(testClient, program.id, [grade.id], {
-                        authorization: undefined,
-                    })
-                ).to.be.rejected
-
-                const dbGrades = (await program.grades) || []
-                expect(dbGrades).to.be.empty
-            })
-        })
-
         context('when authenticated', () => {
             let role: any
 
@@ -736,19 +697,6 @@ describe('program', () => {
             )
             subject = createSubject(org)
             await subject.save()
-        })
-
-        context('when not authenticated', () => {
-            it('throws a permission error', async () => {
-                await expect(
-                    editSubjects(testClient, program.id, [subject.id], {
-                        authorization: undefined,
-                    })
-                ).to.be.rejected
-
-                const dbSubjects = (await program.subjects) || []
-                expect(dbSubjects).to.be.empty
-            })
         })
 
         context('when authenticated', () => {

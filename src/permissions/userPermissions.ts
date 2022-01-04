@@ -42,7 +42,11 @@ export class UserPermissions {
     private user?: User
     public readonly isAdmin?: boolean
 
-    public constructor(token?: { id: string; email?: string; phone?: string }) {
+    public constructor(token?: {
+        id?: string
+        email?: string
+        phone?: string
+    }) {
         this.user_id = token?.id
         if (typeof token?.email == 'string' && token?.email?.length > 0) {
             this.email = token.email

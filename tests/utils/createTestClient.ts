@@ -17,8 +17,7 @@ import httpMocks, {
     ResponseOptions,
     Headers,
 } from 'node-mocks-http'
-import logger from '../../src/logging'
-import { loggerMiddlewareFactory } from '../../src/middlewares'
+import { validateToken } from '../../src/token'
 
 type StringOrAst = string | DocumentNode
 
@@ -125,11 +124,7 @@ export interface ApolloServerTestClient {
 export const createTestClient = async (
     server: ApolloServer
 ): Promise<ApolloServerTestClient> => {
-    const app = express()
-    app.use(graphqlUploadExpress({ maxFileSize: 2000000, maxFiles: 1 }))
-    app.use(loggerMiddlewareFactory(logger))
     await server.start()
-    server.applyMiddleware({ app })
 
     const test = async ({
         query,
@@ -151,7 +146,15 @@ export const createTestClient = async (
             headers: args.headers,
             cookies: args.cookies || {},
         })
+
         const res = mockResponse()
+
+        // in production this is applied as middleware
+        // but that doesn't seem to be applied when using runHttpQuery
+        // this will behaviour same as production for valid tokens
+        // and invalid tokens be tested in acceptance tests instead
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        await validateToken(req, res, () => {})
 
         let variables
         if (args.variables) {

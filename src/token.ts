@@ -1,9 +1,10 @@
 import { AuthenticationError } from 'apollo-server-express'
-import express, { NextFunction, Request, Response } from 'express'
+import express, { Request } from 'express'
 import { decode, Secret, verify, VerifyOptions } from 'jsonwebtoken'
 import getAuthenticatedUser from './services/azureAdB2C'
 import { customErrors } from './types/errors/customError'
 import clean from './utils/clean'
+import { stringInject } from './utils/stringUtils'
 
 const IS_AZURE_B2C_ENABLED = process.env.AZURE_B2C_ENABLED === 'true'
 const issuers = new Map<
@@ -60,28 +61,20 @@ if (process.env.NODE_ENV === 'development') {
     })
 }
 
-/*
-    The next issuers are just for instance,
-    these will be changed for real not allowed issuers
-*/
-const blackListIssuers = [
-    'invalid-issuer',
-    'black-list-issuer',
-    'not-allowed-issuer',
-]
-
 export interface TokenPayload {
     [k: string]: string | undefined | number | string[] | boolean
-    id: string
+    // id is not set until client has selected
+    // a particular user profile
+    id?: string
     email?: string
     phone?: string
     iss: string
 }
 
-async function checkTokenAMS(req: Request): Promise<TokenPayload> {
+async function checkTokenAMS(req: Request): Promise<TokenPayload | undefined> {
     const token = req.headers.authorization || req.cookies.access
     if (!token) {
-        throw new AuthenticationError('No authentication token')
+        return undefined
     }
     const payload = decode(token)
     if (!payload || typeof payload === 'string') {
@@ -111,8 +104,10 @@ async function checkTokenAMS(req: Request): Promise<TokenPayload> {
     return verifiedToken
 }
 
-export async function checkToken(req: Request): Promise<TokenPayload> {
-    let tokenPayload: TokenPayload
+export async function checkToken(
+    req: Request
+): Promise<TokenPayload | undefined> {
+    let tokenPayload: TokenPayload | undefined
     if (IS_AZURE_B2C_ENABLED) {
         const azureTokenPayload = await getAuthenticatedUser(req)
         const { emails, ...rest } = azureTokenPayload
@@ -125,41 +120,18 @@ export async function checkToken(req: Request): Promise<TokenPayload> {
     } else {
         tokenPayload = await checkTokenAMS(req)
     }
-    // the auth service that create our tokens does not normalize emails
-    // as strictly as we do
-    // https://calmisland.atlassian.net/browse/AD-1133?focusedCommentId=56306
-    // therefor we must normalize them ourselves to ensure they match up
-    // with what is saved to our db
-    // cast is ok because clean.email only return null if input is null
-    tokenPayload.email = clean.email(tokenPayload.email) as string | undefined
-    return tokenPayload
-}
-
-export function checkIssuerAuthorization(
-    req: Request,
-    res: Response,
-    next: NextFunction
-) {
-    const token = req.headers?.authorization
-
-    if (token) {
-        const payload = decode(token)
-
-        if (payload && typeof payload !== 'string') {
-            const issuer = payload['iss']
-
-            if (
-                !issuer ||
-                typeof issuer !== 'string' ||
-                blackListIssuers.includes(issuer)
-            ) {
-                res.status(401)
-                return res.send({ message: 'User not authorized' })
-            }
-        }
+    if (tokenPayload !== undefined) {
+        // the auth service that create our tokens does not normalize emails
+        // as strictly as we do
+        // https://calmisland.atlassian.net/browse/AD-1133?focusedCommentId=56306
+        // therefor we must normalize them ourselves to ensure they match up
+        // with what is saved to our db
+        // cast is ok because clean.email only return null if input is null
+        tokenPayload.email = clean.email(tokenPayload.email) as
+            | string
+            | undefined
     }
-
-    next()
+    return tokenPayload
 }
 
 export async function validateToken(
@@ -168,13 +140,14 @@ export async function validateToken(
     next: express.NextFunction
 ) {
     try {
-        if (process.env.NODE_ENV !== 'development') {
-            await checkToken(req)
-        }
-        next()
+        res.locals.token = await checkToken(req)
     } catch (e) {
-        res.status(401).send(
-            `${customErrors.missing_token.code}: ${customErrors.missing_token.message}`
-        )
+        const { code, message } = customErrors.invalid_token
+
+        return res.status(401).send({
+            code,
+            message: stringInject(message, { reason: e.message })!,
+        })
     }
+    next()
 }

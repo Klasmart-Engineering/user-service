@@ -13,7 +13,7 @@ import {
     loggerMiddlewareFactory,
 } from './middlewares'
 import { Model } from './model'
-import { checkIssuerAuthorization, validateToken } from './token'
+import { validateToken } from './token'
 import { createServer } from './utils/createServer'
 
 interface AppOptions {
@@ -54,29 +54,14 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(express.json())
     app.use(correlationIdMiddleware)
     app.use(loggerMiddlewareFactory(options.logger))
-    app.use(checkIssuerAuthorization)
     app.use(cors(corsOptions))
 
-    const viewsPath = path.join(__dirname, '..', 'views')
-    app.use(express.static(viewsPath))
-    app.set('views', viewsPath)
-    app.set('view engine', 'pug')
-
-    app.get(`${options.routePrefix}`, validateToken, (_, res) => {
-        res.render('index', { routePrefix: ROUTE_PREFIX })
+    // unauthenticated endpoints
+    app.get(`${options.routePrefix}/version`, (_, res) => {
+        res.status(200).json({
+            version: `${appPackage.version}`,
+        })
     })
-    app.get(`${options.routePrefix}/explorer`, validateToken, (_, res) => {
-        res.render('graphiql', { routePrefix: ROUTE_PREFIX })
-    })
-    app.get(
-        `${options.routePrefix}/playground`,
-        validateToken,
-        (req, res, next) => {
-            expressPlayground({
-                endpoint: `${options.routePrefix}/playground`,
-            })(req, res, next)
-        }
-    )
 
     app.get(`${options.routePrefix}/health`, (_, res) => {
         res.status(200).json({
@@ -84,11 +69,30 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
         })
     })
 
-    app.get(`${options.routePrefix}/version`, (_, res) => {
-        res.status(200).json({
-            version: `${appPackage.version}`,
-        })
+    // auth check is done here
+    // because throwing an error during apollo context creation
+    // gives a 400 status code
+    app.use(validateToken)
+
+    // authenticated end points
+
+    const viewsPath = path.join(__dirname, '..', 'views')
+    app.use(express.static(viewsPath))
+    app.set('views', viewsPath)
+    app.set('view engine', 'pug')
+
+    app.get(`${options.routePrefix}`, (_, res) => {
+        res.render('index', { routePrefix: ROUTE_PREFIX })
     })
+    app.get(`${options.routePrefix}/explorer`, (_, res) => {
+        res.render('graphiql', { routePrefix: ROUTE_PREFIX })
+    })
+    app.get(`${options.routePrefix}/playground`, (req, res, next) => {
+        expressPlayground({
+            endpoint: `${options.routePrefix}/playground`,
+        })(req, res, next)
+    })
+
     return app
 }
 

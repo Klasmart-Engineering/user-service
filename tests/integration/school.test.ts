@@ -977,15 +977,6 @@ describe('school', () => {
                 { authorization: getAdminAuthToken() }
             )
         })
-        context('when not authenticated', () => {
-            it('fails to list programs in the school', async () => {
-                await expect(
-                    listPrograms(testClient, school.school_id, {
-                        authorization: undefined,
-                    })
-                ).to.be.rejected
-            })
-        })
 
         context('when authenticated', () => {
             // skipped temporarily because authorization check is not currently in place/was removed

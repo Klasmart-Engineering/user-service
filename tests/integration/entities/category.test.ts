@@ -65,17 +65,6 @@ describe('Category', () => {
     })
 
     describe('delete', () => {
-        context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlResult = deleteCategory(testClient, category.id, {
-                    authorization: undefined,
-                })
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
         context('when user is logged in', () => {
             let otherUserId: string
             let roleId: string
@@ -475,22 +464,6 @@ describe('Category', () => {
             )
             subcategory = createSubcategory(org)
             await subcategory.save()
-        })
-
-        context('when not authenticated', () => {
-            it('throws a permission error', async () => {
-                await expect(
-                    editSubcategories(
-                        testClient,
-                        category.id,
-                        [subcategory.id],
-                        { authorization: undefined }
-                    )
-                ).to.be.rejected
-
-                const dbSubcategories = (await category.subcategories) || []
-                expect(dbSubcategories).to.be.empty
-            })
         })
 
         context('when authenticated', () => {
