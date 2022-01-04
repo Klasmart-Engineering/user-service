@@ -25,6 +25,8 @@ import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { config } from '../../../../src/config/config'
+import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
+import { Role } from '../../../../src/entities/role'
 
 use(chaiAsPromised)
 
@@ -57,6 +59,7 @@ describe('processClassFromCSVRow', () => {
     const systemProgName = 'Bada Read'
     const noneProgName = 'None Specified'
     const className = 'Class Test'
+    let queryResultCache: QueryResultCache
 
     before(async () => {
         connection = await createTestConnection()
@@ -109,6 +112,8 @@ describe('processClassFromCSVRow', () => {
         expectedClass = createClass([], expectedOrg)
         expectedClass.class_name = className
         await connection.manager.save(expectedClass)
+
+        queryResultCache = new QueryResultCache()
     })
 
     after(async () => {
@@ -127,7 +132,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
 
         const dbClass = await Class.findOneOrFail({
@@ -153,7 +159,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
 
         const dbClass = await Class.findOneOrFail({
@@ -176,7 +183,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
 
         const dbClass = await Class.findOneOrFail({
@@ -203,7 +211,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
 
         const dbClass = await Class.findOneOrFail({
@@ -227,7 +236,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
 
         const dbClass = await Class.findOneOrFail({
@@ -255,7 +265,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 
@@ -282,7 +293,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 
@@ -309,7 +321,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 
@@ -338,7 +351,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 
@@ -367,7 +381,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
 
         expect(rowErrors).to.have.length(1)
@@ -394,7 +409,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 
@@ -420,7 +436,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 
@@ -446,7 +463,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 
@@ -472,7 +490,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 
@@ -498,7 +517,8 @@ describe('processClassFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
         expect(rowErrors).to.have.length(1)
 

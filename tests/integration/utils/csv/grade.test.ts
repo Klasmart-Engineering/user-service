@@ -19,6 +19,10 @@ import { CSVError } from '../../../../src/types/csv/csvError'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
+import { Role } from '../../../../src/entities/role'
+import { School } from '../../../../src/entities/school'
+import { Class } from '../../../../src/entities/class'
 
 use(chaiAsPromised)
 
@@ -29,6 +33,7 @@ describe('processGradeFromCSVRow', () => {
     let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
+    let queryResultCache: QueryResultCache
 
     before(async () => {
         connection = await createTestConnection()
@@ -54,6 +59,7 @@ describe('processGradeFromCSVRow', () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
+        queryResultCache = new QueryResultCache()
     })
 
     context('when the organization name is not provided', () => {
@@ -67,7 +73,8 @@ describe('processGradeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -100,7 +107,8 @@ describe('processGradeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -133,7 +141,8 @@ describe('processGradeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -181,7 +190,8 @@ describe('processGradeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -228,7 +238,8 @@ describe('processGradeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             const grade = await Grade.findOneOrFail({

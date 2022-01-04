@@ -19,6 +19,10 @@ import { createTestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
+import { Role } from '../../../../src/entities/role'
+import { School } from '../../../../src/entities/school'
+import { Class } from '../../../../src/entities/class'
 
 use(chaiAsPromised)
 
@@ -31,6 +35,7 @@ describe('processCategoryFromCSVRow', () => {
     let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
+    let queryResultCache: QueryResultCache
 
     before(async () => {
         connection = await createTestConnection()
@@ -63,6 +68,8 @@ describe('processCategoryFromCSVRow', () => {
         subcategory = await createSubcategory(organization)
         subcategory.name = row.subcategory_name
         await connection.manager.save(subcategory)
+
+        queryResultCache = new QueryResultCache()
     })
 
     context('when the organization name is not provided', () => {
@@ -76,7 +83,8 @@ describe('processCategoryFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             expect(rowErrors).to.have.length(2) // Should actually be 1, needs to be fixed
@@ -111,7 +119,8 @@ describe('processCategoryFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -145,7 +154,8 @@ describe('processCategoryFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -179,7 +189,8 @@ describe('processCategoryFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -222,7 +233,8 @@ describe('processCategoryFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -256,7 +268,8 @@ describe('processCategoryFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
 
                 const category = await Category.findOneOrFail({
@@ -303,7 +316,8 @@ describe('processCategoryFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
 
                 const category = await Category.findOneOrFail({

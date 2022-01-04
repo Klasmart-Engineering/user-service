@@ -23,6 +23,7 @@ import { Status } from '../../../../src/entities/status'
 import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 import { createOrganizationOwnership } from '../../../factories/organizationOwnership.factory'
 import { config } from '../../../../src/config/config'
+import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
 
@@ -33,6 +34,7 @@ describe('processOrganizationFromCSVRow', () => {
     let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
+    let queryResultCache: QueryResultCache
 
     before(async () => {
         connection = await createTestConnection()
@@ -59,6 +61,7 @@ describe('processOrganizationFromCSVRow', () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
+        queryResultCache = new QueryResultCache()
     })
 
     context('when the organization name is not provided', () => {
@@ -72,7 +75,8 @@ describe('processOrganizationFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             expect(errors).to.deep.equal([
@@ -106,7 +110,8 @@ describe('processOrganizationFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             expect(errors).to.deep.equal([
@@ -141,7 +146,8 @@ describe('processOrganizationFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             expect(errors).to.deep.equal([
@@ -183,7 +189,8 @@ describe('processOrganizationFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             expect(errors).to.deep.equal([
@@ -230,7 +237,8 @@ describe('processOrganizationFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             expect(errors).to.deep.equal([
@@ -258,7 +266,8 @@ describe('processOrganizationFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             expect(errors).to.deep.equal([])

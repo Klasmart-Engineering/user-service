@@ -15,6 +15,7 @@ import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeaders
 import logger from '../../logging'
 import { config } from '../../config/config'
 import stream = require('stream')
+import { QueryResultCache } from './csvUtils'
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
@@ -222,9 +223,13 @@ export async function readCSVFile(
         throw fileErrors
     }
 
+    // Instantiate query result cache to cache repeated DB queries across rows
+    const queryResultCache = new QueryResultCache()
+
     for (let i = 0; i < rowCallbacks.length; i += 1) {
         csvStream = rereadableStream.rewind().pipe(csv())
         rowCounter = 0
+
         for await (let chunk of csvStream) {
             rowCounter += 1
 
@@ -235,7 +240,8 @@ export async function readCSVFile(
                 chunk,
                 rowCounter,
                 fileErrors,
-                userPermissions
+                userPermissions,
+                queryResultCache
             )
 
             fileErrors.push(...rowErrors)

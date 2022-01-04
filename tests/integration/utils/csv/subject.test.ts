@@ -20,6 +20,7 @@ import { CSVError } from '../../../../src/types/csv/csvError'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 
 describe('processSubjectFromCSVRow', () => {
     let connection: Connection
@@ -29,6 +30,7 @@ describe('processSubjectFromCSVRow', () => {
     let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
+    let queryResultCache: QueryResultCache
 
     before(async () => {
         connection = await createTestConnection()
@@ -59,6 +61,7 @@ describe('processSubjectFromCSVRow', () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
+        queryResultCache = new QueryResultCache()
     })
 
     context('when the organization name is not provided', () => {
@@ -72,7 +75,8 @@ describe('processSubjectFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -106,7 +110,8 @@ describe('processSubjectFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -140,7 +145,8 @@ describe('processSubjectFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             const subject = await Subject.findOne({
@@ -180,7 +186,8 @@ describe('processSubjectFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -214,7 +221,8 @@ describe('processSubjectFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.have.length(1)
 
@@ -262,7 +270,8 @@ describe('processSubjectFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
 
                 expect(rowErrors).to.have.length(1)
@@ -285,7 +294,8 @@ describe('processSubjectFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             const subject = await Subject.findOneOrFail({

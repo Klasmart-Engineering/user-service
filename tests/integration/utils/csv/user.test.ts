@@ -42,6 +42,8 @@ import { PermissionName } from '../../../../src/permissions/permissionNames'
 import { normalizedLowercaseTrimmed } from '../../../../src/utils/clean'
 import { pick } from 'lodash'
 import { config } from '../../../../src/config/config'
+import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
+import { objectToKey } from '../../../../src/utils/stringUtils'
 
 use(chaiAsPromised)
 
@@ -57,6 +59,7 @@ describe('processUserFromCSVRow', async () => {
     let adminUser: User
     let adminPermissions: UserPermissions
     let nonAdminUser: User
+    let queryResultCache: QueryResultCache
 
     before(async () => {
         connection = await createTestConnection()
@@ -121,6 +124,8 @@ describe('processUserFromCSVRow', async () => {
             school_name: school.school_name || '',
             class_name: cls.class_name || '',
         }
+
+        queryResultCache = new QueryResultCache()
     })
 
     async function assignUploadPermission(
@@ -150,7 +155,8 @@ describe('processUserFromCSVRow', async () => {
             row,
             1,
             [],
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
 
         const dbUser = await User.findOne({
@@ -170,15 +176,22 @@ describe('processUserFromCSVRow', async () => {
                 new UserPermissions({
                     id: nonAdminUser.user_id,
                     email: nonAdminUser.email || '',
-                })
+                }),
+                queryResultCache
             )
         }
         context('organization does not exist', () => {
             it('errors with nonexistent_entity', async () => {
-                row.organization_name = 'None existing org'
+                row.organization_name = 'Non-existent org'
                 const rowErrors = await processUsers()
                 const err = rowErrors[0]
                 expect(err.code).to.eq(customErrors.nonexistent_entity.code)
+            })
+
+            it('query result cache is not updated with invalid org name', async () => {
+                row.organization_name = 'Non-existent org'
+                const _ = await processUsers()
+                expect(queryResultCache.validatedOrgs.size).to.equal(0)
             })
         })
         context('org exists but user is not a member', () => {
@@ -187,11 +200,15 @@ describe('processUserFromCSVRow', async () => {
                 const err = rowErrors[0]
                 expect(err.code).to.eq(customErrors.nonexistent_entity.code)
             })
+            it('query result cache is not updated with invalid org name', async () => {
+                const _ = await processUsers()
+                expect(queryResultCache.validatedOrgs.size).to.equal(0)
+            })
         })
         context(
             "user is a member but doesn't have upload_users_40880 permission",
             () => {
-                it('errors with unauthorized_org_upload', async () => {
+                it('errors with unauthorized_org_upload and cache is not updated', async () => {
                     await addOrganizationToUserAndValidate(
                         testClient,
                         nonAdminUser.user_id,
@@ -211,13 +228,14 @@ describe('processUserFromCSVRow', async () => {
                     )) {
                         expect(err[v]).to.exist
                     }
+                    expect(queryResultCache.validatedOrgs.size).to.equal(0)
                 })
             }
         )
         context(
             'user is a member and has upload_users_40880 permission',
             () => {
-                it('does not error', async () => {
+                it('does not error and updates cache with valid org (by proxy of validated org name and permission)', async () => {
                     await assignUploadPermission(
                         nonAdminUser.user_id,
                         organization.organization_id,
@@ -225,6 +243,11 @@ describe('processUserFromCSVRow', async () => {
                     )
                     const rowErrors = await processUsers()
                     expect(rowErrors).to.be.empty
+                    expect(
+                        queryResultCache.validatedOrgs.get(
+                            row.organization_name
+                        )?.organization_id
+                    ).to.equal(organization.organization_id)
                 })
             }
         )
@@ -283,12 +306,14 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
                 customErrors.missing_required_entity_attribute.code
             )
+            expect(queryResultCache.validatedOrgs.size).to.equal(0)
         })
         it('errors when blank', async () => {
             row.organization_name = ''
@@ -297,12 +322,14 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
                 customErrors.missing_required_entity_attribute.code
             )
+            expect(queryResultCache.validatedOrgs.size).to.equal(0)
         })
         it('errors when too long', async () => {
             row.organization_name = 'a'.repeat(
@@ -313,12 +340,14 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
 
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
             expect(err.max).to.eq(config.limits.ORGANIZATION_NAME_MAX_LENGTH)
+            expect(queryResultCache.validatedOrgs.size).to.equal(0)
         })
         it("errors when doesn't exist", async () => {
             row.organization_name = 'None Existing Org'
@@ -327,10 +356,12 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.nonexistent_entity.code)
+            expect(queryResultCache.validatedOrgs.size).to.equal(0)
         })
     })
 
@@ -353,7 +384,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
@@ -367,7 +399,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
@@ -383,7 +416,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
@@ -396,7 +430,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             err = rowErrors[0]
@@ -426,7 +461,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
@@ -440,7 +476,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
@@ -456,7 +493,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             const err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
@@ -469,7 +507,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
@@ -492,7 +531,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
 
                 const err = rowErrors[0]
@@ -528,7 +568,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
@@ -542,7 +583,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
@@ -556,7 +598,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_min_length.code)
@@ -568,7 +611,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
@@ -581,7 +625,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(
@@ -611,7 +656,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(rowErrors.length).to.eq(1)
@@ -626,7 +672,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.be.empty
         })
@@ -638,7 +685,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(rowErrors.length).to.eq(1)
@@ -658,7 +706,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
                 err = rowErrors[0]
                 expect(rowErrors.length).to.eq(1)
@@ -678,7 +727,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.be.empty
 
@@ -708,7 +758,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.be.empty
 
@@ -732,7 +783,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
                 const err = rowErrors[0]
                 expect(rowErrors.length).to.eq(1)
@@ -768,7 +820,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(rowErrors.length).to.eq(1)
@@ -788,7 +841,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
                 err = rowErrors[0]
                 expect(rowErrors.length).to.eq(1)
@@ -808,7 +862,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             expect(rowErrors).to.be.empty
 
@@ -832,7 +887,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
                 const err = rowErrors[0]
                 expect(rowErrors.length).to.eq(1)
@@ -866,7 +922,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             err = rowErrors[0]
@@ -884,7 +941,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
                 err = rowErrors[0]
                 expect(err.code).to.eq(customErrors.invalid_alphanumeric.code)
@@ -915,7 +973,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.duplicate_entity.code)
@@ -944,13 +1003,15 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             err = rowErrors[0]
             expect(err.code).to.eq(
                 customErrors.missing_required_entity_attribute.code
             )
+            expect(queryResultCache.validatedOrgRoles.size).to.equal(0)
         })
         it('errors when blank', async () => {
             row.organization_role_name = ''
@@ -959,7 +1020,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             err = rowErrors[0]
@@ -968,6 +1030,7 @@ describe('processUserFromCSVRow', async () => {
             )
             expect(err.entity).to.eq('Organization')
             expect(err.attribute).to.eq('Role')
+            expect(queryResultCache.validatedOrgRoles.size).to.equal(0)
         })
         it('errors when too long', async () => {
             row.organization_role_name = 'a'.repeat(
@@ -978,7 +1041,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             err = rowErrors[0]
@@ -986,6 +1050,7 @@ describe('processUserFromCSVRow', async () => {
             expect(err.max).to.eq(config.limits.ROLE_NAME_MAX_LENGTH)
             expect(err.entity).to.eq('Organization')
             expect(err.attribute).to.eq('Role')
+            expect(queryResultCache.validatedOrgRoles.size).to.equal(0)
         })
         it('errors when nonexistent', async () => {
             row.organization_role_name = 'Non existing role'
@@ -994,7 +1059,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             err = rowErrors[0]
@@ -1003,77 +1069,151 @@ describe('processUserFromCSVRow', async () => {
             expect(err.entityName).to.eq(row.organization_role_name)
             expect(err.parentEntity).to.eq('Organization')
             expect(err.parentName).to.eq(row.organization_name)
+            expect(queryResultCache.validatedOrgRoles.size).to.equal(0)
         })
     })
 
     context('school name', () => {
         let err: CSVError
         let rowErrors: CSVError[]
-        afterEach(() => {
-            expect(rowErrors.length).to.eq(1)
-            expect(err.column).to.eq('school_name')
-            for (const v of getCustomErrorMessageVariables(err.message)) {
-                expect(err[v]).to.exist
+
+        describe('error behaviour', () => {
+            afterEach(() => {
+                expect(rowErrors.length).to.eq(1)
+                expect(err.column).to.eq('school_name')
+                for (const v of getCustomErrorMessageVariables(err.message)) {
+                    expect(err[v]).to.exist
+                }
+            })
+            it('errors when too long', async () => {
+                row.school_name = 'a'.repeat(
+                    config.limits.SCHOOL_NAME_MAX_LENGTH + 1
+                )
+                rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions,
+                    queryResultCache
+                )
+
+                err = rowErrors[0]
+                expect(err.code).to.eq(customErrors.invalid_max_length.code)
+                expect(err.max).to.eq(config.limits.SCHOOL_NAME_MAX_LENGTH)
+                expect(err.entity).to.eq('School')
+                expect(err.attribute).to.eq('Name')
+                expect(queryResultCache.validatedSchools.size).to.equal(0)
+            })
+            it('errors when doesnt exist', async () => {
+                row.school_name = 'Non existing school'
+                row.class_name = undefined
+                rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions,
+                    queryResultCache
+                )
+
+                err = rowErrors[0]
+                expect(err.code).to.eq(customErrors.nonexistent_child.code)
+                expect(err.entity).to.eq('School')
+                expect(err.entityName).to.eq(row.school_name)
+                expect(err.parentEntity).to.eq('Organization')
+                expect(err.parentName).to.eq(row.organization_name)
+                expect(queryResultCache.validatedSchools.size).to.equal(0)
+            })
+
+            it('errors when school is in wrong organization', async () => {
+                const wrongOrganization = createOrganization()
+                await connection.manager.save(wrongOrganization)
+                const wrongSchool = createSchool(wrongOrganization)
+                await connection.manager.save(wrongSchool)
+
+                row.school_name = wrongSchool.school_name
+                rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions,
+                    queryResultCache
+                )
+
+                err = rowErrors[0]
+                expect(err.code).to.eq(customErrors.nonexistent_child.code)
+                expect(err.entity).to.eq('School')
+                expect(err.entityName).to.eq(row.school_name)
+                expect(err.parentEntity).to.eq('Organization')
+                expect(err.parentName).to.eq(row.organization_name)
+                expect(queryResultCache.validatedSchools.size).to.equal(0)
+            })
+        })
+
+        it('should be stored with its org in cache separately if multiple orgs have same school name', async () => {
+            const organization2 = createOrganization()
+            await connection.manager.save(organization2)
+            const school2 = createSchool(organization2)
+            school2.school_name = school.school_name // Both schools in different orgs have same name
+            await connection.manager.save(school2)
+            const role2 = createRole(undefined, organization2)
+            await connection.manager.save(role2)
+
+            await addOrganizationToUserAndValidate(
+                testClient,
+                adminUser.user_id,
+                organization2.organization_id,
+                getAdminAuthToken()
+            )
+            await grantPermission(
+                testClient,
+                role2.role_id,
+                PermissionName.upload_users_40880,
+                { authorization: getAdminAuthToken() }
+            )
+            await grantPermission(
+                testClient,
+                role2.role_id,
+                PermissionName.attend_live_class_as_a_student_187,
+                { authorization: getAdminAuthToken() }
+            )
+
+            const row2: UserRow = {
+                organization_name: organization2.organization_name || '', // Different org in this row
+                user_given_name: user.given_name || '',
+                user_family_name: user.family_name || '',
+                user_shortcode: generateShortCode(),
+                user_email: user.email || '',
+                user_date_of_birth: user.date_of_birth || '',
+                user_gender: user.gender || '',
+                user_alternate_email: user.alternate_email || '',
+                user_alternate_phone: user.alternate_phone || '',
+                organization_role_name: role2.role_name || '',
+                school_name: school2.school_name || '', // School 2 name == school 1 name
+                class_name: cls.class_name || '',
             }
-        })
-        it('errors when too long', async () => {
-            row.school_name = 'a'.repeat(
-                config.limits.SCHOOL_NAME_MAX_LENGTH + 1
-            )
+
+            // Run multiple rows to update query result cache
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
-
-            err = rowErrors[0]
-            expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(config.limits.SCHOOL_NAME_MAX_LENGTH)
-            expect(err.entity).to.eq('School')
-            expect(err.attribute).to.eq('Name')
-        })
-        it('errors when doesnt exist', async () => {
-            row.school_name = 'Non existing school'
-            row.class_name = undefined
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
-                row,
-                1,
+                row2,
+                2,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
-            err = rowErrors[0]
-            expect(err.code).to.eq(customErrors.nonexistent_child.code)
-            expect(err.entity).to.eq('School')
-            expect(err.entityName).to.eq(row.school_name)
-            expect(err.parentEntity).to.eq('Organization')
-            expect(err.parentName).to.eq(row.organization_name)
-        })
-
-        it('errors when school is in wrong organization', async () => {
-            const wrongOrganization = createOrganization()
-            await connection.manager.save(wrongOrganization)
-            const wrongSchool = createSchool(wrongOrganization)
-            await connection.manager.save(wrongSchool)
-
-            row.school_name = wrongSchool.school_name
-            rowErrors = await processUserFromCSVRow(
-                connection.manager,
-                row,
-                1,
-                [],
-                adminPermissions
-            )
-
-            err = rowErrors[0]
-            expect(err.code).to.eq(customErrors.nonexistent_child.code)
-            expect(err.entity).to.eq('School')
-            expect(err.entityName).to.eq(row.school_name)
-            expect(err.parentEntity).to.eq('Organization')
-            expect(err.parentName).to.eq(row.organization_name)
+            expect(queryResultCache.validatedSchools.size).to.eq(2)
         })
     })
 
@@ -1084,7 +1224,8 @@ describe('processUserFromCSVRow', async () => {
             { ...row, school_role_name: `Nonexistant Role` } as UserRow,
             1,
             [],
-            adminPermissions
+            adminPermissions,
+            queryResultCache
         )
 
         expect(rowErrors).to.be.empty
@@ -1093,62 +1234,139 @@ describe('processUserFromCSVRow', async () => {
     context('class name', () => {
         let err: CSVError
         let rowErrors: CSVError[]
-        afterEach(() => {
-            expect(rowErrors.length).to.eq(1)
-            expect(err.column).to.eq('class_name')
-            for (const v of getCustomErrorMessageVariables(err.message)) {
-                expect(err[v]).to.exist
+
+        describe('error behaviour', () => {
+            afterEach(() => {
+                expect(rowErrors.length).to.eq(1)
+                expect(err.column).to.eq('class_name')
+                for (const v of getCustomErrorMessageVariables(err.message)) {
+                    expect(err[v]).to.exist
+                }
+            })
+            it('errors when too long', async () => {
+                row.class_name = 'a'.repeat(
+                    config.limits.CLASS_NAME_MAX_LENGTH + 1
+                )
+                rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions,
+                    queryResultCache
+                )
+
+                err = rowErrors[0]
+                expect(err.code).to.eq(customErrors.invalid_max_length.code)
+                expect(err.max).to.eq(config.limits.CLASS_NAME_MAX_LENGTH)
+                expect(err.entity).to.eq('Class')
+                expect(err.attribute).to.eq('Name')
+                expect(queryResultCache.validatedClasses.size).to.equal(0)
+            })
+            it('errors when doesnt exist', async () => {
+                row.class_name = 'Non existing class'
+                rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions,
+                    queryResultCache
+                )
+
+                err = rowErrors[0]
+                expect(err.code).to.eq(customErrors.nonexistent_child.code)
+                expect(err.entity).to.eq('Class')
+                expect(err.entityName).to.eq(row.class_name)
+                expect(err.parentEntity).to.eq('School')
+                expect(err.parentName).to.eq(row.school_name)
+                expect(queryResultCache.validatedClasses.size).to.equal(0)
+            })
+            it('errors when class is assigned to a school and school is missing', async () => {
+                row.school_name = undefined
+                rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions,
+                    queryResultCache
+                )
+
+                err = rowErrors[0]
+                expect(err.code).to.eq(customErrors.nonexistent_child.code)
+                expect(err.entity).to.eq('Class')
+                expect(err.entityName).to.eq(row.class_name)
+                expect(err.parentEntity).to.eq('School')
+                expect(err.parentName).to.eq('')
+                expect(queryResultCache.validatedClasses.size).to.equal(0)
+            })
+        })
+
+        it('should be stored with its org/school in cache separately if multiple orgs/schools have same class name', async () => {
+            const organization2 = createOrganization()
+            await connection.manager.save(organization2)
+            const school2 = createSchool(organization2)
+            await connection.manager.save(school2)
+            const role2 = createRole(undefined, organization2)
+            await connection.manager.save(role2)
+            const class2 = createClass([school2], organization2)
+            class2.class_name = cls.class_name // Same class name for class in different school + org
+            await connection.manager.save(class2)
+
+            await addOrganizationToUserAndValidate(
+                testClient,
+                adminUser.user_id,
+                organization2.organization_id,
+                getAdminAuthToken()
+            )
+            await grantPermission(
+                testClient,
+                role2.role_id,
+                PermissionName.upload_users_40880,
+                { authorization: getAdminAuthToken() }
+            )
+            await grantPermission(
+                testClient,
+                role2.role_id,
+                PermissionName.attend_live_class_as_a_student_187,
+                { authorization: getAdminAuthToken() }
+            )
+
+            const row2: UserRow = {
+                organization_name: organization2.organization_name || '', // Different org in this row
+                user_given_name: user.given_name || '',
+                user_family_name: user.family_name || '',
+                user_shortcode: generateShortCode(),
+                user_email: user.email || '',
+                user_date_of_birth: user.date_of_birth || '',
+                user_gender: user.gender || '',
+                user_alternate_email: user.alternate_email || '',
+                user_alternate_phone: user.alternate_phone || '',
+                organization_role_name: role2.role_name || '',
+                school_name: school2.school_name || '', // School 2 name == school 1 name
+                class_name: class2.class_name || '',
             }
-        })
-        it('errors when too long', async () => {
-            row.class_name = 'a'.repeat(config.limits.CLASS_NAME_MAX_LENGTH + 1)
+
+            // Run multiple rows to update query result cache
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
-
-            err = rowErrors[0]
-            expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(config.limits.CLASS_NAME_MAX_LENGTH)
-            expect(err.entity).to.eq('Class')
-            expect(err.attribute).to.eq('Name')
-        })
-        it('errors when doesnt exist', async () => {
-            row.class_name = 'Non existing class'
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
-                row,
-                1,
+                row2,
+                2,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
-            err = rowErrors[0]
-            expect(err.code).to.eq(customErrors.nonexistent_child.code)
-            expect(err.entity).to.eq('Class')
-            expect(err.entityName).to.eq(row.class_name)
-            expect(err.parentEntity).to.eq('School')
-            expect(err.parentName).to.eq(row.school_name)
-        })
-        it('errors when class is assigned to a school and school is missing', async () => {
-            row.school_name = undefined
-            rowErrors = await processUserFromCSVRow(
-                connection.manager,
-                row,
-                1,
-                [],
-                adminPermissions
-            )
-
-            err = rowErrors[0]
-            expect(err.code).to.eq(customErrors.nonexistent_child.code)
-            expect(err.entity).to.eq('Class')
-            expect(err.entityName).to.eq(row.class_name)
-            expect(err.parentEntity).to.eq('School')
-            expect(err.parentName).to.eq('')
+            expect(queryResultCache.validatedClasses.size).to.eq(2)
         })
     })
 
@@ -1175,7 +1393,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
         async function processAndReturnUser(expectedErrorCode = '') {
@@ -1214,7 +1433,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             const dbUser = await User.findOneOrFail({
@@ -1250,7 +1470,8 @@ describe('processUserFromCSVRow', async () => {
                 { ...row, school_role_name: role.role_name } as UserRow,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             const dbUser = await User.findOneOrFail({
@@ -1273,7 +1494,8 @@ describe('processUserFromCSVRow', async () => {
                 row,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             expect(rowErrors).to.be.empty
@@ -1296,7 +1518,8 @@ describe('processUserFromCSVRow', async () => {
                 { ...row, school_role_name: role.role_name } as UserRow,
                 1,
                 [],
-                adminPermissions
+                adminPermissions,
+                queryResultCache
             )
 
             const dbUser = await User.findOneOrFail({
@@ -1308,6 +1531,44 @@ describe('processUserFromCSVRow', async () => {
                 where: { user: dbUser, school: school },
             })
             expect(await schoolMembership.roles).to.deep.eq([])
+        })
+
+        it('the query result cache updates with validated entities', async () => {
+            const _ = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+
+            expect(
+                queryResultCache.validatedOrgs.get(row.organization_name)
+                    ?.organization_id
+            ).to.equal(organization.organization_id)
+            expect(
+                queryResultCache.validatedOrgRoles.get(
+                    row.organization_role_name
+                )?.role_id
+            ).to.equal(role.role_id)
+            expect(
+                queryResultCache.validatedSchools.get(
+                    objectToKey({
+                        school_name: row.school_name!,
+                        org_id: organization.organization_id,
+                    })
+                )?.school_id
+            ).to.equal(school.school_id)
+            expect(
+                queryResultCache.validatedClasses.get(
+                    objectToKey({
+                        class_name: row.class_name!,
+                        school_id: school.school_id,
+                        org_id: organization.organization_id,
+                    })
+                )?.class_id
+            ).to.equal(cls.class_id)
         })
 
         context('and the role is neither student nor teacher related', () => {
@@ -1397,7 +1658,8 @@ describe('processUserFromCSVRow', async () => {
                         row,
                         1,
                         [],
-                        adminPermissions
+                        adminPermissions,
+                        queryResultCache
                     )
 
                     const dbUser = await User.findOneOrFail({
@@ -1431,7 +1693,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
 
                 const dbUser = await User.findOneOrFail({
@@ -1494,7 +1757,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
                 let dbUsers = await User.find({
                     where: { email: row.user_email },
@@ -1512,7 +1776,8 @@ describe('processUserFromCSVRow', async () => {
                     row,
                     1,
                     [],
-                    adminPermissions
+                    adminPermissions,
+                    queryResultCache
                 )
                 dbUsers = await User.find({
                     where: { email: row.user_email },
@@ -1587,7 +1852,8 @@ describe('processUserFromCSVRow', async () => {
                             },
                             1,
                             [],
-                            adminPermissions
+                            adminPermissions,
+                            queryResultCache
                         )
 
                         const dbUser = await getUpdatedUser()
@@ -1611,7 +1877,8 @@ describe('processUserFromCSVRow', async () => {
                             },
                             1,
                             [],
-                            adminPermissions
+                            adminPermissions,
+                            queryResultCache
                         )
 
                         const dbUser = await getUpdatedUser()

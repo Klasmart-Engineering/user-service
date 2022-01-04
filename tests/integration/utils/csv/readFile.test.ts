@@ -96,7 +96,7 @@ describe('read file', () => {
                 )
                 expect(false).to.eq(true) // should never reach here
             } catch (e) {
-                const errors: CSVError[] = e
+                const errors: CSVError[] = e as CSVError[]
                 expect(errors.length).to.eq(2)
                 expect(errors[0].row).to.eq(1)
                 expect(errors[1].row).to.eq(2)

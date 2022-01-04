@@ -10,7 +10,7 @@ import { User } from '../../entities/user'
 import { UserRow, UserRowRequirements } from '../../types/csv/userRow'
 import { generateShortCode } from '../shortcode'
 import { v4 as uuid_v4 } from 'uuid'
-import { addCsvError, validateRow } from '../csv/csvUtils'
+import { addCsvError, QueryResultCache, validateRow } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import { userRowValidation } from './validations/user'
 import { customErrors } from '../../types/errors/customError'
@@ -21,6 +21,7 @@ import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeaders
 import clean from '../clean'
 import { Permission } from '../../entities/permission'
 import { config } from '../../config/config'
+import { objectToKey } from '../stringUtils'
 
 export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     headers: (keyof UserRow)[],
@@ -35,7 +36,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     row: UserRow,
     rowNumber: number,
     fileErrors: CSVError[],
-    userPermissions: UserPermissions
+    userPermissions: UserPermissions,
+    queryResultCache: QueryResultCache
 ) => {
     const rowErrors: CSVError[] = []
     // First check static validation constraints
@@ -48,57 +50,71 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     }
 
     // Now check dynamic constraints
+    let org: Organization | undefined
+    let organizationRole: Role | undefined
+    let school: School | undefined
+    let cls: Class | undefined
 
-    // search for the organization by name as well as user membership
-    const org = await Organization.createQueryBuilder('Organization')
-        .innerJoin('Organization.memberships', 'OrganizationMembership')
-        .where('OrganizationMembership.user_id = :user_id', {
-            user_id: userPermissions.getUserId(),
-        })
-        .andWhere('Organization.organization_name = :organization_name', {
-            organization_name: row.organization_name,
-        })
-        .getOne()
-
+    // Does the organization exist? And is the client user part of it?
+    org = queryResultCache.validatedOrgs.get(row.organization_name)
     if (!org) {
-        addCsvError(
-            rowErrors,
-            customErrors.nonexistent_entity.code,
-            rowNumber,
-            'organization_name',
-            customErrors.nonexistent_entity.message,
-            {
-                entity: 'Organization',
-                attribute: 'Name',
-                entityName: row.organization_name,
-            }
-        )
+        org = await Organization.createQueryBuilder('Organization')
+            .innerJoin('Organization.memberships', 'OrganizationMembership')
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: userPermissions.getUserId(),
+            })
+            .andWhere('Organization.organization_name = :organization_name', {
+                organization_name: row.organization_name,
+            })
+            .getOne()
 
-        return rowErrors
+        if (!org) {
+            addCsvError(
+                rowErrors,
+                customErrors.nonexistent_entity.code,
+                rowNumber,
+                'organization_name',
+                customErrors.nonexistent_entity.message,
+                {
+                    entity: 'Organization',
+                    attribute: 'Name',
+                    entityName: row.organization_name,
+                }
+            )
+            return rowErrors
+        }
+
+        // And is the user authorized to upload to this org?
+        try {
+            await userPermissions.rejectIfNotAllowed(
+                { organization_ids: [org.organization_id] },
+                PermissionName.upload_users_40880
+            )
+        } catch (e) {
+            addCsvError(
+                rowErrors,
+                customErrors.unauthorized_org_upload.code,
+                rowNumber,
+                'organization_name',
+                customErrors.unauthorized_org_upload.message,
+                {
+                    entity: 'user',
+                    organizationName: row.organization_name,
+                }
+            )
+            // AD-1721: Added because validation process should not reveal validity of other entities after this point if client user unauthorized. Discussed with Charlie (PM).
+            return rowErrors
+        }
+
+        // Update the cache
+        queryResultCache.validatedOrgs.set(row.organization_name, org)
     }
 
-    // is the user authorized to upload to this org?
-    try {
-        await userPermissions.rejectIfNotAllowed(
-            { organization_ids: [org.organization_id] },
-            PermissionName.upload_users_40880
-        )
-    } catch (e) {
-        addCsvError(
-            rowErrors,
-            customErrors.unauthorized_org_upload.code,
-            rowNumber,
-            'organization_name',
-            customErrors.unauthorized_org_upload.message,
-            {
-                entity: 'user',
-                organizationName: row.organization_name,
-            }
-        )
-    }
-
-    let organizationRole = undefined
-    if (row.organization_role_name) {
+    // Does the provided org role exist in its org?
+    organizationRole = queryResultCache.validatedOrgRoles.get(
+        row.organization_role_name
+    )
+    if (!organizationRole) {
         organizationRole = await manager.findOne(Role, {
             where: [
                 {
@@ -127,69 +143,134 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     parentName: row.organization_name,
                 }
             )
+        } else {
+            // Update the cache
+            queryResultCache.validatedOrgRoles.set(
+                row.organization_role_name,
+                organizationRole
+            )
         }
     }
+
+    // Does the school exist in the org?
     let schoolIfPresentExistsInOrg = true
-    let school: School | undefined = undefined
     if (row.school_name) {
-        school = await manager.findOne(School, {
-            where: {
+        school = queryResultCache.validatedSchools.get(
+            objectToKey({
                 school_name: row.school_name,
-                organization: { organization_id: org.organization_id },
-            },
-        })
-
+                org_id: org.organization_id,
+            })
+        )
         if (!school) {
-            addCsvError(
-                rowErrors,
-                customErrors.nonexistent_child.code,
-                rowNumber,
-                'school_name',
-                customErrors.nonexistent_child.message,
-                {
-                    entity: 'School',
-                    entityName: row.school_name,
-                    parentEntity: 'Organization',
-                    parentName: row.organization_name,
-                }
-            )
-            schoolIfPresentExistsInOrg = false
+            school = await manager.findOne(School, {
+                where: {
+                    school_name: row.school_name,
+                    organization: { organization_id: org.organization_id },
+                },
+            })
+
+            if (!school) {
+                addCsvError(
+                    rowErrors,
+                    customErrors.nonexistent_child.code,
+                    rowNumber,
+                    'school_name',
+                    customErrors.nonexistent_child.message,
+                    {
+                        entity: 'School',
+                        entityName: row.school_name,
+                        parentEntity: 'Organization',
+                        parentName: row.organization_name,
+                    }
+                )
+                schoolIfPresentExistsInOrg = false
+            } else {
+                // Update the cache
+                queryResultCache.validatedSchools.set(
+                    objectToKey({
+                        school_name: row.school_name,
+                        org_id: org.organization_id,
+                    }),
+                    school
+                )
+            }
         }
     }
 
-    let cls = undefined
+    // Does the class exist in the org?
     if (row.class_name && schoolIfPresentExistsInOrg) {
-        cls = await manager.findOne(Class, {
-            where: {
-                class_name: row.class_name,
-                organization: { organization_id: org.organization_id },
-            },
-        })
-
-        const classSchools = (await cls?.schools) || []
-        const classIsAssignedToSchool =
-            classSchools.length > 0 && school
-                ? classSchools?.find((s) => s.school_id === school?.school_id)
-                : false
-
-        if (
-            !cls ||
-            (school && !classIsAssignedToSchool) ||
-            (cls && !school && classSchools.length > 0)
-        ) {
-            addCsvError(
-                rowErrors,
-                customErrors.nonexistent_child.code,
-                rowNumber,
-                'class_name',
-                customErrors.nonexistent_child.message,
-                {
-                    entity: 'Class',
-                    entityName: row.class_name,
-                    parentEntity: 'School',
-                    parentName: row.school_name || '',
-                }
+        if (school) {
+            cls = queryResultCache.validatedClasses.get(
+                objectToKey({
+                    class_name: row.class_name,
+                    school_id: school.school_id,
+                    org_id: org.organization_id,
+                })
             )
+        } else {
+            cls = queryResultCache.validatedClasses.get(
+                objectToKey({
+                    class_name: row.class_name,
+                    org_id: org.organization_id,
+                })
+            )
+        }
+
+        if (!cls) {
+            cls = await manager.findOne(Class, {
+                where: {
+                    class_name: row.class_name,
+                    organization: { organization_id: org.organization_id },
+                },
+            })
+
+            const classSchools = (await cls?.schools) || []
+            const classIsAssignedToSchool =
+                classSchools.length > 0 && school
+                    ? classSchools?.find(
+                          (s) => s.school_id === school?.school_id
+                      )
+                    : false
+
+            if (
+                !cls ||
+                (school && !classIsAssignedToSchool) ||
+                (cls && !school && classSchools.length > 0)
+            ) {
+                addCsvError(
+                    rowErrors,
+                    customErrors.nonexistent_child.code,
+                    rowNumber,
+                    'class_name',
+                    customErrors.nonexistent_child.message,
+                    {
+                        entity: 'Class',
+                        entityName: row.class_name,
+                        parentEntity: 'School',
+                        parentName: row.school_name || '',
+                    }
+                )
+            } else {
+                // Update the cache
+                if (school) {
+                    queryResultCache.validatedClasses.set(
+                        objectToKey({
+                            class_name: row.class_name,
+                            school_id: school.school_id,
+                            org_id: org.organization_id,
+                        }),
+                        cls
+                    )
+                } else {
+                    queryResultCache.validatedClasses.set(
+                        objectToKey({
+                            class_name: row.class_name,
+                            org_id: org.organization_id,
+                        }),
+                        cls
+                    )
+                }
+            }
         }
     }
 

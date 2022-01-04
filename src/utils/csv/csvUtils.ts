@@ -4,6 +4,10 @@ import { stringInject } from '../stringUtils'
 import Joi, { ValidationResult } from 'joi'
 import { getCustomConstraintDetails } from '../../entities/validations/messages'
 import { CsvRowValidationSchema } from './validations/types'
+import { Organization } from '../../entities/organization'
+import { Role } from '../../entities/role'
+import { School } from '../../entities/school'
+import { Class } from '../../entities/class'
 
 export function addCsvError(
     errors: CSVError[],
@@ -96,4 +100,19 @@ export function joiResultToCSVErrors(
         csvErrors.push(csvError)
     }
     return csvErrors
+}
+
+// Map format: entity name in CSV (identifier) -> corresponding entity
+export class QueryResultCache {
+    validatedOrgs: Map<string, Organization>
+    validatedOrgRoles: Map<string, Role>
+    validatedSchools: Map<string, School>
+    validatedClasses: Map<string, Class>
+
+    constructor() {
+        this.validatedOrgs = new Map<string, Organization>()
+        this.validatedOrgRoles = new Map<string, Role>()
+        this.validatedSchools = new Map<string, School>() // Composite key: JSON-stringified {school_name, org_ID}
+        this.validatedClasses = new Map<string, Class>() // Composite key: JSON-stringified {cls_name, school_name, org_ID}
+    }
 }
