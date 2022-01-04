@@ -36,27 +36,28 @@ import { Status } from '../../src/entities/status'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
 import { expectAPIError, expectAPIErrorCollection } from '../utils/apiError'
-import _ from 'lodash'
 import { User } from '../../src/entities/user'
+import { CreateRoleInput, DeleteRoleInput } from '../../src/types/graphQL/role'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { mutate } from '../../src/utils/mutations/commonStructure'
+import { CreateRoles, DeleteRoles } from '../../src/resolvers/role'
 import { Organization } from '../../src/entities/organization'
+import { createRole as createARole } from '../factories/role.factory'
 import {
     createAdminUser as createAdmin,
     createUser,
 } from '../factories/user.factory'
-import { createRole as createARole } from '../factories/role.factory'
-import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { DeleteRoleInput } from '../../src/types/graphQL/role'
-import { UserPermissions } from '../../src/permissions/userPermissions'
-import { mutate } from '../../src/utils/mutations/commonStructure'
-import { DeleteRoles } from '../../src/resolvers/role'
+import { createOrganization } from '../factories/organization.factory'
 import { permErrorMeta } from '../utils/errors'
-import {
-    createDuplicateInputAPIError,
-    createEntityAPIError,
-} from '../../src/utils/resolvers'
+import { getManager } from 'typeorm'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import { NIL_UUID } from '../utils/database'
+import {
+    createEntityAPIError,
+    createDuplicateInputAPIError,
+    createNonExistentOrInactiveEntityAPIError,
+} from '../../src/utils/resolvers'
 
 chai.use(chaiAsPromised)
 
@@ -1403,11 +1404,431 @@ describe('role', () => {
         })
     })
 
+    describe('createRoles', () => {
+        let admin: User
+        let memberWithPermission: User
+        let memberWithoutPermission: User
+        let nonMember: User
+        let orgs: Organization[]
+        const orgsCount = 2
+        const rolesCount = 5
+
+        const expectRoles = async (quantity: number) => {
+            const roleCount = await Role.count({
+                where: { status: Status.ACTIVE, system_role: false },
+            })
+
+            expect(roleCount).to.eq(quantity)
+        }
+
+        const createRolesFromResolver = async (
+            caller: User,
+            input: CreateRoleInput[]
+        ) => {
+            const permissions = new UserPermissions(userToPayload(caller))
+            return mutate(CreateRoles, { input }, permissions)
+        }
+
+        const expectCreateRoles = async (
+            caller: User,
+            input: CreateRoleInput[]
+        ) => {
+            const { roles } = await createRolesFromResolver(caller, input)
+
+            expect(roles).to.have.lengthOf(input.length)
+            roles.forEach((r, i) => {
+                expect(r.name).to.equal(input[i].roleName)
+                expect(r.description).to.equal(input[i].roleDescription)
+            })
+
+            const DBRoles = await Role.findByIds(roles.map((r) => r.id))
+
+            expect(DBRoles).to.have.lengthOf(input.length)
+            DBRoles.forEach(async (dbr) => {
+                const relatedRole = roles.find((r) => r.id === dbr.role_id)
+                const index = roles.indexOf(relatedRole!)
+
+                expect(dbr.role_name).to.equal(relatedRole?.name)
+                expect(dbr.role_description).to.equal(relatedRole?.description)
+
+                const org = await dbr.organization
+
+                expect(org?.organization_id).to.equal(
+                    input[index].organizationId
+                )
+            })
+        }
+
+        const buildDefaultInputArray = (
+            organizations: Organization[]
+        ): CreateRoleInput[] =>
+            Array.from(organizations, (o, i) =>
+                Array.from(new Array(rolesCount), (_, j) => {
+                    return {
+                        organizationId: o.organization_id,
+                        roleName: `Role ${j}`,
+                        roleDescription: `Role number ${j} for org number ${i}`,
+                    }
+                })
+            ).flat()
+
+        const expectPermissionError = async (
+            caller: User,
+            input: CreateRoleInput[]
+        ) => {
+            const permError = permErrorMeta(
+                PermissionName.create_role_with_permissions_30222
+            )
+
+            const operation = createRolesFromResolver(caller, input)
+            await expect(operation).to.be.rejectedWith(permError(caller))
+            await expectRoles(0)
+        }
+
+        const expectInputErrors = async (
+            input: CreateRoleInput[],
+            expectedErrors: APIError[],
+            finalCount: number
+        ) => {
+            const operation = createRolesFromResolver(admin, input)
+            await expectAPIErrorCollection(
+                operation,
+                new APIErrorCollection(expectedErrors)
+            )
+
+            await expectRoles(finalCount)
+        }
+
+        beforeEach(async () => {
+            admin = await createAdmin().save()
+            const roleForCreateRoles = createARole('Create Roles', undefined, {
+                permissions: [
+                    PermissionName.create_role_with_permissions_30222,
+                ],
+            })
+
+            roleForCreateRoles.system_role = true
+            await roleForCreateRoles.save()
+
+            memberWithPermission = await createUser().save()
+            memberWithoutPermission = await createUser().save()
+            nonMember = await createUser().save()
+
+            orgs = await Organization.save(
+                Array.from(new Array(orgsCount), () => createOrganization())
+            )
+
+            await createOrganizationMembership({
+                user: memberWithPermission,
+                organization: orgs[0],
+                roles: [roleForCreateRoles],
+            }).save()
+
+            await createOrganizationMembership({
+                user: memberWithoutPermission,
+                organization: orgs[0],
+            }).save()
+        })
+
+        context('permissions', () => {
+            context('successful cases', () => {
+                context('when caller is admin', () => {
+                    it('should create roles in any organization', async () => {
+                        const input = buildDefaultInputArray(orgs)
+                        await expectCreateRoles(admin, input)
+                    })
+                })
+
+                context('when caller is not admin', () => {
+                    context('but has permissions', () => {
+                        it('should create roles just in the organization which belongs', async () => {
+                            const input = buildDefaultInputArray([orgs[0]])
+                            await expectCreateRoles(memberWithPermission, input)
+                        })
+                    })
+                })
+            })
+
+            context('error handling', () => {
+                context('when caller is not admin', () => {
+                    context('but has permissions', () => {
+                        context(
+                            'and tries to create roles in an organization which does not belong',
+                            () => {
+                                it('should throw a permission error', async () => {
+                                    const input = buildDefaultInputArray([
+                                        orgs[1],
+                                    ])
+
+                                    const roles = await Role.find()
+                                    await expectPermissionError(
+                                        memberWithPermission,
+                                        input
+                                    )
+                                })
+                            }
+                        )
+                    })
+
+                    context('and has not permission', () => {
+                        context('but has membership', () => {
+                            context(
+                                'and tries to create roles in the organization which belongs',
+                                () => {
+                                    it('should throw a permission error', async () => {
+                                        const input = buildDefaultInputArray([
+                                            orgs[0],
+                                        ])
+
+                                        await expectPermissionError(
+                                            memberWithoutPermission,
+                                            input
+                                        )
+                                    })
+                                }
+                            )
+                        })
+
+                        context('also has not membership', () => {
+                            context(
+                                'and tries to create roles in any organization',
+                                () => {
+                                    it('should throw a permission error', async () => {
+                                        const input = buildDefaultInputArray(
+                                            orgs
+                                        )
+
+                                        await expectPermissionError(
+                                            nonMember,
+                                            input
+                                        )
+                                    })
+                                }
+                            )
+                        })
+                    })
+                })
+            })
+        })
+
+        context('input', () => {
+            context('successful cases', () => {
+                context('when roleName already exists in a system role', () => {
+                    let systemRoles: Role[]
+
+                    beforeEach(async () => {
+                        systemRoles = await Role.find({
+                            where: { system_role: true },
+                        })
+                    })
+
+                    it('should create the roles', async () => {
+                        let input = buildDefaultInputArray([orgs[0]])
+                        input = input.map((i, index) => {
+                            return {
+                                organizationId: i.organizationId,
+                                roleName: systemRoles[index].role_name!,
+                                roleDescription: i.roleDescription,
+                            }
+                        })
+
+                        await expectCreateRoles(admin, input)
+                    })
+                })
+
+                context(
+                    'when roleName already exists in another organization',
+                    () => {
+                        let existentRoles: Role[]
+
+                        beforeEach(async () => {
+                            existentRoles = await Role.save(
+                                Array.from(new Array(rolesCount), () =>
+                                    createARole(undefined, orgs[1])
+                                )
+                            )
+                        })
+
+                        it('should create the roles', async () => {
+                            let input = buildDefaultInputArray([orgs[0]])
+                            input = input.map((i, index) => {
+                                return {
+                                    organizationId: i.organizationId,
+                                    roleName: existentRoles[index].role_name!,
+                                    roleDescription: i.roleDescription,
+                                }
+                            })
+
+                            await expectCreateRoles(admin, input)
+                        })
+                    }
+                )
+
+                context('when roleName already exists the organization', () => {
+                    context('but that role is inactive', () => {
+                        let inactiveRoles: Role[]
+
+                        beforeEach(async () => {
+                            inactiveRoles = await Role.save(
+                                Array.from(new Array(rolesCount), () => {
+                                    const role = createARole(undefined, orgs[0])
+                                    role.status = Status.INACTIVE
+                                    return role
+                                })
+                            )
+                        })
+
+                        it('should create the roles', async () => {
+                            let input = buildDefaultInputArray([orgs[0]])
+                            input = input.map((i, index) => {
+                                return {
+                                    organizationId: i.organizationId,
+                                    roleName: inactiveRoles[index].role_name!,
+                                    roleDescription: i.roleDescription,
+                                }
+                            })
+
+                            await expectCreateRoles(admin, input)
+                        })
+                    })
+                })
+            })
+
+            context('error handling', () => {
+                context(
+                    'when organizationId does not belong to any organization',
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const index = 0
+                            const inexistentId = NIL_UUID
+                            const input = buildDefaultInputArray([orgs[0]])
+                            input[index].organizationId = inexistentId
+
+                            const expectedErrors = [
+                                createNonExistentOrInactiveEntityAPIError(
+                                    index,
+                                    ['organization_id'],
+                                    'ID',
+                                    'Organization',
+                                    inexistentId
+                                ),
+                            ]
+
+                            await expectInputErrors(input, expectedErrors, 0)
+                        })
+                    }
+                )
+
+                context(
+                    'when organizationId belongs to an inactive organization',
+                    () => {
+                        let inactiveOrg: Organization
+
+                        beforeEach(async () => {
+                            inactiveOrg = orgs[0]
+                            await inactiveOrg.inactivate(getManager())
+                        })
+
+                        it('should throw an ErrorCollection', async () => {
+                            const input = buildDefaultInputArray([inactiveOrg])
+                            const expectedErrors = Array.from(input, (_, i) =>
+                                createNonExistentOrInactiveEntityAPIError(
+                                    i,
+                                    ['organization_id'],
+                                    'ID',
+                                    'Organization',
+                                    inactiveOrg.organization_id
+                                )
+                            )
+
+                            await expectInputErrors(input, expectedErrors, 0)
+                        })
+                    }
+                )
+
+                context('when roleName is duplicated', () => {
+                    let org: Organization
+                    let existentRole: Role
+
+                    beforeEach(async () => {
+                        org = orgs[0]
+                        existentRole = await createARole(
+                            undefined,
+                            orgs[0]
+                        ).save()
+                    })
+
+                    it('should throw an ErrorCollection', async () => {
+                        const index = 0
+                        const input = buildDefaultInputArray([org])
+                        input[index].roleName = existentRole.role_name!
+                        const expectedErrors = [
+                            createEntityAPIError(
+                                'duplicateChild',
+                                index,
+                                'Role',
+                                existentRole.role_name,
+                                'Organization',
+                                org.organization_id,
+                                ['organizationId', 'name']
+                            ),
+                        ]
+
+                        await expectInputErrors(input, expectedErrors, 1)
+                    })
+                })
+            })
+        })
+
+        context('DB Calls', () => {
+            it('should do the same DB calls for create 1 or 10 roles', async () => {
+                connection.logger.reset()
+                let input = [
+                    {
+                        organizationId: orgs[0].organization_id,
+                        roleName: 'One Role',
+                        roleDescription: 'Creating one role',
+                    },
+                ]
+                await createRolesFromResolver(admin, input)
+                const oneRoleDBCalls = connection.logger.count
+
+                connection.logger.reset()
+                input = buildDefaultInputArray(orgs)
+                await createRolesFromResolver(admin, input)
+                const twentyRolesDBCalls = connection.logger.count
+
+                expect(oneRoleDBCalls).to.equal(twentyRolesDBCalls)
+            })
+
+            it('should do one extra DB call if caller is not admin', async () => {
+                connection.logger.reset()
+                let input = buildDefaultInputArray([orgs[0]])
+                await createRolesFromResolver(admin, input)
+                const adminDBCalls = connection.logger.count
+
+                connection.logger.reset()
+                input = input.map((i) => {
+                    return {
+                        organizationId: i.organizationId,
+                        roleName: `new ${i.roleName}`,
+                        roleDescription: `new ${i.roleDescription}`,
+                    }
+                })
+                await createRolesFromResolver(memberWithPermission, input)
+                const nonAdminDBCalls = connection.logger.count
+
+                expect(nonAdminDBCalls).to.equal(adminDBCalls + 1)
+            })
+        })
+    })
+
     describe('deleteRoles', () => {
         let admin: User
         let memberWithPermission: User
         let memberWithoutPermission: User
         let nonMember: User
+
         let orgsData: OrgData[]
         let systemRoles: Role[]
         let rolesTotalCount: number
@@ -1478,7 +1899,6 @@ describe('role', () => {
             finalCount: number
         ) => {
             const operation = deleteRolesFromResolver(admin, input)
-
             await expectAPIErrorCollection(
                 operation,
                 new APIErrorCollection(expectedErrors)

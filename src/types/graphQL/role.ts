@@ -19,6 +19,12 @@ export interface RoleSummaryNode {
     status: Status
 }
 
+export interface CreateRoleInput {
+    organizationId: string
+    roleName: string
+    roleDescription: string
+}
+
 export interface DeleteRoleInput {
     id: string
 }

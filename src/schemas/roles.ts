@@ -9,7 +9,7 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Permission } from '../entities/permission'
 import { mutate } from '../utils/mutations/commonStructure'
-import { DeleteRoles } from '../resolvers/role'
+import { CreateRoles, DeleteRoles } from '../resolvers/role'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -22,6 +22,7 @@ const typeDefs = gql`
             new_role_id: ID!
             organization_id: ID!
         ): Role
+        createRoles(input: [CreateRoleInput!]!): RolesMutationResult
         deleteRoles(input: [DeleteRoleInput!]!): RolesMutationResult
     }
 
@@ -130,6 +131,12 @@ const typeDefs = gql`
     }
 
     # mutation types
+    input CreateRoleInput {
+        organizationId: ID!
+        roleName: String!
+        roleDescription: String!
+    }
+
     input DeleteRoleInput {
         id: ID!
     }
@@ -185,6 +192,8 @@ export default function getDefault(
                     model.uploadRolesFromCSV(args, ctx, info),
                 replaceRole: (_parent, args, ctx, info) =>
                     model.replaceRole(args, ctx, info),
+                createRoles: (_parent, args, ctx) =>
+                    mutate(CreateRoles, args, ctx.permissions),
                 deleteRoles: (_parent, args, ctx) =>
                     mutate(DeleteRoles, args, ctx.permissions),
             },

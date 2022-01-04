@@ -150,7 +150,9 @@ export async function expectAPIErrorCollection(
 ) {
     const { errors } = (await expect(resolverCall).to.be
         .rejected) as APIErrorCollection
+
     expect(errors).to.exist
+
     for (let x = 0; x < errors.length; x++)
         compareErrors(errors[x], expectedErrors.errors[x])
 }

@@ -9,6 +9,7 @@ import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { createRole } from '../factories/role.factory'
 import {
+    CreateRoleInput,
     DeleteRoleInput,
     RoleConnectionNode,
 } from '../../src/types/graphQL/role'
@@ -18,10 +19,11 @@ import { createUser } from '../factories/user.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { makeRequest } from './utils'
 import { createPermission } from '../factories/permission.factory'
-import { DELETE_ROLES } from '../utils/operations/roleOps'
-import { User } from '../../src/entities/user'
-import { PermissionName } from '../../src/permissions/permissionNames'
 import { userToPayload } from '../utils/operations/userOps'
+import { User } from '../../src/entities/user'
+import { CREATE_ROLES, DELETE_ROLES } from '../utils/operations/roleOps'
+import { Organization } from '../../src/entities/organization'
+import { PermissionName } from '../../src/permissions/permissionNames'
 
 interface IRoleEdge {
     node: RoleConnectionNode
@@ -30,8 +32,9 @@ interface IRoleEdge {
 describe('acceptance.role', () => {
     let connection: Connection
     let systemRolesCount = 0
-    let orgRoles: Role[]
     let orgAdmin: User
+    let organization: Organization
+    let orgRoles: Role[]
     const url = 'http://localhost:8080/user'
     const request = supertest(url)
     const rolesCount = 12
@@ -81,7 +84,14 @@ describe('acceptance.role', () => {
         await loadFixtures('users', connection)
 
         orgAdmin = await createUser().save()
-        const organization = await createOrganization(orgAdmin).save()
+        organization = await createOrganization(orgAdmin).save()
+
+        const roleForCreateRoles = await createRole(
+            'Create Roles',
+            organization,
+            { permissions: [PermissionName.create_role_with_permissions_30222] }
+        ).save()
+
         const roleForDeleteRoles = await createRole(
             'Delete Roles',
             organization,
@@ -91,7 +101,7 @@ describe('acceptance.role', () => {
         await createOrganizationMembership({
             user: orgAdmin,
             organization,
-            roles: [roleForDeleteRoles],
+            roles: [roleForCreateRoles, roleForDeleteRoles],
         }).save()
 
         for (let i = 1; i <= rolesCount; i++) {
@@ -230,6 +240,62 @@ describe('acceptance.role', () => {
         ).to.eq(permission.permission_id)
     })
 
+    context('createRoles', () => {
+        const makeCreateRolesMutation = async (input: CreateRoleInput[]) => {
+            return await makeRequest(
+                request,
+                print(CREATE_ROLES),
+                { input },
+                generateToken(userToPayload(orgAdmin))
+            )
+        }
+
+        context('when input is sent in a correct way', () => {
+            it('should respond successfully', async () => {
+                const input = [
+                    {
+                        organizationId: organization.organization_id,
+                        roleName: 'Custom Role',
+                        roleDescription: 'This is a custom role',
+                    },
+                ]
+
+                const response = await makeCreateRolesMutation(input)
+                const { roles } = response.body.data.createRoles
+
+                expect(response.status).to.eq(200)
+                expect(roles).to.exist
+                expect(roles).to.be.an('array')
+                expect(roles).to.have.lengthOf(input.length)
+
+                roles.forEach((r: RoleConnectionNode, i: number) => {
+                    expect(r.name).to.equal(input[i].roleName)
+                    expect(r.description).to.equal(input[i].roleDescription)
+                })
+            })
+        })
+
+        context('when organizationId in input does not exist', () => {
+            it('should respond with errors', async () => {
+                const input = [
+                    {
+                        organizationId: NIL_UUID,
+                        roleName: 'Custom Role',
+                        roleDescription: 'This is a custom role',
+                    },
+                ]
+
+                const response = await makeCreateRolesMutation(input)
+                const rolesCreated = response.body.data.createRoles
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(rolesCreated).to.be.null
+                expect(errors).to.exist
+            })
+        })
+    })
+
     context('deleteRoles', () => {
         const makeDeleteRolesMutation = async (input: DeleteRoleInput[]) => {
             return await makeRequest(
@@ -255,7 +321,6 @@ describe('acceptance.role', () => {
                 expect(roles).to.exist
                 expect(roles).to.be.an('array')
                 expect(roles).to.have.lengthOf(input.length)
-
                 const inputIds = input.map((i) => i.id)
                 const roleDeletedIds = roles.map(
                     (rd: RoleConnectionNode) => rd.id

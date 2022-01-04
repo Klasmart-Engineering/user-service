@@ -176,6 +176,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2433581057"
             )
         createRole(role_name: String!, role_description: String!): Role
+            @deprecated(
+                reason: "Sunset Date: 29/03/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         createSchool(school_name: String, shortcode: String): School
         createClass(class_name: String, shortcode: String): Class
         createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]

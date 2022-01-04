@@ -3,7 +3,7 @@ import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
 import { Role } from '../../../src/entities/role'
 import { Permission } from '../../../src/entities/permission'
-import { gql } from 'apollo-server-core'
+import gql from 'graphql-tag'
 
 const UPDATE_ROLE = `
     mutation myMutation(
@@ -118,6 +118,18 @@ const ROLE_FIELDS = gql`
         description
         status
         system
+    }
+`
+
+export const CREATE_ROLES = gql`
+    ${ROLE_FIELDS}
+
+    mutation CreateRoles($input: [CreateRoleInput!]!) {
+        createRoles(input: $input) {
+            roles {
+                ...roleFields
+            }
+        }
     }
 `
 
