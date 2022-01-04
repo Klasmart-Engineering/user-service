@@ -24,6 +24,7 @@ import { createClass } from '../../../factories/class.factory'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { config } from '../../../../src/config/config'
 
 use(chaiAsPromised)
 
@@ -381,11 +382,10 @@ describe('processClassFromCSVRow', () => {
         expect(dbClass.length).to.equal(1)
     })
 
-    it('should throw an error for class name length greater than 35 characters', async () => {
+    it('should throw an error for class name that exceeds max length', async () => {
         row = {
             organization_name: orgName,
-            class_name:
-                'This is a class name with more than thirty five characters length',
+            class_name: 'a'.repeat(config.limits.CLASS_NAME_MAX_LENGTH + 1),
             school_name: school1Name,
             program_name: progName,
         }
@@ -401,7 +401,7 @@ describe('processClassFromCSVRow', () => {
         const classRowError = rowErrors[0]
         expect(classRowError.code).to.equal('ERR_CSV_INVALID_LENGTH')
         expect(classRowError.message).to.equal(
-            'On row number 1, class name must not be greater than 35 characters.'
+            `On row number 1, class name must not be greater than ${config.limits.CLASS_NAME_MAX_LENGTH} characters.`
         )
 
         const dbClass = await Class.find()
