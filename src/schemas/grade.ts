@@ -45,6 +45,7 @@ const typeDefs = gql`
 
         #joined columns
         organizationId: UUIDFilter
+        programId: UUIDFilter
         fromGradeId: UUIDFilter
         toGradeId: UUIDFilter
 
