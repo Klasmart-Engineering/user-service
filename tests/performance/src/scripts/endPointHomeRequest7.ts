@@ -26,8 +26,6 @@ export default function (roleType?: string) {
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
 
-    console.log(JSON.stringify(res))
-
     check(res, {
         'status is 200 meQueryReq7': () => res.status === 200,
         '"meQueryReq7" query returns data': (r) => JSON.parse(r.body as string).data?.userNode?.id ?? false,
