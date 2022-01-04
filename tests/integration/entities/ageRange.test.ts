@@ -61,19 +61,6 @@ describe('ageRange', () => {
             await connection.manager.save(ageRange)
         })
 
-        context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlResult = deleteAgeRange(testClient, ageRange.id, {
-                    authorization: undefined,
-                })
-
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
-
         context('when user is logged in', () => {
             let otherUserId: string
             let roleId: string

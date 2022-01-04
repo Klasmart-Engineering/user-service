@@ -175,7 +175,7 @@ describe('model', () => {
 
                 await expect(gqlResult).to.be.rejectedWith(
                     Error,
-                    'Context creation failed: No authentication token'
+                    'User is required for authorization'
                 )
             })
         })
@@ -259,19 +259,6 @@ describe('model', () => {
             organizationId = org.organization_id
             ageRange = createAgeRange(org)
             await connection.manager.save(ageRange)
-        })
-
-        context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlResult = getAgeRange(testClient, ageRange.id, {
-                    authorization: undefined,
-                })
-
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
         })
 
         context('when user is logged in', () => {
@@ -417,19 +404,6 @@ describe('model', () => {
             gradeDetails = await gradeInfo(grade)
         })
 
-        context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlGrade = getGrade(testClient, grade.id, {
-                    authorization: undefined,
-                })
-
-                await expect(gqlGrade).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
-
         context('when user is logged in', () => {
             context('and the user is not an admin', () => {
                 context(
@@ -541,21 +515,6 @@ describe('model', () => {
             organizationId = org.organization_id
             subcategory = createSubcategory(org)
             await connection.manager.save(subcategory)
-        })
-
-        context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlSubcategory = getSubcategory(
-                    testClient,
-                    subcategory.id,
-                    { authorization: undefined }
-                )
-
-                await expect(gqlSubcategory).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
         })
 
         context('when user is logged in', () => {
@@ -678,19 +637,6 @@ describe('model', () => {
             organizationId = org.organization_id
             program = createProgram(org)
             await connection.manager.save(program)
-        })
-
-        context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlResult = getProgram(testClient, program.id, {
-                    authorization: undefined,
-                })
-
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
         })
 
         context('when user is logged in', () => {

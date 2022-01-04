@@ -578,10 +578,10 @@ describe('acceptance.user', () => {
                     query: MY_USERS,
                 })
 
-            expect(response.status).to.eq(400)
+            expect(response.status).to.eq(200)
             expect(response.body.errors.length).to.equal(1)
             expect(response.body.errors[0]['message']).to.equal(
-                'Context creation failed: No authentication token'
+                'No authentication token'
             )
         })
 

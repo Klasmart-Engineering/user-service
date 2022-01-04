@@ -189,9 +189,9 @@ export const customErrors = {
         message:
             'Unauthorized to upload {entity} to {parentEntity} "{parentName}".',
     },
-    missing_token: {
+    invalid_token: {
         code: 'UNAUTHORIZED',
-        message: `No authentication token provided.
+        message: `Invalid token provided: {reason}.
                 Please login to the hub to refresh the cookie,
                 or provide a token in the Authorization header.`,
     },

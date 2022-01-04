@@ -1,3 +1,4 @@
+import { AuthenticationError } from 'apollo-server-errors'
 import Dataloader from 'dataloader'
 import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
@@ -409,8 +410,12 @@ export default function getDefault(
                 },
             },
             Mutation: {
-                me: (_parent, _args, ctx: Context, _info) =>
-                    model.getMyUser(ctx.token),
+                me: (_parent, _args, ctx: Context, _info) => {
+                    if (ctx.token === undefined) {
+                        throw new AuthenticationError('No authentication token')
+                    }
+                    return model.getMyUser(ctx.token)
+                },
                 user: (_parent, args, _context, _info) => model.setUser(args),
                 switch_user: (_parent, args, ctx, info) => {
                     throw new Error('Deprecated')
@@ -430,8 +435,12 @@ export default function getDefault(
                     updateUsers(args, ctx),
             },
             Query: {
-                me: (_, _args, ctx: Context, _info) =>
-                    model.getMyUser(ctx.token),
+                me: (_parent, _args, ctx: Context, _info) => {
+                    if (ctx.token === undefined) {
+                        throw new AuthenticationError('No authentication token')
+                    }
+                    return model.getMyUser(ctx.token)
+                },
                 usersConnection: (_parent, args, ctx: Context, info) => {
                     // Create loaders specific to usersConnection to auto filter children
                     ctx.loaders.usersConnection = {
@@ -454,8 +463,12 @@ export default function getDefault(
                 user: (_parent, { user_id }, ctx: Context, _info) => {
                     return ctx.loaders.user.user.instance.load(user_id)
                 },
-                my_users: (_parent, _args, ctx: Context, info) =>
-                    model.myUsers(ctx.token),
+                my_users: (_parent, _args, ctx: Context, _info) => {
+                    if (ctx.token === undefined) {
+                        throw new AuthenticationError('No authentication token')
+                    }
+                    return model.myUsers(ctx.token)
+                },
             },
             User: {
                 memberships: (user: User, _args, ctx: Context, info) => {
