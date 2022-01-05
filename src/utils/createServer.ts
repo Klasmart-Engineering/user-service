@@ -14,7 +14,6 @@ import {
     isMIMETypeTransformer,
 } from '../directives'
 import { loadPlugins } from './plugins'
-import logger from '../logging'
 
 /* accessing a child via a connection field takes 3 depth
     myconnection { // 0
@@ -69,7 +68,6 @@ async function createContext({
         permissions,
         res,
         req,
-        logger,
         loaders: createContextLazyLoaders(permissions),
     }
 }

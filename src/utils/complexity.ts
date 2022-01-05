@@ -11,6 +11,7 @@ import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
 import { GraphQLRequestContext, WithRequired } from 'apollo-server-types'
 import { Context } from '../main'
 import { ApolloServerPlugin } from 'apollo-server-plugin-base'
+import logger from '../logging'
 
 // apollo doesn't let us supply this as a validation rule
 // so run it as a plugin instead
@@ -80,7 +81,7 @@ async function didResolveOperation(
             maxComplexity,
             complexity,
         }
-        context.logger.warn(loggingContext)
+        logger.log('warn', '%o', { loggingContext })
     }
 
     requestContext.context.complexity = {

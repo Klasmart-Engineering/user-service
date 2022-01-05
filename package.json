@@ -131,7 +131,7 @@
     "jsonwebtoken": "8.5.1",
     "jstransformer-highlight": "^2.0.0",
     "jstransformer-markdown-it": "^2.1.0",
-    "kidsloop-nodejs-logger": "bitbucket:calmisland/kidsloop-nodejs-logger#v0.2.14",
+    "kidsloop-nodejs-logger": "bitbucket:calmisland/kidsloop-nodejs-logger#v0.2.15",
     "lodash": "4.17.21",
     "newrelic": "8.4.0",
     "passport": "0.5.0",

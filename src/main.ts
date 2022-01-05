@@ -7,10 +7,6 @@ import express from 'express'
 import { IDataLoaders } from './loaders/setup'
 import logger from './logging'
 import { TokenPayload } from './token'
-import { KLLogger, NewRelicLogDeliveryAgent } from 'kidsloop-nodejs-logger'
-
-NewRelicLogDeliveryAgent.initialize()
-NewRelicLogDeliveryAgent.configure({})
 
 const port = process.env.PORT || 8080
 
@@ -18,7 +14,6 @@ export interface Context {
     token: TokenPayload | undefined
     res: express.Response
     req: express.Request
-    logger: KLLogger
     permissions: UserPermissions
     loaders: IDataLoaders
     complexity?: { limit: number; score: number }

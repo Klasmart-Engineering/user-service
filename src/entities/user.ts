@@ -94,7 +94,7 @@ export class User extends CustomBaseEntity {
             })
             return membership
         } catch (e) {
-            context.logger?.error(e)
+            logger.error(e)
         }
     }
 
@@ -116,7 +116,7 @@ export class User extends CustomBaseEntity {
             ).findOneOrFail({ where: { user_id: this.user_id, school_id } })
             return membership
         } catch (e) {
-            context.logger?.error(e)
+            logger.error(e)
         }
     }
 
@@ -160,7 +160,7 @@ export class User extends CustomBaseEntity {
                 })
                 .getMany()
         } catch (e) {
-            context.logger?.error(e)
+            logger.error(e)
         }
     }
 
@@ -228,7 +228,7 @@ export class User extends CustomBaseEntity {
                 })
             )
         } catch (e) {
-            context.logger?.error(e)
+            logger.error(e)
         }
     }
 
@@ -309,7 +309,7 @@ export class User extends CustomBaseEntity {
             await this.save()
             return this
         } catch (e) {
-            context.logger?.error(e)
+            logger.error(e)
         }
     }
 
@@ -357,7 +357,7 @@ export class User extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            context.logger?.error(e)
+            logger.error(e)
             return false
         }
     }
@@ -474,7 +474,7 @@ export class User extends CustomBaseEntity {
             await getManager().save(membership)
             return membership
         } catch (e) {
-            context.logger?.error(e)
+            logger.error(e)
         }
     }
 
@@ -497,7 +497,7 @@ export class User extends CustomBaseEntity {
             await getManager().save(membership)
             return membership
         } catch (e) {
-            context.logger?.error(e)
+            logger.error(e)
         }
     }
 
@@ -586,14 +586,14 @@ export class User extends CustomBaseEntity {
             await queryRunner.commitTransaction()
         } catch (err) {
             success = false
-            context.logger?.error(err)
+            logger.error(err)
             dberr = err
             await queryRunner.rollbackTransaction()
         } finally {
             await queryRunner.release()
         }
         if (success) {
-            context.logger?.info('success')
+            logger.info('success')
             return this
         }
         if (dberr !== undefined) {
