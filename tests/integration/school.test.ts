@@ -131,29 +131,6 @@ const expectAPIErrorCollection = async (
         compareErrors(errors[x], expectedErrors.errors[x])
 }
 
-function checkNotFoundErrors(
-    actualError: Error,
-    expectedErrors: {
-        entity: string
-        id: string
-        entryIndex: number
-    }[]
-) {
-    expectedErrors.forEach((val, errorIndex) => {
-        expectAPIError.nonexistent_entity(
-            actualError,
-            {
-                entity: val.entity,
-                entityName: val.id,
-                index: val.entryIndex,
-            },
-            ['id'],
-            errorIndex,
-            expectedErrors.length
-        )
-    })
-}
-
 describe('school', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
