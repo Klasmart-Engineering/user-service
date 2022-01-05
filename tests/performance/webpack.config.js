@@ -46,6 +46,8 @@ module.exports = {
         getSchools: `./getSchools.ts`,
         getAgeRanges: `./getAgeRanges.ts`,
         getUsers: `./getUsers.ts`,
+        getContentsAuthEdMore: `./getContentsAuthEdMore.ts`,
+        getContentsAuthEd: `./getContentsAuthEd.ts`,
         getContentsFolder: `./getContentsFolder.ts`,
         getContentsMe1: `./getContentsMe1.ts`,
         getContentsMe2: `./getContentsMe2.ts`
