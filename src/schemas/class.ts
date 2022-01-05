@@ -199,7 +199,13 @@ const typeDefs = gql`
         grades: [Grade!]
         subjects: [Subject!]
         eligibleTeachers: [User]
+            @deprecated(
+                reason: "Sunset Date: 31/03/2022 Details: [https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2478735554]"
+            )
         eligibleStudents: [User]
+            @deprecated(
+                reason: "Sunset Date: 31/03/2022 Details: [https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2478735554]"
+            )
 
         #mutations
         set(class_name: String, shortcode: String): Class

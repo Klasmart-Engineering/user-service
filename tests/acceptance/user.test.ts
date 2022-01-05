@@ -11,7 +11,11 @@ import {
     leaveTheOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { User } from '../../src/entities/user'
-import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
+import {
+    ELIGIBLE_STUDENTS_CONNECTION,
+    MY_USERS,
+    USERS_CONNECTION,
+} from '../utils/operations/modelOps'
 import {
     ADD_ORG_ROLES_TO_USERS,
     CREATE_USERS,
@@ -60,11 +64,13 @@ const org_name = 'my-org'
 const usersCount = 50
 const classesCount = 2
 const rolesCount = 20
-
+let users: User[]
 let orgId: string
 let userIds: string[]
 let classIds: string[]
 let userEmails: string[]
+let organization: Organization
+let simpleStudentRole: Role
 
 const ME = `
     query {
@@ -102,15 +108,23 @@ describe('acceptance.user', () => {
 
         orgId = createOrg1Data.organization_id
 
-        const organization = await Organization.findOneOrFail(orgId)
+        organization = await Organization.findOneOrFail(orgId)
 
-        const users = await User.save(
+        users = await User.save(
             Array(usersCount).fill(undefined).map(createUser)
         )
 
+        simpleStudentRole = await createRole(undefined, organization, {
+            permissions: [PermissionName.attend_live_class_as_a_student_187],
+        }).save()
+
         memberships = await OrganizationMembership.save(
             users.map((user) =>
-                createOrganizationMembership({ user, organization })
+                createOrganizationMembership({
+                    user,
+                    organization,
+                    roles: [simpleStudentRole],
+                })
             )
         )
 
@@ -826,5 +840,253 @@ describe('acceptance.user', () => {
                 expect(resUsers.length).to.equal(usersCount)
             })
         })
+    })
+    context('eligibleStudentsConnection', () => {
+        context('When a user has permission', () => {
+            it('should find some eligibleStudents', async () => {
+                const response = await makeRequest(
+                    request,
+                    ELIGIBLE_STUDENTS_CONNECTION,
+                    {
+                        classId: classIds[0],
+                        direction: 'FORWARD',
+                        directionArgs: {
+                            count: 50,
+                        },
+                    },
+                    getAdminAuthToken()
+                )
+                expect(
+                    response.body.data.eligibleStudentsConnection.edges.length
+                ).equals(50)
+            })
+        })
+        context('When a user does not have membership', () => {
+            let token: string
+            let testUser: User
+            beforeEach(async () => {
+                testUser = await createUser().save()
+
+                token = generateToken({
+                    id: testUser.user_id,
+                    email: testUser.email,
+                    iss: 'calmid-debug',
+                })
+            })
+            it('should find no users', async () => {
+                const response = await makeRequest(
+                    request,
+                    ELIGIBLE_STUDENTS_CONNECTION,
+                    {
+                        classId: classIds[0],
+                        direction: 'FORWARD',
+                        directionArgs: {
+                            count: 50,
+                        },
+                    },
+                    token
+                )
+                expect(response.status).to.eq(200)
+                expect(
+                    response.body.data.eligibleStudentsConnection.edges.length
+                ).equals(0)
+            })
+        })
+        context('When a user has membership but no role', () => {
+            let token: string
+            let testUser: User
+            beforeEach(async () => {
+                testUser = await createUser().save()
+                await createOrganizationMembership({
+                    user: testUser,
+                    organization,
+                }).save()
+                token = generateToken({
+                    id: testUser.user_id,
+                    email: testUser.email,
+                    iss: 'calmid-debug',
+                })
+            })
+            it('should find no users', async () => {
+                const response = await makeRequest(
+                    request,
+                    ELIGIBLE_STUDENTS_CONNECTION,
+                    {
+                        classId: classIds[0],
+                        direction: 'FORWARD',
+                        directionArgs: {
+                            count: 50,
+                        },
+                    },
+                    token
+                )
+                expect(response.status).to.eq(200)
+                expect(
+                    response.body.data.eligibleStudentsConnection.edges.length
+                ).equals(0)
+            })
+        })
+        context(
+            'When the calling user has membership with a role with only attend_live_class_as_a_student_187 permission',
+            () => {
+                let token: string
+                let testUser: User
+                beforeEach(async () => {
+                    testUser = await createUser().save()
+                    await createOrganizationMembership({
+                        user: testUser,
+                        organization,
+                        roles: [simpleStudentRole],
+                    }).save()
+                    token = generateToken({
+                        id: testUser.user_id,
+                        email: testUser.email,
+                        iss: 'calmid-debug',
+                    })
+                })
+                it('should find only that one same user', async () => {
+                    const response = await makeRequest(
+                        request,
+                        ELIGIBLE_STUDENTS_CONNECTION,
+                        {
+                            classId: classIds[0],
+                            direction: 'FORWARD',
+                            directionArgs: {
+                                count: 50,
+                            },
+                        },
+                        token
+                    )
+                    expect(response.status).to.eq(200)
+                    const edges =
+                        response.body.data.eligibleStudentsConnection.edges
+                    expect(edges.length).equals(1)
+                    const found = edges[0].node
+                    expect(found.id).equals(testUser.user_id)
+                })
+            }
+        )
+        context(
+            'When the calling user has membership with a role with the permission view_users_40110',
+            () => {
+                let token: string
+                let testUser: User
+                beforeEach(async () => {
+                    testUser = await createUser().save()
+                    const orgViewerRole = await createRole(
+                        undefined,
+                        organization,
+                        {
+                            permissions: [PermissionName.view_users_40110],
+                        }
+                    ).save()
+                    if (orgViewerRole) {
+                        await createOrganizationMembership({
+                            user: testUser,
+                            organization,
+                            roles: [orgViewerRole],
+                        }).save()
+                    }
+                    token = generateToken({
+                        id: testUser.user_id,
+                        email: testUser.email,
+                        iss: 'calmid-debug',
+                    })
+                })
+                it('should return a full page of users as the calling user has permission', async () => {
+                    const response = await makeRequest(
+                        request,
+                        ELIGIBLE_STUDENTS_CONNECTION,
+                        {
+                            classId: classIds[0],
+                            direction: 'FORWARD',
+                            directionArgs: {
+                                count: 50,
+                            },
+                        },
+                        token
+                    )
+                    expect(response.status).to.eq(200)
+                    expect(
+                        response.body.data.eligibleStudentsConnection.edges
+                            .length
+                    ).equals(50)
+                })
+            }
+        )
+        context(
+            'When the calling user has membership with a role with the permission view_my_school_users_40111',
+            () => {
+                let token: string
+                let testUser: User
+                beforeEach(async () => {
+                    const school = await createSchool(organization).save()
+                    testUser = await createUser().save()
+
+                    await createSchoolMembership({
+                        user: testUser,
+                        school: school,
+                    }).save()
+
+                    const schoolViewerRole = await createRole(
+                        undefined,
+                        organization,
+                        {
+                            permissions: [
+                                PermissionName.view_my_school_users_40111,
+                            ],
+                        }
+                    ).save()
+
+                    await createOrganizationMembership({
+                        user: testUser,
+                        organization,
+                        roles: [schoolViewerRole],
+                    }).save()
+
+                    await createSchoolMembership({
+                        user: testUser,
+                        school: school,
+                    }).save()
+
+                    const promiseSchoolMemberships = []
+                    for (let i = 0; i < 5; i++) {
+                        promiseSchoolMemberships.push(
+                            createSchoolMembership({
+                                user: users[i],
+                                school: school,
+                            }).save()
+                        )
+                    }
+                    await Promise.all(promiseSchoolMemberships)
+
+                    token = generateToken({
+                        id: testUser.user_id,
+                        email: testUser.email,
+                        iss: 'calmid-debug',
+                    })
+                })
+
+                it('should find only the users enrolled in their school', async () => {
+                    const response = await makeRequest(
+                        request,
+                        ELIGIBLE_STUDENTS_CONNECTION,
+                        {
+                            classId: classIds[0],
+                            direction: 'FORWARD',
+                            directionArgs: {
+                                count: 50,
+                            },
+                        },
+                        token
+                    )
+                    expect(response.status).to.eq(200)
+                    expect(
+                        response.body.data.eligibleStudentsConnection.edges
+                            .length
+                    ).equals(5)
+                })
+            }
+        )
     })
 })

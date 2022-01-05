@@ -49,7 +49,7 @@ const GET_PERMISSION = `
     }
 `
 
-const GRANT_PERMISSION = `
+export const GRANT_PERMISSION = `
     mutation myMutation(
             $role_id: ID!
             $permission_name: String!) {
@@ -72,7 +72,7 @@ const REVOKE_PERMISSION = `
     }
 `
 
-const DENY_PERMISSION = `
+export const DENY_PERMISSION = `
     mutation myMutation(
             $role_id: ID!
             $permission_name: String!) {
