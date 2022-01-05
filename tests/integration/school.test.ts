@@ -81,7 +81,6 @@ import { createMultipleSchools } from '../factories/school.factory'
 import { createClasses } from '../factories/class.factory'
 import { createRole as roleFactory } from '../factories/role.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
-import { config } from '../../src/config/config'
 import { createRole as createARole } from '../factories/role.factory'
 import { createSchool as createASchool } from '../factories/school.factory'
 import { createSchoolMembershipsInManySchools } from '../factories/schoolMembership.factory'
@@ -91,11 +90,10 @@ import {
     compareErrors,
     expectAPIError,
 } from '../utils/apiError'
-import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
+import { APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateInputAPIError,
     createEntityAPIError,
-    createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../../src/utils/resolvers'
 import { NIL_UUID } from '../utils/database'
@@ -103,29 +101,6 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
-
-function checkNotFoundErrors(
-    actualError: Error,
-    expectedErrors: {
-        entity: string
-        id: string
-        entryIndex: number
-    }[]
-) {
-    expectedErrors.forEach((val, errorIndex) => {
-        expectAPIError.nonexistent_entity(
-            actualError,
-            {
-                entity: val.entity,
-                entityName: val.id,
-                index: val.entryIndex,
-            },
-            ['id'],
-            errorIndex,
-            expectedErrors.length
-        )
-    })
-}
 
 interface OrgData {
     org: Organization
