@@ -143,94 +143,72 @@ export class AddProgramsToClasses extends AddMutation<
         )
     }
 
-    protected validate = validateAddingRemovingPrograms
+    protected validate = (
+        index: number,
+        currentEntity: Class,
+        currentInput: AddProgramsToClassInput,
+        maps: EntityMap<Class>
+    ): APIError[] => {
+        const errors: APIError[] = []
+        const { classId, programIds } = currentInput
 
-    protected process = processForAdd
+        for (const subitemId of programIds) {
+            const subitem = maps.subitems.get(subitemId) as Program
+            if (!subitem) {
+                errors.push(
+                    createEntityAPIError(
+                        'nonExistent',
+                        index,
+                        'Program',
+                        subitemId
+                    )
+                )
+            }
+            if (!subitem) continue
+
+            const itemHasSubitem = maps.itemsSubitems.has(
+                getMembershipMapKey(classId, subitemId)
+            )
+
+            if (itemHasSubitem) {
+                errors.push(
+                    createEntityAPIError(
+                        'duplicateChild',
+                        index,
+                        'Program',
+                        subitem.name,
+                        'Class',
+                        currentEntity.class_name
+                    )
+                )
+            }
+        }
+        return errors
+    }
+
+    protected process = (
+        currentEntity: Class,
+        currentInput: AddProgramsToClassInput,
+        maps: EntityMap<Class>
+    ): Class[] => {
+        const { classId, programIds } = currentInput
+
+        const newSubitems: Program[] = []
+        for (const subitemId of programIds) {
+            const subitem = maps.subitems.get(subitemId) as Program
+            newSubitems.push(subitem)
+        }
+        const preexistentSubitems = maps.itemsWithExistentSubitems.get(classId)
+        currentEntity.programs = Promise.resolve([
+            ...(preexistentSubitems as Program[]),
+            ...newSubitems,
+        ])
+        return [currentEntity]
+    }
 
     protected buildOutput = async (currentEntity: Class): Promise<void> => {
         this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
     }
-}
-
-function validateAddingRemovingPrograms(
-    this: AddProgramsToClasses,
-    index: number,
-    currentEntity: Class,
-    currentInput: AddProgramsToClassInput,
-    maps: EntityMap<Class>
-): APIError[] {
-    const errors: APIError[] = []
-    const { classId: itemId, programIds: subitemIds } = currentInput
-    const mainEntityName = 'Class'
-    const subEntityName = 'Program'
-
-    for (const subitemId of subitemIds) {
-        const subitem = maps.subitems.get(subitemId) as Program
-        if (!subitem) {
-            errors.push(
-                createEntityAPIError(
-                    'nonExistent',
-                    index,
-                    subEntityName,
-                    subitemId
-                )
-            )
-        }
-        if (!subitem) continue
-
-        const mutationType = this.inputTypeName.startsWith('Add')
-            ? 'Add'
-            : 'Remove'
-        const itemHasSubitem = maps.itemsSubitems.has(
-            getMembershipMapKey(itemId, subitemId)
-        )
-
-        if (mutationType === 'Add' && itemHasSubitem) {
-            errors.push(
-                createEntityAPIError(
-                    'duplicateChild',
-                    index,
-                    subEntityName,
-                    subitem.name,
-                    mainEntityName,
-                    currentEntity.class_name
-                )
-            )
-        }
-        if (mutationType === 'Remove' && !itemHasSubitem) {
-            errors.push(
-                createEntityAPIError(
-                    'nonExistentChild',
-                    index,
-                    subEntityName,
-                    subitem.name,
-                    mainEntityName,
-                    currentEntity.class_name
-                )
-            )
-        }
-    }
-    return errors
-}
-
-const processForAdd = (
-    currentEntity: Class,
-    currentInput: AddProgramsToClassInput,
-    maps: EntityMap<Class>
-): Class[] => {
-    const { classId: itemId, programIds: subitemIds } = currentInput
-
-    const newSubitems: Program[] = []
-    for (const subitemId of subitemIds) {
-        const subitem = maps.subitems.get(subitemId) as Program
-        newSubitems.push(subitem)
-    }
-    const preexistentSubitems = maps.itemsWithExistentSubitems.get(itemId)
-    currentEntity.programs = Promise.resolve([
-        ...(preexistentSubitems as Program[]),
-        ...newSubitems,
-    ])
-    return [currentEntity]
 }
 
 async function generateMaps(
