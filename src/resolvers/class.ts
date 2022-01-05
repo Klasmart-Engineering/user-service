@@ -136,9 +136,7 @@ export class AddProgramsToClasses extends AddMutation<
         maps: EntityMap<Class>
     ): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
-            {
-                organization_ids: [...maps.organizations.keys()],
-            },
+            { organization_ids: [...maps.organizations.keys()] },
             PermissionName.edit_class_20334
         )
     }

@@ -1193,7 +1193,7 @@ describe('acceptance.class', () => {
         })
 
         context('when data is requested in a correct way', () => {
-            it('should respond with status 200', async () => {
+            it('should pass gql schema validation', async () => {
                 const response = await makeAddProgramsToClassesMutation(input)
                 const resClasses =
                     response.body.data.addProgramsToClasses.classes
