@@ -79,7 +79,6 @@ import { createMultipleSchools } from '../factories/school.factory'
 import { createClasses } from '../factories/class.factory'
 import { createRole as roleFactory } from '../factories/role.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
-import { config } from '../../src/config/config'
 import { createRole as createARole } from '../factories/role.factory'
 import { createSchool as createASchool } from '../factories/school.factory'
 import { createSchoolMembershipsInManySchools } from '../factories/schoolMembership.factory'
@@ -89,11 +88,10 @@ import {
     compareErrors,
     expectAPIError,
 } from '../utils/apiError'
-import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
+import { APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateInputAPIError,
     createEntityAPIError,
-    createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../../src/utils/resolvers'
 import { NIL_UUID } from '../utils/database'
