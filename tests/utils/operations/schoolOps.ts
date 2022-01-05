@@ -147,6 +147,17 @@ export const ADD_CLASSES_TO_SCHOOLS = gql`
     }
 `
 
+export const ADD_PROGRAMS_TO_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+    mutation myMutation($input: [AddProgramsToSchoolInput!]!) {
+        addProgramsToSchools(input: $input) {
+            schools {
+                ...schoolFields
+            }
+        }
+    }
+`
+
 export const CREATE_SCHOOLS = gql`
     ${SCHOOL_FIELDS}
 

@@ -24,3 +24,8 @@ export function createProgram(
 
     return program
 }
+
+export const createPrograms = (length: number, org?: Organization) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createProgram(org))

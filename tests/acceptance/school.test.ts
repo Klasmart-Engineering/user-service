@@ -11,6 +11,7 @@ import { PermissionName } from '../../src/permissions/permissionNames'
 import {
     RemoveUsersFromSchoolInput,
     AddClassesToSchoolInput,
+    AddProgramsToSchoolInput,
     CreateSchoolInput,
     ISchoolsConnectionNode,
     UpdateSchoolInput,
@@ -40,6 +41,7 @@ import ProgramsInitializer from '../../src/initializers/programs'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { DeleteSchoolInput } from '../../src/types/graphQL/school'
 import {
+    ADD_PROGRAMS_TO_SCHOOLS,
     CREATE_SCHOOLS,
     DELETE_SCHOOLS,
     UPDATE_SCHOOLS,
@@ -51,6 +53,7 @@ import { userToPayload } from '../utils/operations/userOps'
 import { ADD_CLASSES_TO_SCHOOLS } from '../utils/operations/schoolOps'
 import { Role } from '../../src/entities/role'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
+import { createProgram } from '../factories/program.factory'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -638,6 +641,71 @@ describe('acceptance.school', () => {
 
                 expect(response.status).to.eq(200)
                 expect(schoolsEdited).to.be.null
+                expect(errors).to.exist
+            })
+        })
+    })
+
+    context('addProgramsToSchools', () => {
+        let adminUser: User
+        let input: AddProgramsToSchoolInput[]
+        const programsCount = 20
+        const schoolsCount = 50
+        const programs: Program[] = []
+
+        const makeAddProgramsToSchoolsMutation = async (
+            input: AddProgramsToSchoolInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(ADD_PROGRAMS_TO_SCHOOLS),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+        }
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            for (let x = 0; x < programsCount; x++) {
+                const cls = await createProgram().save()
+                programs.push(cls)
+            }
+
+            const schools = []
+            for (let i = 0; i < schoolsCount; i++) {
+                schools.push(await createFactorySchool().save())
+            }
+
+            input = []
+            for (let i = 0; i < schoolsCount; i++) {
+                input.push({
+                    schoolId: schools[i].school_id,
+                    programIds: programs.slice(8, 15).map((v) => v.id),
+                })
+            }
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const response = await makeAddProgramsToSchoolsMutation(input)
+                const resSchools =
+                    response.body.data.addProgramsToSchools.schools
+                expect(response.status).to.eq(200)
+                expect(resSchools.length).to.equal(schoolsCount)
+            })
+        })
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                input[0].schoolId = NIL_UUID
+
+                const response = await makeAddProgramsToSchoolsMutation(input)
+                const schoolsUpdated = response.body.data.addProgramsToSchools
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(schoolsUpdated).to.be.null
                 expect(errors).to.exist
             })
         })

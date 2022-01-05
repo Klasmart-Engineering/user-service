@@ -12,7 +12,7 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Program } from '../entities/program'
-import { AddClassesToSchools } from '../resolvers/school'
+import { AddClassesToSchools, AddProgramsToSchools } from '../resolvers/school'
 import {
     CreateSchools,
     DeleteSchools,
@@ -34,6 +34,9 @@ const typeDefs = gql`
         ): SchoolsMutationResult
         addClassesToSchools(
             input: [AddClassesToSchoolInput!]!
+        ): SchoolsMutationResult
+        addProgramsToSchools(
+            input: [AddProgramsToSchoolInput!]!
         ): SchoolsMutationResult
     }
     extend type Query {
@@ -68,6 +71,9 @@ const typeDefs = gql`
         set(school_name: String, shortcode: String): School
         addUser(user_id: ID!): SchoolMembership
         editPrograms(program_ids: [ID!]): [Program]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
+            )
         delete(_: Int): Boolean
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
@@ -147,6 +153,16 @@ const typeDefs = gql`
         ): ProgramsConnectionResponse
     }
 
+    input AddClassesToSchoolInput {
+        schoolId: ID!
+        classIds: [ID!]!
+    }
+
+    input AddProgramsToSchoolInput {
+        schoolId: ID!
+        programIds: [ID!]!
+    }
+
     input SchoolFilter {
         # table columns
         schoolId: UUIDFilter
@@ -197,11 +213,6 @@ const typeDefs = gql`
     input RemoveUsersFromSchoolInput {
         schoolId: ID!
         userIds: [ID!]!
-    }
-
-    input AddClassesToSchoolInput {
-        schoolId: ID!
-        classIds: [ID!]!
     }
 
     type SchoolsMutationResult {
@@ -285,16 +296,18 @@ export default function getDefault(
                     model.getSchool(args, ctx),
                 uploadSchoolsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSchoolsFromCSV(args, ctx, info),
+                deleteSchools: (_parent, args, ctx, _info) =>
+                    mutate(DeleteSchools, args, ctx.permissions),
+                addClassesToSchools: (_parent, args, ctx, _info) =>
+                    mutate(AddClassesToSchools, args, ctx.permissions),
+                addProgramsToSchools: (_parent, args, ctx, _info) =>
+                    mutate(AddProgramsToSchools, args, ctx.permissions),
                 createSchools: (_parent, args, ctx, _info) =>
                     mutate(CreateSchools, args, ctx.permissions),
                 updateSchools: (_parent, args, ctx, _info) =>
                     mutate(UpdateSchools, args, ctx.permissions),
-                deleteSchools: (_parent, args, ctx, _info) =>
-                    mutate(DeleteSchools, args, ctx.permissions),
                 removeUsersFromSchools: (_parent, args, ctx, _info) =>
                     mutate(RemoveUsersFromSchools, args, ctx.permissions),
-                addClassesToSchools: (_parent, args, ctx, _info) =>
-                    mutate(AddClassesToSchools, args, ctx.permissions),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>
