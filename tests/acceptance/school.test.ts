@@ -15,12 +15,17 @@ import {
     CreateSchoolInput,
     ISchoolsConnectionNode,
     UpdateSchoolInput,
+    RemoveProgramsFromSchoolInput,
+    DeleteSchoolInput,
 } from '../../src/types/graphQL/school'
 import { createClass } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
-import { createSchool as createFactorySchool } from '../factories/school.factory'
+import {
+    createMultipleSchools,
+    createSchool as createFactorySchool,
+} from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createUser } from '../factories/user.factory'
 import { NIL_UUID } from '../utils/database'
@@ -39,21 +44,20 @@ import { createTestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 import ProgramsInitializer from '../../src/initializers/programs'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { DeleteSchoolInput } from '../../src/types/graphQL/school'
 import {
     ADD_PROGRAMS_TO_SCHOOLS,
     CREATE_SCHOOLS,
     DELETE_SCHOOLS,
     UPDATE_SCHOOLS,
     REMOVE_USERS_FROM_SCHOOLS,
+    REMOVE_PROGRAMS_FROM_SCHOOLS,
 } from '../utils/operations/schoolOps'
-import { Status } from '../../src/entities/status'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { userToPayload } from '../utils/operations/userOps'
 import { ADD_CLASSES_TO_SCHOOLS } from '../utils/operations/schoolOps'
 import { Role } from '../../src/entities/role'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
-import { createProgram } from '../factories/program.factory'
+import { createProgram, createPrograms } from '../factories/program.factory'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -702,6 +706,69 @@ describe('acceptance.school', () => {
 
                 const response = await makeAddProgramsToSchoolsMutation(input)
                 const schoolsUpdated = response.body.data.addProgramsToSchools
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(schoolsUpdated).to.be.null
+                expect(errors).to.exist
+            })
+        })
+    })
+
+    context('removeProgramsToSchools', () => {
+        let adminUser: User
+        let input: RemoveProgramsFromSchoolInput[]
+        const schoolsCount = 1
+        let programs: Program[] = []
+
+        const makeRemoveProgramsFromSchoolsMutation = async (
+            input: RemoveProgramsFromSchoolInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(REMOVE_PROGRAMS_FROM_SCHOOLS),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+        }
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            programs = createPrograms(3)
+            const schools = createMultipleSchools(3)
+            await connection.manager.save([...schools, ...programs])
+            schools[0].programs = Promise.resolve(programs)
+            await schools[0].save()
+            input = [
+                {
+                    schoolId: schools[0].school_id,
+                    programIds: programs.map((v) => v.id),
+                },
+            ]
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const response = await makeRemoveProgramsFromSchoolsMutation(
+                    input
+                )
+                const resSchools =
+                    response.body.data.removeProgramsFromSchools.schools
+                expect(response.status).to.eq(200)
+                expect(resSchools.length).to.equal(schoolsCount)
+            })
+        })
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                input[0].schoolId = NIL_UUID
+
+                const response = await makeRemoveProgramsFromSchoolsMutation(
+                    input
+                )
+                const schoolsUpdated =
+                    response.body.data.removeProgramsFromSchools
                 const errors = response.body.errors
 
                 expect(response.status).to.eq(200)

@@ -123,6 +123,17 @@ const SCHOOL_FIELDS = gql`
     }
 `
 
+export const REMOVE_PROGRAMS_FROM_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+    mutation myMutation($input: [RemoveProgramsFromSchoolInput!]!) {
+        removeProgramsFromSchools(input: $input) {
+            schools {
+                ...schoolFields
+            }
+        }
+    }
+`
+
 export const DELETE_SCHOOLS = gql`
     ${SCHOOL_FIELDS}
 

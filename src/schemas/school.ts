@@ -12,7 +12,11 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Program } from '../entities/program'
-import { AddClassesToSchools, AddProgramsToSchools } from '../resolvers/school'
+import {
+    AddClassesToSchools,
+    AddProgramsToSchools,
+    RemoveProgramsFromSchools,
+} from '../resolvers/school'
 import {
     CreateSchools,
     DeleteSchools,
@@ -37,6 +41,9 @@ const typeDefs = gql`
         ): SchoolsMutationResult
         addProgramsToSchools(
             input: [AddProgramsToSchoolInput!]!
+        ): SchoolsMutationResult
+        removeProgramsFromSchools(
+            input: [RemoveProgramsFromSchoolInput!]!
         ): SchoolsMutationResult
     }
     extend type Query {
@@ -218,6 +225,11 @@ const typeDefs = gql`
     type SchoolsMutationResult {
         schools: [SchoolConnectionNode!]!
     }
+
+    input RemoveProgramsFromSchoolInput {
+        schoolId: ID!
+        programIds: [ID!]!
+    }
 `
 
 // This is a workaround to needing to mock total count AST check in tests
@@ -308,6 +320,8 @@ export default function getDefault(
                     mutate(UpdateSchools, args, ctx.permissions),
                 removeUsersFromSchools: (_parent, args, ctx, _info) =>
                     mutate(RemoveUsersFromSchools, args, ctx.permissions),
+                removeProgramsFromSchools: (_parent, args, ctx, _info) =>
+                    mutate(RemoveProgramsFromSchools, args, ctx.permissions),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>

@@ -59,3 +59,8 @@ export interface AddProgramsToSchoolInput {
     schoolId: string
     programIds: string[]
 }
+
+export interface RemoveProgramsFromSchoolInput {
+    schoolId: string
+    programIds: string[]
+}
