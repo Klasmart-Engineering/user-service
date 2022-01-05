@@ -30,3 +30,8 @@ export interface DeleteClassInput {
 export interface ClassesMutationResult {
     classes: ClassConnectionNode[]
 }
+
+export interface AddProgramsToClassInput {
+    classId: string
+    programIds: string[]
+}

@@ -86,7 +86,11 @@ import { createRole as createARole } from '../factories/role.factory'
 import { createSchool as createASchool } from '../factories/school.factory'
 import { createSchoolMembershipsInManySchools } from '../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { compareErrors, expectAPIError } from '../utils/apiError'
+import {
+    checkNotFoundErrors,
+    compareErrors,
+    expectAPIError,
+} from '../utils/apiError'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateInputAPIError,

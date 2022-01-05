@@ -4,6 +4,7 @@ import {
     DeleteClassInput,
     ClassesMutationResult,
     ClassConnectionNode,
+    AddProgramsToClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -14,9 +15,13 @@ import {
     createDuplicateInputAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
+    getMembershipMapKey,
 } from '../utils/resolvers'
 import { mapClassToClassConnectionNode } from '../pagination/classesConnection'
 import { config } from '../config/config'
+import { Program } from '../entities/program'
+import { AddMutation, EntityMap } from '../utils/mutations/commonStructure'
+import { Organization } from '../entities/organization'
 
 export async function deleteClasses(
     args: { input: DeleteClassInput[] },
@@ -102,4 +107,164 @@ export async function deleteClasses(
     }
 
     return { classes: output }
+}
+
+export class AddProgramsToClasses extends AddMutation<
+    Class,
+    AddProgramsToClassInput,
+    ClassesMutationResult
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'AddProgramsToClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: AddProgramsToClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    generateEntityMaps = async (
+        input: AddProgramsToClassInput[]
+    ): Promise<EntityMap<Class>> => generateMaps(this.mainEntityIds, input)
+
+    protected async authorize(
+        _input: AddProgramsToClassInput[],
+        maps: EntityMap<Class>
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: [...maps.organizations.keys()] },
+            PermissionName.edit_class_20334
+        )
+    }
+
+    protected validate = (
+        index: number,
+        currentEntity: Class,
+        currentInput: AddProgramsToClassInput,
+        maps: EntityMap<Class>
+    ): APIError[] => {
+        const errors: APIError[] = []
+        const { classId, programIds } = currentInput
+
+        for (const subitemId of programIds) {
+            const subitem = maps.subitems.get(subitemId) as Program
+            if (!subitem) {
+                errors.push(
+                    createEntityAPIError(
+                        'nonExistent',
+                        index,
+                        'Program',
+                        subitemId
+                    )
+                )
+            }
+            if (!subitem) continue
+
+            const itemHasSubitem = maps.itemsSubitems.has(
+                getMembershipMapKey(classId, subitemId)
+            )
+
+            if (itemHasSubitem) {
+                errors.push(
+                    createEntityAPIError(
+                        'duplicateChild',
+                        index,
+                        'Program',
+                        subitem.name,
+                        'Class',
+                        currentEntity.class_name
+                    )
+                )
+            }
+        }
+        return errors
+    }
+
+    protected process = (
+        currentEntity: Class,
+        currentInput: AddProgramsToClassInput,
+        maps: EntityMap<Class>
+    ): Class[] => {
+        const { classId, programIds } = currentInput
+
+        const newSubitems: Program[] = []
+        for (const subitemId of programIds) {
+            const subitem = maps.subitems.get(subitemId) as Program
+            newSubitems.push(subitem)
+        }
+        const preexistentSubitems = maps.itemsWithExistentSubitems.get(classId)
+        currentEntity.programs = Promise.resolve([
+            ...(preexistentSubitems as Program[]),
+            ...newSubitems,
+        ])
+        return [currentEntity]
+    }
+
+    protected buildOutput = async (currentEntity: Class): Promise<void> => {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
+    }
+}
+
+async function generateMaps(
+    itemIds: string[],
+    input: AddProgramsToClassInput[]
+): Promise<EntityMap<Class>> {
+    const relations = 'programs'
+    const addingIds = 'programIds'
+    const mainEntityName = 'Class'
+    const mainitemId = 'class_id'
+    const subitemId = 'id'
+
+    const preloadedItemArray = Class.findByIds(itemIds, {
+        where: { status: Status.ACTIVE },
+        relations: [relations],
+    })
+    const preloadedSubitemsArray = Program.findByIds(
+        input.map((val) => val[addingIds]).flat(),
+        { where: { status: Status.ACTIVE } }
+    )
+    const itemsWithExistentSubitems = new Map<string, Program[]>()
+    const itemsSubitems = new Map<string, Program>()
+    for (const item of await preloadedItemArray) {
+        // eslint-disable-next-line no-await-in-loop
+        const subitems = (await item.programs) || []
+        itemsWithExistentSubitems.set(item[mainitemId], subitems)
+        if (subitems.length > 0) {
+            for (const subitem of subitems) {
+                itemsSubitems.set(
+                    getMembershipMapKey(item[mainitemId], subitem[subitemId]),
+                    subitem
+                )
+            }
+        }
+    }
+
+    const preloadedOrganizationArray = Organization.createQueryBuilder()
+        .select('Organization.organization_id')
+        .innerJoin(`Organization.classes`, mainEntityName)
+        .where(`"${mainEntityName}"."${mainitemId}" IN (:...itemIds)`, {
+            itemIds,
+        })
+        .getMany()
+
+    return {
+        mainEntity: new Map(
+            (await preloadedItemArray).map((i) => [i[mainitemId], i])
+        ),
+        subitems: new Map(
+            (await preloadedSubitemsArray).map((i) => [i[subitemId], i])
+        ),
+        itemsSubitems,
+        itemsWithExistentSubitems,
+        organizations: new Map(
+            (await preloadedOrganizationArray).map((i) => [
+                i.organization_id,
+                i,
+            ])
+        ),
+    }
 }

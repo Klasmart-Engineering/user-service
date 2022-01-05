@@ -11,11 +11,12 @@ import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
-import { deleteClasses } from '../resolvers/class'
+import { deleteClasses, AddProgramsToClasses } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
 import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
+import { mutate } from '../utils/mutations/commonStructure'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -24,6 +25,9 @@ const typeDefs = gql`
         uploadClassesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         deleteClasses(input: [DeleteClassInput!]!): ClassesMutationResult
+        addProgramsToClasses(
+            input: [AddProgramsToClassInput!]!
+        ): ClassesMutationResult
     }
 
     # pagination extension types start here
@@ -221,6 +225,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
             )
         editPrograms(program_ids: [ID!]): [Program]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
+            )
         editAgeRanges(age_range_ids: [ID!]): [AgeRange]
         editGrades(grade_ids: [ID!]): [Grade]
         editSubjects(subject_ids: [ID!]): [Subject]
@@ -240,6 +247,11 @@ const typeDefs = gql`
 
     type ClassesMutationResult {
         classes: [ClassConnectionNode!]!
+    }
+
+    input AddProgramsToClassInput {
+        classId: ID!
+        programIds: [ID!]!
     }
 `
 
@@ -472,6 +484,8 @@ export default function getDefault(
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadClassesFromCSV(args, ctx, info),
+                addProgramsToClasses: (_parent, args, ctx, _info) =>
+                    mutate(AddProgramsToClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
