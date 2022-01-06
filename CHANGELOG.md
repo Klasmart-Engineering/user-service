@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.3.1](https://bitbucket.org/calmisland/kidsloop-user-service/compare/v2.3.0...v2.3.1) (2022-01-06)
+
+
+### Features
+
+* **AD-1846:** expose programID filter in age ranges and grades connection ([1ced182](https://bitbucket.org/calmisland/kidsloop-user-service/commit/1ced18203322fcb386349f4cded04865c0914d23))
+
 ## 2.3.0 (2021-11-18)
 
 
