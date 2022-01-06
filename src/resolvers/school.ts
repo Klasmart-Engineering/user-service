@@ -396,21 +396,21 @@ export class AddUsersToSchools extends AddMembershipMutation<
     protected async generateEntityMaps(
         input: AddUsersToSchoolInput[]
     ): Promise<EntityMap<School>> {
-        const schoolArray = await School.findByIds(this.mainEntityIds, {
+        const schoolsPromise = School.findByIds(this.mainEntityIds, {
             where: { status: Status.ACTIVE },
         })
-        const userArray = await User.findByIds(
+        const usersPromise = User.findByIds(
             input.map((i) => i.userIds).flat(),
             { where: { status: Status.ACTIVE } }
         )
-        const preloadedMembershipArray = await SchoolMembership.find({
+        const membershipsPromise = SchoolMembership.find({
             where: {
                 user_id: In(input.map((i) => i.userIds).flat()),
                 school_id: In(this.mainEntityIds),
                 status: Status.ACTIVE,
             },
         })
-        const preloadedOrganizationArray = await Organization.find({
+        const organizationsPromise = Organization.find({
             join: {
                 alias: 'Organization',
                 innerJoin: {
@@ -424,7 +424,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
             },
         })
 
-        const roles = await Role.findByIds(
+        const rolesPromise = Role.findByIds(
             input.map((i) => i.schoolRoleIds).flat(),
             {
                 where: {
@@ -433,14 +433,28 @@ export class AddUsersToSchools extends AddMembershipMutation<
             }
         )
 
+        const [
+            schools,
+            users,
+            memberships,
+            organizations,
+            roles,
+        ] = await Promise.all([
+            schoolsPromise,
+            usersPromise,
+            membershipsPromise,
+            organizationsPromise,
+            rolesPromise,
+        ])
+
         return {
-            mainEntity: new Map(schoolArray.map((s) => [s.school_id, s])),
-            users: new Map(userArray.map((u) => [u.user_id, u])),
+            mainEntity: new Map(schools.map((s) => [s.school_id, s])),
+            users: new Map(users.map((u) => [u.user_id, u])),
             organizations: new Map(
-                preloadedOrganizationArray.map((o) => [o.organization_id, o])
+                organizations.map((o) => [o.organization_id, o])
             ),
             memberships: new Map(
-                preloadedMembershipArray.map((i) => [
+                memberships.map((i) => [
                     getMembershipMapKey(i.school_id, i.user_id),
                     i,
                 ])
