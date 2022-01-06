@@ -3,7 +3,7 @@ import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
 import { Role } from '../../../src/entities/role'
 import { Permission } from '../../../src/entities/permission'
-import gql from 'graphql-tag'
+import { gql } from 'graphql-tag'
 
 const UPDATE_ROLE = `
     mutation myMutation(
@@ -126,6 +126,18 @@ export const CREATE_ROLES = gql`
 
     mutation CreateRoles($input: [CreateRoleInput!]!) {
         createRoles(input: $input) {
+            roles {
+                ...roleFields
+            }
+        }
+    }
+`
+
+export const UPDATE_ROLES = gql`
+    ${ROLE_FIELDS}
+
+    mutation UpdateRoles($input: [UpdateRoleInput!]!) {
+        updateRoles(input: $input) {
             roles {
                 ...roleFields
             }

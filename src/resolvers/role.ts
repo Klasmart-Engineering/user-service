@@ -1,5 +1,6 @@
 import { In } from 'typeorm'
 import { Organization } from '../entities/organization'
+import { Permission } from '../entities/permission'
 import { Role } from '../entities/role'
 import { Status } from '../entities/status'
 import { Context } from '../main'
@@ -13,16 +14,24 @@ import {
     CreateRoleInput,
     DeleteRoleInput,
     RolesMutationResult,
+    UpdateRoleInput,
 } from '../types/graphQL/role'
 import {
     CreateMutation,
     DeleteMutation,
     EntityMap,
+    UpdateMutation,
 } from '../utils/mutations/commonStructure'
 import {
+    createDuplicateInputAPIError,
     createEntityAPIError,
+    createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
 } from '../utils/resolvers'
+
+type RoleAndOrg = Role & {
+    __organization__: Organization
+}
 
 export class CreateRoles extends CreateMutation<
     Role,
@@ -128,6 +137,230 @@ export class CreateRoles extends CreateMutation<
             )
 
             this.output.roles.push(roleConnectionNode)
+        }
+    }
+}
+
+export class UpdateRoles extends UpdateMutation<
+    Role,
+    UpdateRoleInput,
+    RolesMutationResult
+> {
+    protected readonly EntityType = Role
+    protected readonly EntityPrimaryKey = Role
+    protected readonly inputTypeName = 'UpdateRoleInput'
+    protected readonly mainEntityIds: string[]
+    protected readonly output: RolesMutationResult = { roles: [] }
+
+    constructor(input: UpdateRoleInput[], permissions: Context['permissions']) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.id)
+    }
+
+    protected async generateEntityMaps(
+        input: UpdateRoleInput[]
+    ): Promise<EntityMap<Role>> {
+        const names = input.map((val) => val.roleName)
+        const ids = input.map((val) => val.permissionIds).flat()
+        const preloadedRoleArray = Role.find({
+            where: {
+                role_id: In(this.mainEntityIds),
+                status: Status.ACTIVE,
+            },
+            relations: ['organization'],
+        })
+
+        const matchingPreloadedRoleArray = Role.find({
+            where: {
+                role_name: In(names),
+                status: Status.ACTIVE,
+            },
+            relations: ['organization'],
+        })
+
+        const preloadedPermissionArray = Permission.find({
+            where: {
+                permission_name: In(ids),
+                status: Status.ACTIVE,
+            },
+        })
+
+        const mainEntity = new Map(
+            (await preloadedRoleArray).map((r) => [r.role_id, r])
+        )
+
+        const matchingOrgsAndNames = new Map<string, Role>()
+        const newNames = new Map<string, Role>()
+
+        for (const r of await matchingPreloadedRoleArray) {
+            const orgId = (await r.organization)?.organization_id || ''
+            matchingOrgsAndNames.set([orgId, r.role_name].toString(), r)
+        }
+
+        for (const i of input) {
+            const role = mainEntity.get(i.id)
+
+            if (role && i.roleName) {
+                role.role_name = i.roleName
+                newNames.set(i.id, role)
+            }
+        }
+
+        return {
+            mainEntity,
+            permissions: new Map(
+                (await preloadedPermissionArray).map((p) => [
+                    p.permission_name,
+                    p,
+                ])
+            ),
+            matchingOrgsAndNames,
+            newNames,
+        }
+    }
+
+    protected async authorize(
+        _input: UpdateRoleInput[],
+        entityMaps: EntityMap<Role>
+    ) {
+        const organizationIds: string[] = []
+
+        for (const c of entityMaps.mainEntity.values()) {
+            const organizationId = (await c.organization)?.organization_id
+            if (organizationId) organizationIds.push(organizationId)
+        }
+
+        await this.permissions.rejectIfNotAllowed(
+            { organization_ids: organizationIds },
+            PermissionName.edit_role_and_permissions_30332
+        )
+    }
+
+    protected validate(
+        index: number,
+        currentEntity: Role,
+        currentInput: UpdateRoleInput,
+        maps: EntityMap<Role>
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { roleName, roleDescription, permissionIds } = currentInput
+
+        if (!roleName && !roleDescription && !permissionIds) {
+            errors.push(
+                createInputRequiresAtLeastOne(index, 'Role', [
+                    'roleName',
+                    'roleDescription',
+                    'permissionIds',
+                ])
+            )
+        }
+
+        if (roleName) {
+            const organizationId = (currentEntity as RoleAndOrg)
+                .__organization__?.organization_id
+
+            const matchingOrgAndName = maps.matchingOrgsAndNames.get(
+                [organizationId, roleName].toString()
+            ) as Role
+
+            if (
+                matchingOrgAndName &&
+                matchingOrgAndName.role_id !== currentEntity.role_id
+            ) {
+                errors.push(
+                    createEntityAPIError(
+                        'duplicateChild',
+                        index,
+                        'Role',
+                        roleName,
+                        'Organization',
+                        organizationId,
+                        ['organizationId', 'name']
+                    )
+                )
+            }
+
+            const newNames = [...maps.newNames.values()] as RoleAndOrg[]
+            const inputNameDuplicated = newNames.find((nn, i) => {
+                const sameName = nn.role_name === roleName
+                const sameOrg =
+                    nn.__organization__?.organization_id === organizationId
+                const differentId = nn.role_id !== currentEntity.role_id
+                return sameName && sameOrg && differentId && index > i
+            })
+
+            if (inputNameDuplicated) {
+                errors.push(
+                    createDuplicateInputAPIError(
+                        index,
+                        ['roleName'],
+                        'UpdateRoleInput'
+                    )
+                )
+            }
+        }
+
+        if (permissionIds) {
+            const uniquePermissionIds = new Set(permissionIds)
+
+            if (uniquePermissionIds.size < permissionIds.length) {
+                errors.push(
+                    createDuplicateInputAPIError(
+                        index,
+                        ['permissionIds'],
+                        'UpdateRoleInput'
+                    )
+                )
+            }
+
+            for (const pid of permissionIds) {
+                const permissionExists = maps.permissions.has(pid)
+
+                if (!permissionExists) {
+                    errors.push(
+                        createEntityAPIError(
+                            'nonExistent',
+                            index,
+                            'Permission',
+                            pid
+                        )
+                    )
+                }
+            }
+        }
+
+        return errors
+    }
+
+    protected process(
+        currentEntity: Role,
+        currentInput: UpdateRoleInput,
+        entityMaps: EntityMap<Role>
+    ): Role[] {
+        const { roleName, roleDescription, permissionIds } = currentInput
+
+        currentEntity.role_name = roleName || currentEntity.role_name
+        currentEntity.role_description =
+            roleDescription || currentEntity.role_description
+
+        if (permissionIds) {
+            currentEntity.permissions = Promise.resolve(
+                Array.from(
+                    permissionIds,
+                    (pid) => entityMaps.permissions.get(pid) as Permission
+                )
+            )
+        }
+
+        return [currentEntity]
+    }
+
+    protected async buildOutput(): Promise<void> {
+        this.output.roles = []
+        for (const proccesedEntity of this.processedEntities) {
+            this.output.roles.push(
+                await mapRoleToRoleConnectionNode(proccesedEntity)
+            )
         }
     }
 }
