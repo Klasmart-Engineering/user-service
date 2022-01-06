@@ -174,5 +174,7 @@ export function createEntityAPIError(
     return new APIError(errorDetails)
 }
 
-export const getMembershipMapKey = (organisationId: string, userId: string) =>
-    [organisationId, userId].toString()
+export const getMembershipMapKey = (
+    organizationOrSchoolId: string,
+    userId: string
+) => [organizationOrSchoolId, userId].toString()

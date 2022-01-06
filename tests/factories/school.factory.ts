@@ -18,10 +18,13 @@ export function createSchool(
     return school
 }
 
-export const createMultipleSchools = (length: number): School[] => {
+export const createMultipleSchools = (
+    length: number,
+    org: Organization = createOrganization()
+): School[] => {
     const schools: School[] = []
     for (let x = 0; x < length; x++) {
-        schools.push(createSchool())
+        schools.push(createSchool(org))
     }
     return schools
 }

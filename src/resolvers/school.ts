@@ -20,6 +20,7 @@ import {
     UpdateSchoolInput,
     AddProgramsToSchoolInput,
     RemoveProgramsFromSchoolInput,
+    AddUsersToSchoolInput,
 } from '../types/graphQL/school'
 import {
     CreateMutation,
@@ -28,6 +29,7 @@ import {
     AddMutation,
     UpdateMutation,
     RemoveMembershipMutation,
+    AddMembershipMutation,
 } from '../utils/mutations/commonStructure'
 import { Class } from '../entities/class'
 import {
@@ -39,6 +41,8 @@ import {
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
 import { config } from '../config/config'
 import { Program } from '../entities/program'
+import { map } from 'lodash'
+import { Role } from '../entities/role'
 
 export class CreateSchools extends CreateMutation<
     School,
@@ -361,6 +365,182 @@ export class DeleteSchools extends DeleteMutation<
             { organization_ids: organizationIds },
             PermissionName.delete_school_20440
         )
+    }
+
+    protected async buildOutput(currentEntity: School): Promise<void> {
+        this.output.schools.push(
+            await mapSchoolToSchoolConnectionNode(currentEntity)
+        )
+    }
+}
+
+export class AddUsersToSchools extends AddMembershipMutation<
+    School,
+    AddUsersToSchoolInput,
+    SchoolsMutationResult,
+    SchoolMembership
+> {
+    protected readonly EntityType = School
+    protected readonly inputTypeName = 'AddUsersToSchoolInput'
+    protected readonly output: SchoolsMutationResult = { schools: [] }
+    protected readonly mainEntityIds: string[]
+
+    constructor(
+        input: AddUsersToSchoolInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.schoolId)
+    }
+
+    protected async generateEntityMaps(
+        input: AddUsersToSchoolInput[]
+    ): Promise<EntityMap<School>> {
+        const schoolArray = await School.findByIds(this.mainEntityIds, {
+            where: { status: Status.ACTIVE },
+        })
+        const userArray = await User.findByIds(
+            input.map((i) => i.userIds).flat(),
+            { where: { status: Status.ACTIVE } }
+        )
+        const preloadedMembershipArray = await SchoolMembership.find({
+            where: {
+                user_id: In(input.map((i) => i.userIds).flat()),
+                school_id: In(this.mainEntityIds),
+                status: Status.ACTIVE,
+            },
+        })
+        const preloadedOrganizationArray = await Organization.find({
+            join: {
+                alias: 'Organization',
+                innerJoin: {
+                    schools: 'Organization.schools',
+                },
+            },
+            where: (qb: WhereExpression) => {
+                qb.where('schools.school_id IN (:...schoolIds)', {
+                    schoolIds: this.mainEntityIds,
+                })
+            },
+        })
+
+        const roles = await Role.findByIds(
+            input.map((i) => i.schoolRoleIds).flat(),
+            {
+                where: {
+                    status: Status.ACTIVE,
+                },
+            }
+        )
+
+        return {
+            mainEntity: new Map(schoolArray.map((s) => [s.school_id, s])),
+            users: new Map(userArray.map((u) => [u.user_id, u])),
+            organizations: new Map(
+                preloadedOrganizationArray.map((o) => [o.organization_id, o])
+            ),
+            memberships: new Map(
+                preloadedMembershipArray.map((i) => [
+                    getMembershipMapKey(i.school_id, i.user_id),
+                    i,
+                ])
+            ),
+            roles: new Map(roles.map((i) => [i.role_id, i])),
+        }
+    }
+
+    protected async authorize(
+        _input: AddUsersToSchoolInput[],
+        maps: EntityMap<School>
+    ) {
+        return this.permissions.rejectIfNotAllowed(
+            {
+                organization_ids: [...maps.organizations.keys()],
+                school_ids: this.mainEntityIds,
+            },
+            PermissionName.edit_school_20330
+        )
+    }
+
+    protected validate(
+        index: number,
+        currentEntity: School,
+        currentInput: AddUsersToSchoolInput,
+        maps: EntityMap<School>
+    ): APIError[] {
+        const errors: APIError[] = []
+
+        // role validation
+        const missingRoleIds: string[] = currentInput.schoolRoleIds.reduce(
+            (acc: string[], schoolRoleId: string) => {
+                if (!maps.roles.has(schoolRoleId)) acc.push(schoolRoleId)
+                return acc
+            },
+            []
+        )
+        if (missingRoleIds.length) {
+            errors.push(
+                createEntityAPIError(
+                    'nonExistent',
+                    index,
+                    'Role',
+                    missingRoleIds.toString()
+                )
+            )
+        }
+
+        for (const userId of currentInput.userIds) {
+            // user validation
+            const user = maps.users.get(userId) as User
+            if (!user) {
+                errors.push(
+                    createEntityAPIError('nonExistent', index, 'User', userId)
+                )
+                continue
+            }
+            // membership validation
+            if (
+                maps.memberships.has(
+                    getMembershipMapKey(currentInput.schoolId, userId)
+                )
+            ) {
+                errors.push(
+                    createEntityAPIError(
+                        'duplicateChild',
+                        index,
+                        'User',
+                        user.user_name(),
+                        'School',
+                        currentEntity.school_name,
+                        ['school_id', 'user_id']
+                    )
+                )
+            }
+        }
+
+        return errors
+    }
+
+    protected process(
+        currentEntity: School,
+        currentInput: AddUsersToSchoolInput,
+        maps: EntityMap<School>
+    ): SchoolMembership[] {
+        const memberships: SchoolMembership[] = []
+
+        for (const userId of currentInput.userIds) {
+            const membership = new SchoolMembership()
+            membership.school_id = currentEntity.school_id
+            membership.school = Promise.resolve(currentEntity)
+            membership.user_id = userId
+            membership.user = Promise.resolve(maps.users.get(userId) as User)
+            membership.roles = Promise.resolve(
+                currentInput.schoolRoleIds.map((r) => maps.roles.get(r) as Role)
+            )
+            memberships.push(membership)
+        }
+
+        return memberships
     }
 
     protected async buildOutput(currentEntity: School): Promise<void> {
