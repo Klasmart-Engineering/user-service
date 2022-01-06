@@ -15,6 +15,7 @@ import { Program } from '../entities/program'
 import {
     AddClassesToSchools,
     AddProgramsToSchools,
+    AddUsersToSchools,
     RemoveProgramsFromSchools,
 } from '../resolvers/school'
 import {
@@ -33,6 +34,9 @@ const typeDefs = gql`
         createSchools(input: [CreateSchoolInput!]!): SchoolsMutationResult
         updateSchools(input: [UpdateSchoolInput!]!): SchoolsMutationResult
         deleteSchools(input: [DeleteSchoolInput!]!): SchoolsMutationResult
+        addUsersToSchools(
+            input: [AddUsersToSchoolInput!]!
+        ): SchoolsMutationResult
         removeUsersFromSchools(
             input: [RemoveUsersFromSchoolInput!]!
         ): SchoolsMutationResult
@@ -217,6 +221,12 @@ const typeDefs = gql`
         id: ID!
     }
 
+    input AddUsersToSchoolInput {
+        schoolId: ID!
+        schoolRoleIds: [ID!]!
+        userIds: [ID!]!
+    }
+
     input RemoveUsersFromSchoolInput {
         schoolId: ID!
         userIds: [ID!]!
@@ -318,6 +328,8 @@ export default function getDefault(
                     mutate(CreateSchools, args, ctx.permissions),
                 updateSchools: (_parent, args, ctx, _info) =>
                     mutate(UpdateSchools, args, ctx.permissions),
+                addUsersToSchools: (_parent, args, ctx, _info) =>
+                    mutate(AddUsersToSchools, args, ctx.permissions),
                 removeUsersFromSchools: (_parent, args, ctx, _info) =>
                     mutate(RemoveUsersFromSchools, args, ctx.permissions),
                 removeProgramsFromSchools: (_parent, args, ctx, _info) =>
