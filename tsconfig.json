@@ -1,5 +1,5 @@
 {
-  "include": ["customTypings", "src", "tests", "migrations", "ormconfig.ts"],
+  "include": ["customTypings", "src", "tests", "migrations", "ormconfig.ts", "scripts"],
   "compilerOptions": {
     /* Basic Options */
     // "incremental": true,                   /* Enable incremental compilation */

@@ -35,8 +35,13 @@ let NonAdminAuthToken =
 
 const secret = 'iXtZx1D5AqEB0B9pfn+hRQ=='
 
-export function generateToken(payload: any): string {
-    const val = sign(payload, secret, { expiresIn: '1800s' })
+// set expiresIn to undefined to have the token never expire
+export function generateToken(payload: any, expiresIn?: '1800s'): string {
+    const options: { expiresIn?: string } = {}
+    if (expiresIn !== undefined) {
+        options.expiresIn = expiresIn
+    }
+    const val = sign(payload, secret, options)
     return val
 }
 

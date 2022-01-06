@@ -14,6 +14,7 @@
     "build": "tsc -p tsconfig.build.json && cpy '**/*.csv' '../dist/src' --parents --cwd=src && cpy 'views/**/*' './dist/views'",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
+    "get-jwt-token": "DATABASE_URL=\"postgres://postgres:kidsloop@localhost/postgres1\" ts-node \"scripts/getJwtToken.ts\"",
     "prettier-format": "prettier --config .prettierrc \"./**/*.{ts,test.ts}\" --write",
     "prettier-check": "prettier --config .prettierrc \"./**/*.{ts,test.ts}\" --check",
     "commitlint-check": "commitlint",

@@ -16,12 +16,13 @@ You need to understand that in order to interact with the API, you need to have 
 
 ### Token script
 
-- Create a file called `debug_user_service_secret` at the same level of the script, containing only the secret from the issuer `calmid-debug` found in [/src/token.ts](../src/token.ts) (it should be a short password, not a certificate/public key) .
-
-- Run the [script](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/scripts/create_jwt_token.py) for generating tokens
 ```bash
-python create_jwt_token.py -i <a random v4 uuid> -e <user email>
+npm run-script get-jwt-token
 ```
+
+This will generate an Admin user and print an authentication header for them (which never expires).
+
+If you want to change any details about the user, see `scripts/getJwtToken.ts`.
 
 ### Setup authentication headers
 - Start the application and navigate to the URL outputted in the terminal to view the GraphQL explorer.
