@@ -265,13 +265,10 @@ async function generateMaps(
         input.map((i) => i.userIds).flat(),
         { where: { status: Status.ACTIVE } }
     )
-    let preloadedRoleArray: Promise<Role[]> = Promise.resolve([])
-    if (input[0].organizationRoleIds) {
-        preloadedRoleArray = Role.findByIds(
-            input.map((i) => i.organizationRoleIds).flat(),
-            { where: { status: Status.ACTIVE } }
-        )
-    }
+    const preloadedRoleArray = Role.findByIds(
+        input.map((i) => i.organizationRoleIds).flat(),
+        { where: { status: Status.ACTIVE } }
+    )
     const preloadedMembershipArray = OrganizationMembership.find({
         where: {
             user_id: In(input.map((i) => i.userIds).flat()),
