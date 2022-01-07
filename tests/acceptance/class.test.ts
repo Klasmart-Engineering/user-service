@@ -41,6 +41,7 @@ import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
+import { makeRequest } from './utils'
 
 interface IClassEdge {
     node: ClassConnectionNode
