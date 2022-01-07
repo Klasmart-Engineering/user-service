@@ -10,6 +10,7 @@ import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createGrade } from '../../factories/grade.factory'
 import { createOrganization } from '../../factories/organization.factory'
+import { createProgram } from '../../factories/program.factory'
 import {
     ApolloServerTestClient,
     createTestClient,

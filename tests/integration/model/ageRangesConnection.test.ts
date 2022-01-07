@@ -11,6 +11,7 @@ import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { createOrganization } from '../../factories/organization.factory'
+import { createProgram } from '../../factories/program.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
