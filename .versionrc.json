@@ -1,11 +1,11 @@
 {
-    "types": [
-      {"type":"feat","section":"Features"},
-      {"type":"fix","section":"Bug Fixes"},
-      {"type":"test","section":"Tests", "hidden": true},
-      {"type":"build","section":"Build System", "hidden": true},
-      {"type":"ci","hidden":true}
-    ],
-    "commitUrlFormat": "https://bitbucket.org/calmisland/kidsloop-user-service/commits/{{hash}}",
-    "compareUrlFormat": "https://bitbucket.org/calmisland/kidsloop-user-service/compare/{{previousTag}}%0D{{currentTag}}"
+  "types": [
+    {"type":"feat","section":"Features"},
+    {"type":"fix","section":"Bug Fixes"},
+    {"type":"test","section":"Tests", "hidden": true},
+    {"type":"build","section":"Build System", "hidden": true},
+    {"type":"ci","hidden":true}
+  ],
+  "commitUrlFormat": "https://bitbucket.org/calmisland/kidsloop-user-service/commits/{{hash}}",
+  "compareUrlFormat": "https://bitbucket.org/calmisland/kidsloop-user-service/compare/{{previousTag}}%0D{{currentTag}}"
 }
