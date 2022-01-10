@@ -7436,7 +7436,7 @@ describe('organization', () => {
                     it('makes the expected number of database calls', async () => {
                         connection.logger.reset()
                         await expect(removeUsers()).to.be.fulfilled
-                        expect(connection.logger.count).to.equal(5) // preload: 3, authorize: 1, save: 1
+                        expect(connection.logger.count).to.equal(6) // preload: 4, authorize: 1, save: 1
                     })
                 })
 
