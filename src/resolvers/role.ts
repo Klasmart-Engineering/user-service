@@ -18,9 +18,11 @@ import {
 } from '../types/graphQL/role'
 import {
     CreateMutation,
+    DeleteEntityMap,
     DeleteMutation,
     EntityMap,
     UpdateMutation,
+    validateActiveAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
 import {
     createDuplicateInputAPIError,
@@ -31,6 +33,10 @@ import {
 
 type RoleAndOrg = Role & {
     __organization__: Organization
+}
+export interface CreateRoleEntityMap extends EntityMap<Role> {
+    mainEntity: Map<string, Role>
+    organizations: Map<string, Organization>
 }
 
 export class CreateRoles extends CreateMutation<
@@ -57,8 +63,9 @@ export class CreateRoles extends CreateMutation<
         }
     }
 
-    generateEntityMaps = (input: CreateRoleInput[]): Promise<EntityMap<Role>> =>
-        generateMapsForCreate(input, this.orgIds)
+    generateEntityMaps = (
+        input: CreateRoleInput[]
+    ): Promise<CreateRoleEntityMap> => generateMapsForCreate(input, this.orgIds)
 
     protected authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
@@ -67,11 +74,20 @@ export class CreateRoles extends CreateMutation<
         )
     }
 
+    validationOverAllInputs(inputs: CreateRoleInput[]) {
+        return {
+            validInputs: inputs.map((i, index) => {
+                return { input: i, index }
+            }),
+            apiErrors: [],
+        }
+    }
+
     protected validate(
         index: number,
         _entity: Role,
         currentInput: CreateRoleInput,
-        maps: EntityMap<Role>
+        maps: CreateRoleEntityMap
     ): APIError[] {
         const errors: APIError[] = []
         const { organizationId, roleName } = currentInput
@@ -111,34 +127,35 @@ export class CreateRoles extends CreateMutation<
     }
 
     protected process(
-        _entity: Role,
         currentInput: CreateRoleInput,
-        maps: EntityMap<Role>
-    ): Role[] {
+        maps: CreateRoleEntityMap
+    ) {
         const { organizationId, roleName, roleDescription } = currentInput
         const role = new Role()
 
         role.role_name = roleName
         role.role_description = roleDescription
         role.organization = Promise.resolve(
-            maps.organizations.get(organizationId) as Organization
+            maps.organizations.get(organizationId)!
         )
 
-        return [role]
+        return { outputEntity: role }
     }
 
-    protected async buildOutput(): Promise<void> {
-        this.output.roles = []
+    protected async buildOutput(outputEntity: Role): Promise<void> {
+        const roleConnectionNode = await mapRoleToRoleConnectionNode(
+            outputEntity
+        )
 
-        for (const processedEntity of this.processedEntities) {
-            // eslint-disable-next-line no-await-in-loop
-            const roleConnectionNode = await mapRoleToRoleConnectionNode(
-                processedEntity
-            )
-
-            this.output.roles.push(roleConnectionNode)
-        }
+        this.output.roles.push(roleConnectionNode)
     }
+}
+
+interface UpdateRolesEntityMap extends EntityMap<Role> {
+    mainEntity: Map<string, Role>
+    permissions: Map<string, Permission>
+    matchingOrgsAndNames: Map<string, Role>
+    newNames: Map<string, Role>
 }
 
 export class UpdateRoles extends UpdateMutation<
@@ -159,7 +176,7 @@ export class UpdateRoles extends UpdateMutation<
 
     protected async generateEntityMaps(
         input: UpdateRoleInput[]
-    ): Promise<EntityMap<Role>> {
+    ): Promise<UpdateRolesEntityMap> {
         const names = input.map((val) => val.roleName)
         const ids = input.map((val) => val.permissionIds).flat()
         const preloadedRoleArray = Role.find({
@@ -221,7 +238,7 @@ export class UpdateRoles extends UpdateMutation<
 
     protected async authorize(
         _input: UpdateRoleInput[],
-        entityMaps: EntityMap<Role>
+        entityMaps: UpdateRolesEntityMap
     ) {
         const organizationIds: string[] = []
 
@@ -236,11 +253,27 @@ export class UpdateRoles extends UpdateMutation<
         )
     }
 
+    protected validationOverAllInputs(
+        inputs: UpdateRoleInput[],
+        entityMaps: UpdateRolesEntityMap
+    ): {
+        validInputs: { index: number; input: UpdateRoleInput }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.id),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate(
         index: number,
         currentEntity: Role,
         currentInput: UpdateRoleInput,
-        maps: EntityMap<Role>
+        maps: UpdateRolesEntityMap
     ): APIError[] {
         const errors: APIError[] = []
         const { roleName, roleDescription, permissionIds } = currentInput
@@ -333,11 +366,15 @@ export class UpdateRoles extends UpdateMutation<
     }
 
     protected process(
-        currentEntity: Role,
         currentInput: UpdateRoleInput,
-        entityMaps: EntityMap<Role>
-    ): Role[] {
+        entityMaps: UpdateRolesEntityMap,
+        index: number
+    ) {
         const { roleName, roleDescription, permissionIds } = currentInput
+
+        const currentEntity = entityMaps.mainEntity.get(
+            this.mainEntityIds[index]
+        )!
 
         currentEntity.role_name = roleName || currentEntity.role_name
         currentEntity.role_description =
@@ -352,17 +389,17 @@ export class UpdateRoles extends UpdateMutation<
             )
         }
 
-        return [currentEntity]
+        return { outputEntity: currentEntity }
     }
 
-    protected async buildOutput(): Promise<void> {
-        this.output.roles = []
-        for (const proccesedEntity of this.processedEntities) {
-            this.output.roles.push(
-                await mapRoleToRoleConnectionNode(proccesedEntity)
-            )
-        }
+    protected async buildOutput(proccesedEntity: Role): Promise<void> {
+        this.output.roles.push(
+            await mapRoleToRoleConnectionNode(proccesedEntity)
+        )
     }
+}
+export interface DeleteRoleEntityMap extends DeleteEntityMap<Role> {
+    mainEntity: Map<string, Role>
 }
 
 export class DeleteRoles extends DeleteMutation<
@@ -380,7 +417,7 @@ export class DeleteRoles extends DeleteMutation<
         this.mainEntityIds = input.map((val) => val.id)
     }
 
-    protected async generateEntityMaps(): Promise<EntityMap<Role>> {
+    protected async generateEntityMaps(): Promise<DeleteEntityMap<Role>> {
         const roles = await Role.createQueryBuilder()
             .select([
                 ...roleConnectionNodeFields,
@@ -395,7 +432,7 @@ export class DeleteRoles extends DeleteMutation<
 
     protected async authorize(
         _input: DeleteRoleInput[],
-        entityMaps: EntityMap<Role>
+        entityMaps: DeleteRoleEntityMap
     ) {
         const organizationIds: string[] = []
         for (const r of entityMaps.mainEntity.values()) {
@@ -409,7 +446,7 @@ export class DeleteRoles extends DeleteMutation<
         )
     }
 
-    protected buildOutput(currentEntity: Role): void {
+    protected async buildOutput(currentEntity: Role): Promise<void> {
         this.output.roles.push(mapRoleToRoleConnectionNode(currentEntity))
     }
 }
@@ -417,7 +454,7 @@ export class DeleteRoles extends DeleteMutation<
 async function generateMapsForCreate(
     input: CreateRoleInput[],
     organizationIds: string[]
-): Promise<EntityMap<Role>> {
+): Promise<CreateRoleEntityMap> {
     const matchingOrgsAndNames = await getOrgsAndNames(organizationIds, input)
     const preloadedOrgArray = Organization.find({
         where: {

@@ -3,6 +3,7 @@ import {
     stringInject,
     isHexadecimalColor,
     objectToKey,
+    ObjMap,
 } from '../../../src/utils/stringUtils'
 
 describe('stringInject', () => {
@@ -187,5 +188,118 @@ describe('objectToKey', () => {
     })
     it('ignores the order of properties', () => {
         expect(objectToKey({ a: 1, b: 2 })).eq(objectToKey({ b: 2, a: 1 }))
+    })
+})
+
+describe('objMap', () => {
+    type TestObjMap = ObjMap<{ a: string; b: string }, string>
+
+    const testObjMap = (
+        objMap: TestObjMap,
+        expectedKeys: { a: string; b: string }[],
+        expectedValues: string[],
+        expectedSize: number
+    ) => {
+        for (const [index, key] of expectedKeys.entries()) {
+            it(`has ${JSON.stringify(key)}`, () => {
+                expect(objMap.has(key)).to.be.true
+            })
+
+            it(`get ${JSON.stringify(key)}`, () => {
+                expect(objMap.get(key)).to.eq(expectedValues[index])
+            })
+        }
+
+        it('has correct entries', () => {
+            const keys = Array.from(objMap.entries()).map(([k, v]) => k)
+            const values = Array.from(objMap.entries()).map(([k, v]) => v)
+            expect(keys).to.deep.eq(Array.from(objMap.keys()))
+            expect(values).to.deep.eq(Array.from(objMap.values()))
+            expect(keys).to.deep.eq(expectedKeys)
+            expect(values).to.deep.eq(expectedValues)
+        })
+        it('has correct size', () => {
+            expect(objMap.size).to.eq(expectedSize)
+        })
+    }
+
+    context('constructing with entries', () => {
+        const entries = [
+            {
+                key: { a: '1', b: '2' },
+                value: 'myvalue',
+            },
+            {
+                key: { a: '2', b: '2' },
+                value: 'myvalue',
+            },
+        ]
+
+        const objMap: TestObjMap = new ObjMap(entries)
+        testObjMap(
+            objMap,
+            entries.map((e) => e.key),
+            entries.map((e) => e.value),
+            2
+        )
+    })
+
+    context('setting entries', () => {
+        const objMap: TestObjMap = new ObjMap([])
+
+        const entries = [
+            {
+                key: { a: '1', b: '2' },
+                value: 'myvalue',
+            },
+            {
+                key: { a: '2', b: '2' },
+                value: 'myvalue',
+            },
+        ]
+
+        objMap.set(entries[0].key, entries[0].value)
+        objMap.set(entries[1].key, entries[1].value)
+        testObjMap(
+            objMap,
+            entries.map((e) => e.key),
+            entries.map((e) => e.value),
+            2
+        )
+    })
+
+    context('constructing with duplicate keys', () => {
+        const entries = [
+            {
+                key: { a: '1', b: '2' },
+                value: 'myvalue',
+            },
+            {
+                key: { a: '1', b: '2' },
+                value: 'othervalue',
+            },
+        ]
+
+        const objMap: TestObjMap = new ObjMap(entries)
+        testObjMap(objMap, [entries[1].key], [entries[1].value], 1)
+    })
+
+    context('setting duplicate keys', () => {
+        const objMap: TestObjMap = new ObjMap([])
+
+        const entries = [
+            {
+                key: { a: '1', b: '2' },
+                value: 'myvalue',
+            },
+            {
+                key: { a: '1', b: '2' },
+                value: 'othervalue',
+            },
+        ]
+
+        objMap.set(entries[0].key, entries[0].value)
+        objMap.set(entries[1].key, entries[1].value)
+        testObjMap(objMap, [entries[1].key], [entries[1].value], 1)
     })
 })

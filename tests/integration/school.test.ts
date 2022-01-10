@@ -1917,14 +1917,14 @@ describe('school', () => {
                     const res = await expect(addClasses()).to.be.rejected
                     checkNotFoundErrors(res, [
                         {
-                            entity: 'Class',
-                            id: classes[1].class_id,
-                            entryIndex: 1,
-                        },
-                        {
                             entity: 'School',
                             id: schools[2].school_id,
                             entryIndex: 2,
+                        },
+                        {
+                            entity: 'Class',
+                            id: classes[1].class_id,
+                            entryIndex: 1,
                         },
                     ])
                 })
@@ -2836,14 +2836,14 @@ describe('school', () => {
                         const res = await expect(addPrograms()).to.be.rejected
                         checkNotFoundErrors(res, [
                             {
-                                entity: 'Program',
-                                id: programs[1].id,
-                                entryIndex: 1,
-                            },
-                            {
                                 entity: 'School',
                                 id: schools[2].school_id,
                                 entryIndex: 2,
+                            },
+                            {
+                                entity: 'Program',
+                                id: programs[1].id,
+                                entryIndex: 1,
                             },
                         ])
                     })
@@ -3084,14 +3084,14 @@ describe('school', () => {
                             .rejected
                         checkNotFoundErrors(res, [
                             {
-                                entity: 'Program',
-                                id: programs[1].id,
-                                entryIndex: 1,
-                            },
-                            {
                                 entity: 'School',
                                 id: schools[2].school_id,
                                 entryIndex: 2,
+                            },
+                            {
+                                entity: 'Program',
+                                id: programs[1].id,
+                                entryIndex: 1,
                             },
                         ])
                     })

@@ -81,6 +81,11 @@ export const customErrors = {
         message:
             '{entity} {entityName} already exists for {parentEntity} {parentName}.',
     },
+    duplicate_child_entity_attribute: {
+        code: 'ERR_DUPLICATE_CHILD_ENTITY_ATTRIBUTE',
+        message:
+            '{entity} {entityName} with the same {attribute} of {attributeValue} already exists for {parentEntity} {parentName}.',
+    },
     duplicate_input_value: {
         code: 'ERR_DUPLICATE_INPUT_VALUE',
         message: '{entity} {entityName} is repeated in the inputs.',

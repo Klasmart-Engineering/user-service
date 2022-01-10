@@ -7264,6 +7264,11 @@ describe('organization', () => {
                         const res = await expect(addUsers()).to.be.rejected
                         const expectedErrors = [
                             {
+                                entity: 'Organization',
+                                id: orgs[2].organization_id,
+                                entryIndex: 2,
+                            },
+                            {
                                 entity: 'Role',
                                 id: roles[0].role_id,
                                 entryIndex: 0,
@@ -7272,11 +7277,6 @@ describe('organization', () => {
                                 entity: 'User',
                                 id: users[1].user_id,
                                 entryIndex: 1,
-                            },
-                            {
-                                entity: 'Organization',
-                                id: orgs[2].organization_id,
-                                entryIndex: 2,
                             },
                         ]
                         expectedErrors.forEach((ee, errorIndex) => {
@@ -7511,7 +7511,7 @@ describe('organization', () => {
                                 index: 1,
                             },
                             ['id'],
-                            0,
+                            1,
                             2
                         )
                         expectAPIError.nonexistent_entity(
@@ -7522,7 +7522,7 @@ describe('organization', () => {
                                 index: 2,
                             },
                             ['id'],
-                            1,
+                            0,
                             2
                         )
                         await checkNoChangesMade(3) // 2 from orgs[2] + 1 from users[1]

@@ -1155,7 +1155,7 @@ export class Organization extends CustomBaseEntity {
     }
 
     public async createClass(
-        { class_name, shortcode }: { class_name: string; shortcode: string },
+        { class_name, shortcode }: { class_name: string; shortcode?: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -1172,7 +1172,7 @@ export class Organization extends CustomBaseEntity {
             PermissionName.create_class_20224
         )
 
-        if (shortcode?.length > 0) {
+        if (shortcode && shortcode.length > 0) {
             shortcode = shortcode.toUpperCase()
             if (!validateShortCode(shortcode)) {
                 throw 'Invalid shortcode provided'
@@ -1195,7 +1195,7 @@ export class Organization extends CustomBaseEntity {
     }
 
     public async createSchool(
-        { school_name, shortcode }: { school_name: string; shortcode: string },
+        { school_name, shortcode }: { school_name: string; shortcode?: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -1211,8 +1211,7 @@ export class Organization extends CustomBaseEntity {
             permissionContext,
             PermissionName.create_school_20220
         )
-
-        if (shortcode?.length > 0) {
+        if (shortcode && shortcode.length > 0) {
             shortcode = shortcode.toUpperCase()
             if (!validateShortCode(shortcode)) {
                 throw 'Invalid shortcode provided'

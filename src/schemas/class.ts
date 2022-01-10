@@ -11,7 +11,11 @@ import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
-import { deleteClasses, AddProgramsToClasses } from '../resolvers/class'
+import {
+    deleteClasses,
+    AddProgramsToClasses,
+    CreateClasses,
+} from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
 import { Program } from '../entities/program'
@@ -22,6 +26,7 @@ const typeDefs = gql`
     extend type Mutation {
         classes: [Class]
         class(class_id: ID!): Class
+        createClasses(input: [CreateClassInput!]!): ClassesMutationResult
         uploadClassesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         deleteClasses(input: [DeleteClassInput!]!): ClassesMutationResult
@@ -243,6 +248,12 @@ const typeDefs = gql`
 
     input DeleteClassInput {
         id: ID!
+    }
+
+    input CreateClassInput {
+        organizationId: ID!
+        name: String!
+        shortcode: String
     }
 
     type ClassesMutationResult {
@@ -480,6 +491,8 @@ export default function getDefault(
             Mutation: {
                 deleteClasses: (_parent, args, ctx, _info) =>
                     deleteClasses(args, ctx),
+                createClasses: (_parent, args, ctx, _info) =>
+                    mutate(CreateClasses, args, ctx.permissions),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>

@@ -10,14 +10,114 @@ import {
     createEntityAPIError,
     createInputLengthAPIError,
 } from '../resolvers'
+import { ObjMap } from '../stringUtils'
 
-export type EntityMap<EntityType extends CustomBaseEntity> = {
-    mainEntity: Map<string, EntityType>
-    [key: string]: Map<string, CustomBaseEntity | CustomBaseEntity[]>
+export interface EntityMap<EntityType extends CustomBaseEntity> {
+    mainEntity?: Map<string, EntityType>
+    [key: string]:
+        | Map<string, CustomBaseEntity | CustomBaseEntity[]>
+        | ObjMap<{ [key: string]: string }, unknown>
+        | undefined
 }
 
-type InputLoopResults<OutputType> = {
-    mutationOutput: OutputType
+// this will not create an error for the first input
+// with a given attribute value, only subsequent duplicates
+export function validateNoDuplicate(
+    values: string[],
+    inputTypeName: string,
+    attributeName: string
+): Map<number, APIError> {
+    const valueSet = new Set<string>()
+    const errors: Map<number, APIError> = new Map()
+    for (const [index, value] of values.entries()) {
+        if (valueSet.has(value)) {
+            errors.set(
+                index,
+                createDuplicateInputAPIError(
+                    index,
+                    [attributeName],
+                    inputTypeName
+                )
+            )
+        } else {
+            valueSet.add(value)
+        }
+    }
+    return errors
+}
+
+// this will only create errors for the first instance of each
+// inactive ID
+function validateActiveEntityExists(
+    ids: string[],
+    entityTypeName: string,
+    entities: Map<string, CustomBaseEntity>
+): Map<number, APIError> {
+    const errors: Map<number, APIError> = new Map()
+    const alreadyErrored = new Set<string>()
+    for (const [index, id] of ids.entries()) {
+        const mainEntity = entities.get(id)
+        if (
+            !mainEntity ||
+            // we only generate this error once per ID
+            // and rely on duplicate error checking to flag the rest
+            (mainEntity.status !== Status.ACTIVE && !alreadyErrored.has(id))
+        ) {
+            alreadyErrored.add(id)
+            errors.set(
+                index,
+                createEntityAPIError('nonExistent', index, entityTypeName, id)
+            )
+        }
+    }
+    return errors
+}
+
+export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
+    inputs: A[],
+    entityMaps: EntityMap<B>,
+    mainEntityIds: string[],
+    entityTypeName: string,
+    inputTypeName: string
+): {
+    validInputs: { index: number; input: A }[]
+    apiErrors: APIError[]
+} {
+    const errors: APIError[] = []
+
+    const ids = inputs.map((_, index) => mainEntityIds[index])
+
+    const failedActiveInputs = validateActiveEntityExists(
+        ids,
+        entityTypeName,
+        entityMaps.mainEntity!
+    )
+
+    errors.push(...failedActiveInputs.values())
+
+    const failedDuplicateInputs = validateNoDuplicate(ids, inputTypeName, 'id')
+
+    errors.push(...failedDuplicateInputs.values())
+
+    const validInputs = inputs
+        .map((i, index) => {
+            return { input: i, index }
+        })
+        .filter(
+            (_, index) =>
+                !failedActiveInputs.has(index) &&
+                !failedDuplicateInputs.has(index)
+        )
+
+    return { validInputs, apiErrors: errors }
+}
+
+export type ProcessedResult<
+    OutputEntity extends CustomBaseEntity,
+    ModifiedEntity extends CustomBaseEntity
+> = {
+    outputEntity: OutputEntity
+    modifiedEntity?: ModifiedEntity[]
 }
 
 abstract class Mutation<
@@ -50,15 +150,22 @@ abstract class Mutation<
     /**
      * Makes all db queries that are needed for this mutation,
      * and formats them into maps.
+     * This should never under fetch data (and require later DB calls)
+     * But may fetch more then is stricty needed
+     * todo: can we make this lazy?
      */
     protected abstract generateEntityMaps(
         input: InputType[]
     ): Promise<EntityMap<EntityType>>
 
     /**
-     * Standardises the format of the input if possible, throws errors otherwise.
+     * Standardises the format of the input if possible
+     * Invalid input should be preserved so errors can be
+     * generated for it during validation
      */
-    protected abstract normalize(input: InputType[]): Promise<InputType[]>
+    protected normalize(inputs: InputType[]): InputType[] {
+        return inputs
+    }
 
     /**
      * Checks that the user calling the mutation has the
@@ -84,21 +191,23 @@ abstract class Mutation<
      * should also populate the output variable.
      */
     protected abstract process(
-        currentEntity: EntityType | undefined,
         currentInput: InputType,
-        entityMaps: EntityMap<EntityType>
-    ): ModifiedEntityType[]
+        entityMaps: EntityMap<EntityType>,
+        index: number
+    ): ProcessedResult<EntityType, ModifiedEntityType>
 
     /**
      * Formats the current entity for output and pushes it the
      * list in `this.output`
      */
-    protected abstract buildOutput(currentEntity?: EntityType): void
+    protected abstract buildOutput(currentEntity?: EntityType): Promise<void>
 
     /**
      * Performs a save/update on the database.
      */
-    protected abstract applyToDatabase(): Promise<void>
+    protected abstract applyToDatabase(
+        results: ProcessedResult<EntityType, ModifiedEntityType>[]
+    ): Promise<void>
 
     private validateInputLength() {
         if (this.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
@@ -110,69 +219,55 @@ abstract class Mutation<
     }
 
     // Concrete Methods
-    private commonValidations(
-        index: number,
-        id: string,
-        idsSet: Set<string>,
+    protected abstract validationOverAllInputs(
+        inputs: InputType[],
         entityMaps: EntityMap<EntityType>
-    ): EntityType | APIError | undefined {
-        // Check for duplicates
-        if (idsSet.has(id)) {
-            return createDuplicateInputAPIError(
-                index,
-                ['id'],
-                this.inputTypeName
-            )
-        } else {
-            idsSet.add(id)
-        }
-
-        if (this.inputTypeName.startsWith('Create')) return undefined
-
-        const mainEntity = entityMaps.mainEntity.get(id)
-        if (!mainEntity || mainEntity.status !== Status.ACTIVE) {
-            return createEntityAPIError(
-                'nonExistent',
-                index,
-                this.EntityType.name,
-                id
-            )
-        }
-        return mainEntity
+    ): {
+        validInputs: { index: number; input: InputType }[]
+        apiErrors: APIError[]
     }
 
     private inputLoop(
         normalizedInput: InputType[],
         entityMaps: EntityMap<EntityType>
-    ): InputLoopResults<OutputType> {
-        const idsSet = new Set<string>()
+    ): ProcessedResult<EntityType, ModifiedEntityType>[] {
         const errors: APIError[] = []
-        for (const [index, entry] of normalizedInput.entries()) {
-            // Validation stage
-            const id = this.mainEntityIds[index]
-            const entity = this.commonValidations(index, id, idsSet, entityMaps)
-            if (entity instanceof APIError) {
-                errors.push(entity)
-                continue
+
+        const { validInputs, apiErrors } = this.validationOverAllInputs(
+            normalizedInput,
+            entityMaps
+        )
+
+        errors.push(...apiErrors)
+
+        const processedEntities: ProcessedResult<
+            EntityType,
+            ModifiedEntityType
+        >[] = []
+
+        for (const { index, input } of validInputs) {
+            let entity: EntityType | undefined = undefined
+
+            if (entityMaps?.mainEntity !== undefined) {
+                entity = entityMaps.mainEntity.get(this.mainEntityIds[index])!
             }
-            errors.push(...this.validate(index, entity, entry, entityMaps))
+
+            errors.push(...this.validate(index, entity, input, entityMaps))
 
             // Processing stage
             if (errors.length) continue
-            this.processedEntities.push(
-                ...this.process(entity, entry, entityMaps)
-            )
-            if (entity) this.buildOutput(entity)
+
+            processedEntities.push(this.process(input, entityMaps, index))
         }
         if (errors.length) throw new APIErrorCollection(errors)
-        return {
-            mutationOutput: this.output,
-        }
+        return processedEntities
     }
 
-    private async saveWrapper() {
+    private async saveWrapper(
+        results: ProcessedResult<EntityType, ModifiedEntityType>[]
+    ) {
         try {
-            await this.applyToDatabase()
+            await this.applyToDatabase(results)
         } catch (e) {
             let message = 'Unknown Error'
             if (e instanceof Error) {
@@ -186,11 +281,17 @@ abstract class Mutation<
     async run(): Promise<OutputType> {
         this.validateInputLength()
         const normalizedInput = await this.normalize(this.input)
-        const entityMaps = await this.generateEntityMaps(this.input)
+        const entityMaps = await this.generateEntityMaps(normalizedInput)
         await this.authorize(normalizedInput, entityMaps)
         const loopResults = this.inputLoop(normalizedInput, entityMaps)
-        await this.saveWrapper()
-        return loopResults.mutationOutput
+        await this.saveWrapper(loopResults)
+        // building output has to be done after saving to the DB
+        // to allow DB generated default values to be returned
+        // and null properties to be populated on partial objects
+        for (const { outputEntity } of loopResults) {
+            await this.buildOutput(outputEntity)
+        }
+        return this.output
     }
 }
 
@@ -216,12 +317,17 @@ export abstract class CreateMutation<
     InputType,
     OutputType
 > extends Mutation<EntityType, InputType, OutputType> {
-    protected normalize = () => Promise.resolve(this.input)
-    protected abstract buildOutput(): Promise<void>
+    protected mainEntityIds: string[] = []
+    protected abstract buildOutput(outputEntity: EntityType): Promise<void>
 
-    protected async applyToDatabase(): Promise<void> {
-        await getManager().save(this.processedEntities)
-        await this.buildOutput()
+    async applyToDatabase(
+        results: Pick<ProcessedResult<EntityType, EntityType>, 'outputEntity'>[]
+    ): Promise<void> {
+        const allEntitiesToSave = []
+        for (const result of results) {
+            allEntitiesToSave.push(result.outputEntity)
+        }
+        await getManager().save(allEntitiesToSave)
     }
 }
 
@@ -233,13 +339,18 @@ export abstract class UpdateMutation<
     constructor(input: InputType[], permissions: Context['permissions']) {
         super(input, permissions)
     }
-    protected normalize = () => Promise.resolve(this.input)
-    protected abstract buildOutput(): Promise<void>
+    protected abstract buildOutput(currentEntity: EntityType): Promise<void>
 
-    protected async applyToDatabase(): Promise<void> {
-        await getManager().save(this.processedEntities)
-        await this.buildOutput()
+    protected async applyToDatabase(
+        results: Pick<ProcessedResult<EntityType, EntityType>, 'outputEntity'>[]
+    ): Promise<void> {
+        await getManager().save(results.map((r) => r.outputEntity))
     }
+}
+
+export interface DeleteEntityMap<EntityType extends CustomBaseEntity>
+    extends EntityMap<EntityType> {
+    mainEntity: Map<string, EntityType>
 }
 
 export abstract class DeleteMutation<
@@ -256,12 +367,34 @@ export abstract class DeleteMutation<
         super(input, permissions)
     }
 
-    protected normalize = () => Promise.resolve(this.input)
+    protected validationOverAllInputs(
+        inputs: InputType[],
+        entityMaps: EntityMap<EntityType>
+    ): {
+        validInputs: { index: number; input: InputType }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            this.mainEntityIds,
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate = () => []
 
-    protected process(currentEntity: EntityType): EntityType[] {
+    protected process(
+        currentInput: InputType,
+        entityMaps: DeleteEntityMap<EntityType>,
+        index: number
+    ) {
+        const currentEntity = entityMaps.mainEntity.get(
+            this.mainEntityIds[index]
+        )!
         Object.assign(currentEntity, this.partialEntity)
-        return [currentEntity]
+        return { outputEntity: currentEntity }
     }
 
     protected async applyToDatabase(): Promise<void> {
@@ -284,10 +417,16 @@ export abstract class AddRemoveMutation<
         super(input, permissions)
     }
 
-    protected normalize = () => Promise.resolve(this.input)
+    protected abstract process(
+        currentInput: InputType,
+        entityMaps: EntityMap<EntityType>,
+        index: number
+    ): Pick<ProcessedResult<EntityType, ModifiedEntityType>, 'outputEntity'>
 
-    protected async applyToDatabase(): Promise<void> {
-        await getManager().save(this.processedEntities)
+    protected async applyToDatabase(
+        results: ProcessedResult<EntityType, ModifiedEntityType>[]
+    ): Promise<void> {
+        await getManager().save(results.map((r) => r.outputEntity))
     }
 }
 export const AddMutation = AddRemoveMutation
@@ -322,20 +461,19 @@ export abstract class RemoveMembershipMutation<
         deleted_at: new Date(),
     }
     protected abstract readonly MembershipType: typeof CustomBaseEntity
-    protected abstract readonly saveIds: Record<string, string>[]
 
     constructor(input: InputType[], permissions: Context['permissions']) {
         super(input, permissions)
     }
 
-    protected normalize = () => Promise.resolve(this.input)
-
-    protected async applyToDatabase(): Promise<void> {
+    protected async applyToDatabase(
+        results: ProcessedResult<EntityType, MembershipType>[]
+    ): Promise<void> {
         await getManager()
             .createQueryBuilder()
             .update(this.MembershipType)
             .set(this.partialEntity)
-            .whereInIds(this.saveIds)
+            .whereInIds(results.map((r) => r.modifiedEntity ?? []).flat())
             .execute()
     }
 }
