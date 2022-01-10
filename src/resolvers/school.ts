@@ -41,7 +41,6 @@ import {
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
 import { config } from '../config/config'
 import { Program } from '../entities/program'
-import { map } from 'lodash'
 import { Role } from '../entities/role'
 
 export class CreateSchools extends CreateMutation<
