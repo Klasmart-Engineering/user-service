@@ -433,33 +433,21 @@ export class AddUsersToSchools extends AddMembershipMutation<
             }
         )
 
-        const [
-            schools,
-            users,
-            memberships,
-            organizations,
-            roles,
-        ] = await Promise.all([
-            schoolsPromise,
-            usersPromise,
-            membershipsPromise,
-            organizationsPromise,
-            rolesPromise,
-        ])
-
         return {
-            mainEntity: new Map(schools.map((s) => [s.school_id, s])),
-            users: new Map(users.map((u) => [u.user_id, u])),
+            mainEntity: new Map(
+                (await schoolsPromise).map((s) => [s.school_id, s])
+            ),
+            users: new Map((await usersPromise).map((u) => [u.user_id, u])),
             organizations: new Map(
-                organizations.map((o) => [o.organization_id, o])
+                (await organizationsPromise).map((o) => [o.organization_id, o])
             ),
             memberships: new Map(
-                memberships.map((i) => [
+                (await membershipsPromise).map((i) => [
                     getMembershipMapKey(i.school_id, i.user_id),
                     i,
                 ])
             ),
-            roles: new Map(roles.map((i) => [i.role_id, i])),
+            roles: new Map((await rolesPromise).map((i) => [i.role_id, i])),
         }
     }
 
