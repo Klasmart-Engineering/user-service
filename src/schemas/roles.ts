@@ -9,7 +9,7 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Permission } from '../entities/permission'
 import { mutate } from '../utils/mutations/commonStructure'
-import { CreateRoles, DeleteRoles } from '../resolvers/role'
+import { CreateRoles, UpdateRoles, DeleteRoles } from '../resolvers/role'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -23,6 +23,7 @@ const typeDefs = gql`
             organization_id: ID!
         ): Role
         createRoles(input: [CreateRoleInput!]!): RolesMutationResult
+        updateRoles(input: [UpdateRoleInput!]!): RolesMutationResult
         deleteRoles(input: [DeleteRoleInput!]!): RolesMutationResult
     }
 
@@ -119,6 +120,9 @@ const typeDefs = gql`
             role_description: String
             system_role: Boolean
         ): Role
+            @deprecated(
+                reason: "Sunset Date: 03/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         grant(permission_name: String!): Permission
         revoke(permission_name: String!): Boolean
         edit_permissions(permission_names: [String!]): [Permission]
@@ -135,6 +139,13 @@ const typeDefs = gql`
         organizationId: ID!
         roleName: String!
         roleDescription: String!
+    }
+
+    input UpdateRoleInput {
+        id: ID!
+        roleName: String
+        roleDescription: String
+        permissionIds: [ID!]
     }
 
     input DeleteRoleInput {
@@ -194,6 +205,8 @@ export default function getDefault(
                     model.replaceRole(args, ctx, info),
                 createRoles: (_parent, args, ctx) =>
                     mutate(CreateRoles, args, ctx.permissions),
+                updateRoles: (_parent, args, ctx) =>
+                    mutate(UpdateRoles, args, ctx.permissions),
                 deleteRoles: (_parent, args, ctx) =>
                     mutate(DeleteRoles, args, ctx.permissions),
             },

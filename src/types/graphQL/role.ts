@@ -25,6 +25,13 @@ export interface CreateRoleInput {
     roleDescription: string
 }
 
+export interface UpdateRoleInput {
+    id: string
+    roleName?: string
+    roleDescription?: string
+    permissionIds?: string[]
+}
+
 export interface DeleteRoleInput {
     id: string
 }
