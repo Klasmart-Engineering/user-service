@@ -14,7 +14,6 @@ const params = {
 };
 
 export default function (roleType?: string) {
-
     const userPayload = JSON.stringify({
         variables: {
             direction: 'FORWARD',

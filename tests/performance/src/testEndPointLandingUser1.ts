@@ -3,53 +3,6 @@ import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
 import endPointUserRequest1 from './scripts/endPointUserRequest1';
 
-/*
-
-Script that evaluates the endPoint:
-https://api.loadtest.kidsloop.live/user/
-    {
-        "operationName": "getOrganizationSchools",
-        "variables": {
-        {
-            "direction": "FORWARD",
-            "count": 50,
-            "order": "ASC",
-            "orderBy": "name",
-            "filter": {
-                "status": {
-                    "operator": "eq",
-                    "value": "active"
-                },
-                "organizationId": {
-                    "operator": "eq",
-                    "value": "360b46fe-3579-42d4-9a39-dc48726d033f"
-                },
-                "AND": [
-                    {
-                        "OR": [
-                            {
-                                "name": {
-                                    "operator": "contains",
-                                    "value": "",
-                                    "caseInsensitive": true
-                                }
-                            },
-                            {
-                                "shortCode": {
-                                    "operator": "contains",
-                                    "value": "",
-                                    "caseInsensitive": true
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
-        }
-
-            }
-*/
-
 export const options: Options = {
     vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
     duration: __ENV.DURATION ?? '1m',

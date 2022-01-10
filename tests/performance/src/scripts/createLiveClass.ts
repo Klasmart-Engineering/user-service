@@ -1,5 +1,3 @@
-// https://kl2.loadtest.kidsloop.live/v1/schedules?org_id=c611ece6-cd8c-4bcc-8975-fa0a8163ee7b
-
 import generateClassPayload from "../utils/generateClassPayload";
 import { check } from 'k6';
 import http from 'k6/http';
