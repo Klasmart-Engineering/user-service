@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.5.1](https://bitbucket.org/calmisland/kidsloop-user-service/compare/v2.5.0...v2.5.1) (2022-01-11)
+
+
+### Features
+
+* **AD-1846:** expose programID filter in age ranges and grades connection ([7458ee8](https://bitbucket.org/calmisland/kidsloop-user-service/commit/7458ee89ee8e65994e431920555cb2baccbab28b))
+
+
+### Bug Fixes
+
+* **AD-1810:** undefined authentication tokens ([f34882c](https://bitbucket.org/calmisland/kidsloop-user-service/commit/f34882c5a502aef4b84c7e2dda49e648d9938ba2))
+
 ## 2.5.0 (2021-12-09)
 
 
