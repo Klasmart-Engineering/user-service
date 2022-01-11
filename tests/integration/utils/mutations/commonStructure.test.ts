@@ -159,7 +159,7 @@ describe('commonStructure', () => {
             })
         })
 
-        context('#commonValidations', () => {
+        context('validateActiveAndNoDuplicates', () => {
             context('when the inputs are correct', () => {
                 beforeEach(() => generateCategories(5))
 

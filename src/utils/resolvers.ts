@@ -115,6 +115,29 @@ export function createUnauthorizedAPIError(
     })
 }
 
+export function createDuplicateChildEntityAttributeAPIError(
+    entity: string,
+    entityName: string,
+    parentEntity: string,
+    parentName: string,
+    attribute: string,
+    attributeValue: string,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.duplicate_child_entity_attribute.code,
+        message: customErrors.duplicate_child_entity_attribute.message,
+        variables: [],
+        entity,
+        entityName,
+        index,
+        attribute,
+        attributeValue,
+        parentEntity,
+        parentName,
+    })
+}
+
 export function createEntityAPIError(
     errorType: entityErrorType,
     index: number,

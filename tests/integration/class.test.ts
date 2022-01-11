@@ -1,5 +1,7 @@
 import { expect, use } from 'chai'
+import faker from 'faker'
 import { getManager, In } from 'typeorm'
+import { v4 as uuid_v4 } from 'uuid'
 import { Model } from '../../src/model'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
@@ -42,6 +44,8 @@ import { User } from '../../src/entities/user'
 import {
     AddProgramsToClasses,
     deleteClasses as deleteClassesResolver,
+    CreateClasses,
+    EntityMapCreateClass,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -85,11 +89,24 @@ import { Role } from '../../src/entities/role'
 import {
     AddProgramsToClassInput,
     DeleteClassInput,
+    CreateClassInput,
 } from '../../src/types/graphQL/class'
-import { checkNotFoundErrors, expectAPIError } from '../utils/apiError'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { buildPermissionError } from '../utils/errors'
+import {
+    compareErrors,
+    expectAPIError,
+    checkNotFoundErrors,
+} from '../utils/apiError'
+import { generateShortCode, validateShortCode } from '../../src/utils/shortcode'
+import { APIError } from '../../src/types/errors/apiError'
+import { customErrors } from '../../src/types/errors/customError'
+import { ObjMap } from '../../src/utils/stringUtils'
+import {
+    createDuplicateChildEntityAttributeAPIError,
+    createDuplicateInputAPIError,
+} from '../../src/utils/resolvers'
 
 use(chaiAsPromised)
 
@@ -105,6 +122,731 @@ describe('class', () => {
 
     after(async () => {
         await connection?.close()
+    })
+
+    describe('createClasses', () => {
+        let ctx: { permissions: UserPermissions }
+        let org: Organization
+        let createClasses: CreateClasses
+
+        beforeEach(async () => {
+            const clientUser = await createUser().save()
+            org = await createOrganization().save()
+            const r = await createRoleFactory(undefined, org, {
+                permissions: [PermissionName.create_class_20224],
+            }).save()
+            await createOrganizationMembership({
+                user: clientUser,
+                organization: org,
+                roles: [r],
+            }).save()
+            const permissions = new UserPermissions(userToPayload(clientUser))
+            ctx = { permissions }
+            createClasses = new CreateClasses([], ctx.permissions)
+        })
+
+        context('complete mutation calls', () => {
+            it('can create a class', async () => {
+                const input: CreateClassInput[] = [
+                    {
+                        organizationId: org.organization_id,
+                        name: faker.random.word(),
+                    },
+                ]
+
+                const result = await mutate(
+                    CreateClasses,
+                    { input },
+                    ctx.permissions
+                )
+                expect(result.classes.length).to.eq(1)
+
+                expect(result.classes[0].id).to.not.be.undefined
+                expect(result.classes[0].name).to.eq(input[0].name)
+                expect(result.classes[0].status).to.eq(Status.ACTIVE)
+                expect(result.classes[0].shortCode).to.not.be.undefined
+
+                const dbClasses = await Class.find()
+
+                expect(dbClasses).to.have.lengthOf(1)
+
+                expect(dbClasses[0].status).to.eq(Status.ACTIVE)
+                expect(dbClasses[0].class_name).to.eq(input[0].name)
+                expect(dbClasses[0]?.shortcode).to.eq(
+                    result.classes[0].shortCode
+                )
+                expect(
+                    (await dbClasses[0].organization)?.organization_id
+                ).to.eq(org.organization_id)
+            })
+
+            const getDbCallCount = async (input: CreateClassInput[]) => {
+                connection.logger.reset()
+                await mutate(CreateClasses, { input }, ctx.permissions)
+                return connection.logger.count
+            }
+
+            const inputElement = () => {
+                return {
+                    organizationId: org.organization_id,
+                    name: faker.random.word(),
+                }
+            }
+
+            it('db connections do not increase with number of input elements', async () => {
+                await getDbCallCount([inputElement()]) // warm up permissions cache
+                const singleClassCount = await getDbCallCount([inputElement()])
+                const twoClassCount = await getDbCallCount([
+                    inputElement(),
+                    inputElement(),
+                ])
+                expect(twoClassCount).to.be.eq(singleClassCount)
+                expect(twoClassCount).to.be.equal(5)
+            })
+        })
+
+        context('normalize', () => {
+            it('preserves input element positions and length', () => {
+                for (const inputLength of [0, 1, 2, 5]) {
+                    const input: CreateClassInput[] = Array.from(
+                        Array(inputLength)
+                    ).map(() => {
+                        return {
+                            organizationId: uuid_v4(),
+                            name: faker.random.word(),
+                            shortcode: generateShortCode(),
+                        }
+                    })
+
+                    const normalized = createClasses.normalize(input)
+                    expect(normalized.length).to.eq(input.length)
+                    expect(
+                        normalized.map((n) => n.organizationId)
+                    ).to.deep.equal(input.map((i) => i.organizationId))
+                    expect(normalized.map((n) => n.name)).to.deep.equal(
+                        input.map((i) => i.name)
+                    )
+                    expect(normalized.map((n) => n.shortcode)).to.deep.equal(
+                        input.map((i) => i.shortcode)
+                    )
+                }
+            })
+
+            context('shortcodes', () => {
+                const checkShortcode = (
+                    shortcode: string | undefined
+                ): string | undefined => {
+                    const input: CreateClassInput[] = [
+                        {
+                            organizationId: org.organization_id,
+                            name: faker.random.word(),
+                            shortcode,
+                        },
+                    ]
+
+                    const normalized = createClasses.normalize(input)
+                    expect(normalized.length).to.eq(input.length)
+                    return normalized[0].shortcode
+                }
+
+                it('generates shortcodes when not supplied by caller', () => {
+                    const normalizedShortcode = checkShortcode(undefined)
+                    expect(normalizedShortcode).to.not.be.undefined
+                    expect(validateShortCode(normalizedShortcode)).to.be.true
+                })
+
+                it('normalizes shortcodes to uppercase', () => {
+                    const invalidShortcode = generateShortCode().toLowerCase()
+                    expect(validateShortCode(invalidShortcode)).to.be.false
+
+                    const normalizedShortcode = checkShortcode(invalidShortcode)
+                    expect(normalizedShortcode).to.eq(
+                        invalidShortcode.toUpperCase()
+                    )
+                })
+
+                it('preserves invalid shortcodes', () => {
+                    const invalidShortcode = '!!!!!'
+                    expect(validateShortCode(invalidShortcode)).to.be.false
+
+                    const normalizedShortcode = checkShortcode(invalidShortcode)
+                    expect(normalizedShortcode).to.eq(invalidShortcode)
+                })
+
+                it('preserves valid shortcodes', () => {
+                    const validShortcode = generateShortCode()
+                    const normalizedShortcode = checkShortcode(validShortcode)
+                    expect(normalizedShortcode).to.eq(validShortcode)
+                })
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('returns existing organizations', async () => {
+                const unpermittedOrg = await createOrganization().save()
+
+                const validOrgIds = [
+                    org.organization_id,
+                    // entity maps are generated before authorization
+                    // so we should fetch orgs regardless of permissions
+                    unpermittedOrg.organization_id,
+                ]
+
+                const inactiveOrg = createOrganization()
+                inactiveOrg.status = Status.INACTIVE
+                await inactiveOrg.save()
+
+                const invalidOrgIds = [
+                    // we shouldn't error here for invalid org IDs
+                    // that is handled later by validation
+                    uuid_v4(),
+                    // if an organization isn't active we should act like
+                    // it doesn't exist at all
+                    inactiveOrg.organization_id,
+                ]
+
+                const input: CreateClassInput[] = [
+                    ...validOrgIds,
+                    ...invalidOrgIds,
+                ].map((organizationId) => {
+                    return {
+                        organizationId: organizationId,
+                        name: faker.random.word(),
+                    }
+                })
+
+                const entityMaps = await createClasses.generateEntityMaps(input)
+                expect(
+                    Array.from(entityMaps.organizations.keys())
+                ).to.deep.equalInAnyOrder(validOrgIds)
+                expect(
+                    Array.from(entityMaps.organizations.values()).map(
+                        (i) => i.organization_id
+                    )
+                ).to.deep.equalInAnyOrder(validOrgIds)
+                for (const [
+                    key,
+                    organization,
+                ] of entityMaps.organizations.entries()) {
+                    expect(key).to.eq(organization.organization_id)
+                }
+            })
+
+            it('returns conflicting orgId-className pairs', async () => {
+                const existingClass = await createClassFactory(
+                    undefined,
+                    org
+                ).save()
+
+                const unpermittedOrgClass = await createClassFactory(
+                    undefined,
+                    await createOrganization().save()
+                ).save()
+
+                const inactiveClass = createClassFactory(undefined, org)
+                inactiveClass.status = Status.INACTIVE
+                await inactiveClass.save()
+
+                const inactiveOrg = createOrganization()
+                inactiveOrg.status = Status.INACTIVE
+                await inactiveOrg.save()
+
+                const inactiveOrgClass = await createClassFactory(
+                    undefined,
+                    inactiveOrg
+                ).save()
+
+                const existingClasses = [
+                    existingClass,
+                    unpermittedOrgClass,
+                    inactiveClass,
+                    inactiveOrgClass,
+                ]
+
+                const expectedPairs = await Promise.all(
+                    existingClasses.map(async (ec) => {
+                        return {
+                            organizationId: (await ec.organization)!
+                                .organization_id,
+                            name: ec.class_name!,
+                        }
+                    })
+                )
+
+                const input: CreateClassInput[] = [
+                    ...expectedPairs,
+                    {
+                        organizationId: org.organization_id,
+                        name: faker.random.word(),
+                    },
+                ]
+
+                const entityMaps = await createClasses.generateEntityMaps(input)
+                expect(
+                    Array.from(entityMaps.conflictingNames.keys())
+                ).to.deep.equalInAnyOrder(expectedPairs)
+            })
+
+            it('returns conflicting orgId-shortcode pairs', async () => {
+                const existingClass = await createClassFactory(
+                    undefined,
+                    org
+                ).save()
+
+                const unpermittedOrgClass = await createClassFactory(
+                    undefined,
+                    await createOrganization().save()
+                ).save()
+
+                const inactiveClass = createClassFactory(undefined, org)
+                inactiveClass.status = Status.INACTIVE
+                await inactiveClass.save()
+
+                const inactiveOrg = createOrganization()
+                inactiveOrg.status = Status.INACTIVE
+                await inactiveOrg.save()
+
+                const inactiveOrgClass = await createClassFactory(
+                    undefined,
+                    inactiveOrg
+                ).save()
+
+                const existingClasses = [
+                    existingClass,
+                    unpermittedOrgClass,
+                    inactiveClass,
+                    inactiveOrgClass,
+                ]
+
+                const expectedPairs = await Promise.all(
+                    existingClasses.map(async (ec) => {
+                        return {
+                            organizationId: (await ec.organization)!
+                                .organization_id,
+                            name: ec.class_name!,
+                            shortcode: ec.shortcode!,
+                        }
+                    })
+                )
+
+                const input: CreateClassInput[] = [
+                    ...expectedPairs,
+                    {
+                        organizationId: org.organization_id,
+                        name: faker.random.word(),
+                        shortcode: generateShortCode(),
+                    },
+                ]
+
+                const expectedEntries = await Promise.all(
+                    existingClasses.map(async (ec) => {
+                        return [
+                            {
+                                organizationId: (await ec.organization)!
+                                    .organization_id,
+                                shortcode: ec.shortcode!,
+                            },
+                            ec.class_id,
+                        ]
+                    })
+                )
+
+                const entityMaps = await createClasses.generateEntityMaps(input)
+                expect(
+                    Array.from(entityMaps.conflictingShortcodes.entries())
+                ).to.deep.equalInAnyOrder(expectedEntries)
+            })
+        })
+
+        context('authorize', () => {
+            const makeUserWithPermission = async (
+                permission: PermissionName
+            ) => {
+                const clientUser = await createUser().save()
+                const permittedOrg = await createOrganization().save()
+                const role = await createRoleFactory(undefined, permittedOrg, {
+                    permissions: [permission],
+                }).save()
+                await createOrganizationMembership({
+                    user: clientUser,
+                    organization: permittedOrg,
+                    roles: [role],
+                }).save()
+                const permissions = new UserPermissions(
+                    userToPayload(clientUser)
+                )
+                return { permittedOrg, userCtx: { permissions } }
+            }
+
+            const callAuthorize = (
+                userCtx: {
+                    permissions: UserPermissions
+                },
+                orgIds: string[]
+            ) => {
+                const createClasses = new CreateClasses([], userCtx.permissions)
+
+                const input = orgIds.map((orgId) => {
+                    return {
+                        organizationId: orgId,
+                        name: faker.random.word(),
+                    }
+                })
+
+                return createClasses.authorize(input)
+            }
+
+            it('checks the correct permission', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.create_class_20224
+                )
+
+                await expect(
+                    callAuthorize(userCtx, [permittedOrg.organization_id])
+                ).to.be.eventually.fulfilled
+            })
+
+            it('rejects when user is not authorized', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.edit_class_20334
+                )
+
+                await expect(
+                    callAuthorize(userCtx, [permittedOrg.organization_id])
+                ).to.be.eventually.rejectedWith(
+                    /User\(.*\) does not have Permission\(create_class_20224\) in Organizations\(.*\)/
+                )
+            })
+
+            it('checks all organizations', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.create_class_20224
+                )
+
+                const {
+                    permittedOrg: notPermittedOrg,
+                } = await makeUserWithPermission(
+                    PermissionName.edit_class_20334
+                )
+
+                await expect(
+                    callAuthorize(userCtx, [
+                        permittedOrg.organization_id,
+                        notPermittedOrg.organization_id,
+                    ])
+                ).to.be.eventually.rejectedWith(
+                    /User\(.*\) does not have Permission\(create_class_20224\) in Organizations\(.*\)/
+                )
+            })
+        })
+
+        const buildEntityMap = async (classes: Class[]) => {
+            const entityMap: EntityMapCreateClass = {
+                organizations: new Map([]),
+                conflictingNames: new ObjMap([]),
+                conflictingShortcodes: new ObjMap([]),
+            }
+
+            for (const _class of classes) {
+                if (_class.class_id === undefined) {
+                    _class.class_id = uuid_v4()
+                }
+                const classOrg = (await _class.organization)!
+                entityMap.organizations.set(classOrg.organization_id, classOrg)
+                entityMap.conflictingNames.set(
+                    {
+                        organizationId: classOrg.organization_id,
+                        name: _class.class_name!,
+                    },
+                    _class.class_id
+                )
+                entityMap.conflictingShortcodes.set(
+                    {
+                        organizationId: classOrg.organization_id,
+                        shortcode: _class.shortcode!,
+                    },
+                    _class.class_id
+                )
+            }
+            return entityMap
+        }
+
+        context('validationOverAllInputs', () => {
+            let inputs: CreateClassInput[]
+
+            beforeEach(() => {
+                inputs = [
+                    {
+                        organizationId: org.organization_id,
+                        name: faker.random.word(),
+                        shortcode: generateShortCode(),
+                    },
+                    {
+                        organizationId: org.organization_id,
+                        name: faker.random.word(),
+                        shortcode: generateShortCode(),
+                    },
+                    {
+                        organizationId: org.organization_id,
+                        name: faker.random.word(),
+                        shortcode: generateShortCode(),
+                    },
+                ]
+            })
+
+            it('duplicate names', async () => {
+                const duplicateInput = inputs[1]
+
+                duplicateInput.name = inputs[0].name
+
+                const {
+                    validInputs,
+                    apiErrors,
+                } = createClasses.validationOverAllInputs(inputs)
+
+                expect(validInputs.length).to.eq(2)
+                expect(validInputs[0].input.name).to.eq(inputs[0].name)
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].input.name).to.eq(inputs[2].name)
+                expect(validInputs[1].index).to.eq(2)
+
+                const error = createDuplicateInputAPIError(1, ['name'], 'class')
+
+                expect(apiErrors.length).to.eq(1)
+                compareErrors(apiErrors[0], error)
+            })
+
+            it('duplicate shortcodes', async () => {
+                const duplicateInput = inputs[1]
+
+                duplicateInput.shortcode = inputs[0].shortcode
+
+                const {
+                    validInputs,
+                    apiErrors,
+                } = createClasses.validationOverAllInputs(inputs)
+
+                expect(validInputs.length).to.eq(2)
+                expect(validInputs[0].input).to.deep.eq(inputs[0])
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].input).to.deep.eq(inputs[2])
+                expect(validInputs[1].index).to.eq(2)
+
+                const error = createDuplicateInputAPIError(
+                    1,
+                    ['shortcode'],
+                    'class'
+                )
+
+                expect(apiErrors.length).to.eq(1)
+                compareErrors(apiErrors[0], error)
+            })
+        })
+
+        context('validate', () => {
+            const runTestCases = (
+                testCases: { input: CreateClassInput; error?: APIError }[],
+                entityMap: EntityMapCreateClass
+            ) => {
+                for (const { input, error } of testCases) {
+                    const errors = createClasses.validate(
+                        0,
+                        undefined,
+                        input,
+                        entityMap
+                    )
+
+                    if (error !== undefined) {
+                        expect(errors.length).to.eq(1)
+                        compareErrors(errors[0], error)
+                    }
+                }
+            }
+
+            it('returns errors for invalid shortcodes', async () => {
+                const input: CreateClassInput = {
+                    organizationId: org.organization_id,
+                    name: faker.random.word(),
+                    shortcode: '!!!!!',
+                }
+                const error = new APIError({
+                    code: customErrors.invalid_alphanumeric.code,
+                    message: customErrors.invalid_alphanumeric.message,
+                    variables: [],
+                    entity: 'Class',
+                    attribute: 'shortcode',
+                    index: 0,
+                })
+                const entityMap = await buildEntityMap([])
+                entityMap.organizations.set(org.organization_id, org)
+
+                runTestCases([{ input, error }], entityMap)
+            })
+
+            it('organization exists', async () => {
+                // completly made up org IDs will fail before validation at authorize checks
+                // because you can't have permissions for a non-existant org
+                // but inactive orgs can pass authorize checks
+                const inactiveOrg = createOrganization()
+                inactiveOrg.status = Status.INACTIVE
+                await inactiveOrg.save()
+
+                const input = {
+                    organizationId: inactiveOrg.organization_id,
+                    name: faker.random.word(),
+                }
+
+                const error = new APIError({
+                    code: customErrors.nonexistent_or_inactive.code,
+                    message: customErrors.nonexistent_or_inactive.message,
+                    variables: [],
+                    entity: 'Organization',
+                    attribute: 'ID',
+                    otherAttribute: inactiveOrg.organization_id,
+                    index: 0,
+                })
+
+                const entityManager = await buildEntityMap([])
+
+                runTestCases([{ input, error }], entityManager)
+            })
+
+            it('duplicate name in org', async () => {
+                const classInSameOrg = createClassFactory(undefined, org)
+                classInSameOrg.class_id = uuid_v4()
+                const inactiveClassInSameOrg = createClassFactory(
+                    undefined,
+                    org
+                )
+                inactiveClassInSameOrg.class_id = uuid_v4()
+                inactiveClassInSameOrg.status = Status.INACTIVE
+
+                const differentOrg = await createOrganization().save()
+                const classInDifferentOrg = createClassFactory(
+                    undefined,
+                    differentOrg
+                )
+
+                const testCases: {
+                    input: CreateClassInput
+                    error?: APIError
+                }[] = await Promise.all(
+                    [classInSameOrg, inactiveClassInSameOrg].map(async (c) => {
+                        const organizationId = (await c.organization)!
+                            .organization_id
+                        return {
+                            input: {
+                                name: c.class_name!,
+                                organizationId,
+                            },
+                            error: createDuplicateChildEntityAttributeAPIError(
+                                'Class',
+                                c.class_id,
+                                'Organization',
+                                organizationId,
+                                'name',
+                                c.class_name!,
+                                0
+                            ),
+                        }
+                    })
+                )
+                testCases.push({
+                    input: {
+                        name: classInDifferentOrg.class_name!,
+                        organizationId: (await classInDifferentOrg.organization)!
+                            .organization_id,
+                    },
+                })
+
+                const entityMap = await buildEntityMap([
+                    classInSameOrg,
+                    inactiveClassInSameOrg,
+                    classInDifferentOrg,
+                ])
+
+                runTestCases(testCases, entityMap)
+            })
+
+            it('duplicate shortcode in org', async () => {
+                const classInSameOrg = createClassFactory(undefined, org)
+                classInSameOrg.class_id = uuid_v4()
+                const inactiveClassInSameOrg = createClassFactory(
+                    undefined,
+                    org
+                )
+                inactiveClassInSameOrg.status = Status.INACTIVE
+                inactiveClassInSameOrg.class_id = uuid_v4()
+                const differentOrg = await createOrganization().save()
+                const classInDifferentOrg = createClassFactory(
+                    undefined,
+                    differentOrg
+                )
+                classInDifferentOrg.class_id = uuid_v4()
+
+                const testCases: {
+                    input: Partial<CreateClassInput>
+                    error: APIError
+                }[] = await Promise.all(
+                    [classInSameOrg, inactiveClassInSameOrg].map(async (c) => {
+                        return {
+                            input: {
+                                organizationId: (await c.organization)!
+                                    .organization_id,
+                                shortcode: c.shortcode!,
+                            },
+                            error: createDuplicateChildEntityAttributeAPIError(
+                                'Class',
+                                c.class_id,
+                                'Organization',
+                                (await c.organization)!.organization_id,
+                                'shortcode',
+                                c.shortcode!,
+                                0
+                            ),
+                        }
+                    })
+                )
+
+                const entityMap = await buildEntityMap([
+                    classInSameOrg,
+                    inactiveClassInSameOrg,
+                    classInDifferentOrg,
+                ])
+
+                runTestCases(
+                    testCases.map((t) => {
+                        ;(t.input as Partial<CreateClassInput>).name = faker.random.word()
+                        return t as {
+                            input: CreateClassInput
+                            error: APIError
+                        }
+                    }),
+                    entityMap
+                )
+            })
+        })
+
+        it('process', async () => {
+            const input: CreateClassInput = {
+                organizationId: org.organization_id,
+                name: faker.random.word(),
+                shortcode: generateShortCode(),
+            }
+            const entityMap = await buildEntityMap([])
+            entityMap.organizations.set(org.organization_id, org)
+
+            const {
+                outputEntity,
+            }: {
+                outputEntity: Class
+            } = await createClasses.process(input, entityMap)
+            expect(outputEntity.class_name).to.eq(input.name)
+            expect(outputEntity.shortcode).to.eq(input.shortcode)
+            expect((await outputEntity.organization)?.organization_id).to.eq(
+                input.organizationId
+            )
+        })
     })
 
     describe('set', () => {
@@ -4516,14 +5258,14 @@ describe('class', () => {
                         const res = await expect(addPrograms()).to.be.rejected
                         checkNotFoundErrors(res, [
                             {
-                                entity: 'Program',
-                                id: programs[1].id,
-                                entryIndex: 1,
-                            },
-                            {
                                 entity: 'Class',
                                 id: classes[2].class_id,
                                 entryIndex: 2,
+                            },
+                            {
+                                entity: 'Program',
+                                id: programs[1].id,
+                                entryIndex: 1,
                             },
                         ])
                     })

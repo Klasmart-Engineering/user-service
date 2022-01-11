@@ -30,6 +30,9 @@ import {
     UpdateMutation,
     RemoveMembershipMutation,
     AddMembershipMutation,
+    DeleteEntityMap,
+    validateActiveAndNoDuplicates,
+    ProcessedResult,
 } from '../utils/mutations/commonStructure'
 import { Class } from '../entities/class'
 import {
@@ -43,6 +46,11 @@ import { config } from '../config/config'
 import { Program } from '../entities/program'
 import { Role } from '../entities/role'
 
+export interface CreateSchoolEntityMap extends EntityMap<School> {
+    mainEntity: Map<string, School>
+    matchingOrgsAndShortcodes: Map<string, School>
+    organizations: Map<string, Organization>
+}
 export class CreateSchools extends CreateMutation<
     School,
     CreateSchoolInput,
@@ -50,7 +58,6 @@ export class CreateSchools extends CreateMutation<
 > {
     protected readonly EntityType = School
     protected inputTypeName = 'CreateSchoolInput'
-    protected mainEntityIds: string[] = []
     protected orgIds: string[]
     protected output: SchoolsMutationResult = { schools: [] }
 
@@ -62,14 +69,12 @@ export class CreateSchools extends CreateMutation<
         this.orgIds = Array.from(
             new Set(input.map((val) => val.organizationId).flat())
         )
-        for (const val of input) {
-            this.mainEntityIds.push([val.organizationId, val.name].toString())
-        }
     }
 
     generateEntityMaps = (
         input: CreateSchoolInput[]
-    ): Promise<EntityMap<School>> => generateMapsForCreate(input, this.orgIds)
+    ): Promise<CreateSchoolEntityMap> =>
+        generateMapsForCreate(input, this.orgIds)
 
     protected authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
@@ -78,11 +83,20 @@ export class CreateSchools extends CreateMutation<
         )
     }
 
+    validationOverAllInputs(inputs: CreateSchoolInput[]) {
+        return {
+            validInputs: inputs.map((i, index) => {
+                return { input: i, index }
+            }),
+            apiErrors: [],
+        }
+    }
+
     protected validate(
         index: number,
         _entity: School,
         currentInput: CreateSchoolInput,
-        maps: EntityMap<School>
+        maps: CreateSchoolEntityMap
     ): APIError[] {
         const errors: APIError[] = []
         const { organizationId, name, shortCode } = currentInput
@@ -138,10 +152,9 @@ export class CreateSchools extends CreateMutation<
     }
 
     protected process(
-        _entity: School,
         currentInput: CreateSchoolInput,
-        maps: EntityMap<School>
-    ): School[] {
+        maps: CreateSchoolEntityMap
+    ) {
         const { organizationId, name, shortCode } = currentInput
 
         const school = new School()
@@ -150,22 +163,24 @@ export class CreateSchools extends CreateMutation<
             ? formatShortCode(shortCode)
             : generateShortCode(name)
         school.organization = Promise.resolve(
-            maps.organizations.get(organizationId) as Organization
+            maps.organizations.get(organizationId)!
         )
 
-        return [school]
+        return { outputEntity: school }
     }
 
-    protected async buildOutput(): Promise<void> {
-        this.output.schools = []
-        for (const proccesedEntity of this.processedEntities) {
-            // eslint-disable-next-line no-await-in-loop
-            const schoolConnectionNode = await mapSchoolToSchoolConnectionNode(
-                proccesedEntity
-            )
-            this.output.schools.push(schoolConnectionNode)
-        }
+    protected async buildOutput(outputEntity: School): Promise<void> {
+        const schoolConnectionNode = await mapSchoolToSchoolConnectionNode(
+            outputEntity
+        )
+        this.output.schools.push(schoolConnectionNode)
     }
+}
+
+export interface UpdateSchoolEntityMap extends EntityMap<School> {
+    mainEntity: Map<string, School>
+    matchingOrgsAndShortcodes: Map<string, School>
+    matchingOrgsAndNames: Map<string, School>
 }
 
 export class UpdateSchools extends UpdateMutation<
@@ -189,7 +204,7 @@ export class UpdateSchools extends UpdateMutation<
 
     protected async generateEntityMaps(
         input: UpdateSchoolInput[]
-    ): Promise<EntityMap<School>> {
+    ): Promise<UpdateSchoolEntityMap> {
         const names = input.map((val) => val.name)
         const shortCodes = input.map((val) => val.shortCode)
 
@@ -231,7 +246,7 @@ export class UpdateSchools extends UpdateMutation<
 
     protected async authorize(
         _input: UpdateSchoolInput[],
-        entityMaps: EntityMap<School>
+        entityMaps: UpdateSchoolEntityMap
     ) {
         const organizationIds: string[] = []
         for (const c of entityMaps.mainEntity.values()) {
@@ -244,11 +259,27 @@ export class UpdateSchools extends UpdateMutation<
         )
     }
 
+    protected validationOverAllInputs(
+        inputs: UpdateSchoolInput[],
+        entityMaps: UpdateSchoolEntityMap
+    ): {
+        validInputs: { index: number; input: UpdateSchoolInput }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.id),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate(
         index: number,
         currentEntity: School,
         currentInput: UpdateSchoolInput,
-        maps: EntityMap<School>
+        maps: UpdateSchoolEntityMap
     ): APIError[] {
         const errors: APIError[] = []
         const { organizationId, name, shortCode } = currentInput
@@ -262,7 +293,7 @@ export class UpdateSchools extends UpdateMutation<
 
         if (
             matchingOrgAndName &&
-            (matchingOrgAndName as School).school_id !== currentEntity.school_id
+            matchingOrgAndName.school_id !== currentEntity.school_id
         ) {
             errors.push(
                 createEntityAPIError(
@@ -278,8 +309,7 @@ export class UpdateSchools extends UpdateMutation<
         }
         if (
             matchingOrgAndShortcode &&
-            (matchingOrgAndShortcode as School).school_id !==
-                currentEntity.school_id
+            matchingOrgAndShortcode.school_id !== currentEntity.school_id
         ) {
             errors.push(
                 createEntityAPIError(
@@ -297,9 +327,14 @@ export class UpdateSchools extends UpdateMutation<
     }
 
     protected process(
-        currentEntity: School,
-        currentInput: UpdateSchoolInput
-    ): School[] {
+        currentInput: UpdateSchoolInput,
+        entityMaps: UpdateSchoolEntityMap,
+        index: number
+    ) {
+        const currentEntity = entityMaps.mainEntity.get(
+            this.mainEntityIds[index]
+        )!
+
         const { name, shortCode } = currentInput
         currentEntity.school_name = name
         currentEntity.shortcode =
@@ -307,16 +342,13 @@ export class UpdateSchools extends UpdateMutation<
                 shortCode,
                 config.limits.SCHOOL_SHORTCODE_MAX_LENGTH
             ) || currentEntity.shortcode
-        return [currentEntity]
+        return { outputEntity: currentEntity }
     }
 
-    protected async buildOutput(): Promise<void> {
-        this.output.schools = []
-        for (const proccesedEntity of this.processedEntities) {
-            this.output.schools.push(
-                await mapSchoolToSchoolConnectionNode(proccesedEntity)
-            )
-        }
+    protected async buildOutput(outputEntity: School): Promise<void> {
+        this.output.schools.push(
+            await mapSchoolToSchoolConnectionNode(outputEntity)
+        )
     }
 }
 
@@ -339,7 +371,7 @@ export class DeleteSchools extends DeleteMutation<
         this.mainEntityIds = input.map((val) => val.id)
     }
 
-    protected async generateEntityMaps(): Promise<EntityMap<School>> {
+    protected async generateEntityMaps(): Promise<DeleteEntityMap<School>> {
         const categories = await School.createQueryBuilder()
             .select([
                 ...schoolConnectionNodeFields,
@@ -353,7 +385,7 @@ export class DeleteSchools extends DeleteMutation<
 
     protected async authorize(
         _input: DeleteSchoolInput[],
-        entityMaps: EntityMap<School>
+        entityMaps: DeleteEntityMap<School>
     ) {
         const organizationIds: string[] = []
         for (const c of entityMaps.mainEntity.values()) {
@@ -371,6 +403,14 @@ export class DeleteSchools extends DeleteMutation<
             await mapSchoolToSchoolConnectionNode(currentEntity)
         )
     }
+}
+
+export interface AddUsersToSchoolsEntityMap extends EntityMap<School> {
+    mainEntity: Map<string, School>
+    users: Map<string, User>
+    memberships: Map<string, SchoolMembership>
+    organizations: Map<string, Organization>
+    roles: Map<string, Role>
 }
 
 export class AddUsersToSchools extends AddMembershipMutation<
@@ -392,9 +432,25 @@ export class AddUsersToSchools extends AddMembershipMutation<
         this.mainEntityIds = input.map((val) => val.schoolId)
     }
 
+    protected validationOverAllInputs(
+        inputs: AddUsersToSchoolInput[],
+        entityMaps: AddUsersToSchoolsEntityMap
+    ): {
+        validInputs: { index: number; input: AddUsersToSchoolInput }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.schoolId),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected async generateEntityMaps(
         input: AddUsersToSchoolInput[]
-    ): Promise<EntityMap<School>> {
+    ): Promise<AddUsersToSchoolsEntityMap> {
         const schoolsPromise = School.findByIds(this.mainEntityIds, {
             where: { status: Status.ACTIVE },
         })
@@ -452,7 +508,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
 
     protected async authorize(
         _input: AddUsersToSchoolInput[],
-        maps: EntityMap<School>
+        maps: AddUsersToSchoolsEntityMap
     ) {
         return this.permissions.rejectIfNotAllowed(
             {
@@ -467,7 +523,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
         index: number,
         currentEntity: School,
         currentInput: AddUsersToSchoolInput,
-        maps: EntityMap<School>
+        maps: AddUsersToSchoolsEntityMap
     ): APIError[] {
         const errors: APIError[] = []
 
@@ -523,11 +579,12 @@ export class AddUsersToSchools extends AddMembershipMutation<
     }
 
     protected process(
-        currentEntity: School,
         currentInput: AddUsersToSchoolInput,
-        maps: EntityMap<School>
-    ): SchoolMembership[] {
+        maps: AddUsersToSchoolsEntityMap,
+        index: number
+    ): ProcessedResult<School, SchoolMembership> {
         const memberships: SchoolMembership[] = []
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
 
         for (const userId of currentInput.userIds) {
             const membership = new SchoolMembership()
@@ -541,7 +598,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
             memberships.push(membership)
         }
 
-        return memberships
+        return { outputEntity: currentEntity, modifiedEntity: memberships }
     }
 
     protected async buildOutput(currentEntity: School): Promise<void> {
@@ -549,6 +606,13 @@ export class AddUsersToSchools extends AddMembershipMutation<
             await mapSchoolToSchoolConnectionNode(currentEntity)
         )
     }
+}
+
+export interface RemoveUsersFromSchoolsEntityMap extends EntityMap<School> {
+    mainEntity: Map<string, School>
+    users: Map<string, User>
+    memberships: Map<string, SchoolMembership>
+    organizations: Map<string, Organization>
 }
 
 export class RemoveUsersFromSchools extends RemoveMembershipMutation<
@@ -582,12 +646,12 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
 
     generateEntityMaps = async (
         input: RemoveUsersFromSchoolInput[]
-    ): Promise<EntityMap<School>> =>
+    ): Promise<RemoveUsersFromSchoolsEntityMap> =>
         generateMapsForRemoveUsers(this.mainEntityIds, input)
 
     protected async authorize(
         _input: RemoveUsersFromSchoolInput[],
-        maps: EntityMap<School>
+        maps: RemoveUsersFromSchoolsEntityMap
     ): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
             {
@@ -598,11 +662,27 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
         )
     }
 
+    protected validationOverAllInputs(
+        inputs: RemoveUsersFromSchoolInput[],
+        entityMaps: RemoveUsersFromSchoolsEntityMap
+    ): {
+        validInputs: { index: number; input: RemoveUsersFromSchoolInput }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.schoolId),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate(
         index: number,
         currentEntity: School,
         currentInput: RemoveUsersFromSchoolInput,
-        maps: EntityMap<School>
+        maps: RemoveUsersFromSchoolsEntityMap
     ): APIError[] {
         // Retrieval
         const errors: APIError[] = []
@@ -622,7 +702,7 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
 
         for (const userId of userIds) {
             // User validation
-            const user = maps.users.get(userId) as User
+            const user = maps.users.get(userId)
 
             if (!user) {
                 errors.push(
@@ -652,23 +732,25 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
     }
 
     protected process(
-        _currentEntity: School,
         currentInput: RemoveUsersFromSchoolInput,
-        maps: EntityMap<School>
-    ): SchoolMembership[] {
+        maps: RemoveUsersFromSchoolsEntityMap,
+        index: number
+    ) {
         const { schoolId, userIds } = currentInput
         const memberships: SchoolMembership[] = []
+
+        const currentEntity = maps.mainEntity!.get(this.mainEntityIds[index])!
 
         for (const userId of userIds) {
             const membership = maps.memberships.get(
                 [schoolId, userId].toString()
-            ) as SchoolMembership
+            )!
 
             Object.assign(membership, this.partialEntity)
             memberships.push(membership)
         }
 
-        return memberships
+        return { outputEntity: currentEntity, others: memberships }
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
@@ -676,6 +758,14 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
             await mapSchoolToSchoolConnectionNode(currentEntity)
         )
     }
+}
+
+export interface AddClassesToSchoolsEntityMap extends EntityMap<School> {
+    mainEntity: Map<string, School>
+    organizations: Map<string, Organization>
+    subitems: Map<string, Class>
+    itemsSubitems: Map<string, Class>
+    itemsWithExistentSubitems: Map<string, Class[]>
 }
 
 export class AddClassesToSchools extends AddMutation<
@@ -698,12 +788,12 @@ export class AddClassesToSchools extends AddMutation<
 
     generateEntityMaps = async (
         input: AddClassesToSchoolInput[]
-    ): Promise<EntityMap<School>> =>
+    ): Promise<AddClassesToSchoolsEntityMap> =>
         generateMapsForAddingClasses(this.mainEntityIds, input)
 
     protected async authorize(
         _input: AddClassesToSchoolInput[],
-        maps: EntityMap<School>
+        maps: AddClassesToSchoolsEntityMap
     ): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
             {
@@ -714,11 +804,27 @@ export class AddClassesToSchools extends AddMutation<
         )
     }
 
+    protected validationOverAllInputs(
+        inputs: AddClassesToSchoolInput[],
+        entityMaps: AddClassesToSchoolsEntityMap
+    ): {
+        validInputs: { index: number; input: AddClassesToSchoolInput }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.schoolId),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate = (
         index: number,
         currentEntity: School,
         currentInput: AddClassesToSchoolInput,
-        maps: EntityMap<School>
+        maps: AddClassesToSchoolsEntityMap
     ): APIError[] => {
         const errors: APIError[] = []
         const { schoolId: itemId, classIds: subitemIds } = currentInput
@@ -728,7 +834,7 @@ export class AddClassesToSchools extends AddMutation<
         const subEntityKeyName = 'class_name'
 
         for (const subitemId of subitemIds) {
-            const subitem = maps.subitems.get(subitemId) as Class
+            const subitem = maps.subitems.get(subitemId)
             if (!subitem) {
                 errors.push(
                     createEntityAPIError(
@@ -761,24 +867,26 @@ export class AddClassesToSchools extends AddMutation<
         return errors
     }
 
-    protected process = (
-        currentEntity: School,
+    protected process(
         currentInput: AddClassesToSchoolInput,
-        maps: EntityMap<School>
-    ): School[] => {
+        maps: AddClassesToSchoolsEntityMap,
+        index: number
+    ) {
         const { schoolId: itemId, classIds: subitemIds } = currentInput
+
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
 
         const newSubitems: Class[] = []
         for (const subitemId of subitemIds) {
-            const subitem = maps.subitems.get(subitemId) as Class
+            const subitem = maps.subitems.get(subitemId)!
             newSubitems.push(subitem)
         }
-        const preexistentSubitems = maps.itemsWithExistentSubitems.get(itemId)
+        const preexistentSubitems = maps.itemsWithExistentSubitems.get(itemId)!
         currentEntity.classes = Promise.resolve([
-            ...(preexistentSubitems as Class[]),
+            ...preexistentSubitems,
             ...newSubitems,
         ])
-        return [currentEntity]
+        return { outputEntity: currentEntity }
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
@@ -786,6 +894,14 @@ export class AddClassesToSchools extends AddMutation<
             await mapSchoolToSchoolConnectionNode(currentEntity)
         )
     }
+}
+
+export interface AddProgramsToSchoolsEntityMap extends EntityMap<School> {
+    mainEntity: Map<string, School>
+    organizations: Map<string, Organization>
+    subitems: Map<string, Program>
+    itemsSubitems: Map<string, Program>
+    itemsWithExistentSubitems: Map<string, Program[]>
 }
 
 export class AddProgramsToSchools extends AddMutation<
@@ -806,9 +922,9 @@ export class AddProgramsToSchools extends AddMutation<
         this.mainEntityIds = input.map((val) => val.schoolId)
     }
 
-    generateEntityMaps = async (
+    async generateEntityMaps(
         input: AddProgramsToSchoolInput[]
-    ): Promise<EntityMap<School>> => {
+    ): Promise<AddProgramsToSchoolsEntityMap> {
         const itemIds = this.mainEntityIds
         const relations = 'programs'
         const addingIds = 'programIds'
@@ -871,7 +987,7 @@ export class AddProgramsToSchools extends AddMutation<
 
     protected async authorize(
         _input: AddProgramsToSchoolInput[],
-        maps: EntityMap<School>
+        maps: AddProgramsToSchoolsEntityMap
     ): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
             {
@@ -882,11 +998,27 @@ export class AddProgramsToSchools extends AddMutation<
         )
     }
 
+    protected validationOverAllInputs(
+        inputs: AddProgramsToSchoolInput[],
+        entityMaps: AddProgramsToSchoolsEntityMap
+    ): {
+        validInputs: { index: number; input: AddProgramsToSchoolInput }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.schoolId),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate = (
         index: number,
         currentEntity: School,
         currentInput: AddProgramsToSchoolInput,
-        maps: EntityMap<School>
+        maps: AddProgramsToSchoolsEntityMap
     ): APIError[] => {
         const errors: APIError[] = []
         const { schoolId: itemId, programIds: subitemIds } = currentInput
@@ -896,7 +1028,7 @@ export class AddProgramsToSchools extends AddMutation<
         const subEntityKeyName = 'name'
 
         for (const subitemId of subitemIds) {
-            const subitem = maps.subitems.get(subitemId) as Program
+            const subitem = maps.subitems.get(subitemId)
             if (!subitem) {
                 errors.push(
                     createEntityAPIError(
@@ -929,24 +1061,26 @@ export class AddProgramsToSchools extends AddMutation<
         return errors
     }
 
-    protected process = (
-        currentEntity: School,
+    protected process(
         currentInput: AddProgramsToSchoolInput,
-        maps: EntityMap<School>
-    ): School[] => {
+        maps: AddProgramsToSchoolsEntityMap,
+        index: number
+    ) {
         const { schoolId: itemId, programIds: subitemIds } = currentInput
+
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
 
         const newSubitems: Program[] = []
         for (const subitemId of subitemIds) {
-            const subitem = maps.subitems.get(subitemId) as Program
+            const subitem = maps.subitems.get(subitemId)!
             newSubitems.push(subitem)
         }
-        const preexistentSubitems = maps.itemsWithExistentSubitems.get(itemId)
+        const preexistentSubitems = maps.itemsWithExistentSubitems.get(itemId)!
         currentEntity.programs = Promise.resolve([
-            ...(preexistentSubitems as Program[]),
+            ...preexistentSubitems,
             ...newSubitems,
         ])
-        return [currentEntity]
+        return { outputEntity: currentEntity }
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
@@ -959,7 +1093,7 @@ export class AddProgramsToSchools extends AddMutation<
 async function generateMapsForCreate(
     input: CreateSchoolInput[],
     organizationIds: string[]
-): Promise<EntityMap<School>> {
+): Promise<CreateSchoolEntityMap> {
     const {
         matchingOrgsAndNames,
         matchingOrgsAndShortcodes,
@@ -1071,7 +1205,7 @@ async function generateMapsForRemoveUsers(
 async function generateMapsForAddingClasses(
     itemIds: string[],
     input: AddClassesToSchoolInput[]
-): Promise<EntityMap<School>> {
+): Promise<AddClassesToSchoolsEntityMap> {
     const relations = 'classes'
     const addingIds = 'classIds'
     const mainEntityName = 'School'
@@ -1128,6 +1262,14 @@ async function generateMapsForAddingClasses(
     }
 }
 
+export interface RemoveProgramsFromSchoolsEntityMap extends EntityMap<School> {
+    mainEntity: Map<string, School>
+    organizations: Map<string, Organization>
+    subitems: Map<string, Program>
+    itemsSubitems: Map<string, Program>
+    itemsWithExistentSubitems: Map<string, Program[]>
+}
+
 export class RemoveProgramsFromSchools extends AddMutation<
     School,
     RemoveProgramsFromSchoolInput,
@@ -1148,12 +1290,12 @@ export class RemoveProgramsFromSchools extends AddMutation<
 
     generateEntityMaps = async (
         input: RemoveProgramsFromSchoolInput[]
-    ): Promise<EntityMap<School>> =>
+    ): Promise<RemoveProgramsFromSchoolsEntityMap> =>
         generateMapsForAddingRemovingPrograms(this.mainEntityIds, input)
 
     protected async authorize(
         _input: RemoveProgramsFromSchoolInput[],
-        maps: EntityMap<School>
+        maps: RemoveProgramsFromSchoolsEntityMap
     ): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
             {
@@ -1164,17 +1306,33 @@ export class RemoveProgramsFromSchools extends AddMutation<
         )
     }
 
+    protected validationOverAllInputs(
+        inputs: RemoveProgramsFromSchoolInput[],
+        entityMaps: RemoveProgramsFromSchoolsEntityMap
+    ): {
+        validInputs: { index: number; input: RemoveProgramsFromSchoolInput }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.schoolId),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate = (
         index: number,
         currentEntity: School,
         currentInput: RemoveProgramsFromSchoolInput,
-        maps: EntityMap<School>
+        maps: RemoveProgramsFromSchoolsEntityMap
     ): APIError[] => {
         const errors: APIError[] = []
         const { schoolId, programIds } = currentInput
 
         for (const subitemId of programIds) {
-            const subitem = maps.subitems.get(subitemId) as Program
+            const subitem = maps.subitems.get(subitemId)
             if (!subitem) {
                 errors.push(
                     createEntityAPIError(
@@ -1207,21 +1365,24 @@ export class RemoveProgramsFromSchools extends AddMutation<
         return errors
     }
 
-    protected process = (
-        currentEntity: School,
+    protected process(
         currentInput: RemoveProgramsFromSchoolInput,
-        maps: EntityMap<School>
-    ): School[] => {
+        maps: RemoveProgramsFromSchoolsEntityMap,
+        index: number
+    ) {
         const { schoolId, programIds } = currentInput
 
         const preexistentSubitems = maps.itemsWithExistentSubitems.get(
             schoolId
-        ) as Program[]
-        const newSubitems = preexistentSubitems.filter((subitem) =>
-            programIds.includes(subitem.id)
+        )!
+        const newSubitems = preexistentSubitems.filter(
+            (subitem) => programIds.includes(subitem.id)!
         )
+
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+
         currentEntity.programs = Promise.resolve(newSubitems)
-        return [currentEntity]
+        return { outputEntity: currentEntity }
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
@@ -1234,7 +1395,7 @@ export class RemoveProgramsFromSchools extends AddMutation<
 async function generateMapsForAddingRemovingPrograms(
     itemIds: string[],
     input: RemoveProgramsFromSchoolInput[]
-): Promise<EntityMap<School>> {
+): Promise<RemoveProgramsFromSchoolsEntityMap> {
     const relations = 'programs'
     const addingIds = 'programIds'
     const mainEntityName = 'School'

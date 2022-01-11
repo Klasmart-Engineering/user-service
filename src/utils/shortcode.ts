@@ -1,5 +1,7 @@
 import { createHash } from 'crypto'
 import { config } from '../config/config'
+import { APIError } from '../types/errors/apiError'
+import { customErrors } from '../types/errors/customError'
 import clean from './clean'
 
 export const SHORTCODE_DEFAULT_MAXLEN = 10
@@ -33,15 +35,50 @@ export function generateShortCode(
     return result
 }
 
+export function newValidateShortCode(
+    entity: 'Class' | 'School' | 'Organization',
+    code: string | undefined,
+    index?: number,
+    maxlen = SHORTCODE_DEFAULT_MAXLEN
+): APIError[] {
+    const errors: APIError[] = []
+
+    if (code === undefined) {
+        return errors
+    }
+    if (code?.length > maxlen) {
+        errors.push(
+            new APIError({
+                code: customErrors.invalid_max_length.code,
+                message: customErrors.invalid_max_length.message,
+                variables: [],
+                entity,
+                index,
+            })
+        )
+    }
+    const shortcode_re = /^[A-Z|0-9]+$/
+    if (!code.match(shortcode_re)) {
+        errors.push(
+            new APIError({
+                code: customErrors.invalid_alphanumeric.code,
+                message: customErrors.invalid_alphanumeric.message,
+                attribute: 'shortcode',
+                variables: [],
+                entity,
+                index,
+            })
+        )
+    }
+    return errors
+}
+
 export function validateShortCode(
     code?: string,
     maxlen = SHORTCODE_DEFAULT_MAXLEN
 ): boolean {
-    const shortcode_re = /^[A-Z|0-9]+$/
-    if (code && code.length <= maxlen && code.match(shortcode_re)) {
-        return true
-    }
-    return false
+    // the entity value here doesn't matter as we don't surface the error message
+    return newValidateShortCode('Class', code, maxlen).length === 0
 }
 
 export function formatShortCode(

@@ -15,6 +15,7 @@ export class APIError extends Error implements IAPIError {
     variables: string[]
     entity?: string
     attribute?: string
+    attributeValue?: string
     otherAttribute?: string
     organizationName?: string
     entityName?: string

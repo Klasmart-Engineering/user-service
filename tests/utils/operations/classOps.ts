@@ -285,6 +285,11 @@ export const ADD_PROGRAMS_TO_CLASSES = gql`
         }
     }
 `
+export const CREATE_CLASSES = `mutation($input: [CreateClassInput!]!) {
+    createClasses(input: $input) {
+        ${CLASSES_MUTATION_RESULT}
+    }
+}`
 
 export async function updateClass(
     testClient: ApolloServerTestClient,

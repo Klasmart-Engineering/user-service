@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
 import { Connection, In } from 'typeorm'
+import faker from 'faker'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { Class } from '../../src/entities/class'
 import { Status } from '../../src/entities/status'
@@ -9,6 +10,7 @@ import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import {
     AddProgramsToClassInput,
     ClassConnectionNode,
+    CreateClassInput,
     DeleteClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
@@ -33,6 +35,7 @@ import {
     DELETE_CLASS,
     DELETE_CLASSES,
     ADD_PROGRAMS_TO_CLASSES,
+    CREATE_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASSES_CONNECTION,
@@ -57,6 +60,7 @@ import { UserPermissions } from '../../src/permissions/userPermissions'
 import { createProgram } from '../factories/program.factory'
 import { createClass as createClassFactory } from '../factories/class.factory'
 import { NIL_UUID } from '../utils/database'
+import { generateShortCode } from '../../src/utils/shortcode'
 
 interface IClassEdge {
     node: ClassConnectionNode
@@ -1213,6 +1217,50 @@ describe('acceptance.class', () => {
                 expect(classesUpdated).to.be.null
                 expect(errors).to.exist
             })
+        })
+    })
+    context('createClasses', () => {
+        let input: CreateClassInput[]
+
+        beforeEach(async () => {
+            input = [
+                {
+                    organizationId: org1Id,
+                    name: faker.random.word(),
+                    shortcode: generateShortCode(),
+                },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                CREATE_CLASSES,
+                { input },
+                getAdminAuthToken()
+            )
+            expect(response.status).to.eq(200)
+            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.data.createClasses.classes).to.have.lengthOf(
+                input.length
+            )
+        })
+
+        it('has mandatory name and organizationId input fields', async () => {
+            const response = await makeRequest(
+                request,
+                CREATE_CLASSES,
+                { input: [{}] },
+                getAdminAuthToken()
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "organizationId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "name" of required type "String!" was not provided.'
+            )
         })
     })
 })

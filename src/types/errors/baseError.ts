@@ -19,6 +19,7 @@ export interface LegacyErrorParams {
 export interface ErrorParams {
     entity?: string
     attribute?: string
+    attributeValue?: string
     otherAttribute?: string
     organizationName?: string
     entityName?: string
