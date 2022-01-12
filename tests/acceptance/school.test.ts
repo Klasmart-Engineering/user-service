@@ -592,32 +592,37 @@ describe('acceptance.school', () => {
             ]
         })
 
-        context('when data is requested in a correct way', () => {
-            it('should pass gql schema validation', async () => {
-                const response = await makeRequest(
-                    request,
-                    print(ADD_USERS_TO_SCHOOLS),
-                    { input },
-                    generateToken(userToPayload(adminUser))
-                )
-                expect(response.status).to.eq(200)
-                expect(
-                    response.body.data.addUsersToSchools.schools
-                ).to.have.lengthOf(1)
-            })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_USERS_TO_SCHOOLS),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.addUsersToSchools.schools
+            ).to.have.lengthOf(1)
         })
 
-        context('when input is invalid', () => {
-            it('should respond with errors', async () => {
-                const response = await makeRequest(
-                    request,
-                    print(ADD_USERS_TO_SCHOOLS),
-                    { input: [{ schoolId: 'abc' }] },
-                    generateToken(userToPayload(adminUser))
-                )
-                expect(response.status).to.eq(400)
-                expect(response.body.errors).to.exist
-            })
+        it('has mandatory schoolId, userIds & schoolRoleIds input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_USERS_TO_SCHOOLS),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.have.lengthOf(3)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "schoolId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "schoolRoleIds" of required type "[ID!]!" was not provided'
+            )
+            expect(response.body.errors[2].message).to.contain(
+                'Field "userIds" of required type "[ID!]!" was not provided.'
+            )
         })
     })
 
