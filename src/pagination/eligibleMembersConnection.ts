@@ -1,6 +1,8 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Brackets, SelectQueryBuilder } from 'typeorm'
+import { distinctMembers } from '../directives/isAdminUtils'
 import { User } from '../entities/user'
+import { PermissionName } from '../permissions/permissionNames'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     getWhereClauseFromFilter,
@@ -24,9 +26,13 @@ export interface EligibleMembersPaginationArgs extends IPaginationArgs<User> {
     classId: string
 }
 
+type ClassMembershipPermission =
+    | PermissionName.attend_live_class_as_a_teacher_186
+    | PermissionName.attend_live_class_as_a_student_187
+
 export async function eligibleMembersConnectionResolver(
     info: GraphQLResolveInfo,
-    permissionId: string,
+    permissionId: ClassMembershipPermission,
     {
         // classId is explicitly passed, as it is a mandatory parameter not an optional filter value
         classId,
@@ -103,11 +109,18 @@ function membersWithPermission(
 export async function eligibleMemberConnectionQuery(
     scope: SelectQueryBuilder<User>,
     classId: string,
-    permissionId: string,
+    permissionId: ClassMembershipPermission,
     filter?: IEntityFilter
 ) {
     scope = membersWithPermission(permissionId, classId, scope)
     scope = scopeToClasses(scope)
+
+    if (permissionId === 'attend_live_class_as_a_teacher_186') {
+        excludeMembers('teacher', scope, classId)
+    } else {
+        excludeMembers('student', scope, classId)
+    }
+
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
@@ -137,4 +150,22 @@ function scopeToClasses(
     )
 
     return scope
+}
+
+function excludeMembers(
+    memberType: 'student' | 'teacher',
+    scope: SelectQueryBuilder<User>,
+    classId: string
+) {
+    const table =
+        memberType === 'student'
+            ? 'user_classes_studying_class'
+            : 'user_classes_teaching_class'
+
+    const query = distinctMembers(table, 'classClassId', [classId])!
+    scope.setParameters({
+        ...scope.getParameters(),
+        ...query.getParameters(),
+    })
+    scope.andWhere(`"User"."user_id" NOT IN (${query!.getQuery()})`)
 }

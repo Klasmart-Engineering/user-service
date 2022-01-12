@@ -65,6 +65,7 @@ const usersCount = 50
 const classesCount = 2
 const rolesCount = 20
 let users: User[]
+let students: User[]
 let orgId: string
 let userIds: string[]
 let classIds: string[]
@@ -132,15 +133,15 @@ describe('acceptance.user', () => {
         userEmails = users.map(({ email }) => email ?? '')
 
         for (let i = 0; i < classesCount; i++) {
-            const uIds = [
-                userIds[i * 3],
-                userIds[i * 3 + 1],
-                userIds[i * 3 + 2],
-            ]
+            students = [users[i * 3], users[i * 3 + 1], users[i * 3 + 2]]
 
             const class_ = await createClass([], organization).save()
             classIds.push(class_.class_id)
-            await addStudentsToClass(class_.class_id, uIds, getAdminAuthToken())
+            await addStudentsToClass(
+                class_.class_id,
+                students.map((u) => u.user_id),
+                getAdminAuthToken()
+            )
         }
     })
 
@@ -858,7 +859,7 @@ describe('acceptance.user', () => {
                 )
                 expect(
                     response.body.data.eligibleStudentsConnection.edges.length
-                ).equals(50)
+                ).equals(users.length - students.length)
             })
         })
         context('When a user does not have membership', () => {
@@ -1010,7 +1011,7 @@ describe('acceptance.user', () => {
                     expect(
                         response.body.data.eligibleStudentsConnection.edges
                             .length
-                    ).equals(50)
+                    ).equals(users.length - students.length)
                 })
             }
         )
@@ -1084,7 +1085,7 @@ describe('acceptance.user', () => {
                     expect(
                         response.body.data.eligibleStudentsConnection.edges
                             .length
-                    ).equals(5)
+                    ).equals(5 - students.length)
                 })
             }
         )
