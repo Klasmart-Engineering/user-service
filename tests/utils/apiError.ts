@@ -138,10 +138,21 @@ export function compareErrors(error: APIError, expectedError: APIError) {
     expect(error.entity).to.eq(expectedError.entity)
     expect(error.entityName).to.eq(expectedError.entityName)
     expect(error.attribute).to.eq(expectedError.attribute)
+    expect(error.attributeValue).to.eq(expectedError.attributeValue)
     expect(error.otherAttribute).to.eq(expectedError.otherAttribute)
     expect(error.index).to.eq(expectedError.index)
     expect(error.min).to.eq(expectedError.min)
     expect(error.max).to.eq(expectedError.max)
+}
+
+export function compareMultipleErrors(
+    errors: APIError[],
+    expectedErrors: APIError[]
+) {
+    expect(errors.length).to.equal(expectedErrors.length)
+    for (let i = 0; i < errors.length; i++) {
+        compareErrors(errors[i], expectedErrors[i])
+    }
 }
 
 export async function expectAPIErrorCollection(

@@ -43,12 +43,14 @@ export interface AddOrganizationRolesToUserInput {
     organizationId: string
     roleIds: string[]
 }
+export type RemoveOrganizationRolesFromUserInput = AddOrganizationRolesToUserInput
 
-export interface RemoveOrganizationRolesFromUserInput {
+export interface AddSchoolRolesToUserInput {
     userId: string
-    organizationId: string
+    schoolId: string
     roleIds: string[]
 }
+export type RemoveSchoolRolesFromUserInput = AddSchoolRolesToUserInput
 
 export interface UsersMutationResult {
     users: CoreUserConnectionNode[]

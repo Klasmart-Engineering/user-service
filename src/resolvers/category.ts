@@ -19,12 +19,12 @@ import {
 } from '../types/graphQL/category'
 import {
     createDatabaseSaveAPIError,
-    createDuplicateInputAPIError,
+    createDuplicateAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
-} from '../utils/resolvers'
+} from '../utils/resolvers/errors'
 import { config } from '../config/config'
 import { categoryConnectionNodeFields } from '../pagination/categoriesConnection'
 import { subcategoryConnectionNodeFields } from '../pagination/subcategoriesConnection'
@@ -134,7 +134,7 @@ export async function updateCategories(
 
         if (duplicateInputId) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['id'],
                     'UpdateCategoryInput'
@@ -182,7 +182,7 @@ export async function updateCategories(
 
             if (duplicatedInputName) {
                 errors.push(
-                    createDuplicateInputAPIError(
+                    createDuplicateAttributeAPIError(
                         index,
                         ['name'],
                         'UpdateCategoryInput'
@@ -362,7 +362,7 @@ export async function createCategories(
 
         if (categoriesInputIsDuplicated) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['organizationId', 'name'],
                     'CreateCategoryInput'
@@ -621,7 +621,7 @@ export async function removeSubcategoriesFromCategories(
 
         if (inputIdIsDuplicate) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['categoryId'],
                     'RemoveSubcategoriesFromCategoryInput'
@@ -641,7 +641,7 @@ export async function removeSubcategoriesFromCategories(
 
         if (subcategoryIdsDuplicate) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['subcategoryIds'],
                     'RemoveSubcategoriesFromCategoryInput.subcategoryIds'

@@ -23,8 +23,8 @@ import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
 import {
-    createMultipleSchools,
-    createSchool as createFactorySchool,
+    createSchools,
+    createSchool as createSchoolFactory,
 } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createUser } from '../factories/user.factory'
@@ -216,7 +216,7 @@ describe('acceptance.school', () => {
 
             wizardUser = await createUser().save()
             wizardOrg = await createOrganization().save()
-            wizardingSchool = await createFactorySchool(
+            wizardingSchool = await createSchoolFactory(
                 wizardOrg,
                 'Hogwarts'
             ).save()
@@ -309,16 +309,16 @@ describe('acceptance.school', () => {
 
     context('schoolNode', () => {
         context('when requested school exists', () => {
-            it('should respond succesfully', async () => {
+            it('should respond successfully', async () => {
                 const schoolResponse = await makeConnectionQuery()
                 const schoolsEdges =
                     schoolResponse.body.data.schoolsConnection.edges
-                const schoolId = schoolsEdges[0].node.id
-                const response = await makeNodeQuery(schoolId)
+                const expectedSchoolNodeId = schoolsEdges[0].node.id
+                const response = await makeNodeQuery(expectedSchoolNodeId)
                 const schoolNode = response.body.data.schoolNode
 
                 expect(response.status).to.eq(200)
-                expect(schoolNode.id).to.equal(schoolId)
+                expect(schoolNode.id).to.equal(expectedSchoolNodeId)
             })
         })
 
@@ -415,7 +415,7 @@ describe('acceptance.school', () => {
 
             const schools = []
             for (let i = 0; i < schoolsCount; i++) {
-                schools.push(await createFactorySchool().save())
+                schools.push(await createSchoolFactory().save())
             }
 
             input = []
@@ -517,18 +517,18 @@ describe('acceptance.school', () => {
         })
 
         const makeUpdateSchoolsMutation = async (
-            input: UpdateSchoolInput[]
+            mutationInput: UpdateSchoolInput[]
         ) => {
             return await makeRequest(
                 request,
                 print(UPDATE_SCHOOLS),
-                { input },
+                { input: mutationInput },
                 getAdminAuthToken()
             )
         }
 
         context('when input is sent in a correct way', () => {
-            it('should respond succesfully', async () => {
+            it('should respond successfully', async () => {
                 const response = await makeUpdateSchoolsMutation(input)
                 const schools = response.body.data.updateSchools.schools
                 expect(response.status).to.eq(200)
@@ -658,12 +658,12 @@ describe('acceptance.school', () => {
         const programs: Program[] = []
 
         const makeAddProgramsToSchoolsMutation = async (
-            input: AddProgramsToSchoolInput[]
+            mutationInput: AddProgramsToSchoolInput[]
         ) => {
             return await makeRequest(
                 request,
                 print(ADD_PROGRAMS_TO_SCHOOLS),
-                { input },
+                { input: mutationInput },
                 generateToken(userToPayload(adminUser))
             )
         }
@@ -679,7 +679,7 @@ describe('acceptance.school', () => {
 
             const schools = []
             for (let i = 0; i < schoolsCount; i++) {
-                schools.push(await createFactorySchool().save())
+                schools.push(await createSchoolFactory().save())
             }
 
             input = []
@@ -722,12 +722,12 @@ describe('acceptance.school', () => {
         let programs: Program[] = []
 
         const makeRemoveProgramsFromSchoolsMutation = async (
-            input: RemoveProgramsFromSchoolInput[]
+            mutationInput: RemoveProgramsFromSchoolInput[]
         ) => {
             return await makeRequest(
                 request,
                 print(REMOVE_PROGRAMS_FROM_SCHOOLS),
-                { input },
+                { input: mutationInput },
                 generateToken(userToPayload(adminUser))
             )
         }
@@ -737,7 +737,7 @@ describe('acceptance.school', () => {
                 email: UserPermissions.ADMIN_EMAILS[0],
             }).save()
             programs = createPrograms(3)
-            const schools = createMultipleSchools(3)
+            const schools = createSchools(3)
             await connection.manager.save([...schools, ...programs])
             schools[0].programs = Promise.resolve(programs)
             await schools[0].save()

@@ -34,12 +34,12 @@ import {
 import { createServer } from '../../src/utils/createServer'
 import { createCategory } from '../factories/category.factory'
 import {
-    createDuplicateInputAPIError,
+    createDuplicateAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
-} from '../../src/utils/resolvers'
+} from '../../src/utils/resolvers/errors'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
@@ -525,7 +525,7 @@ describe('category', () => {
                     const expectedErrors = Array.from(
                         [input[1], input[2]],
                         (_, index) =>
-                            createDuplicateInputAPIError(
+                            createDuplicateAttributeAPIError(
                                 index + 1,
                                 ['organizationId', 'name'],
                                 'CreateCategoryInput'
@@ -1004,7 +1004,7 @@ describe('category', () => {
                             const expectedErrors = Array.from(
                                 [input[1], input[2]],
                                 (_, index) => {
-                                    return createDuplicateInputAPIError(
+                                    return createDuplicateAttributeAPIError(
                                         index + 1,
                                         ['id'],
                                         'UpdateCategoryInput'
@@ -1043,7 +1043,7 @@ describe('category', () => {
                             const expectedErrors = Array.from(
                                 catsToUpdate.slice(1, catsToUpdate.length),
                                 (_, index) => {
-                                    return createDuplicateInputAPIError(
+                                    return createDuplicateAttributeAPIError(
                                         index + 1,
                                         ['name'],
                                         'UpdateCategoryInput'
@@ -2489,7 +2489,7 @@ describe('category', () => {
                             const expectedErrors = Array.from(
                                 [input[1], input[2]],
                                 (_, index) => {
-                                    return createDuplicateInputAPIError(
+                                    return createDuplicateAttributeAPIError(
                                         index + 1,
                                         ['categoryId'],
                                         'RemoveSubcategoriesFromCategoryInput'
@@ -2587,7 +2587,7 @@ describe('category', () => {
                             const expectedErrors = Array.from(
                                 input,
                                 (_, index) =>
-                                    createDuplicateInputAPIError(
+                                    createDuplicateAttributeAPIError(
                                         index,
                                         ['subcategoryIds'],
                                         'RemoveSubcategoriesFromCategoryInput.subcategoryIds'

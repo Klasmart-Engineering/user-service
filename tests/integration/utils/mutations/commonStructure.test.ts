@@ -15,7 +15,7 @@ import {
 } from '../../../../src/types/graphQL/category'
 import { mutate } from '../../../../src/utils/mutations/commonStructure'
 import { createServer } from '../../../../src/utils/createServer'
-import { createInputLengthAPIError } from '../../../../src/utils/resolvers'
+import { createInputLengthAPIError } from '../../../../src/utils/resolvers/errors'
 import { createCategories } from '../../../factories/category.factory'
 import {
     createOrganization,

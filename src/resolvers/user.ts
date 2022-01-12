@@ -1,5 +1,4 @@
-import { getManager, In, WhereExpression } from 'typeorm'
-import { Organization } from '../entities/organization'
+import { getManager, WhereExpression } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Role } from '../entities/role'
 import { Status } from '../entities/status'
@@ -16,16 +15,18 @@ import {
     APIErrorCollection,
     validateAPICall,
 } from '../types/errors/apiError'
+import { v4 as uuid_v4 } from 'uuid'
 import { customErrors } from '../types/errors/customError'
 import {
     AddOrganizationRolesToUserInput,
     RemoveOrganizationRolesFromUserInput,
+    RemoveSchoolRolesFromUserInput,
     UpdateUserInput,
+    UserContactInfo,
     UsersMutationResult,
 } from '../types/graphQL/user'
 import { Brackets, EntityManager, getConnection } from 'typeorm'
-import { UserContactInfo, CreateUserInput } from '../types/graphQL/user'
-import { v4 as uuid_v4 } from 'uuid'
+import { CreateUserInput } from '../types/graphQL/user'
 import { UserConnectionNode } from '../types/graphQL/user'
 import {
     createUserSchema,
@@ -35,9 +36,20 @@ import clean from '../utils/clean'
 import {
     createInputLengthAPIError,
     createUnauthorizedAPIError,
-    getMembershipMapKey,
-} from '../utils/resolvers'
+} from '../utils/resolvers/errors'
+import { validate } from '../utils/resolvers/inputValidation'
+import { getMap, SchoolMembershipMap } from '../utils/resolvers/entityMaps'
 import { config } from '../config/config'
+import {
+    EntityMap,
+    filterInvalidInputs,
+    ProcessedResult,
+    RemoveMutation,
+    validateNoDuplicateAttribute,
+} from '../utils/mutations/commonStructure'
+import { School } from '../entities/school'
+import { SchoolMembership } from '../entities/schoolMembership'
+import { ObjMap } from '../utils/stringUtils'
 
 export function addOrganizationRolesToUsers(
     args: { input: AddOrganizationRolesToUserInput[] },
@@ -86,134 +98,61 @@ async function modifyOrganizationRoles(
     )
 
     // Preloading
-    const preloadedUserArray = User.findByIds(
-        args.input.map((val) => val.userId),
-        { where: { status: Status.ACTIVE } }
+    const orgIds = args.input.map((val) => val.organizationId)
+    const userIds = args.input.map((val) => val.userId)
+    const orgMapPromise = getMap.organization(orgIds)
+    const userMapPromise = getMap.user(userIds)
+    const roleMapPromise = getMap.role(args.input.flatMap((val) => val.roleIds))
+    const membershipMapPromise = getMap.membership.organization(
+        orgIds,
+        userIds,
+        ['roles']
     )
-    const preloadedRoleArray = Role.findByIds(
-        args.input.map((val) => val.roleIds).flat(),
-        { where: { status: Status.ACTIVE } }
-    )
-    const preloadedOrganizationArray = Organization.findByIds(
-        args.input.map((val) => val.organizationId),
-        { where: { status: Status.ACTIVE } }
-    )
-    const preloadedMembershipArray = OrganizationMembership.find({
-        where: {
-            user_id: In(args.input.map((val) => val.userId)),
-            organization_id: In(args.input.map((val) => val.organizationId)),
-            status: Status.ACTIVE,
-        },
-        relations: ['roles'],
-    })
-    const preloadedRoles = new Map(
-        (await preloadedRoleArray).map((i) => [i.role_id, i])
-    )
-    const preloadedUsers = new Map(
-        (await preloadedUserArray).map((i) => [i.user_id, i])
-    )
-    const preloadedOrganizations = new Map(
-        (await preloadedOrganizationArray).map((i) => [i.organization_id, i])
-    )
-    const preloadedMemberships = new Map(
-        (await preloadedMembershipArray).map((i) => [
-            getMembershipMapKey(i.organization_id, i.user_id),
-            i,
-        ])
-    )
+    const preloadedOrganizations = await orgMapPromise
+    const preloadedUsers = await userMapPromise
+    const preloadedRoles = await roleMapPromise
+    const preloadedMemberships = await membershipMapPromise
 
     // Process inputs
     const errors: APIError[] = []
     const memberships: OrganizationMembership[] = []
     const output: CoreUserConnectionNode[] = []
     for (const [index, subArgs] of args.input.entries()) {
-        // Organization validation
         const { organizationId, userId, roleIds } = subArgs
 
-        // Role validation
-        const roles: Role[] = []
-        const missingRoleIds: string[] = []
-        for (const roleId of roleIds) {
-            const role = preloadedRoles.get(roleId)
-            if (role) roles.push(role)
-            else missingRoleIds.push(roleId)
-        }
-        if (missingRoleIds.length) {
-            errors.push(
-                new APIError({
-                    code: customErrors.nonexistent_or_inactive.code,
-                    message: customErrors.nonexistent_or_inactive.message,
-                    variables: ['role_id'],
-                    entity: 'Role',
-                    attribute: 'IDs',
-                    otherAttribute: missingRoleIds.toString(),
-                    index,
-                })
-            )
-        }
-
-        // User validation
-        const user = preloadedUsers.get(userId)
-        if (!user) {
-            errors.push(
-                new APIError({
-                    code: customErrors.nonexistent_or_inactive.code,
-                    message: customErrors.nonexistent_or_inactive.message,
-                    variables: ['user_id'],
-                    entity: 'User',
-                    attribute: 'ID',
-                    otherAttribute: userId,
-                    index,
-                })
-            )
-        }
-
-        // Organization validation
-        const org = preloadedOrganizations.get(organizationId)
-        if (!org) {
-            errors.push(
-                new APIError({
-                    code: customErrors.nonexistent_or_inactive.code,
-                    message: customErrors.nonexistent_or_inactive.message,
-                    variables: ['organization_id'],
-                    entity: 'Organization',
-                    attribute: 'ID',
-                    otherAttribute: organizationId,
-                    index,
-                })
-            )
-        }
-
-        // Organization Membership validation
-        if (!org || !user) continue
-        const dbMembership = preloadedMemberships.get(
-            getMembershipMapKey(organizationId, userId)
+        const orgs = validate.nonExistent.organization(
+            index,
+            [organizationId],
+            preloadedOrganizations
         )
-        if (!dbMembership) {
-            errors.push(
-                new APIError({
-                    code: customErrors.nonexistent_child.code,
-                    message: customErrors.nonexistent_child.message,
-                    variables: ['organization_id', 'user_id'],
-                    entity: 'User',
-                    entityName: user?.user_name() || userId,
-                    parentEntity: 'Organization',
-                    parentName: org?.organization_name || organizationId,
-                    index,
-                })
-            )
-        }
+        const roles = validate.nonExistent.role(index, roleIds, preloadedRoles)
+        const users = validate.nonExistent.user(index, [userId], preloadedUsers)
+        errors.push(...orgs.errors, ...roles.errors, ...users.errors)
 
-        // Add/remove roles in organization membership
-        if (errors.length > 0 || !dbMembership) continue
-        const dbMembershipRoles = (await dbMembership.roles) || [] // should already be fetched
-        dbMembership.roles = Promise.resolve(
-            roleModificationFn(dbMembershipRoles, roles)
-        )
-        memberships.push(dbMembership)
+        if (!users.values.length) continue
+        for (const org of orgs.values) {
+            const dbMemberships = validate.nonExistentChild.organization(
+                index,
+                org,
+                users.values,
+                preloadedMemberships
+            )
+            if (dbMemberships.errors) errors.push(...dbMemberships.errors)
+
+            for (const dbMembership of dbMemberships.values) {
+                if (errors.length > 0) continue
+                // eslint-disable-next-line no-await-in-loop
+                const dbMembershipRoles = (await dbMembership.roles) || [] // already fetched
+                dbMembership.roles = Promise.resolve(
+                    roleModificationFn(dbMembershipRoles, roles.values)
+                )
+                memberships.push(dbMembership)
+            }
+        }
 
         // Build output
-        output.push(mapUserToUserConnectionNode(user))
+        if (errors.length > 0) continue
+        output.push(mapUserToUserConnectionNode(users.values[0]))
     }
 
     if (errors.length > 0) throw new APIErrorCollection(errors)
@@ -230,6 +169,169 @@ async function modifyOrganizationRoles(
     }
 
     return { users: output }
+}
+
+export interface RemoveSchoolRolesFromUsersEntityMap extends EntityMap<User> {
+    mainEntity: Map<string, User>
+    schools: Map<string, School>
+    roles: Map<string, Role>
+    memberships: SchoolMembershipMap
+    membershipRoles: ObjMap<{ schoolId: string; userId: string }, Role[]>
+}
+
+export class RemoveSchoolRolesFromUsers extends RemoveMutation<
+    User,
+    RemoveSchoolRolesFromUserInput,
+    UsersMutationResult,
+    SchoolMembership
+> {
+    protected EntityType = User
+    protected inputTypeName = 'RemoveSchoolRolesFromUserInput'
+    protected mainEntityIds: string[]
+    protected output: UsersMutationResult = { users: [] }
+
+    constructor(
+        input: RemoveSchoolRolesFromUserInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((i) => i.userId)
+    }
+
+    async generateEntityMaps(
+        input: RemoveSchoolRolesFromUserInput[]
+    ): Promise<RemoveSchoolRolesFromUsersEntityMap> {
+        // Kick off db requests
+        const schoolIds = input.map((i) => i.schoolId)
+        const userIds = input.map((i) => i.userId)
+        const schoolMap = getMap.school(schoolIds, ['organization'])
+        const userMap = getMap.user(userIds)
+        const roleMap = getMap.role(input.flatMap((i) => i.roleIds))
+        const membershipMap = getMap.membership.school(schoolIds, userIds, [
+            'roles',
+        ])
+        // Make map for memberships' roles (does not need to query db)
+        const membershipRoles = new ObjMap<
+            { schoolId: string; userId: string },
+            Role[]
+        >()
+        for (const [key, membership] of (await membershipMap).entries()) {
+            if (membership.roles) {
+                // eslint-disable-next-line no-await-in-loop
+                membershipRoles.set(key, await membership.roles)
+            }
+        }
+        return {
+            mainEntity: await userMap,
+            schools: await schoolMap,
+            roles: await roleMap,
+            memberships: await membershipMap,
+            membershipRoles,
+        }
+    }
+
+    async authorize(
+        input: RemoveSchoolRolesFromUserInput[],
+        entityMaps: RemoveSchoolRolesFromUsersEntityMap
+    ): Promise<void> {
+        const school_ids = input.map((i) => i.schoolId)
+        const schoolMap = entityMaps.schools
+        const orgIdPromises = input
+            .map((i) =>
+                schoolMap
+                    .get(i.schoolId)
+                    ?.organization?.then((o) => o.organization_id)
+            )
+            .filter((op): op is Promise<string> => op !== undefined)
+
+        await this.permissions.rejectIfNotAllowed(
+            { organization_ids: await Promise.all(orgIdPromises), school_ids },
+            PermissionName.edit_users_40330
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: RemoveSchoolRolesFromUserInput[]
+    ): {
+        validInputs: { index: number; input: RemoveSchoolRolesFromUserInput }[]
+        apiErrors: APIError[]
+    } {
+        const failedDuplicateInputs = validateNoDuplicateAttribute(
+            inputs.map((i) => {
+                return { entityId: i.schoolId, attributeValue: i.userId }
+            }),
+            'School',
+            'user_id'
+        )
+        return filterInvalidInputs(inputs, [failedDuplicateInputs])
+    }
+
+    validate(
+        index: number,
+        _currentEntity: User | undefined,
+        currentInput: RemoveSchoolRolesFromUserInput,
+        entityMaps: RemoveSchoolRolesFromUsersEntityMap
+    ): APIError[] {
+        const { userId, schoolId, roleIds } = currentInput
+        const errors: APIError[] = []
+
+        const schoolMap = entityMaps.schools
+        const schools = validate.nonExistent.school(
+            index,
+            [schoolId],
+            schoolMap
+        )
+        const userMap = entityMaps.mainEntity
+        const users = validate.nonExistent.user(index, [userId], userMap)
+        const roleMap = entityMaps.roles
+        const roles = validate.nonExistent.role(index, roleIds, roleMap)
+        errors.push(...schools.errors, ...users.errors, ...roles.errors)
+
+        if (!users.values.length) return errors
+        for (const school of schools.values) {
+            const membership = validate.nonExistentChild.school(
+                index,
+                school,
+                users.values,
+                entityMaps.memberships
+            )
+            if (membership.errors.length) errors.push(...membership.errors)
+        }
+
+        return errors
+    }
+
+    protected process(
+        currentInput: RemoveSchoolRolesFromUserInput,
+        maps: RemoveSchoolRolesFromUsersEntityMap,
+        index: number
+    ): ProcessedResult<User, SchoolMembership> {
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+        const { userId, schoolId, roleIds } = currentInput
+        const roleIdsSet = new Set(roleIds)
+        const dbMembership = maps.memberships.get({ schoolId, userId })!
+        const dbMembershipRoles = maps.membershipRoles.get({
+            schoolId,
+            userId,
+        })!
+        dbMembership.roles = Promise.resolve(
+            dbMembershipRoles.filter((dmr) => !roleIdsSet.has(dmr.role_id))
+        )
+        return { outputEntity: currentEntity, modifiedEntity: [dbMembership] }
+    }
+
+    protected async applyToDatabase(
+        results: ProcessedResult<User, SchoolMembership>[]
+    ): Promise<void> {
+        const saveEntities = results
+            .flatMap((r) => r.modifiedEntity)
+            .filter((r): r is SchoolMembership => r !== undefined)
+        await getManager().save(saveEntities)
+    }
+
+    protected buildOutput = async (currentEntity: User): Promise<void> => {
+        this.output.users.push(mapUserToUserConnectionNode(currentEntity))
+    }
 }
 
 // Uses the same "clean.xxxx()" calls as the csv functions do
@@ -364,7 +466,7 @@ function buildListOfExistingUserErrors(
 }
 
 // We build a key for a map, I am using maps to reduce the looping through arrays to
-// a minumum when looking up values
+// a minimum when looking up values
 function makeLookupKey(
     given: string | undefined | null,
     family: string | undefined | null,

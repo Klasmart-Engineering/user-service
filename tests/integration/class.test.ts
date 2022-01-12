@@ -77,7 +77,7 @@ import {
 } from '../factories/user.factory'
 import {
     createClass as createClassFactory,
-    createClasses,
+    createClasses as createClassesFactory,
 } from '../factories/class.factory'
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createAgeRange } from '../factories/ageRange.factory'
@@ -105,8 +105,8 @@ import { customErrors } from '../../src/types/errors/customError'
 import { ObjMap } from '../../src/utils/stringUtils'
 import {
     createDuplicateChildEntityAttributeAPIError,
-    createDuplicateInputAPIError,
-} from '../../src/utils/resolvers'
+    createDuplicateAttributeAPIError,
+} from '../../src/utils/resolvers/errors'
 
 use(chaiAsPromised)
 
@@ -484,7 +484,7 @@ describe('class', () => {
                 },
                 orgIds: string[]
             ) => {
-                const createClasses = new CreateClasses([], userCtx.permissions)
+                const mutation = new CreateClasses([], userCtx.permissions)
 
                 const input = orgIds.map((orgId) => {
                     return {
@@ -493,7 +493,7 @@ describe('class', () => {
                     }
                 })
 
-                return createClasses.authorize(input)
+                return mutation.authorize(input)
             }
 
             it('checks the correct permission', async () => {
@@ -610,7 +610,11 @@ describe('class', () => {
                 expect(validInputs[1].input.name).to.eq(inputs[2].name)
                 expect(validInputs[1].index).to.eq(2)
 
-                const error = createDuplicateInputAPIError(1, ['name'], 'class')
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['name'],
+                    'class'
+                )
 
                 expect(apiErrors.length).to.eq(1)
                 compareErrors(apiErrors[0], error)
@@ -632,7 +636,7 @@ describe('class', () => {
                 expect(validInputs[1].input).to.deep.eq(inputs[2])
                 expect(validInputs[1].index).to.eq(2)
 
-                const error = createDuplicateInputAPIError(
+                const error = createDuplicateAttributeAPIError(
                     1,
                     ['shortcode'],
                     'class'
@@ -840,7 +844,7 @@ describe('class', () => {
                 outputEntity,
             }: {
                 outputEntity: Class
-            } = await createClasses.process(input, entityMap)
+            } = createClasses.process(input, entityMap)
             expect(outputEntity.class_name).to.eq(input.name)
             expect(outputEntity.shortcode).to.eq(input.shortcode)
             expect((await outputEntity.organization)?.organization_id).to.eq(
@@ -4978,7 +4982,7 @@ describe('class', () => {
                     await deleteClasses(smallInput, adminUser)
                     expect(connection.logger.count).to.equal(dbCallCount)
 
-                    const classes = await Class.save(createClasses(50))
+                    const classes = await Class.save(createClassesFactory(50))
                     const bigInput = classes.map((c) => {
                         return { id: c.class_id }
                     })
@@ -5155,7 +5159,7 @@ describe('class', () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
-            classes = createClasses(3)
+            classes = createClassesFactory(3)
             programs = createPrograms(3, organization)
             await connection.manager.save([...classes, ...programs])
             input = [

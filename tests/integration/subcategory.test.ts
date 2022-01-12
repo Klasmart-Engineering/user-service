@@ -44,7 +44,7 @@ import {
 } from '../utils/operations/subcategoryOps'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import { subcategoryConnectionNodeFields } from '../../src/pagination/subcategoriesConnection'
-import { createInputLengthAPIError } from '../../src/utils/resolvers'
+import { createInputLengthAPIError } from '../../src/utils/resolvers/errors'
 import { NIL_UUID } from '../utils/database'
 import { config } from '../../src/config/config'
 import { buildPermissionError } from '../utils/errors'

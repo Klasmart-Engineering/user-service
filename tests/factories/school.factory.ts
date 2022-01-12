@@ -10,7 +10,6 @@ export function createSchool(
     name?: string
 ) {
     const school = new School()
-
     school.school_name = !name ? faker.random.word() : name
     school.organization = Promise.resolve(org)
     school.shortcode = generateShortCode()
@@ -18,10 +17,7 @@ export function createSchool(
     return school
 }
 
-export const createMultipleSchools = (length: number): School[] => {
-    const schools: School[] = []
-    for (let x = 0; x < length; x++) {
-        schools.push(createSchool())
-    }
-    return schools
-}
+export const createSchools = (length: number, org?: Organization) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createSchool(org))

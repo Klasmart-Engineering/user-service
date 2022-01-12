@@ -422,7 +422,6 @@ describe('organization', () => {
                     undefined,
                     { authorization: getAdminAuthToken() }
                 )
-
                 expect(cls).to.be.null
                 const dbOrg = await Organization.findOneOrFail(organizationId)
                 const orgClasses = (await dbOrg.classes) || []
@@ -7091,6 +7090,7 @@ describe('organization', () => {
                     organizationRoleIds,
                 } = orgInputs
 
+                // eslint-disable-next-line no-await-in-loop
                 const dbMemberships = await OrganizationMembership.find({
                     where: {
                         organization_id: organizationId,
@@ -7113,6 +7113,7 @@ describe('organization', () => {
                 // Check that each entry has the same set of roles
                 for (const membership of dbMemberships) {
                     const dbRoles = new Set(
+                        // eslint-disable-next-line no-await-in-loop
                         (await membership.roles)?.map((val) => val.role_id)
                     )
                     const inputRoles = new Set(organizationRoleIds)
@@ -7338,6 +7339,7 @@ describe('organization', () => {
             for (const orgInputs of input) {
                 const { organizationId, userIds } = orgInputs
 
+                // eslint-disable-next-line no-await-in-loop
                 const dbMemberships = await OrganizationMembership.find({
                     where: {
                         organization_id: organizationId,

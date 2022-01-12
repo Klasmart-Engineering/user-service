@@ -34,12 +34,12 @@ import {
 import { Class } from '../entities/class'
 import {
     createEntityAPIError,
-    createDuplicateInputAPIError,
+    createDuplicateAttributeAPIError,
     createNonExistentOrInactiveEntityAPIError,
-    getMembershipMapKey,
-} from '../utils/resolvers'
+} from '../utils/resolvers/errors'
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
 import { config } from '../config/config'
+import { getMembershipMapKey } from '../utils/resolvers/entityMaps'
 import { Program } from '../entities/program'
 
 export interface CreateSchoolEntityMap extends EntityMap<School> {
@@ -226,6 +226,7 @@ export class UpdateSchools extends UpdateMutation<
         const matchingOrgsAndNames = new Map<string, School>()
         const matchingOrgsAndShortcodes = new Map<string, School>()
         for (const s of await matchingPreloadedSchoolArray) {
+            // eslint-disable-next-line no-await-in-loop
             const orgId = (await s.organization)?.organization_id || ''
             matchingOrgsAndNames.set([orgId, s.school_name].toString(), s)
             matchingOrgsAndShortcodes.set([orgId, s.shortcode].toString(), s)
@@ -246,6 +247,7 @@ export class UpdateSchools extends UpdateMutation<
     ) {
         const organizationIds: string[] = []
         for (const c of entityMaps.mainEntity.values()) {
+            // eslint-disable-next-line no-await-in-loop
             const organizationId = (await c.organization)?.organization_id
             if (organizationId) organizationIds.push(organizationId)
         }
@@ -385,6 +387,7 @@ export class DeleteSchools extends DeleteMutation<
     ) {
         const organizationIds: string[] = []
         for (const c of entityMaps.mainEntity.values()) {
+            // eslint-disable-next-line no-await-in-loop
             const organizationId = (await c.organization)?.organization_id
             if (organizationId) organizationIds.push(organizationId)
         }
@@ -485,7 +488,7 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
 
         if (uniqueUserIds.size < userIds.length) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['userIds'],
                     'RemoveUsersFromSchoolInput'
@@ -674,9 +677,9 @@ export class AddClassesToSchools extends AddMutation<
             const subitem = maps.subitems.get(subitemId)!
             newSubitems.push(subitem)
         }
-        const preexistentSubitems = maps.itemsWithExistentSubitems.get(itemId)!
+        const preExistentSubitems = maps.itemsWithExistentSubitems.get(itemId)!
         currentEntity.classes = Promise.resolve([
-            ...preexistentSubitems,
+            ...preExistentSubitems,
             ...newSubitems,
         ])
         return { outputEntity: currentEntity }
@@ -722,7 +725,7 @@ export class AddProgramsToSchools extends AddMutation<
         const relations = 'programs'
         const addingIds = 'programIds'
         const mainEntityName = 'School'
-        const mainitemId = 'school_id'
+        const mainItemId = 'school_id'
         const subitemId = 'id'
 
         const preloadedItemArray = School.findByIds(itemIds, {
@@ -738,12 +741,12 @@ export class AddProgramsToSchools extends AddMutation<
         for (const item of await preloadedItemArray) {
             // eslint-disable-next-line no-await-in-loop
             const subitems = (await item.programs) || []
-            itemsWithExistentSubitems.set(item[mainitemId], subitems)
+            itemsWithExistentSubitems.set(item[mainItemId], subitems)
             if (subitems.length > 0) {
                 for (const subitem of subitems) {
                     itemsSubitems.set(
                         getMembershipMapKey(
-                            item[mainitemId],
+                            item[mainItemId],
                             subitem[subitemId]
                         ),
                         subitem
@@ -755,14 +758,14 @@ export class AddProgramsToSchools extends AddMutation<
         const preloadedOrganizationArray = Organization.createQueryBuilder()
             .select('Organization.organization_id')
             .innerJoin(`Organization.schools`, mainEntityName)
-            .where(`"${mainEntityName}"."${mainitemId}" IN (:...itemIds)`, {
+            .where(`"${mainEntityName}"."${mainItemId}" IN (:...itemIds)`, {
                 itemIds,
             })
             .getMany()
 
         return {
             mainEntity: new Map(
-                (await preloadedItemArray).map((i) => [i[mainitemId], i])
+                (await preloadedItemArray).map((i) => [i[mainItemId], i])
             ),
             subitems: new Map(
                 (await preloadedSubitemsArray).map((i) => [i[subitemId], i])
@@ -868,9 +871,9 @@ export class AddProgramsToSchools extends AddMutation<
             const subitem = maps.subitems.get(subitemId)!
             newSubitems.push(subitem)
         }
-        const preexistentSubitems = maps.itemsWithExistentSubitems.get(itemId)!
+        const preExistentSubitems = maps.itemsWithExistentSubitems.get(itemId)!
         currentEntity.programs = Promise.resolve([
-            ...preexistentSubitems,
+            ...preExistentSubitems,
             ...newSubitems,
         ])
         return { outputEntity: currentEntity }
@@ -932,6 +935,7 @@ const getMatchingEntities = async (
     const matchingOrgsAndNames = new Map<string, School>()
     const matchingOrgsAndShortcodes = new Map<string, School>()
     for (const s of await matchingPreloadedSchoolArray) {
+        // eslint-disable-next-line no-await-in-loop
         const orgId = (await s.organization)?.organization_id || ''
         matchingOrgsAndNames.set([orgId, s.school_name].toString(), s)
         matchingOrgsAndShortcodes.set([orgId, s.shortcode].toString(), s)
@@ -1002,7 +1006,7 @@ async function generateMapsForAddingClasses(
     const relations = 'classes'
     const addingIds = 'classIds'
     const mainEntityName = 'School'
-    const mainitemId = 'school_id'
+    const mainItemId = 'school_id'
     const subitemId = 'class_id'
 
     const preloadedItemArray = School.findByIds(itemIds, {
@@ -1018,11 +1022,11 @@ async function generateMapsForAddingClasses(
     for (const item of await preloadedItemArray) {
         // eslint-disable-next-line no-await-in-loop
         const subitems = (await item.classes) || []
-        itemsWithExistentSubitems.set(item[mainitemId], subitems)
+        itemsWithExistentSubitems.set(item[mainItemId], subitems)
         if (subitems.length > 0) {
             for (const subitem of subitems) {
                 itemsSubitems.set(
-                    getMembershipMapKey(item[mainitemId], subitem[subitemId]),
+                    getMembershipMapKey(item[mainItemId], subitem[subitemId]),
                     subitem
                 )
             }
@@ -1032,14 +1036,14 @@ async function generateMapsForAddingClasses(
     const preloadedOrganizationArray = Organization.createQueryBuilder()
         .select('Organization.organization_id')
         .innerJoin(`Organization.schools`, mainEntityName)
-        .where(`"${mainEntityName}"."${mainitemId}" IN (:...itemIds)`, {
+        .where(`"${mainEntityName}"."${mainItemId}" IN (:...itemIds)`, {
             itemIds,
         })
         .getMany()
 
     return {
         mainEntity: new Map(
-            (await preloadedItemArray).map((i) => [i[mainitemId], i])
+            (await preloadedItemArray).map((i) => [i[mainItemId], i])
         ),
         subitems: new Map(
             (await preloadedSubitemsArray).map((i) => [i[subitemId], i])
@@ -1165,10 +1169,10 @@ export class RemoveProgramsFromSchools extends AddMutation<
     ) {
         const { schoolId, programIds } = currentInput
 
-        const preexistentSubitems = maps.itemsWithExistentSubitems.get(
+        const preExistentSubitems = maps.itemsWithExistentSubitems.get(
             schoolId
         )!
-        const newSubitems = preexistentSubitems.filter(
+        const newSubitems = preExistentSubitems.filter(
             (subitem) => programIds.includes(subitem.id)!
         )
 
@@ -1192,7 +1196,7 @@ async function generateMapsForAddingRemovingPrograms(
     const relations = 'programs'
     const addingIds = 'programIds'
     const mainEntityName = 'School'
-    const mainitemId = 'school_id'
+    const mainItemId = 'school_id'
     const subitemId = 'id'
 
     const preloadedItemArray = School.findByIds(itemIds, {
@@ -1208,11 +1212,11 @@ async function generateMapsForAddingRemovingPrograms(
     for (const item of await preloadedItemArray) {
         // eslint-disable-next-line no-await-in-loop
         const subitems = (await item.programs) || []
-        itemsWithExistentSubitems.set(item[mainitemId], subitems)
+        itemsWithExistentSubitems.set(item[mainItemId], subitems)
         if (subitems.length > 0) {
             for (const subitem of subitems) {
                 itemsSubitems.set(
-                    getMembershipMapKey(item[mainitemId], subitem[subitemId]),
+                    getMembershipMapKey(item[mainItemId], subitem[subitemId]),
                     subitem
                 )
             }
@@ -1222,14 +1226,14 @@ async function generateMapsForAddingRemovingPrograms(
     const preloadedOrganizationArray = Organization.createQueryBuilder()
         .select('Organization.organization_id')
         .innerJoin(`Organization.schools`, mainEntityName)
-        .where(`"${mainEntityName}"."${mainitemId}" IN (:...itemIds)`, {
+        .where(`"${mainEntityName}"."${mainItemId}" IN (:...itemIds)`, {
             itemIds,
         })
         .getMany()
 
     return {
         mainEntity: new Map(
-            (await preloadedItemArray).map((i) => [i[mainitemId], i])
+            (await preloadedItemArray).map((i) => [i[mainItemId], i])
         ),
         subitems: new Map(
             (await preloadedSubitemsArray).map((i) => [i[subitemId], i])

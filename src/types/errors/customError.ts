@@ -90,6 +90,11 @@ export const customErrors = {
         code: 'ERR_DUPLICATE_INPUT_VALUE',
         message: '{entity} {entityName} is repeated in the inputs.',
     },
+    duplicate_input_attribute_value: {
+        code: 'ERR_DUPLICATE_INPUT_ATTRIBUTE_VALUE',
+        message:
+            '{entity} {entityName} with {attribute} {attributeValue} is repeated in the inputs.',
+    },
     duplicate_attribute_values: {
         code: 'ERR_DUPLICATE_ATTRIBUTE_VALUES',
         message: '{entity} {attribute} must contain unique values.',

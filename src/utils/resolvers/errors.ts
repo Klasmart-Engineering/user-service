@@ -1,6 +1,6 @@
-import { APIError, IAPIError } from '../types/errors/apiError'
-import { customErrors } from '../types/errors/customError'
-import { config } from '../config/config'
+import { APIError, IAPIError } from '../../types/errors/apiError'
+import { customErrors } from '../../types/errors/customError'
+import { config } from '../../config/config'
 
 type entityErrorType =
     | 'nonExistent'
@@ -72,7 +72,7 @@ export function createInputRequiresAtLeastOne(
     })
 }
 
-export function createDuplicateInputAPIError(
+export function createDuplicateAttributeAPIError(
     index: number,
     variables: string[],
     entity: string
@@ -83,6 +83,25 @@ export function createDuplicateInputAPIError(
         variables,
         entity,
         attribute: `(${variables.toString()})`,
+        index,
+    })
+}
+
+export function createDuplicateInputAttributeAPIError(
+    index: number,
+    entity: string,
+    entityName: string,
+    attribute: string,
+    attributeValue: string
+): APIError {
+    return new APIError({
+        code: customErrors.duplicate_input_attribute_value.code,
+        message: customErrors.duplicate_input_attribute_value.message,
+        variables: ['id'],
+        entity,
+        entityName,
+        attribute,
+        attributeValue,
         index,
     })
 }
@@ -196,6 +215,3 @@ export function createEntityAPIError(
 
     return new APIError(errorDetails)
 }
-
-export const getMembershipMapKey = (organisationId: string, userId: string) =>
-    [organisationId, userId].toString()

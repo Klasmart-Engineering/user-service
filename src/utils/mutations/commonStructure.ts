@@ -6,11 +6,12 @@ import { Context } from '../../main'
 import { APIError, APIErrorCollection } from '../../types/errors/apiError'
 import {
     createDatabaseSaveAPIError,
-    createDuplicateInputAPIError,
+    createDuplicateAttributeAPIError,
+    createDuplicateInputAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
-} from '../resolvers'
-import { ObjMap } from '../stringUtils'
+} from '../resolvers/errors'
+import { objectToKey, ObjMap } from '../stringUtils'
 
 export interface EntityMap<EntityType extends CustomBaseEntity> {
     mainEntity?: Map<string, EntityType>
@@ -18,6 +19,37 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
         | Map<string, CustomBaseEntity | CustomBaseEntity[]>
         | ObjMap<{ [key: string]: string }, unknown>
         | undefined
+}
+
+type MembershipIdPair = { entityId: string; attributeValue: string }
+
+// this will not create an error for the first input
+// with a given attribute value, only subsequent duplicates
+export function validateNoDuplicateAttribute(
+    values: MembershipIdPair[],
+    entityTypeName: string,
+    attributeName: string
+): Map<number, APIError> {
+    const valueSet = new Set<string>()
+    const errors = new Map<number, APIError>()
+    for (const [index, value] of values.entries()) {
+        const key = objectToKey(value)
+        if (valueSet.has(key)) {
+            errors.set(
+                index,
+                createDuplicateInputAttributeAPIError(
+                    index,
+                    entityTypeName,
+                    value.entityId,
+                    attributeName,
+                    value.attributeValue
+                )
+            )
+        } else {
+            valueSet.add(key)
+        }
+    }
+    return errors
 }
 
 // this will not create an error for the first input
@@ -28,12 +60,12 @@ export function validateNoDuplicate(
     attributeName: string
 ): Map<number, APIError> {
     const valueSet = new Set<string>()
-    const errors: Map<number, APIError> = new Map()
+    const errors = new Map<number, APIError>()
     for (const [index, value] of values.entries()) {
         if (valueSet.has(value)) {
             errors.set(
                 index,
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     [attributeName],
                     inputTypeName
@@ -84,7 +116,6 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     apiErrors: APIError[]
 } {
     const errors: APIError[] = []
-
     const ids = inputs.map((_, index) => mainEntityIds[index])
 
     const failedActiveInputs = validateActiveEntityExists(
@@ -92,24 +123,35 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
         entityTypeName,
         entityMaps.mainEntity!
     )
-
     errors.push(...failedActiveInputs.values())
 
     const failedDuplicateInputs = validateNoDuplicate(ids, inputTypeName, 'id')
-
     errors.push(...failedDuplicateInputs.values())
 
+    return filterInvalidInputs(inputs, [
+        failedActiveInputs,
+        failedDuplicateInputs,
+    ])
+}
+
+/**
+ * Filters out invalid inputs by removing those at the indices
+ * where an error was detected.
+ *
+ * Returns the filtered input list, and the errors in the form
+ * of a list.
+ */
+export function filterInvalidInputs<T>(
+    inputs: T[],
+    errorMaps: Map<number, APIError>[]
+) {
     const validInputs = inputs
         .map((i, index) => {
             return { input: i, index }
         })
-        .filter(
-            (_, index) =>
-                !failedActiveInputs.has(index) &&
-                !failedDuplicateInputs.has(index)
-        )
-
-    return { validInputs, apiErrors: errors }
+        .filter((_, index) => !errorMaps.some((em) => em.has(index)))
+    const apiErrors = errorMaps.flatMap((em) => [...em.values()])
+    return { validInputs, apiErrors }
 }
 
 export type ProcessedResult<
@@ -151,7 +193,7 @@ abstract class Mutation<
      * Makes all db queries that are needed for this mutation,
      * and formats them into maps.
      * This should never under fetch data (and require later DB calls)
-     * But may fetch more then is stricty needed
+     * But may fetch more then is strictly needed
      * todo: can we make this lazy?
      */
     protected abstract generateEntityMaps(
@@ -178,6 +220,9 @@ abstract class Mutation<
 
     /**
      * Looks for errors at one step of the input.
+     *
+     * TODO: should output the data that `process()` needs,
+     * so we don't have to use maps and non-null assertions
      */
     protected abstract validate(
         index: number,
@@ -232,29 +277,23 @@ abstract class Mutation<
         entityMaps: EntityMap<EntityType>
     ): ProcessedResult<EntityType, ModifiedEntityType>[] {
         const errors: APIError[] = []
-
         const { validInputs, apiErrors } = this.validationOverAllInputs(
             normalizedInput,
             entityMaps
         )
-
         errors.push(...apiErrors)
 
         const processedEntities: ProcessedResult<
             EntityType,
             ModifiedEntityType
         >[] = []
-
         for (const { index, input } of validInputs) {
             let entity: EntityType | undefined = undefined
-
             if (entityMaps?.mainEntity !== undefined) {
                 entity = entityMaps.mainEntity.get(this.mainEntityIds[index])!
             }
 
             errors.push(...this.validate(index, entity, input, entityMaps))
-
-            // Processing stage
             if (errors.length) continue
 
             processedEntities.push(this.process(input, entityMaps, index))
@@ -280,7 +319,7 @@ abstract class Mutation<
 
     async run(): Promise<OutputType> {
         this.validateInputLength()
-        const normalizedInput = await this.normalize(this.input)
+        const normalizedInput = this.normalize(this.input)
         const entityMaps = await this.generateEntityMaps(normalizedInput)
         await this.authorize(normalizedInput, entityMaps)
         const loopResults = this.inputLoop(normalizedInput, entityMaps)
@@ -289,6 +328,7 @@ abstract class Mutation<
         // to allow DB generated default values to be returned
         // and null properties to be populated on partial objects
         for (const { outputEntity } of loopResults) {
+            // eslint-disable-next-line no-await-in-loop
             await this.buildOutput(outputEntity)
         }
         return this.output
@@ -303,13 +343,12 @@ export function mutate<
 >(
     mutation: new (
         argsInput: InputType[],
-        permissions: Context['permissions']
+        perms: Context['permissions']
     ) => Mutation<EntityType, InputType, OutputType, ModifiedEntityType>,
     args: Record<'input', InputType[]>,
     permissions: Context['permissions']
 ): Promise<OutputType> {
-    const mutationClass = new mutation(args.input, permissions)
-    return mutationClass.run()
+    return new mutation(args.input, permissions).run()
 }
 
 export abstract class CreateMutation<
@@ -386,7 +425,7 @@ export abstract class DeleteMutation<
     protected validate = () => []
 
     protected process(
-        currentInput: InputType,
+        _currentInput: InputType,
         entityMaps: DeleteEntityMap<EntityType>,
         index: number
     ) {
