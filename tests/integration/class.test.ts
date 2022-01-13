@@ -3000,24 +3000,26 @@ describe('class', () => {
         context('when authorized within organization', () => {
             let userId: string
             let classId: string
+            let organization: Organization
+            let organizationId: string
 
             beforeEach(async () => {
                 const orgOwner = await createAdminUser(testClient)
                 userId = (await createNonAdminUser(testClient))?.user_id
-                const organizationId = (
-                    await createOrganizationAndValidate(
-                        testClient,
-                        orgOwner.user_id
-                    )
-                )?.organization_id
+                organization = await createOrganizationAndValidate(
+                    testClient,
+                    orgOwner.user_id
+                )
+                organizationId = organization?.organization_id
                 await addUserToOrganizationAndValidate(
                     testClient,
                     userId,
                     organizationId,
                     { authorization: getAdminAuthToken() }
                 )
-                classId = (await createClass(testClient, organizationId))
-                    ?.class_id
+                classId = (
+                    await createClassFactory(undefined, organization).save()
+                )?.class_id
                 const role = await createRole(testClient, organizationId)
                 await grantPermission(
                     testClient,
@@ -3074,6 +3076,46 @@ describe('class', () => {
                         (await dbStudents.classesStudying) || []
                     expect(students.map(userInfo)).to.deep.eq([userId])
                     expect(classesStudying.map(classInfo)).to.deep.eq([classId])
+                })
+            })
+
+            context('student is added to multiple classes', () => {
+                let classId_second: string
+
+                beforeEach(async () => {
+                    classId_second = (
+                        await createClassFactory(undefined, organization).save()
+                    )?.class_id
+                    await addStudentToClass(
+                        testClient,
+                        classId_second,
+                        userId,
+                        { authorization: getAdminAuthToken() }
+                    )
+                })
+
+                it('removes the student from particular class', async () => {
+                    const gqlStudent = await removeStudentInClass(
+                        testClient,
+                        classId,
+                        userId,
+                        { authorization: getNonAdminAuthToken() }
+                    )
+                    expect(gqlStudent).to.be.true
+                    const dbStudent = await User.findOneOrFail(userId, {
+                        relations: ['classesStudying'],
+                    })
+                    const dbClass = await Class.findOneOrFail(classId, {
+                        relations: ['students'],
+                    })
+                    const students = (await dbClass.students) || []
+                    const classesStudying =
+                        (await dbStudent.classesStudying) || []
+                    expect(students).to.be.empty
+                    expect(classesStudying).to.have.lengthOf(1)
+                    expect(classesStudying[0].class_id).to.be.equal(
+                        classId_second
+                    )
                 })
             })
         })
@@ -3702,26 +3744,27 @@ describe('class', () => {
         context('when authorized within organization', () => {
             let userId: string
             let classId: string
+            let school: School
             let schoolId: string
+            let organization: Organization
+            let organizationId: string
 
             beforeEach(async () => {
                 const orgOwner = await createAdminUser(testClient)
                 userId = (await createNonAdminUser(testClient))?.user_id
-                const organizationId = (
-                    await createOrganizationAndValidate(
-                        testClient,
-                        orgOwner.user_id
-                    )
-                )?.organization_id
-                schoolId = (
-                    await createSchool(
-                        testClient,
-                        organizationId,
-                        'My School',
-                        undefined,
-                        { authorization: getAdminAuthToken() }
-                    )
-                )?.school_id
+                organization = await createOrganizationAndValidate(
+                    testClient,
+                    orgOwner.user_id
+                )
+                organizationId = organization?.organization_id
+                school = await createSchool(
+                    testClient,
+                    organizationId,
+                    'My School',
+                    undefined,
+                    { authorization: getAdminAuthToken() }
+                )
+                schoolId = school?.school_id
                 await addUserToOrganizationAndValidate(
                     testClient,
                     userId,
@@ -3731,11 +3774,9 @@ describe('class', () => {
                 await addUserToSchool(testClient, userId, schoolId, {
                     authorization: getAdminAuthToken(),
                 })
-                classId = (await createClass(testClient, organizationId))
-                    ?.class_id
-                await addSchoolToClass(testClient, classId, schoolId, {
-                    authorization: getAdminAuthToken(),
-                })
+                classId = (
+                    await createClassFactory([school], organization).save()
+                )?.class_id
                 const role = await createRole(testClient, organizationId)
                 await grantPermission(
                     testClient,
@@ -3749,20 +3790,17 @@ describe('class', () => {
                     organizationId,
                     role.role_id
                 )
-                await addTeacherToClass(testClient, classId, userId, {
-                    authorization: getAdminAuthToken(),
-                })
             })
 
             it('removes the school from class', async () => {
-                const gqlTeacher = await removeSchoolFromClass(
+                const gqlSchool = await removeSchoolFromClass(
                     testClient,
                     classId,
                     schoolId,
                     { authorization: getNonAdminAuthToken() }
                 )
 
-                expect(gqlTeacher).to.be.true
+                expect(gqlSchool).to.be.true
                 const dbSchool = await School.findOneOrFail(schoolId)
                 const dbClass = await Class.findOneOrFail(classId)
                 const classSchools = (await dbClass.schools) || []
@@ -3779,20 +3817,56 @@ describe('class', () => {
                 })
 
                 it('fails to remove school from class', async () => {
-                    const gqlTeacher = await removeSchoolFromClass(
+                    const gqlSchool = await removeSchoolFromClass(
                         testClient,
                         classId,
                         schoolId,
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    expect(gqlTeacher).to.be.null
+                    expect(gqlSchool).to.be.null
                     const dbSchool = await School.findOneOrFail(schoolId)
                     const dbClass = await Class.findOneOrFail(classId)
                     const classSchools = (await dbClass.schools) || []
                     const schoolClasses = (await dbSchool.classes) || []
                     expect(classSchools.map(schoolInfo)).to.deep.eq([schoolId])
                     expect(schoolClasses.map(classInfo)).to.deep.eq([classId])
+                })
+            })
+
+            context('and school is added to multiple classes', () => {
+                let classId_second: string
+
+                beforeEach(async () => {
+                    classId_second = (
+                        await createClassFactory(
+                            [school],
+                            organization,
+                            undefined
+                        ).save()
+                    )?.class_id
+                })
+
+                it('school is removed from particular class', async () => {
+                    const gqlSchool = await removeSchoolFromClass(
+                        testClient,
+                        classId,
+                        schoolId,
+                        { authorization: getNonAdminAuthToken() }
+                    )
+
+                    expect(gqlSchool).to.be.true
+                    const dbSchool = await School.findOneOrFail(schoolId, {
+                        relations: ['classes'],
+                    })
+                    const dbClass = await Class.findOneOrFail(classId, {
+                        relations: ['schools'],
+                    })
+                    const classSchools = (await dbClass.schools) || []
+                    const schoolClasses = (await dbSchool.classes) || []
+                    expect(classSchools).to.be.empty
+                    expect(schoolClasses).to.have.lengthOf(1)
+                    expect(schoolClasses[0].class_id).to.equal(classId_second)
                 })
             })
         })
@@ -3853,14 +3927,14 @@ describe('class', () => {
             })
 
             it('removes the school from class', async () => {
-                const gqlTeacher = await removeSchoolFromClass(
+                const gqlSchool = await removeSchoolFromClass(
                     testClient,
                     classId,
                     schoolId,
                     { authorization: getNonAdminAuthToken() }
                 )
 
-                expect(gqlTeacher).to.be.true
+                expect(gqlSchool).to.be.true
                 const dbSchool = await School.findOneOrFail(schoolId)
                 const dbClass = await Class.findOneOrFail(classId)
                 const classSchools = (await dbClass.schools) || []
@@ -3897,7 +3971,6 @@ describe('class', () => {
     })
 
     describe('delete', () => {
-        let school: School
         let user: User
         let cls: Class
         let organization: Organization
@@ -4047,7 +4120,6 @@ describe('class', () => {
             )
             cls = await createClass(testClient, organization.organization_id)
             program = createProgram(organization)
-            const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(
                 testClient,
                 user.user_id,
@@ -4171,7 +4243,7 @@ describe('class', () => {
                     let dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).to.be.empty
 
-                    let gqlPrograms = await editPrograms(
+                    const gqlPrograms = await editPrograms(
                         testClient,
                         cls.class_id,
                         [program.id],
@@ -4185,12 +4257,9 @@ describe('class', () => {
                         gqlPrograms.map(programInfo)
                     )
 
-                    gqlPrograms = await editPrograms(
-                        testClient,
-                        cls.class_id,
-                        [],
-                        { authorization: getNonAdminAuthToken() }
-                    )
+                    await editPrograms(testClient, cls.class_id, [], {
+                        authorization: getNonAdminAuthToken(),
+                    })
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).to.be.empty
@@ -4249,7 +4318,6 @@ describe('class', () => {
                 authorization: getAdminAuthToken(),
             })
             program = createProgram(organization, [ageRange], [], [])
-            const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(
                 testClient,
                 user.user_id,
@@ -4340,7 +4408,6 @@ describe('class', () => {
                 authorization: getAdminAuthToken(),
             })
             program = createProgram(organization, [], [grade], [])
-            const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(
                 testClient,
                 user.user_id,
@@ -4431,7 +4498,6 @@ describe('class', () => {
                 authorization: getAdminAuthToken(),
             })
             program = createProgram(organization, [], [], [subject])
-            const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(
                 testClient,
                 user.user_id,
@@ -4579,7 +4645,7 @@ describe('class', () => {
                     let dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
 
-                    let gqlAgeRanges = await editAgeRanges(
+                    const gqlAgeRanges = await editAgeRanges(
                         testClient,
                         cls.class_id,
                         [ageRange.id],
@@ -4593,12 +4659,9 @@ describe('class', () => {
                         gqlAgeRanges.map(ageRangeInfo)
                     )
 
-                    gqlAgeRanges = await editAgeRanges(
-                        testClient,
-                        cls.class_id,
-                        [],
-                        { authorization: getNonAdminAuthToken() }
-                    )
+                    await editAgeRanges(testClient, cls.class_id, [], {
+                        authorization: getNonAdminAuthToken(),
+                    })
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
@@ -4714,7 +4777,7 @@ describe('class', () => {
                     let dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).to.be.empty
 
-                    let gqlGrades = await editGrades(
+                    const gqlGrades = await editGrades(
                         testClient,
                         cls.class_id,
                         [grade.id],
@@ -4728,7 +4791,7 @@ describe('class', () => {
                         gqlGrades.map(gradeInfo)
                     )
 
-                    gqlGrades = await editGrades(testClient, cls.class_id, [], {
+                    await editGrades(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
                     dbClass = await Class.findOneOrFail(cls.class_id)
@@ -4846,7 +4909,7 @@ describe('class', () => {
                     let dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).to.be.empty
 
-                    let gqlSubjects = await editSubjects(
+                    const gqlSubjects = await editSubjects(
                         testClient,
                         cls.class_id,
                         [subject.id],
@@ -4860,12 +4923,9 @@ describe('class', () => {
                         gqlSubjects.map(subjectInfo)
                     )
 
-                    gqlSubjects = await editSubjects(
-                        testClient,
-                        cls.class_id,
-                        [],
-                        { authorization: getNonAdminAuthToken() }
-                    )
+                    await editSubjects(testClient, cls.class_id, [], {
+                        authorization: getNonAdminAuthToken(),
+                    })
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).to.be.empty

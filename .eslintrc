@@ -19,6 +19,7 @@
       "@typescript-eslint/no-this-alias": "warn",
       "no-empty-pattern": "warn",
       "no-console": "error",
+      "no-self-compare": "error",
       "@typescript-eslint/no-extra-semi": "off",
       "@typescript-eslint/explicit-member-accessibility": "off",
       "@typescript-eslint/explicit-function-return-type": "off",

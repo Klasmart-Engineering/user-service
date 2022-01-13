@@ -106,27 +106,17 @@ export class Class extends CustomBaseEntity {
         }
     }
 
-    public async eligibleTeachers(
-        args: Record<string, unknown>,
-        context: Context,
-        info: GraphQLResolveInfo
-    ): Promise<User[] | IterableIterator<User>> {
+    public async eligibleTeachers(): Promise<User[] | IterableIterator<User>> {
         const members = await this._membersWithPermission(
             PermissionName.attend_live_class_as_a_teacher_186
         )
-
         return this.filterMembersForClass(members)
     }
 
-    public async eligibleStudents(
-        args: Record<string, unknown>,
-        context: Context,
-        info: GraphQLResolveInfo
-    ): Promise<User[] | IterableIterator<User>> {
+    public async eligibleStudents(): Promise<User[] | IterableIterator<User>> {
         const members = await this._membersWithPermission(
             PermissionName.attend_live_class_as_a_student_187
         )
-
         return this.filterMembersForClass(members)
     }
 
@@ -443,7 +433,7 @@ export class Class extends CustomBaseEntity {
             const user = await getRepository(User).findOneOrFail({ user_id })
             const classes = (await user.classesStudying) || []
             user.classesStudying = Promise.resolve(
-                classes.filter(({ class_id }) => class_id !== class_id)
+                classes.filter(({ class_id }) => class_id !== this.class_id)
             )
             await user.save()
 
@@ -583,7 +573,7 @@ export class Class extends CustomBaseEntity {
             })
             const classes = (await school.classes) || []
             school.classes = Promise.resolve(
-                classes.filter(({ class_id }) => class_id !== class_id)
+                classes.filter(({ class_id }) => class_id !== this.class_id)
             )
             await school.save()
 
@@ -614,7 +604,7 @@ export class Class extends CustomBaseEntity {
             PermissionName.edit_class_20334
         )
 
-        const validPrograms: Program[] = await this.getPrograms(program_ids)
+        const validPrograms: Program[] = await Class.getPrograms(program_ids)
         this.programs = Promise.resolve(validPrograms)
 
         await this.save()
@@ -642,7 +632,7 @@ export class Class extends CustomBaseEntity {
             PermissionName.edit_class_20334
         )
 
-        const validAgeRanges: AgeRange[] = await this.getAgeRanges(
+        const validAgeRanges: AgeRange[] = await Class.getAgeRanges(
             age_range_ids
         )
         this.age_ranges = Promise.resolve(validAgeRanges)
@@ -672,7 +662,7 @@ export class Class extends CustomBaseEntity {
             PermissionName.edit_class_20334
         )
 
-        const validGrades: Grade[] = await this.getGrades(grade_ids)
+        const validGrades: Grade[] = await Class.getGrades(grade_ids)
         this.grades = Promise.resolve(validGrades)
 
         await this.save()
@@ -700,7 +690,7 @@ export class Class extends CustomBaseEntity {
             PermissionName.edit_class_20334
         )
 
-        const validSubjects: Subject[] = await this.getSubjects(subject_ids)
+        const validSubjects: Subject[] = await Class.getSubjects(subject_ids)
         this.subjects = Promise.resolve(validSubjects)
 
         await this.save()
@@ -708,7 +698,7 @@ export class Class extends CustomBaseEntity {
         return validSubjects
     }
 
-    private async getAgeRanges(ids: string[]) {
+    private static async getAgeRanges(ids: string[]) {
         if (ids.length === 0) {
             return []
         }
@@ -718,7 +708,7 @@ export class Class extends CustomBaseEntity {
         })
     }
 
-    private async getGrades(ids: string[]) {
+    private static async getGrades(ids: string[]) {
         if (ids.length === 0) {
             return []
         }
@@ -728,7 +718,7 @@ export class Class extends CustomBaseEntity {
         })
     }
 
-    private async getSubjects(ids: string[]) {
+    private static async getSubjects(ids: string[]) {
         if (ids.length === 0) {
             return []
         }
@@ -738,7 +728,7 @@ export class Class extends CustomBaseEntity {
         })
     }
 
-    private async getPrograms(ids: string[]) {
+    private static async getPrograms(ids: string[]) {
         if (ids.length === 0) {
             return []
         }
