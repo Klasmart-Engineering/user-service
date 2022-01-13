@@ -12,3 +12,8 @@ export function createSubcategory(org: Organization = createOrganization()) {
 
     return subcategory
 }
+
+export const createSubcategories = (length: number, org?: Organization) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createSubcategory(org))

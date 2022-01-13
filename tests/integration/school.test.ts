@@ -81,7 +81,7 @@ import {
 import { createOrganization } from '../factories/organization.factory'
 import { formatShortCode, generateShortCode } from '../../src/utils/shortcode'
 import faker from 'faker'
-import { createMultipleSchools } from '../factories/school.factory'
+import { createSchools } from '../factories/school.factory'
 import { createClasses } from '../factories/class.factory'
 import {
     createRole as roleFactory,
@@ -99,10 +99,10 @@ import {
 } from '../utils/apiError'
 import { APIErrorCollection } from '../../src/types/errors/apiError'
 import {
-    createDuplicateInputAPIError,
+    createDuplicateAttributeAPIError,
     createEntityAPIError,
     createNonExistentOrInactiveEntityAPIError,
-} from '../../src/utils/resolvers'
+} from '../../src/utils/resolvers/errors'
 import { NIL_UUID } from '../utils/database'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Role } from '../../src/entities/role'
@@ -1811,11 +1811,14 @@ describe('school', () => {
                 await expect(
                     addClasses(useAdminUser ? adminUser : nonAdminUser)
                 ).to.be.rejected
-                const insertedClasses: Class[] = []
-                for (const school of schools) {
-                    const insertedClasses = await school.classes
-                    if (insertedClasses) classes.push(...insertedClasses)
-                }
+                const promises = schools.reduce(
+                    (acc: Promise<Class[]>[], current) => {
+                        if (current.classes) acc.push(current.classes)
+                        return acc
+                    },
+                    []
+                )
+                const insertedClasses = (await Promise.all(promises)).flat()
                 expect(insertedClasses).to.have.lengthOf(0)
             })
         }
@@ -1824,7 +1827,7 @@ describe('school', () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
-            schools = createMultipleSchools(3)
+            schools = createSchools(3)
             classes = createClasses(3, organization)
             await connection.manager.save([...schools, ...classes])
             input = [
@@ -2417,7 +2420,7 @@ describe('school', () => {
                             await expectAPIErrorCollection(
                                 removeUsersFromResolver(admin, input),
                                 new APIErrorCollection([
-                                    createDuplicateInputAPIError(
+                                    createDuplicateAttributeAPIError(
                                         1,
                                         ['id'],
                                         'RemoveUsersFromSchoolInput'
@@ -2521,7 +2524,7 @@ describe('school', () => {
                             removeUsersFromResolver(admin, input),
                             new APIErrorCollection(
                                 Array.from(input, (_, i) =>
-                                    createDuplicateInputAPIError(
+                                    createDuplicateAttributeAPIError(
                                         i,
                                         ['userIds'],
                                         'RemoveUsersFromSchoolInput'
@@ -2741,7 +2744,7 @@ describe('school', () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
-            schools = createMultipleSchools(3)
+            schools = createSchools(3)
             programs = createPrograms(3, organization)
             await connection.manager.save([...schools, ...programs])
             input = [
@@ -2981,7 +2984,7 @@ describe('school', () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
-            schools = createMultipleSchools(3)
+            schools = createSchools(3)
             programs = createPrograms(3, organization)
             await connection.manager.save([...schools, ...programs])
             schools[0].programs = Promise.resolve([programs[0]])
@@ -3193,7 +3196,7 @@ describe('school', () => {
             nonAdminUser = await createNonAdminUser(testClient)
 
             org = await createOrganization().save()
-            schools = createMultipleSchools(2, org)
+            schools = createSchools(2, org)
             users = createUsers(3)
             roles = createRoles(3)
             await connection.manager.save([...users, ...schools, ...roles])

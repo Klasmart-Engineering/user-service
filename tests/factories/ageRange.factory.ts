@@ -33,3 +33,8 @@ export function createAgeRange(
 
     return ageRange
 }
+
+export const createAgeRanges = (length: number, org?: Organization) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createAgeRange(org))

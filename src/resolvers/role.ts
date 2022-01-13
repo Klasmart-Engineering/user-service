@@ -25,11 +25,11 @@ import {
     validateActiveAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
 import {
-    createDuplicateInputAPIError,
+    createDuplicateAttributeAPIError,
     createEntityAPIError,
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
-} from '../utils/resolvers'
+} from '../utils/resolvers/errors'
 
 type RoleAndOrg = Role & {
     __organization__: Organization
@@ -210,6 +210,7 @@ export class UpdateRoles extends UpdateMutation<
         const newNames = new Map<string, Role>()
 
         for (const r of await matchingPreloadedRoleArray) {
+            // eslint-disable-next-line no-await-in-loop
             const orgId = (await r.organization)?.organization_id || ''
             matchingOrgsAndNames.set([orgId, r.role_name].toString(), r)
         }
@@ -243,6 +244,7 @@ export class UpdateRoles extends UpdateMutation<
         const organizationIds: string[] = []
 
         for (const c of entityMaps.mainEntity.values()) {
+            // eslint-disable-next-line no-await-in-loop
             const organizationId = (await c.organization)?.organization_id
             if (organizationId) organizationIds.push(organizationId)
         }
@@ -324,7 +326,7 @@ export class UpdateRoles extends UpdateMutation<
 
             if (inputNameDuplicated) {
                 errors.push(
-                    createDuplicateInputAPIError(
+                    createDuplicateAttributeAPIError(
                         index,
                         ['roleName'],
                         'UpdateRoleInput'
@@ -338,7 +340,7 @@ export class UpdateRoles extends UpdateMutation<
 
             if (uniquePermissionIds.size < permissionIds.length) {
                 errors.push(
-                    createDuplicateInputAPIError(
+                    createDuplicateAttributeAPIError(
                         index,
                         ['permissionIds'],
                         'UpdateRoleInput'
@@ -436,6 +438,7 @@ export class DeleteRoles extends DeleteMutation<
     ) {
         const organizationIds: string[] = []
         for (const r of entityMaps.mainEntity.values()) {
+            // eslint-disable-next-line no-await-in-loop
             const organizationId = (await r.organization)?.organization_id
             if (organizationId) organizationIds.push(organizationId)
         }

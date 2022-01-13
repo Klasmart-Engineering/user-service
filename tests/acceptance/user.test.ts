@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
 import { expect, use } from 'chai'
@@ -22,16 +23,18 @@ import {
     GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
     randomChangeToUpdateUserInput,
     REMOVE_ORG_ROLES_FROM_USERS,
+    REMOVE_SCHOOL_ROLES_FROM_USERS,
     UPDATE_USERS,
     userToCreateUserInput,
+    userToPayload,
     userToUpdateUserInput,
 } from '../utils/operations/userOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
-import { createSchool } from '../factories/school.factory'
-import { createRole } from '../factories/role.factory'
+import { createSchool, createSchools } from '../factories/school.factory'
+import { createRole, createRoles } from '../factories/role.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { School } from '../../src/entities/school'
-import { createUser } from '../factories/user.factory'
+import { createUser, createUsers } from '../factories/user.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
@@ -43,6 +46,7 @@ import { Class } from '../../src/entities/class'
 import {
     AddOrganizationRolesToUserInput,
     RemoveOrganizationRolesFromUserInput,
+    RemoveSchoolRolesFromUserInput,
     UpdateUserInput,
     UserConnectionNode,
 } from '../../src/types/graphQL/user'
@@ -54,17 +58,21 @@ import {
     mapUserToUserConnectionNode,
 } from '../../src/pagination/usersConnection'
 import { config } from '../../src/config/config'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { SchoolMembership } from '../../src/entities/schoolMembership'
+import { NIL_UUID } from '../utils/database'
 
 use(chaiAsPromised)
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
-const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
+const adminUserId = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
 const usersCount = 50
 const classesCount = 2
 const rolesCount = 20
 let users: User[]
+let students: User[]
 let orgId: string
 let userIds: string[]
 let classIds: string[]
@@ -84,6 +92,7 @@ const ME = `
 describe('acceptance.user', () => {
     let connection: TestConnection
     let memberships: OrganizationMembership[]
+    let schoolMemberships: SchoolMembership[]
 
     before(async () => {
         connection = await createTestConnection()
@@ -98,7 +107,7 @@ describe('acceptance.user', () => {
 
         await loadFixtures('users', connection)
         const createOrg1Response = await createOrg(
-            user_id,
+            adminUserId,
             org_name,
             getAdminAuthToken()
         )
@@ -132,15 +141,15 @@ describe('acceptance.user', () => {
         userEmails = users.map(({ email }) => email ?? '')
 
         for (let i = 0; i < classesCount; i++) {
-            const uIds = [
-                userIds[i * 3],
-                userIds[i * 3 + 1],
-                userIds[i * 3 + 2],
-            ]
+            students = [users[i * 3], users[i * 3 + 1], users[i * 3 + 2]]
 
             const class_ = await createClass([], organization).save()
             classIds.push(class_.class_id)
-            await addStudentsToClass(class_.class_id, uIds, getAdminAuthToken())
+            await addStudentsToClass(
+                class_.class_id,
+                students.map((u) => u.user_id),
+                getAdminAuthToken()
+            )
         }
     })
 
@@ -217,7 +226,7 @@ describe('acceptance.user', () => {
     })
 
     context('usersConnection', () => {
-        context('using explict count', async () => {
+        context('using explicit count', async () => {
             async function makeQuery(pageSize: any) {
                 return await request
                     .post('/user')
@@ -801,10 +810,7 @@ describe('acceptance.user', () => {
         let input: RemoveOrganizationRolesFromUserInput[]
 
         beforeEach(async () => {
-            const roles = []
-            for (let i = 0; i < rolesCount; i++) {
-                roles.push(createRole(`Role ${i}`))
-            }
+            const roles = createRoles(rolesCount)
             await Role.save(roles)
 
             input = []
@@ -841,6 +847,77 @@ describe('acceptance.user', () => {
             })
         })
     })
+
+    context('removeSchoolRolesFromUsers', () => {
+        let adminUser: User
+        let input: RemoveSchoolRolesFromUserInput[]
+        const schoolCount = 5
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const roles = createRoles(rolesCount)
+            users = createUsers(usersCount)
+            await connection.manager.save([...roles, ...users])
+            const org = await createOrganization().save()
+            const schools = createSchools(schoolCount, org)
+            await School.save(schools)
+
+            schoolMemberships = []
+            input = []
+            for (const [index, school] of schools.entries()) {
+                const user = users[index % users.length] // just in case schoolCount > userCount
+                schoolMemberships.push(
+                    createSchoolMembership({
+                        user,
+                        school,
+                        roles: roles,
+                    })
+                )
+                input.push({
+                    userId: user.user_id,
+                    schoolId: school.school_id,
+                    roleIds: roles.map((r) => r.role_id),
+                })
+            }
+            await SchoolMembership.save(schoolMemberships)
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                REMOVE_SCHOOL_ROLES_FROM_USERS,
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            const resUsers: UserConnectionNode[] =
+                response.body.data.removeSchoolRolesFromUsers.users
+            expect(response.status).to.eq(200)
+            expect(resUsers.length).to.equal(schoolCount)
+        })
+
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                REMOVE_SCHOOL_ROLES_FROM_USERS,
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(3)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "userId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "schoolId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[2].message).to.contain(
+                'Field "roleIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
     context('eligibleStudentsConnection', () => {
         context('When a user has permission', () => {
             it('should find some eligibleStudents', async () => {
@@ -858,7 +935,7 @@ describe('acceptance.user', () => {
                 )
                 expect(
                     response.body.data.eligibleStudentsConnection.edges.length
-                ).equals(50)
+                ).equals(users.length - students.length)
             })
         })
         context('When a user does not have membership', () => {
@@ -1010,7 +1087,7 @@ describe('acceptance.user', () => {
                     expect(
                         response.body.data.eligibleStudentsConnection.edges
                             .length
-                    ).equals(50)
+                    ).equals(users.length - students.length)
                 })
             }
         )
@@ -1084,7 +1161,7 @@ describe('acceptance.user', () => {
                     expect(
                         response.body.data.eligibleStudentsConnection.edges
                             .length
-                    ).equals(5)
+                    ).equals(5 - students.length)
                 })
             }
         )

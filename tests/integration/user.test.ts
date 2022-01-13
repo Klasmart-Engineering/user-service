@@ -69,8 +69,14 @@ import {
     createOrganization as organizationFactory,
     createOrganizations,
 } from '../factories/organization.factory'
-import { createSchool as schoolFactory } from '../factories/school.factory'
-import { createRole as roleFactory } from '../factories/role.factory'
+import {
+    createSchool as schoolFactory,
+    createSchools,
+} from '../factories/school.factory'
+import {
+    createRole as roleFactory,
+    createRoles,
+} from '../factories/role.factory'
 import {
     createUser,
     createUsers as userFactory,
@@ -80,11 +86,12 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { expectIsNonNullable } from '../utils/assertions'
-import { expectAPIError } from '../utils/apiError'
+import { compareMultipleErrors, expectAPIError } from '../utils/apiError'
 import {
     addOrganizationRolesToUsers,
     createUsers,
     removeOrganizationRolesFromUsers,
+    RemoveSchoolRolesFromUsers,
     updateUsers,
 } from '../../src/resolvers/user'
 import { UserPermissions } from '../../src/permissions/userPermissions'
@@ -92,14 +99,23 @@ import {
     AddOrganizationRolesToUserInput,
     CreateUserInput,
     RemoveOrganizationRolesFromUserInput,
+    RemoveSchoolRolesFromUserInput,
     UpdateUserInput,
     UserConnectionNode,
+    UsersMutationResult,
 } from '../../src/types/graphQL/user'
 import { mapUserToUserConnectionNode } from '../../src/pagination/usersConnection'
 import clean from '../../src/utils/clean'
 import faker from 'faker'
 import { v4 as uuid_v4 } from 'uuid'
 import { config } from '../../src/config/config'
+import { buildPermissionError } from '../utils/errors'
+import { mutate } from '../../src/utils/mutations/commonStructure'
+import { getMap } from '../../src/utils/resolvers/entityMaps'
+import {
+    createDuplicateInputAttributeAPIError,
+    createEntityAPIError,
+} from '../../src/utils/resolvers/errors'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -1660,19 +1676,22 @@ describe('user', () => {
                 idsToModify: string[]
             ) => string[]
         ) {
+            const dbMemberships = await getMap.membership.organization(
+                input.map((i) => i.organizationId),
+                input.map((i) => i.userId),
+                ['roles']
+            )
             for (const [idx, val] of input.entries()) {
                 const { organizationId, userId, roleIds } = val
-                const dbMembership = await OrganizationMembership.findOneOrFail(
-                    {
-                        where: {
-                            organization_id: organizationId,
-                            user_id: userId,
-                        },
-                        relations: ['roles'],
-                    }
-                )
+                const dbMembership = dbMemberships.get({
+                    organizationId,
+                    userId,
+                })
+                expect(dbMembership).to.not.be.undefined
+                if (dbMembership === undefined) continue
 
-                const dbRoleIds = (await dbMembership.roles)
+                // eslint-disable-next-line no-await-in-loop
+                const dbRoleIds = (await dbMembership.roles) // already fetched
                     ?.map((r) => r.role_id)
                     .sort()
                 const expectedRoleIds = modifyRolesFn(
@@ -1731,27 +1750,14 @@ describe('user', () => {
                 totalErrorCount?: number
             ) {
                 expectedErrors.forEach((val, errorIndex) => {
-                    const getVar = () => {
-                        switch (val.entity) {
-                            case 'Role':
-                                return 'role_id'
-                            case 'Organization':
-                                return 'organization_id'
-                            case 'User':
-                                return 'user_id'
-                            default:
-                                return ''
-                        }
-                    }
-                    expectAPIError.nonexistent_or_inactive(
+                    expectAPIError.nonexistent_entity(
                         actualError,
                         {
                             entity: val.entity,
-                            attribute: val.entity === 'Role' ? 'IDs' : 'ID',
-                            otherAttribute: val.id,
+                            entityName: val.id,
                             index: val.entryIndex,
                         },
-                        [getVar()],
+                        ['id'],
                         errorIndex,
                         totalErrorCount ?? expectedErrors.length
                     )
@@ -1849,7 +1855,7 @@ describe('user', () => {
                                 await organization3.inactivate(getManager())
                         )
 
-                        it('returns an inactive or nonexistent organization error', async () => {
+                        it('returns an nonexistent organization error', async () => {
                             const res = await expect(addOrgRoles()).to.be
                                 .rejected
                             checkNotFoundErrors(res, [
@@ -1868,7 +1874,7 @@ describe('user', () => {
                 context('and one of the users is inactive', async () => {
                     beforeEach(async () => await user2.inactivate(getManager()))
 
-                    it('returns an inactive or nonexistent user error', async () => {
+                    it('returns an nonexistent user error', async () => {
                         const res = await expect(addOrgRoles()).to.be.rejected
                         checkNotFoundErrors(res, [
                             {
@@ -1885,7 +1891,7 @@ describe('user', () => {
                 context('and one of the roles is inactive', async () => {
                     beforeEach(async () => await role1.inactivate(getManager()))
 
-                    it('returns an inactive or nonexistent role error', async () => {
+                    it('returns an nonexistent role error', async () => {
                         const res = await expect(addOrgRoles()).to.be.rejected
                         checkNotFoundErrors(res, [
                             {
@@ -1901,8 +1907,10 @@ describe('user', () => {
 
                 context('and one of the memberships is inactive', async () => {
                     beforeEach(async () => {
-                        const membs = (await user1.memberships) || []
-                        for (const m of membs) await m.inactivate(getManager())
+                        const memberships = (await user1.memberships) || []
+                        await Promise.all(
+                            memberships.map((m) => m.inactivate(getManager()))
+                        )
                     })
 
                     it('returns a nonexistent child error', async () => {
@@ -1911,13 +1919,12 @@ describe('user', () => {
                             res,
                             {
                                 entity: 'User',
-                                entityName: user1.user_name(),
+                                entityName: user1.user_id,
                                 parentEntity: 'Organization',
-                                parentName:
-                                    organization1.organization_name || '',
+                                parentName: organization1.organization_id,
                                 index: 0,
                             },
-                            ['organization_id', 'user_id'],
+                            [''],
                             0,
                             1
                         )
@@ -1928,26 +1935,30 @@ describe('user', () => {
 
                 context('and multiple attributes are inactive', async () => {
                     beforeEach(async () => {
-                        const membs = (await user3.memberships) || []
-                        for (const m of membs) await m.inactivate(getManager())
+                        const memberships = (await user3.memberships) || []
                         await Promise.all([
+                            ...memberships.map((m) =>
+                                m.inactivate(getManager())
+                            ),
                             user1.inactivate(getManager()),
                             role1.inactivate(getManager()),
                             role2.inactivate(getManager()),
                         ])
                     })
 
-                    it('returns several inactive or nonexistent errors', async () => {
+                    it('returns several nonexistent errors', async () => {
                         const res = await expect(addOrgRoles()).to.be.rejected
                         checkNotFoundErrors(
                             res,
                             [
                                 {
                                     entity: 'Role',
-                                    id: [
-                                        role1.role_id,
-                                        role2.role_id,
-                                    ].toString(),
+                                    id: role1.role_id,
+                                    entryIndex: 0,
+                                },
+                                {
+                                    entity: 'Role',
+                                    id: role2.role_id,
                                     entryIndex: 0,
                                 },
                                 {
@@ -1961,21 +1972,20 @@ describe('user', () => {
                                     entryIndex: 1,
                                 },
                             ],
-                            4
+                            5
                         )
                         expectAPIError.nonexistent_child(
                             res,
                             {
                                 entity: 'User',
-                                entityName: user3.user_name(),
+                                entityName: user3.user_id,
                                 parentEntity: 'Organization',
-                                parentName:
-                                    organization3.organization_name || '',
+                                parentName: organization3.organization_id,
                                 index: 2,
                             },
-                            ['organization_id', 'user_id'],
-                            3,
-                            4
+                            [''],
+                            4,
+                            5
                         )
                     })
 
@@ -2085,6 +2095,451 @@ describe('user', () => {
             })
         })
     })
+
+    /**
+     * Some of the methods of RemoveSchoolRolesFromUsers are not tested here.
+     *
+     * generateEntityMaps: would repeat tests for the `getMap()`, also other tests are
+     * dependent on this and would fail if the maps where wrong
+     *
+     * process: tested indirectly with `run()`
+     *
+     * applyToDatabase: tested indirectly with `run()`
+     */
+    describe('RemoveSchoolRolesFromUsers', () => {
+        let input: RemoveSchoolRolesFromUserInput[]
+        let org: Organization
+        let users: User[]
+        let roles: Role[]
+        let schools: School[]
+        let memberships: SchoolMembership[]
+        let initialRoles: Role[][]
+
+        function getRemoveRoles(authUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new RemoveSchoolRolesFromUsers([], permissions)
+        }
+
+        function getMaps(
+            mutation: RemoveSchoolRolesFromUsers,
+            mutationInput: RemoveSchoolRolesFromUserInput[]
+        ) {
+            return mutation.generateEntityMaps(mutationInput)
+        }
+
+        async function checkHasExpectedRoles(
+            modifyRolesFn: (
+                currentRoles: Role[],
+                roleIds: string[]
+            ) => string[],
+            mutationInput: RemoveSchoolRolesFromUserInput[]
+        ) {
+            const allUserIds = mutationInput.map((i) => i.userId)
+            const allSchoolIds = mutationInput.map((i) => i.schoolId)
+            const membershipsMap = await getMap.membership.school(
+                allSchoolIds,
+                allUserIds
+            )
+            for (const [idx, i] of mutationInput.entries()) {
+                const { schoolId, userId, roleIds } = i
+                const dbMembership = membershipsMap.get({ schoolId, userId })
+                // Check that roles match
+                const dbMembershipRoleIds =
+                    // eslint-disable-next-line no-await-in-loop
+                    (await dbMembership?.roles) // already fetched
+                        ?.map((r) => r.role_id)
+                        .sort() || []
+                const expectedRoleIds = modifyRolesFn(
+                    initialRoles[idx],
+                    roleIds
+                ).sort()
+                expect(dbMembershipRoleIds).to.deep.equal(expectedRoleIds)
+            }
+        }
+
+        function checkChangesMade(
+            mutationInput: RemoveSchoolRolesFromUserInput[]
+        ) {
+            const fn = (currentRoles: Role[], roleIds: string[]) =>
+                currentRoles
+                    .filter((ir) => !roleIds.find((rid) => ir.role_id === rid))
+                    .map((cr) => cr.role_id)
+            return checkHasExpectedRoles(fn, mutationInput)
+        }
+
+        function checkNoChangesMade(
+            mutationInput: RemoveSchoolRolesFromUserInput[]
+        ) {
+            const fn = (currentRoles: Role[]) =>
+                currentRoles.map((cr) => cr.role_id)
+            return checkHasExpectedRoles(fn, mutationInput)
+        }
+
+        async function inactivateMembership(
+            school_id: string,
+            user_id: string
+        ) {
+            const membership = await SchoolMembership.findOneOrFail({
+                where: { school_id, user_id },
+            })
+            await membership.inactivate(getManager())
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
+            org = await organizationFactory().save()
+            schools = createSchools(3, org)
+            await School.save(schools)
+            users = userFactory(3)
+            roles = createRoles(3)
+            await connection.manager.save([...users, ...roles])
+
+            // Create memberships
+            initialRoles = [roles, roles, roles]
+            memberships = initialRoles.map((ir, i) =>
+                createSchoolMembership({
+                    user: users[i],
+                    school: schools[i],
+                    roles: ir,
+                })
+            )
+            await SchoolMembership.save(memberships)
+
+            // Generate input
+            input = []
+            const inputRoleIndices = [
+                [0, 1],
+                [1, 2],
+                [0, 1, 2],
+            ]
+            for (let i = 0; i < 3; i++) {
+                input.push({
+                    userId: users[i].user_id,
+                    schoolId: schools[i].school_id,
+                    roleIds: inputRoleIndices[i].map((rr) => roles[rr].role_id),
+                })
+            }
+        })
+
+        context('.run', () => {
+            function runRemoveRoles(
+                mutationInput: RemoveSchoolRolesFromUserInput[],
+                authUser = adminUser
+            ) {
+                const permissions = new UserPermissions(userToPayload(authUser))
+                return mutate(
+                    RemoveSchoolRolesFromUsers,
+                    { input: mutationInput },
+                    permissions
+                )
+            }
+
+            context('when all attributes are valid', () => {
+                it('removes all the users', async () => {
+                    await expect(runRemoveRoles(input)).to.be.fulfilled
+                    await checkChangesMade(input)
+                })
+
+                it('returns the expected output', async () => {
+                    const res: UsersMutationResult = await expect(
+                        runRemoveRoles(input)
+                    ).to.be.fulfilled
+                    const userIds = new Set(res.users.map((u) => u.id))
+                    expect(userIds).to.have.length(input.length)
+                    input.forEach(
+                        (i) => expect(userIds.has(i.userId)).to.be.true
+                    )
+                })
+
+                it('makes the expected number of database calls', async () => {
+                    connection.logger.reset()
+                    await expect(runRemoveRoles(input)).to.be.fulfilled
+                    expect(connection.logger.count).to.equal(10) // preload: 4, authorize: 1, save: 5
+                })
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getRemoveRoles(authUser)
+                const maps = await getMaps(mutation, input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.edit_users_40330
+            context(
+                'when user has permissions to remove users from all schools',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await roleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: org,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to remove users from all schools',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await roleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createSchoolMembership({
+                            user: nonAdminUser,
+                            school: schools[1],
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(
+                                permission,
+                                nonAdminUser,
+                                [org],
+                                [schools[0], schools[2]]
+                            )
+                        )
+                        await checkNoChangesMade(input)
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            context('when the same membership is used three times', () => {
+                let schoolId: string
+                let userId: string
+                beforeEach(() => {
+                    schoolId = schools[0].school_id
+                    userId = users[0].user_id
+                    const roleIds = roles.map((r) => r.role_id)
+                    input = Array(3)
+                        .fill(undefined)
+                        .map(() => {
+                            return { userId, schoolId, roleIds }
+                        })
+                })
+
+                it('returns duplicate errors for the last two memberships', () => {
+                    const val = getRemoveRoles().validationOverAllInputs(input)
+                    const xErrors = [1, 2].map((i) =>
+                        createDuplicateInputAttributeAPIError(
+                            i,
+                            'School',
+                            schoolId,
+                            'user_id',
+                            userId
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, xErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getRemoveRoles().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context(
+                'when there are duplicate users and orgs but unique combinations thereof',
+                () => {
+                    beforeEach(() => {
+                        const roleIds = roles.map((r) => r.role_id)
+                        input = [
+                            {
+                                schoolId: schools[0].school_id,
+                                userId: users[0].user_id,
+                                roleIds,
+                            },
+                            {
+                                schoolId: schools[1].school_id,
+                                userId: users[0].user_id,
+                                roleIds,
+                            },
+                            {
+                                schoolId: schools[0].school_id,
+                                userId: users[1].user_id,
+                                roleIds,
+                            },
+                        ]
+                    })
+
+                    it('returns no errors', () => {
+                        const val = getRemoveRoles().validationOverAllInputs(
+                            input
+                        )
+                        expect(val.apiErrors).to.be.empty
+                        expect(
+                            val.validInputs.map((vi) => vi.input)
+                        ).to.deep.equal(input)
+                    })
+
+                    it('returns the full input list', () => {
+                        const val = getRemoveRoles().validationOverAllInputs(
+                            input
+                        )
+                        expect(
+                            val.validInputs.map((vi) => vi.input)
+                        ).to.deep.equal(input)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(
+                mutationInput: RemoveSchoolRolesFromUserInput[]
+            ) {
+                const mutation = getRemoveRoles()
+                const maps = await getMaps(mutation, mutationInput)
+                return mutationInput.flatMap((i, index) =>
+                    mutation.validate(index, undefined, i, maps)
+                )
+            }
+
+            context('when all attributes are valid', () => {
+                it('does not throw errors', async () => {
+                    await expect(validate(input)).to.be.fulfilled
+                })
+            })
+
+            context('when one of the roles was already removed', () => {
+                beforeEach(async () => {
+                    await inactivateMembership(
+                        schools[0].school_id,
+                        users[0].user_id
+                    )
+                    initialRoles = [[], roles, roles]
+                })
+
+                it('returns a nonexistent_child error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'User',
+                            users[0].user_id,
+                            'School',
+                            schools[0].school_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+
+                    await checkNoChangesMade(input)
+                })
+            })
+
+            context('when one of the schools is inactive', async () => {
+                beforeEach(async () => {
+                    await schools[1].inactivate(getManager())
+                    initialRoles = [roles, [], roles] // membership is also inactivated
+                })
+
+                it('returns a nonexistent_entity error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'School',
+                            schools[1].school_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade(input)
+                })
+            })
+
+            context('when one of the roles is inactive', async () => {
+                beforeEach(() => roles[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [0, 1, 2].map((index) =>
+                        createEntityAPIError(
+                            'nonExistent',
+                            index,
+                            'Role',
+                            roles[1].role_id
+                        )
+                    )
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade(input)
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        schools[2].inactivate(getManager()),
+                        users[1].inactivate(getManager()),
+                        roles[1].inactivate(getManager()),
+                        memberships[1].inactivate(getManager()),
+                    ])
+                    initialRoles = [roles, [], []]
+                })
+
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Role',
+                            roles[1].role_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'User',
+                            users[1].user_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'Role',
+                            roles[1].role_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            2,
+                            'School',
+                            schools[2].school_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            2,
+                            'Role',
+                            roles[1].role_id
+                        ),
+                    ]
+                    await checkNoChangesMade(input)
+                })
+            })
+        })
+    })
+
     describe('UpdateUsers', () => {
         let idOfUserPerformingOperation: string
         let userPerformingOperation: User
@@ -2106,12 +2561,15 @@ describe('user', () => {
             ).organization_id
 
             updateUserInputs = []
+            const users = await User.save(
+                userFactory(config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
+            )
             for (
                 let i = 0;
                 i < config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE;
                 i++
             ) {
-                const u = await createUser().save()
+                const u = users[i]
                 updateUserInputs.push(
                     randomChangeToUpdateUserInput(userToUpdateUserInput(u))
                 )

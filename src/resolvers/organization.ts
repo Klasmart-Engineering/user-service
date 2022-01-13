@@ -13,7 +13,7 @@ import {
     OrganizationsMutationResult,
     RemoveUsersFromOrganizationInput,
 } from '../types/graphQL/organization'
-import { createEntityAPIError, getMembershipMapKey } from '../utils/resolvers'
+import { createEntityAPIError } from '../utils/resolvers/errors'
 import { config } from '../config/config'
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
 import {
@@ -23,6 +23,7 @@ import {
     ProcessedResult,
     validateActiveAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
+import { getMembershipMapKey } from '../utils/resolvers/entityMaps'
 
 export interface AddUsersToOrganizationsEntityMap
     extends EntityMap<Organization> {
@@ -317,10 +318,14 @@ async function generateMaps(
         input.map((i) => i.userIds).flat(),
         { where: { status: Status.ACTIVE } }
     )
-    const preloadedRoleArray = Role.findByIds(
-        input.map((i) => i.organizationRoleIds).flat(),
-        { where: { status: Status.ACTIVE } }
-    )
+    let preloadedRoleArray: Promise<Role[]> = Promise.resolve([])
+    // Check that we are dealing with AddUsersToOrganizationInput & not RemoveUsersFromOrganizationInput
+    if (input.some((i) => i.organizationRoleIds)) {
+        preloadedRoleArray = Role.findByIds(
+            input.flatMap((i) => i.organizationRoleIds),
+            { where: { status: Status.ACTIVE } }
+        )
+    }
     const preloadedMembershipArray = OrganizationMembership.find({
         where: {
             user_id: In(input.map((i) => i.userIds).flat()),

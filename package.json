@@ -25,7 +25,7 @@
     "test:acceptance": "DATABASE_URL=postgres://postgres:kidsloop@localhost/postgres1 LOG_LEVEL=info mocha --require ts-node/register --file tests/acceptance/hooks.ts \"tests/acceptance/**/*.test.ts\" --timeout 8000",
     "test:migrations": "NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register \"tests/migrations/**/*.test.ts\" --timeout 8000",
     "test": "npm run test:unit && npm run test:integration && npm run test:migrations",
-    "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary npm run test",
+    "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary --reporter=text-summary npm run test && open ./coverage/lcov-report/index.html",
     "make-badges": "istanbul-badges-readme",
     "test:file": "mocha --require ts-node/register --file tests/testHelper.ts tests/integration/directives/isMIMEType.test.ts --timeout 5000",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm",

@@ -294,7 +294,8 @@ export const ADD_ORG_ROLES_TO_USERS = `
             ${USERS_MUTATION_RESULT}
         }
     }
-    `
+`
+
 export const CREATE_USERS = `
     mutation CreateUsers($input:[CreateUserInput!]!){
         createUsers(input:$input) {
@@ -318,6 +319,15 @@ export const UPDATE_USERS = `
         }
     }
 `
+
+export const REMOVE_SCHOOL_ROLES_FROM_USERS = `
+    mutation myMutation($input: [RemoveSchoolRolesFromUserInput!]!) {
+        removeSchoolRolesFromUsers(input: $input) {
+            ${USERS_MUTATION_RESULT}
+        }
+    }
+`
+
 export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
     userId: string,

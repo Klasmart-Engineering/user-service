@@ -13,12 +13,12 @@ import { Status } from '../entities/status'
 import { Class } from '../entities/class'
 import { PermissionName } from '../permissions/permissionNames'
 import {
+    createDuplicateAttributeAPIError,
     createDuplicateChildEntityAttributeAPIError,
-    createDuplicateInputAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
-    getMembershipMapKey,
-} from '../utils/resolvers'
+    createNonExistentOrInactiveEntityAPIError,
+} from '../utils/resolvers/errors'
 import { mapClassToClassConnectionNode } from '../pagination/classesConnection'
 import { config } from '../config/config'
 import { Program } from '../entities/program'
@@ -30,7 +30,7 @@ import {
     validateNoDuplicate,
 } from '../utils/mutations/commonStructure'
 import { Organization } from '../entities/organization'
-import { createNonExistentOrInactiveEntityAPIError } from '../utils/resolvers'
+import { getMembershipMapKey } from '../utils/resolvers/entityMaps'
 import {
     generateShortCode,
     validateShortCode,
@@ -64,6 +64,7 @@ export async function deleteClasses(
     // Check Permissions
     const orgIdSet = new Set<string>()
     for (const c of preloadedClasses.values()) {
+        // eslint-disable-next-line no-await-in-loop
         const org = await c.organization
         if (org) orgIdSet.add(org.organization_id)
     }
@@ -88,7 +89,11 @@ export async function deleteClasses(
         )
         if (inputIdIsDuplicate) {
             errors.push(
-                createDuplicateInputAPIError(index, ['id'], 'DeleteClassInput')
+                createDuplicateAttributeAPIError(
+                    index,
+                    ['id'],
+                    'DeleteClassInput'
+                )
             )
             continue
         }
@@ -239,9 +244,9 @@ export class AddProgramsToClasses extends AddMutation<
             const subitem = maps.subitems.get(subitemId) as Program
             newSubitems.push(subitem)
         }
-        const preexistentSubitems = maps.itemsWithExistentSubitems.get(classId)!
+        const preExistentSubitems = maps.itemsWithExistentSubitems.get(classId)!
         currentEntity.programs = Promise.resolve([
-            ...preexistentSubitems,
+            ...preExistentSubitems,
             ...newSubitems,
         ])
         return { outputEntity: currentEntity }
@@ -259,7 +264,7 @@ async function generateMaps(
     const relations = 'programs'
     const addingIds = 'programIds'
     const mainEntityName = 'Class'
-    const mainitemId = 'class_id'
+    const mainItemId = 'class_id'
     const subitemId = 'id'
 
     const preloadedItemArray = Class.findByIds(itemIds, {
@@ -275,11 +280,11 @@ async function generateMaps(
     for (const item of await preloadedItemArray) {
         // eslint-disable-next-line no-await-in-loop
         const subitems = (await item.programs) || []
-        itemsWithExistentSubitems.set(item[mainitemId], subitems)
+        itemsWithExistentSubitems.set(item[mainItemId], subitems)
         if (subitems.length > 0) {
             for (const subitem of subitems) {
                 itemsSubitems.set(
-                    getMembershipMapKey(item[mainitemId], subitem[subitemId]),
+                    getMembershipMapKey(item[mainItemId], subitem[subitemId]),
                     subitem
                 )
             }
@@ -289,14 +294,14 @@ async function generateMaps(
     const preloadedOrganizationArray = Organization.createQueryBuilder()
         .select('Organization.organization_id')
         .innerJoin(`Organization.classes`, mainEntityName)
-        .where(`"${mainEntityName}"."${mainitemId}" IN (:...itemIds)`, {
+        .where(`"${mainEntityName}"."${mainItemId}" IN (:...itemIds)`, {
             itemIds,
         })
         .getMany()
 
     return {
         mainEntity: new Map(
-            (await preloadedItemArray).map((i) => [i[mainitemId], i])
+            (await preloadedItemArray).map((i) => [i[mainItemId], i])
         ),
         subitems: new Map(
             (await preloadedSubitemsArray).map((i) => [i[subitemId], i])

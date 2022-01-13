@@ -60,10 +60,10 @@ import { getManager } from 'typeorm'
 import { NIL_UUID } from '../utils/database'
 import {
     createEntityAPIError,
-    createDuplicateInputAPIError,
+    createDuplicateAttributeAPIError,
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
-} from '../../src/utils/resolvers'
+} from '../../src/utils/resolvers/errors'
 
 chai.use(chaiAsPromised)
 
@@ -2332,7 +2332,7 @@ describe('role', () => {
                                 const expectedErrors = Array.from(
                                     input.slice(1, input.length),
                                     (_, i) =>
-                                        createDuplicateInputAPIError(
+                                        createDuplicateAttributeAPIError(
                                             i + 1,
                                             ['roleName'],
                                             'UpdateRoleInput'
@@ -2362,7 +2362,7 @@ describe('role', () => {
                             })
 
                             const expectedErrors = Array.from(input, (_, i) =>
-                                createDuplicateInputAPIError(
+                                createDuplicateAttributeAPIError(
                                     i,
                                     ['permissionIds'],
                                     'UpdateRoleInput'

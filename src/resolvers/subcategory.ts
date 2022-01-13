@@ -17,7 +17,7 @@ import {
     UpdateSubcategoryInput,
     CreateSubcategoryInput,
 } from '../types/graphQL/subcategory'
-import { createInputLengthAPIError } from '../utils/resolvers'
+import { createInputLengthAPIError } from '../utils/resolvers/errors'
 import { config } from '../config/config'
 
 export async function createSubcategories(

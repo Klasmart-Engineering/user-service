@@ -37,5 +37,18 @@ export function createOrganizationMembership({
 
 export const createOrganizationMemberships = (
     users: User[],
-    organization: Organization
-) => users.map((user) => createOrganizationMembership({ user, organization }))
+    organization: Organization,
+    roles?: Role[]
+) =>
+    users.map((user) =>
+        createOrganizationMembership({ user, organization, roles })
+    )
+
+export const createOrgMembershipsInManyOrgs = (
+    users: User[],
+    organizations: Organization[],
+    roles?: Role[]
+) =>
+    organizations
+        .map((o) => createOrganizationMemberships(users, o, roles))
+        .flat()
