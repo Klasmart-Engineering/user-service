@@ -13,6 +13,7 @@ type PartialUser = Pick<
     | 'email'
     | 'phone'
     | 'username'
+    | 'id_provider'
     | 'date_of_birth'
     | 'gender'
     | 'alternate_email'
@@ -25,6 +26,7 @@ export function createUser({
     email,
     phone,
     username,
+    id_provider,
     date_of_birth,
     gender,
     alternate_email,
@@ -38,6 +40,7 @@ export function createUser({
     user.phone =
         phone ?? (clean.phone(faker.phone.phoneNumber('+44#######')) as string)
     user.username = username ?? faker.name.firstName()
+    user.id_provider = id_provider
     user.date_of_birth = date_of_birth ?? '01-2018'
     user.gender = gender ?? faker.random.arrayElement(DEFAULT_GENDERS)
     user.alternate_email = alternate_email

@@ -12,6 +12,7 @@ import {
     OneToOne,
     SelectQueryBuilder,
     EntityManager,
+    Unique,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
@@ -33,6 +34,7 @@ import clean from '../utils/clean'
 import logger from '../logging'
 
 @Entity()
+@Unique('UQ_USERNAME_ID_PROVIDER', ['username', 'id_provider'])
 export class User extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public user_id!: string
@@ -49,6 +51,13 @@ export class User extends CustomBaseEntity {
 
     @Column({ nullable: true })
     public username?: string
+
+    @Column({
+        nullable: true,
+        comment:
+            'Used in combination with username to uniquely identify an MCB user',
+    })
+    public id_provider?: string
 
     @Column({ nullable: true })
     public email?: string
