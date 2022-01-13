@@ -3,7 +3,12 @@ import depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
 import { Context } from '../main'
 import { Model } from '../model'
-import { checkToken, TokenPayload, validateAPIKey } from '../token'
+import {
+    checkAPIKey,
+    checkToken,
+    isAPIKey,
+    TokenPayload,
+} from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
 import { CustomError } from '../types/csv/csvError'
@@ -54,7 +59,8 @@ export function maxQueryDepth(): number {
 
 export async function authenticate(req: Request) {
     let permissions: UserPermissions
-    if (await validateAPIKey(req)) {
+    const auth = req.headers.authorization || ''
+    if ((await isAPIKey(auth)) && (await checkAPIKey(auth))) {
         permissions = new UserPermissions(undefined, true)
     } else {
         const token: TokenPayload = await checkToken(req)
@@ -83,7 +89,7 @@ async function createContext({
         // this is the case in tests where we do not setup the whole
         // express app
         logger: req.logger ?? logger,
-        loaders: createContextLazyLoaders(permissions)
+        loaders: createContextLazyLoaders(permissions),
     }
 }
 
