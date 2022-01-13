@@ -136,6 +136,26 @@ export function getCustomConstraintDetails(
             }
         }
 
+        case 'array.min': {
+            return {
+                code: customErrors.invalid_array_min_length.code,
+                message: customErrors.invalid_array_min_length.message,
+                params: {
+                    min: error.context?.limit,
+                },
+            }
+        }
+
+        case 'array.max': {
+            return {
+                code: customErrors.invalid_array_max_length.code,
+                message: customErrors.invalid_array_max_length.message,
+                params: {
+                    max: error.context?.limit,
+                },
+            }
+        }
+
         default: {
             logger.error(
                 'Missing custom message for joi constraint %s',

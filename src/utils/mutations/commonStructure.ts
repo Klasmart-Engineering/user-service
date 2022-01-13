@@ -3,7 +3,12 @@ import { config } from '../../config/config'
 import { CustomBaseEntity } from '../../entities/customBaseEntity'
 import { Status } from '../../entities/status'
 import { Context } from '../../main'
-import { APIError, APIErrorCollection } from '../../types/errors/apiError'
+import { APISchema, APISchemaMetadata } from '../../types/api'
+import {
+    APIError,
+    APIErrorCollection,
+    validateAPICall,
+} from '../../types/errors/apiError'
 import {
     createDatabaseSaveAPIError,
     createDuplicateAttributeAPIError,
@@ -174,6 +179,10 @@ abstract class Mutation<
     protected abstract readonly mainEntityIds: string[]
     protected abstract readonly output: OutputType
 
+    // all subclasses must provide joi validation schemas and metadata for their inputs
+    protected abstract readonly inputValidationSchema: APISchema<InputType>
+    protected abstract readonly inputValidationMetadata: APISchemaMetadata<InputType>
+
     // Concrete variables
     protected readonly input: InputType[]
     protected readonly permissions: Context['permissions']
@@ -254,13 +263,24 @@ abstract class Mutation<
         results: ProcessedResult<EntityType, ModifiedEntityType>[]
     ): Promise<void>
 
-    private validateInputLength() {
+    private validateInput() {
+        const errors: APIError[] = []
         if (this.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
-            throw createInputLengthAPIError(this.EntityType.name, 'min')
+            errors.push(createInputLengthAPIError(this.EntityType.name, 'min'))
         }
         if (this.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
-            throw createInputLengthAPIError(this.EntityType.name, 'max')
+            errors.push(createInputLengthAPIError(this.EntityType.name, 'max'))
         }
+
+        for (const i of this.input) {
+            const result = validateAPICall(
+                i,
+                this.inputValidationSchema,
+                this.inputValidationMetadata
+            )
+            errors.push(...result.errors)
+        }
+        if (errors.length) throw new APIErrorCollection(errors)
     }
 
     // Concrete Methods
@@ -318,7 +338,7 @@ abstract class Mutation<
     }
 
     async run(): Promise<OutputType> {
-        this.validateInputLength()
+        this.validateInput()
         const normalizedInput = this.normalize(this.input)
         const entityMaps = await this.generateEntityMaps(normalizedInput)
         await this.authorize(normalizedInput, entityMaps)

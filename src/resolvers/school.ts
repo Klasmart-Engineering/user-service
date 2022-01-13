@@ -50,6 +50,8 @@ import {
 import { Program } from '../entities/program'
 import { Role } from '../entities/role'
 import { validate } from '../utils/resolvers/inputValidation'
+import Joi from 'joi'
+import { validations } from '../utils/mutations/validations/shared'
 
 export interface CreateSchoolEntityMap extends EntityMap<School> {
     mainEntity: Map<string, School>
@@ -430,6 +432,23 @@ export class AddUsersToSchools extends AddMembershipMutation<
     protected readonly inputTypeName = 'AddUsersToSchoolInput'
     protected readonly output: SchoolsMutationResult = { schools: [] }
     protected readonly mainEntityIds: string[]
+
+    protected readonly inputValidationSchema = {
+        schoolId: validations.uuid,
+        userIds: validations.uuids,
+        schoolRoleIds: validations.uuids.min(0),
+    }
+    protected readonly inputValidationMetadata = {
+        schoolId: {
+            entity: 'School',
+        },
+        userIds: {
+            entity: 'User',
+        },
+        schoolRoleIds: {
+            entity: 'Role',
+        },
+    }
 
     constructor(
         input: AddUsersToSchoolInput[],
