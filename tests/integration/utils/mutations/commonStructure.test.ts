@@ -13,16 +13,24 @@ import {
     CategoriesMutationResult,
     DeleteCategoryInput,
 } from '../../../../src/types/graphQL/category'
-import { mutate } from '../../../../src/utils/mutations/commonStructure'
-import { createServer } from '../../../../src/utils/createServer'
-import { createInputLengthAPIError } from '../../../../src/utils/resolvers/errors'
-import { createCategories } from '../../../factories/category.factory'
 import {
-    createOrganization,
-    createOrganizations,
-} from '../../../factories/organization.factory'
+    DeleteEntityMap,
+    DeleteMutation,
+    mutate,
+} from '../../../../src/utils/mutations/commonStructure'
+import { createServer } from '../../../../src/utils/createServer'
+import {
+    createDuplicateAttributeAPIError,
+    createEntityAPIError,
+    createInputLengthAPIError,
+} from '../../../../src/utils/resolvers/errors'
+import {
+    createCategories,
+    createCategory,
+} from '../../../factories/category.factory'
+import { createOrganizations } from '../../../factories/organization.factory'
 import { createAdminUser, createUsers } from '../../../factories/user.factory'
-import { expectAPIError, compareErrors } from '../../../utils/apiError'
+import { compareErrors } from '../../../utils/apiError'
 import { userToPayload } from '../../../utils/operations/userOps'
 import {
     createTestConnection,
@@ -41,13 +49,15 @@ import {
 } from '../../../../src/resolvers/organization'
 import { OrganizationMembership } from '../../../../src/entities/organizationMembership'
 import { createOrganizationMemberships } from '../../../factories/organizationMembership.factory'
+import { Context } from '../../../../src/main'
+import sinon, { SinonFakeTimers } from 'sinon'
+import { mapCategoryToCategoryConnectionNode } from '../../../../src/pagination/categoriesConnection'
 
 use(chaiAsPromised)
 
 describe('commonStructure', () => {
     let connection: TestConnection
     let admin: User
-    let categories: Category[]
 
     before(async () => {
         connection = await createTestConnection()
@@ -60,61 +70,11 @@ describe('commonStructure', () => {
         admin = await createAdminUser().save()
     })
 
-    async function generateCategories(count: number): Promise<void> {
-        const org: Organization = await createOrganization().save()
-        categories = await Category.save(createCategories(count, org))
-    }
-
     async function deleteEntity(
         input: DeleteCategoryInput[]
     ): Promise<CategoriesMutationResult> {
         const permissions = new UserPermissions(userToPayload(admin))
         return mutate(DeleteCategories, { input }, permissions)
-    }
-
-    function generateDeleteInput() {
-        return categories.map((c) => {
-            return { id: c.id }
-        })
-    }
-
-    function expectNonExistentCategory(
-        res: any,
-        id: string,
-        inputIndex: number,
-        errorIndex: number,
-        errorCount: number
-    ) {
-        expectAPIError.nonexistent_entity(
-            res,
-            {
-                entity: 'Category',
-                entityName: id,
-                index: inputIndex,
-            },
-            ['id'],
-            errorIndex,
-            errorCount
-        )
-    }
-
-    function expectDuplicateDeleteCategory(
-        res: any,
-        inputIndex: number,
-        errorIndex: number,
-        errorCount: number
-    ) {
-        expectAPIError.duplicate_attribute_values(
-            res,
-            {
-                entity: 'DeleteCategoryInput',
-                attribute: '(id)',
-                index: inputIndex,
-            },
-            ['id'],
-            errorIndex,
-            errorCount
-        )
     }
 
     /**
@@ -158,75 +118,6 @@ describe('commonStructure', () => {
                 })
             })
         })
-
-        context('validateActiveAndNoDuplicates', () => {
-            context('when the inputs are correct', () => {
-                beforeEach(() => generateCategories(5))
-
-                it('passes validation', async () => {
-                    await expect(deleteEntity(generateDeleteInput())).to.be
-                        .fulfilled
-                })
-            })
-            context('when there are duplicate ids of the entity', () => {
-                beforeEach(async () => {
-                    await generateCategories(5)
-                    currentInput = generateDeleteInput()
-                    currentInput.push(currentInput[3])
-                })
-
-                it('throws a duplicate_attribute_values error', async () => {
-                    const res = await expect(deleteEntity(currentInput)).to.be
-                        .rejected
-                    expectAPIError.duplicate_attribute_values(
-                        res,
-                        {
-                            entity: 'DeleteCategoryInput',
-                            attribute: '(id)',
-                            index: 5,
-                        },
-                        ['id'],
-                        0,
-                        1
-                    )
-                })
-            })
-
-            context('when the entity is inactivated', () => {
-                let inactiveCategory: Category
-                beforeEach(async () => {
-                    await generateCategories(5)
-                    inactiveCategory = categories[2]
-                    await inactiveCategory.inactivate(getManager())
-                })
-
-                it('throws a nonexistent_entity error', async () => {
-                    const res = await expect(
-                        deleteEntity(generateDeleteInput())
-                    ).to.be.rejected
-                    expectNonExistentCategory(res, inactiveCategory.id, 2, 0, 1)
-                })
-            })
-
-            context('when an entity is inactivated and duplicated', () => {
-                let inactiveCategory: Category
-                beforeEach(async () => {
-                    await generateCategories(5)
-                    currentInput = generateDeleteInput()
-                    inactiveCategory = categories[2]
-                    await inactiveCategory.inactivate(getManager())
-                    currentInput.push(inactiveCategory, inactiveCategory)
-                })
-
-                it('throws nonexistent_entity at first occurrence, and throws duplicate_attribute_values henceforth', async () => {
-                    const res = await expect(deleteEntity(currentInput)).to.be
-                        .rejected
-                    expectNonExistentCategory(res, inactiveCategory.id, 2, 0, 3)
-                    expectDuplicateDeleteCategory(res, 5, 1, 3)
-                    expectDuplicateDeleteCategory(res, 6, 2, 3)
-                })
-            })
-        })
     })
 
     /**
@@ -237,40 +128,331 @@ describe('commonStructure', () => {
     //     context('#applyToDatabase', () => {})
     // })
 
-    /**
-     * Using DeleteCategories to test common methods of DeleteXs mutations
-     */
+    // this tests only the methods defined by DeleteMutation
+    // not the dummy implementations of its abstract methods
+    // those should be tested seperatly for each real child class
     describe('deleteMutation', () => {
-        context('#run', () => {
-            context('when deleting 1 then 50 categories', () => {
-                it('makes the same number of database calls', async () => {
-                    await generateCategories(1)
-                    connection.logger.reset()
-                    await expect(deleteEntity(generateDeleteInput())).to.be
-                        .fulfilled
-                    const baseCount = connection.logger.count
+        class DeleteTest extends DeleteMutation<
+            Category,
+            { id: string },
+            CategoriesMutationResult
+        > {
+            readonly EntityType = Category
+            readonly inputTypeName = 'TestInput'
+            protected readonly output: CategoriesMutationResult = {
+                categories: [],
+            }
+            protected readonly mainEntityIds: string[]
+            // this is used to avoid needing to access
+            // the real db in generateEntityMaps
+            protected existingCategories: Category[]
 
-                    await generateCategories(50)
-                    connection.logger.reset()
-                    await expect(deleteEntity(generateDeleteInput())).to.be
-                        .fulfilled
-                    expect(connection.logger.count).to.equal(baseCount)
+            constructor(
+                input: { id: string }[],
+                permissions: Context['permissions'],
+                existingCategories: Category[]
+            ) {
+                super(input, permissions)
+                this.mainEntityIds = input.map((val) => val.id)
+                this.existingCategories = existingCategories
+            }
+
+            async generateEntityMaps(): Promise<DeleteEntityMap<Category>> {
+                return {
+                    mainEntity: new Map(
+                        this.existingCategories.map((c) => [c.id, c])
+                    ),
+                }
+            }
+
+            async authorize() {
+                return
+            }
+
+            async buildOutput(): Promise<void> {
+                return
+            }
+        }
+
+        let inputCategories: Category[]
+        let inputs: { id: string }[]
+        let permissions: UserPermissions
+        let categoriesMap: Map<string, Category>
+
+        beforeEach(async () => {
+            permissions = new UserPermissions(userToPayload(admin))
+            inputCategories = await createCategories(5)
+            await Category.save(inputCategories)
+            inputs = inputCategories.map(({ id }) => {
+                return {
+                    id,
+                }
+            })
+            categoriesMap = new Map(inputCategories.map((c) => [c.id, c]))
+        })
+
+        context('#run', () => {
+            it('does not error', async () => {
+                await expect(
+                    new DeleteTest(inputs, permissions, inputCategories).run()
+                ).to.be.fulfilled
+            })
+        })
+
+        context('#validationOverAllInputs', () => {
+            it('returns all inputs and no errors when input IDs are active and not duplicated', async () => {
+                const mutation = new DeleteTest(
+                    inputs,
+                    permissions,
+                    inputCategories
+                )
+                const {
+                    validInputs,
+                    apiErrors,
+                } = mutation.validationOverAllInputs(
+                    inputs,
+                    await mutation.generateEntityMaps()
+                )
+                const expectedValidInputs = inputs.map((input, index) => {
+                    return {
+                        input,
+                        index,
+                    }
+                })
+                expect(validInputs).to.deep.equal(expectedValidInputs)
+                expect(apiErrors).to.have.length(0)
+            })
+
+            context('when there are duplicate ids of the entity', () => {
+                beforeEach(async () => {
+                    inputs[0] = inputs[1]
+                })
+
+                it('returns a duplicate_attribute_values error', async () => {
+                    const mutation = new DeleteTest(
+                        inputs,
+                        permissions,
+                        inputCategories
+                    )
+                    const {
+                        validInputs,
+                        apiErrors,
+                    } = mutation.validationOverAllInputs(
+                        inputs,
+                        await mutation.generateEntityMaps()
+                    )
+
+                    const expectedValidInputs = inputs.map((input, index) => {
+                        return {
+                            input,
+                            index,
+                        }
+                    })
+                    expectedValidInputs.splice(1, 1)
+                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(apiErrors).to.have.length(1)
+                    const error = createDuplicateAttributeAPIError(
+                        1,
+                        ['id'],
+                        mutation.inputTypeName
+                    )
+                    compareErrors(apiErrors[0], error)
+                })
+            })
+
+            context('when the entity is inactivated', () => {
+                let inactiveCategory: Category
+
+                beforeEach(async () => {
+                    inactiveCategory = inputCategories[0]
+                    await inactiveCategory.inactivate(getManager())
+                })
+
+                it('returns a nonexistent_entity error', async () => {
+                    const mutation = new DeleteTest(
+                        inputs,
+                        permissions,
+                        inputCategories
+                    )
+                    const {
+                        validInputs,
+                        apiErrors,
+                    } = mutation.validationOverAllInputs(
+                        inputs,
+                        await mutation.generateEntityMaps()
+                    )
+
+                    const expectedValidInputs = inputs
+                        .map((input, index) => {
+                            return {
+                                input,
+                                index,
+                            }
+                        })
+                        .slice(1)
+                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(apiErrors).to.have.length(1)
+                    const error = createEntityAPIError(
+                        'nonExistent',
+                        0,
+                        mutation.EntityType.name,
+                        inputs[0].id
+                    )
+                    compareErrors(apiErrors[0], error)
+                })
+            })
+
+            context('when an entity is inactivated and duplicated', () => {
+                let inactiveCategory: Category
+
+                beforeEach(async () => {
+                    inactiveCategory = inputCategories[0]
+                    await inactiveCategory.inactivate(getManager())
+                    inputs[1] = inputs[0]
+                })
+
+                it('returns nonexistent_entity at first occurrence, and duplicate_attribute_values otherwise', async () => {
+                    const mutation = new DeleteTest(
+                        inputs,
+                        permissions,
+                        inputCategories
+                    )
+                    const {
+                        validInputs,
+                        apiErrors,
+                    } = mutation.validationOverAllInputs(
+                        inputs,
+                        await mutation.generateEntityMaps()
+                    )
+                    const expectedValidInputs = inputs
+                        .map((input, index) => {
+                            return {
+                                input,
+                                index,
+                            }
+                        })
+                        .slice(2)
+                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(apiErrors).to.have.length(2)
+                    const inactiveError = createEntityAPIError(
+                        'nonExistent',
+                        0,
+                        mutation.EntityType.name,
+                        inputs[0].id
+                    )
+                    compareErrors(apiErrors[0], inactiveError)
+                    const duplicateError = createDuplicateAttributeAPIError(
+                        1,
+                        ['id'],
+                        mutation.inputTypeName
+                    )
+                    compareErrors(apiErrors[1], duplicateError)
                 })
             })
         })
+
+        context('#validate', () => {
+            // delete doesn't do any per-input validation
+            // because the ids have already been checked in validationOverAllInputs
+            it('returns no errors', () => {
+                const mutation = new DeleteTest(
+                    inputs,
+                    permissions,
+                    inputCategories
+                )
+                expect(mutation.validate()).to.be.empty
+            })
+        })
+
+        context('#process', () => {
+            let clock: SinonFakeTimers
+            let result: {
+                outputEntity: Category
+            }
+            beforeEach(async () => {
+                clock = sinon.useFakeTimers()
+                const mutation = new DeleteTest(
+                    inputs,
+                    permissions,
+                    inputCategories
+                )
+                result = mutation.process(
+                    inputs[0],
+                    await mutation.generateEntityMaps(),
+                    0
+                )
+            })
+
+            afterEach(() => {
+                clock.restore()
+            })
+
+            it('returns the correct entity', () => {
+                expect(result.outputEntity.id).to.eq(inputs[0].id)
+            })
+
+            it('sets its status to inactive', async () => {
+                expect(result.outputEntity.status).to.eq(Status.INACTIVE)
+            })
+
+            it('sets its deleted_at date', () => {
+                expect(result.outputEntity.deleted_at).to.deep.equal(
+                    new clock.Date()
+                )
+            })
+        })
+
         context('#applyToDatabase', () => {
-            beforeEach(() => generateCategories(5))
-            it('successfully deletes the entities', async () => {
-                await expect(deleteEntity(generateDeleteInput())).to.be
-                    .fulfilled
-                expect(
-                    await Category.count({
-                        where: {
-                            id: In(categories.map((c) => c.id)),
-                            status: Status.INACTIVE,
-                        },
+            let clock: SinonFakeTimers
+            let notInputCategory: Category
+            beforeEach(async () => {
+                clock = sinon.useFakeTimers()
+                notInputCategory = await createCategory()
+                await Category.save(notInputCategory)
+                connection.logger.reset()
+                const mutation = new DeleteTest(
+                    inputs,
+                    permissions,
+                    inputCategories
+                )
+                await mutation.applyToDatabase()
+            })
+
+            afterEach(() => {
+                clock.restore()
+            })
+
+            it('makes the input entities inactive', async () => {
+                const dbCategories = await Category.findByIds(
+                    inputs.map(({ id }) => id)
+                )
+                for (const dbCategory of dbCategories) {
+                    expect(dbCategory.deleted_at).to.deep.equal(
+                        new clock.Date()
+                    )
+                    expect(
+                        mapCategoryToCategoryConnectionNode(dbCategory)
+                    ).to.deep.equal({
+                        ...mapCategoryToCategoryConnectionNode(
+                            categoriesMap.get(dbCategory.id)!
+                        ),
+                        status: Status.INACTIVE,
                     })
-                ).to.equal(categories.length)
+                }
+            })
+            it('does not delete other entities', async () => {
+                const dbNotDeleted = await Category.findByIds([
+                    notInputCategory.id,
+                ])
+                expect(dbNotDeleted).to.have.lengthOf(1)
+                expect(
+                    mapCategoryToCategoryConnectionNode(dbNotDeleted[0])
+                ).to.deep.equal(
+                    mapCategoryToCategoryConnectionNode(notInputCategory)
+                )
+            })
+            it('makes 1 query', () => {
+                expect(connection.logger.count).to.eq(1)
             })
         })
     })

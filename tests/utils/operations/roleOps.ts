@@ -112,7 +112,7 @@ const DELETE_ROLE = `
 `
 
 const ROLE_FIELDS = gql`
-    fragment roleFields on RoleConnectionNode {
+    fragment roleFieldsBasic on RoleConnectionNode {
         id
         name
         description
@@ -127,7 +127,7 @@ export const CREATE_ROLES = gql`
     mutation CreateRoles($input: [CreateRoleInput!]!) {
         createRoles(input: $input) {
             roles {
-                ...roleFields
+                ...roleFieldsBasic
             }
         }
     }
@@ -139,7 +139,7 @@ export const UPDATE_ROLES = gql`
     mutation UpdateRoles($input: [UpdateRoleInput!]!) {
         updateRoles(input: $input) {
             roles {
-                ...roleFields
+                ...roleFieldsBasic
             }
         }
     }
@@ -151,7 +151,7 @@ export const DELETE_ROLES = gql`
     mutation DeleteRoles($input: [DeleteRoleInput!]!) {
         deleteRoles(input: $input) {
             roles {
-                ...roleFields
+                ...roleFieldsBasic
             }
         }
     }

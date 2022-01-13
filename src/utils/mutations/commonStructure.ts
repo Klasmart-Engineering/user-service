@@ -406,13 +406,15 @@ export abstract class DeleteMutation<
         super(input, permissions)
     }
 
-    protected validationOverAllInputs(
+    validationOverAllInputs(
         inputs: InputType[],
         entityMaps: EntityMap<EntityType>
     ): {
         validInputs: { index: number; input: InputType }[]
         apiErrors: APIError[]
     } {
+        // todo: the active checks should be moved into `validate`
+        // as they can be done on each input in isolation
         return validateActiveAndNoDuplicates(
             inputs,
             entityMaps,
@@ -422,9 +424,9 @@ export abstract class DeleteMutation<
         )
     }
 
-    protected validate = () => []
+    validate = () => []
 
-    protected process(
+    process(
         _currentInput: InputType,
         entityMaps: DeleteEntityMap<EntityType>,
         index: number
@@ -436,7 +438,7 @@ export abstract class DeleteMutation<
         return { outputEntity: currentEntity }
     }
 
-    protected async applyToDatabase(): Promise<void> {
+    async applyToDatabase(): Promise<void> {
         await getManager()
             .createQueryBuilder()
             .update(this.EntityType)
