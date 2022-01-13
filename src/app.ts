@@ -55,6 +55,11 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(correlationMiddleware())
     app.use(cors(corsOptions))
 
+    const viewsPath = path.join(__dirname, '..', 'views')
+    app.use(express.static(viewsPath))
+    app.set('views', viewsPath)
+    app.set('view engine', 'pug')
+
     // unauthenticated endpoints
     app.get(`${options.routePrefix}/version`, (_, res) => {
         res.status(200).json({
@@ -74,23 +79,21 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(validateToken)
 
     // authenticated end points
-
-    const viewsPath = path.join(__dirname, '..', 'views')
-    app.use(express.static(viewsPath))
-    app.set('views', viewsPath)
-    app.set('view engine', 'pug')
-
-    app.get(`${options.routePrefix}`, (_, res) => {
+    app.get(`${options.routePrefix}`, docsAreEnabled, (_, res) => {
         res.render('index', { routePrefix: ROUTE_PREFIX })
     })
-    app.get(`${options.routePrefix}/explorer`, (_, res) => {
+    app.get(`${options.routePrefix}/explorer`, docsAreEnabled, (_, res) => {
         res.render('graphiql', { routePrefix: ROUTE_PREFIX })
     })
-    app.get(`${options.routePrefix}/playground`, (req, res, next) => {
-        expressPlayground({
-            endpoint: `${options.routePrefix}/playground`,
-        })(req, res, next)
-    })
+    app.get(
+        `${options.routePrefix}/playground`,
+        docsAreEnabled,
+        (req, res, next) => {
+            expressPlayground({
+                endpoint: `${options.routePrefix}/playground`,
+            })(req, res, next)
+        }
+    )
 
     return app
 }
@@ -109,4 +112,19 @@ export const initApp = async () => {
     })
 
     return { expressApp: app, apolloServer }
+}
+
+export function docsAreEnabled(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+) {
+    if (
+        process.env.ENABLE_PAGE_DOCS === '1' ||
+        process.env.NODE_ENV === 'development'
+    ) {
+        next()
+    } else {
+        res.status(403).send('Docs are disabled on this server.')
+    }
 }
