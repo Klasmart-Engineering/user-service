@@ -186,6 +186,19 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     return [failedActiveInputs, failedDuplicateInputs]
 }
 
+export function validateNoDuplicates<A>(
+    inputs: A[],
+    mainEntityIds: string[],
+    inputTypeName: string
+): Map<number, APIError>[] {
+    const errors: APIError[] = []
+    const ids = inputs.map((_, index) => mainEntityIds[index])
+    const failedDuplicateInputs = validateNoDuplicate(ids, inputTypeName, 'id')
+    errors.push(...failedDuplicateInputs.values())
+
+    return [failedDuplicateInputs]
+}
+
 export function validateSubItemsLengthAndNoDuplicates<
     InputType,
     SubItemName extends keyof InputType

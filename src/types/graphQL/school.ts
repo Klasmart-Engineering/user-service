@@ -57,6 +57,8 @@ export interface AddClassesToSchoolInput {
     classIds: string[]
 }
 
+export type RemoveClassesFromSchoolInput = AddClassesToSchoolInput
+
 export interface SchoolsMutationResult {
     schools: ISchoolsConnectionNode[]
 }

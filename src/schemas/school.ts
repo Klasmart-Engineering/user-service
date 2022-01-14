@@ -16,6 +16,7 @@ import {
     AddClassesToSchools,
     AddProgramsToSchools,
     AddUsersToSchools,
+    RemoveClassesFromSchools,
     RemoveProgramsFromSchools,
 } from '../resolvers/school'
 import {
@@ -48,6 +49,9 @@ const typeDefs = gql`
         ): SchoolsMutationResult
         removeProgramsFromSchools(
             input: [RemoveProgramsFromSchoolInput!]!
+        ): SchoolsMutationResult
+        removeClassesFromSchools(
+            input: [RemoveClassesFromSchoolInput!]!
         ): SchoolsMutationResult
     }
     extend type Query {
@@ -175,6 +179,11 @@ const typeDefs = gql`
     input AddProgramsToSchoolInput {
         schoolId: ID!
         programIds: [ID!]!
+    }
+
+    input RemoveClassesFromSchoolInput {
+        schoolId: ID!
+        classIds: [ID!]!
     }
 
     input SchoolFilter {
@@ -337,6 +346,8 @@ export default function getDefault(
                     mutate(RemoveUsersFromSchools, args, ctx.permissions),
                 removeProgramsFromSchools: (_parent, args, ctx, _info) =>
                     mutate(RemoveProgramsFromSchools, args, ctx.permissions),
+                removeClassesFromSchools: (_parent, args, ctx, _info) =>
+                    mutate(RemoveClassesFromSchools, args, ctx.permissions),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>
