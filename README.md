@@ -2,7 +2,7 @@
 
 | Statements                                                            | Branches                                                            | Functions                                                            | Lines                                                           |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------- |
-| ![Statements](https://img.shields.io/badge/Coverage-68.92%25-red.svg) | ![Branches](https://img.shields.io/badge/Coverage-37.41%25-red.svg) | ![Functions](https://img.shields.io/badge/Coverage-67.04%25-red.svg) | ![Lines](https://img.shields.io/badge/Coverage-71.9%25-red.svg) |
+| ![Statements](https://img.shields.io/badge/statements-92.98%25-brightgreen.svg) | ![Branches](https://img.shields.io/badge/branches-82.1%25-yellow.svg) | ![Functions](https://img.shields.io/badge/functions-91.79%25-brightgreen.svg) | ![Lines](https://img.shields.io/badge/lines-92.85%25-brightgreen.svg) |
 
 Welcome to the admin service (formerly user service)!
 

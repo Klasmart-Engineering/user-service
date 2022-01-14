@@ -195,13 +195,13 @@ input RemoveOrganizationRolesFromUserInput {
 
 input AddSchoolRolesToUserInput {
   userId: ID!
-  schooId: ID!
+  schoolId: ID!
   roleIds: [ID!]!
 }
 
 input RemoveSchoolRolesFromUserInput {
   userId: ID!
-  schooId: ID!
+  schoolId: ID!
   roleIds: [ID!]!
 }
 

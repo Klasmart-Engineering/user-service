@@ -105,6 +105,9 @@ const typeDefs = gql`
         addRole(role_id: ID!): Role
         addRoles(role_ids: [ID!]!): [Role]
         removeRole(role_id: ID!): SchoolMembership
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/ezmgXfSg"
+            )
         leave(_: Int): Boolean
             @deprecated(
                 reason: "Sunset Date: 21/03/22 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"

@@ -181,6 +181,9 @@ const typeDefs = gql`
             )
         createSchool(school_name: String, shortcode: String): School
         createClass(class_name: String, shortcode: String): Class
+            @deprecated(
+                reason: "Sunset Date: 10/04/2022 https://calmisland.atlassian.net/l/c/GSPr3XYb"
+            )
         createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
         createOrUpdateGrades(grades: [GradeDetail]!): [Grade]
         createOrUpdateCategories(categories: [CategoryDetail]!): [Category]

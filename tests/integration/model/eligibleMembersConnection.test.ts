@@ -53,6 +53,7 @@ describe('eligibleMembersConnection', () => {
     let studentRoleId: string
     let teacherRole: Role
     let studentRole: Role
+    let cls: Class
     let classId: string
     let organization: Organization
     let orgOwnerPermissions: UserPermissions
@@ -104,13 +105,15 @@ describe('eligibleMembersConnection', () => {
             organization,
         }).save()
 
-        classId = (await createClass(undefined, organization).save()).class_id
+        cls = await createClass(undefined, organization).save()
+        classId = cls.class_id
 
         teacherRole = await createRole('Teacher Role', organization).save()
         teacherRoleId = teacherRole.role_id
         studentRole = await createRole('Student Role', organization).save()
         studentRoleId = studentRole.role_id
     })
+
     describe('eligibleTeachersConnection', () => {
         context(
             'when one user is authorized to attend a live class as a teacher, and another as a student',
@@ -165,7 +168,7 @@ describe('eligibleMembersConnection', () => {
                         const scope = getRepository(User).createQueryBuilder()
                         const conn = await eligibleMembersConnectionResolver(
                             info,
-                            'attend_live_class_as_a_teacher_186',
+                            PermissionName.attend_live_class_as_a_teacher_186,
                             {
                                 classId,
                                 direction: 'FORWARD',
@@ -179,6 +182,35 @@ describe('eligibleMembersConnection', () => {
                         expect(userIds).to.have.length(1)
                         expect(userIds[0]).to.equal(teacherId)
                     })
+
+                    context(
+                        'when the teacher is already a teacher in the class',
+                        () => {
+                            beforeEach(async () => {
+                                cls.teachers = Promise.resolve([teacher])
+                                await cls.save()
+                            })
+                            it('is excluded from results', async () => {
+                                const scope = getRepository(
+                                    User
+                                ).createQueryBuilder()
+                                const conn = await eligibleMembersConnectionResolver(
+                                    info,
+                                    PermissionName.attend_live_class_as_a_teacher_186,
+                                    {
+                                        classId,
+                                        direction: 'FORWARD',
+                                        directionArgs: {
+                                            count: 50,
+                                        },
+                                        scope,
+                                    }
+                                )
+
+                                expect(conn.edges).to.have.length(0)
+                            })
+                        }
+                    )
                 })
 
                 context('and via school permission', () => {
@@ -209,7 +241,7 @@ describe('eligibleMembersConnection', () => {
                         const scope = getRepository(User).createQueryBuilder()
                         const conn = await eligibleMembersConnectionResolver(
                             info,
-                            'attend_live_class_as_a_teacher_186',
+                            PermissionName.attend_live_class_as_a_teacher_186,
                             {
                                 classId,
                                 direction: 'FORWARD',
@@ -255,7 +287,7 @@ describe('eligibleMembersConnection', () => {
                         const scope = getRepository(User).createQueryBuilder()
                         const conn = await eligibleMembersConnectionResolver(
                             info,
-                            'attend_live_class_as_a_teacher_186',
+                            PermissionName.attend_live_class_as_a_teacher_186,
                             {
                                 classId,
                                 direction: 'FORWARD',
@@ -289,7 +321,7 @@ describe('eligibleMembersConnection', () => {
                         const scope = getRepository(User).createQueryBuilder()
                         const conn = await eligibleMembersConnectionResolver(
                             info,
-                            'attend_live_class_as_a_teacher_186',
+                            PermissionName.attend_live_class_as_a_teacher_186,
                             {
                                 classId,
                                 direction: 'FORWARD',
@@ -365,7 +397,7 @@ describe('eligibleMembersConnection', () => {
                         const scope = getRepository(User).createQueryBuilder()
                         const conn = await eligibleMembersConnectionResolver(
                             info,
-                            'attend_live_class_as_a_student_187',
+                            PermissionName.attend_live_class_as_a_student_187,
                             {
                                 classId,
                                 direction: 'FORWARD',
@@ -379,6 +411,35 @@ describe('eligibleMembersConnection', () => {
                         expect(userIds).to.have.length(1)
                         expect(userIds[0]).to.equal(studentId)
                     })
+
+                    context(
+                        'when the student is already a student in the class',
+                        () => {
+                            beforeEach(async () => {
+                                cls.students = Promise.resolve([student])
+                                await cls.save()
+                            })
+                            it('is excluded from results', async () => {
+                                const scope = getRepository(
+                                    User
+                                ).createQueryBuilder()
+                                const conn = await eligibleMembersConnectionResolver(
+                                    info,
+                                    PermissionName.attend_live_class_as_a_student_187,
+                                    {
+                                        classId,
+                                        direction: 'FORWARD',
+                                        directionArgs: {
+                                            count: 50,
+                                        },
+                                        scope,
+                                    }
+                                )
+
+                                expect(conn.edges).to.have.length(0)
+                            })
+                        }
+                    )
                 })
 
                 context('and via school permission', () => {
@@ -405,7 +466,7 @@ describe('eligibleMembersConnection', () => {
                         const scope = getRepository(User).createQueryBuilder()
                         const conn = await eligibleMembersConnectionResolver(
                             info,
-                            'attend_live_class_as_a_student_187',
+                            PermissionName.attend_live_class_as_a_student_187,
                             {
                                 classId,
                                 direction: 'FORWARD',
@@ -452,7 +513,7 @@ describe('eligibleMembersConnection', () => {
                         const scope = getRepository(User).createQueryBuilder()
                         const conn = await eligibleMembersConnectionResolver(
                             info,
-                            'attend_live_class_as_a_student_187',
+                            PermissionName.attend_live_class_as_a_student_187,
                             {
                                 classId,
                                 direction: 'FORWARD',
@@ -484,7 +545,7 @@ describe('eligibleMembersConnection', () => {
                         const scope = getRepository(User).createQueryBuilder()
                         const conn = await eligibleMembersConnectionResolver(
                             info,
-                            'attend_live_class_as_a_student_187',
+                            PermissionName.attend_live_class_as_a_student_187,
                             {
                                 classId,
                                 direction: 'FORWARD',
@@ -610,7 +671,7 @@ describe('eligibleMembersConnection', () => {
                 const scope = getRepository(User).createQueryBuilder()
                 const conn = await eligibleMembersConnectionResolver(
                     info,
-                    'attend_live_class_as_a_student_187',
+                    PermissionName.attend_live_class_as_a_student_187,
                     {
                         classId: class1.class_id,
                         direction: 'FORWARD',
@@ -628,7 +689,7 @@ describe('eligibleMembersConnection', () => {
                 const scope = getRepository(User).createQueryBuilder()
                 const conn = await eligibleMembersConnectionResolver(
                     info,
-                    'attend_live_class_as_a_teacher_186',
+                    PermissionName.attend_live_class_as_a_teacher_186,
                     {
                         classId: class1.class_id,
                         direction: 'FORWARD',
@@ -652,7 +713,7 @@ describe('eligibleMembersConnection', () => {
                 let scope = getRepository(User).createQueryBuilder()
                 let conn = await eligibleMembersConnectionResolver(
                     info,
-                    'attend_live_class_as_a_student_187',
+                    PermissionName.attend_live_class_as_a_student_187,
                     {
                         classId: class1.class_id,
                         direction: 'FORWARD',
@@ -673,7 +734,7 @@ describe('eligibleMembersConnection', () => {
                 scope = getRepository(User).createQueryBuilder()
                 conn = await eligibleMembersConnectionResolver(
                     info,
-                    'attend_live_class_as_a_student_187',
+                    PermissionName.attend_live_class_as_a_student_187,
                     {
                         classId: class1.class_id,
                         direction: 'FORWARD',
@@ -696,7 +757,7 @@ describe('eligibleMembersConnection', () => {
                 let scope = getRepository(User).createQueryBuilder()
                 let conn = await eligibleMembersConnectionResolver(
                     info,
-                    'attend_live_class_as_a_teacher_186',
+                    PermissionName.attend_live_class_as_a_teacher_186,
                     {
                         classId: class1.class_id,
                         direction: 'FORWARD',
@@ -716,7 +777,7 @@ describe('eligibleMembersConnection', () => {
                 scope = getRepository(User).createQueryBuilder()
                 conn = await eligibleMembersConnectionResolver(
                     info,
-                    'attend_live_class_as_a_teacher_186',
+                    PermissionName.attend_live_class_as_a_teacher_186,
                     {
                         classId: class1.class_id,
                         direction: 'FORWARD',

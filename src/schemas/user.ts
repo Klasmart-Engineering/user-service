@@ -22,11 +22,13 @@ import {
     addOrganizationRolesToUsers,
     createUsers,
     removeOrganizationRolesFromUsers,
+    RemoveSchoolRolesFromUsers,
     updateUsers,
 } from '../resolvers/user'
 import { UserConnectionNode } from '../types/graphQL/user'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { mutate } from '../utils/mutations/commonStructure'
 
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
 
@@ -37,6 +39,12 @@ const typeDefs = gql`
         ): UsersMutationResult
         removeOrganizationRolesFromUsers(
             input: [RemoveOrganizationRolesFromUserInput!]!
+        ): UsersMutationResult
+        addSchoolRolesToUsers(
+            input: [AddSchoolRolesToUserInput!]!
+        ): UsersMutationResult
+        removeSchoolRolesFromUsers(
+            input: [RemoveSchoolRolesFromUserInput!]!
         ): UsersMutationResult
         me: User
         user(
@@ -96,6 +104,18 @@ const typeDefs = gql`
     input RemoveOrganizationRolesFromUserInput {
         userId: ID!
         organizationId: ID!
+        roleIds: [ID!]!
+    }
+
+    input AddSchoolRolesToUserInput {
+        userId: ID!
+        schoolId: ID!
+        roleIds: [ID!]!
+    }
+
+    input RemoveSchoolRolesFromUserInput {
+        userId: ID!
+        schoolId: ID!
         roleIds: [ID!]!
     }
 
@@ -449,7 +469,8 @@ export default function getDefault(
                     addOrganizationRolesToUsers(args, ctx),
                 removeOrganizationRolesFromUsers: (_parent, args, ctx, _info) =>
                     removeOrganizationRolesFromUsers(args, ctx),
-
+                removeSchoolRolesFromUsers: (_parent, args, ctx, _info) =>
+                    mutate(RemoveSchoolRolesFromUsers, args, ctx.permissions),
                 createUsers: (_parent, args, ctx, _info) =>
                     createUsers(args, ctx),
                 updateUsers: (_parent, args, ctx, _info) =>

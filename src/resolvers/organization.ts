@@ -1,4 +1,4 @@
-import { In } from 'typeorm'
+import { getManager, In } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Role } from '../entities/role'
@@ -13,14 +13,27 @@ import {
     OrganizationsMutationResult,
     RemoveUsersFromOrganizationInput,
 } from '../types/graphQL/organization'
-import { createEntityAPIError, getMembershipMapKey } from '../utils/resolvers'
+import { createEntityAPIError } from '../utils/resolvers/errors'
 import { config } from '../config/config'
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
 import {
     RemoveMembershipMutation,
     EntityMap,
     AddMembershipMutation,
+    ProcessedResult,
+    validateActiveAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
+import { getMembershipMapKey } from '../utils/resolvers/entityMaps'
+
+export interface AddUsersToOrganizationsEntityMap
+    extends EntityMap<Organization> {
+    mainEntity: Map<string, Organization>
+    users: Map<string, User>
+    roles: Map<string, Role>
+    memberships: Map<string, OrganizationMembership>
+}
+
+type RemoveUsersFromOrganizationsEntityMap = AddUsersToOrganizationsEntityMap
 
 export class AddUsersToOrganizations extends AddMembershipMutation<
     Organization,
@@ -43,7 +56,7 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
 
     generateEntityMaps = (
         input: AddUsersToOrganizationInput[]
-    ): Promise<EntityMap<Organization>> =>
+    ): Promise<AddUsersToOrganizationsEntityMap> =>
         generateMaps(this.mainEntityIds, input)
 
     protected authorize(): Promise<void> {
@@ -53,11 +66,27 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
         )
     }
 
+    protected validationOverAllInputs(
+        inputs: AddUsersToOrganizationInput[],
+        entityMaps: AddUsersToOrganizationsEntityMap
+    ): {
+        validInputs: { index: number; input: AddUsersToOrganizationInput }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.organizationId),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate(
         index: number,
         currentEntity: Organization,
         currentInput: AddUsersToOrganizationInput,
-        maps: EntityMap<Organization>
+        maps: AddUsersToOrganizationsEntityMap
     ): APIError[] {
         // Retrieval
         const errors: APIError[] = []
@@ -114,10 +143,12 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
     }
 
     protected process(
-        currentEntity: Organization,
         currentInput: AddUsersToOrganizationInput,
-        maps: EntityMap<Organization>
-    ): OrganizationMembership[] {
+        maps: AddUsersToOrganizationsEntityMap,
+        index: number
+    ): ProcessedResult<Organization, OrganizationMembership> {
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+
         // Retrieval
         const { organizationId, organizationRoleIds, userIds } = currentInput
         const roles = organizationRoleIds.map(
@@ -140,11 +171,26 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
                 generateShortCode(userId, config.limits.SHORTCODE_MAX_LENGTH)
             memberships.push(membership)
         }
-        return memberships
+        return { outputEntity: currentEntity, modifiedEntity: memberships }
     }
 
-    protected buildOutput = (currentEntity: Organization): void =>
-        addOrgToOutput(currentEntity, this.output)
+    protected async applyToDatabase(
+        results: ProcessedResult<Organization, OrganizationMembership>[]
+    ): Promise<void> {
+        const allEntitiesToSave = []
+        for (const r of results) {
+            // we don't change the organization itself
+            // so no need to save it
+            if (r.modifiedEntity !== undefined) {
+                allEntitiesToSave.push(...r.modifiedEntity)
+            }
+        }
+        await getManager().save(allEntitiesToSave)
+    }
+
+    protected buildOutput = async (
+        currentEntity: Organization
+    ): Promise<void> => addOrgToOutput(currentEntity, this.output)
 }
 
 export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
@@ -178,7 +224,7 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
 
     generateEntityMaps = (
         input: RemoveUsersFromOrganizationInput[]
-    ): Promise<EntityMap<Organization>> =>
+    ): Promise<RemoveUsersFromOrganizationsEntityMap> =>
         generateMaps(this.mainEntityIds, input)
 
     protected authorize(): Promise<void> {
@@ -188,11 +234,30 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
         )
     }
 
+    protected validationOverAllInputs(
+        inputs: RemoveUsersFromOrganizationInput[],
+        entityMaps: RemoveUsersFromOrganizationsEntityMap
+    ): {
+        validInputs: {
+            index: number
+            input: RemoveUsersFromOrganizationInput
+        }[]
+        apiErrors: APIError[]
+    } {
+        return validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.organizationId),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+    }
+
     protected validate(
         index: number,
         currentEntity: Organization,
         currentInput: RemoveUsersFromOrganizationInput,
-        maps: EntityMap<Organization>
+        maps: RemoveUsersFromOrganizationsEntityMap
     ): APIError[] {
         // Retrieval
         const errors: APIError[] = []
@@ -230,10 +295,11 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
     }
 
     protected process(
-        _currentEntity: Organization,
         currentInput: RemoveUsersFromOrganizationInput,
-        maps: EntityMap<Organization>
-    ): OrganizationMembership[] {
+        maps: RemoveUsersFromOrganizationsEntityMap,
+        index: number
+    ) {
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
         const { organizationId, userIds } = currentInput
         const memberships: OrganizationMembership[] = []
         for (const userId of userIds) {
@@ -244,11 +310,12 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
             memberships.push(membership)
         }
 
-        return memberships
+        return { outputEntity: currentEntity, others: memberships }
     }
 
-    protected buildOutput = (currentEntity: Organization): void =>
-        addOrgToOutput(currentEntity, this.output)
+    protected buildOutput = async (
+        currentEntity: Organization
+    ): Promise<void> => addOrgToOutput(currentEntity, this.output)
 }
 
 async function generateMaps(
@@ -257,7 +324,7 @@ async function generateMaps(
         userIds: string[]
         organizationRoleIds?: string[]
     }[]
-) {
+): Promise<AddUsersToOrganizationsEntityMap> {
     const preloadedOrgArray = Organization.findByIds(organizationIds, {
         where: { status: Status.ACTIVE },
     })
@@ -266,9 +333,10 @@ async function generateMaps(
         { where: { status: Status.ACTIVE } }
     )
     let preloadedRoleArray: Promise<Role[]> = Promise.resolve([])
-    if (input[0].organizationRoleIds) {
+    // Check that we are dealing with AddUsersToOrganizationInput & not RemoveUsersFromOrganizationInput
+    if (input.some((i) => i.organizationRoleIds)) {
         preloadedRoleArray = Role.findByIds(
-            input.map((i) => i.organizationRoleIds).flat(),
+            input.flatMap((i) => i.organizationRoleIds),
             { where: { status: Status.ACTIVE } }
         )
     }

@@ -5,10 +5,6 @@ import { Program } from '../../../src/entities/program'
 import { School } from '../../../src/entities/school'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
-import {
-    DeleteClassInput,
-    ClassConnectionNode,
-} from '../../../src/types/graphQL/class'
 import { ApolloServerTestClient } from '../createTestClient'
 import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
@@ -285,6 +281,11 @@ export const ADD_PROGRAMS_TO_CLASSES = gql`
         }
     }
 `
+export const CREATE_CLASSES = `mutation($input: [CreateClassInput!]!) {
+    createClasses(input: $input) {
+        ${CLASSES_MUTATION_RESULT}
+    }
+}`
 
 export async function updateClass(
     testClient: ApolloServerTestClient,

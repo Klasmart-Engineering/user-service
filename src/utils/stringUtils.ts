@@ -72,3 +72,57 @@ export function isHexadecimalColor(hex: string): boolean {
 export function objectToKey<T extends Record<string, unknown>>(obj: T) {
     return JSON.stringify(obj, Object.keys(obj).sort())
 }
+
+// normal maps don't support non-primitive keys
+// so this works by turning objects into JSON strings
+// only supports string properties as object properties
+// have weird edge cases like:
+// * could be expensive
+// * could be recursive
+export class ObjMap<Key extends { [key: string]: string }, Value> {
+    map: Map<string, Value>
+
+    constructor(entries?: { key: Key; value: Value }[]) {
+        if (entries !== undefined) {
+            this.map = new Map(
+                entries.map((entry) => [objectToKey(entry.key), entry.value])
+            )
+        } else {
+            this.map = new Map()
+        }
+    }
+
+    set(key: Key, value: Value) {
+        this.map.set(objectToKey(key), value)
+    }
+
+    get(key: Key) {
+        return this.map.get(objectToKey(key))
+    }
+
+    has(key: Key) {
+        return this.map.has(objectToKey(key))
+    }
+
+    *keys(): IterableIterator<Key> {
+        for (const key of this.map.keys()) {
+            yield JSON.parse(key) as Key
+        }
+    }
+
+    *values(): IterableIterator<Value> {
+        for (const value of this.map.values()) {
+            yield value
+        }
+    }
+
+    *entries(): IterableIterator<[Key, Value]> {
+        for (const [key, value] of this.map.entries()) {
+            yield [JSON.parse(key) as Key, value]
+        }
+    }
+
+    get size() {
+        return this.map.size
+    }
+}

@@ -31,7 +31,7 @@ import logger from '../logging'
 @Check(`"school_name" <> ''`)
 export class School extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
-    public readonly school_id!: string
+    public school_id!: string
 
     @Column({ nullable: false })
     public school_name!: string

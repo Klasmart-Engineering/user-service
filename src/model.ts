@@ -457,7 +457,7 @@ export class Model {
     ) =>
         eligibleMembersConnectionResolver(
             info,
-            'attend_live_class_as_a_student_187',
+            PermissionName.attend_live_class_as_a_student_187,
             paginationArgs
         )
 
@@ -468,7 +468,7 @@ export class Model {
     ) =>
         eligibleMembersConnectionResolver(
             info,
-            'attend_live_class_as_a_teacher_186',
+            PermissionName.attend_live_class_as_a_teacher_186,
             paginationArgs
         )
 

@@ -27,6 +27,12 @@ export interface DeleteClassInput {
     id: string
 }
 
+export interface CreateClassInput {
+    organizationId: string
+    name: string
+    shortcode?: string
+}
+
 export interface ClassesMutationResult {
     classes: ClassConnectionNode[]
 }

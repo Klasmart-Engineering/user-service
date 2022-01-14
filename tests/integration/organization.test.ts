@@ -422,7 +422,6 @@ describe('organization', () => {
                     undefined,
                     { authorization: getAdminAuthToken() }
                 )
-
                 expect(cls).to.be.null
                 const dbOrg = await Organization.findOneOrFail(organizationId)
                 const orgClasses = (await dbOrg.classes) || []
@@ -7091,6 +7090,7 @@ describe('organization', () => {
                     organizationRoleIds,
                 } = orgInputs
 
+                // eslint-disable-next-line no-await-in-loop
                 const dbMemberships = await OrganizationMembership.find({
                     where: {
                         organization_id: organizationId,
@@ -7113,6 +7113,7 @@ describe('organization', () => {
                 // Check that each entry has the same set of roles
                 for (const membership of dbMemberships) {
                     const dbRoles = new Set(
+                        // eslint-disable-next-line no-await-in-loop
                         (await membership.roles)?.map((val) => val.role_id)
                     )
                     const inputRoles = new Set(organizationRoleIds)
@@ -7264,6 +7265,11 @@ describe('organization', () => {
                         const res = await expect(addUsers()).to.be.rejected
                         const expectedErrors = [
                             {
+                                entity: 'Organization',
+                                id: orgs[2].organization_id,
+                                entryIndex: 2,
+                            },
+                            {
                                 entity: 'Role',
                                 id: roles[0].role_id,
                                 entryIndex: 0,
@@ -7272,11 +7278,6 @@ describe('organization', () => {
                                 entity: 'User',
                                 id: users[1].user_id,
                                 entryIndex: 1,
-                            },
-                            {
-                                entity: 'Organization',
-                                id: orgs[2].organization_id,
-                                entryIndex: 2,
                             },
                         ]
                         expectedErrors.forEach((ee, errorIndex) => {
@@ -7338,6 +7339,7 @@ describe('organization', () => {
             for (const orgInputs of input) {
                 const { organizationId, userIds } = orgInputs
 
+                // eslint-disable-next-line no-await-in-loop
                 const dbMemberships = await OrganizationMembership.find({
                     where: {
                         organization_id: organizationId,
@@ -7511,7 +7513,7 @@ describe('organization', () => {
                                 index: 1,
                             },
                             ['id'],
-                            0,
+                            1,
                             2
                         )
                         expectAPIError.nonexistent_entity(
@@ -7522,7 +7524,7 @@ describe('organization', () => {
                                 index: 2,
                             },
                             ['id'],
-                            1,
+                            0,
                             2
                         )
                         await checkNoChangesMade(3) // 2 from orgs[2] + 1 from users[1]

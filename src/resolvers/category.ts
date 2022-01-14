@@ -19,17 +19,20 @@ import {
 } from '../types/graphQL/category'
 import {
     createDatabaseSaveAPIError,
-    createDuplicateInputAPIError,
+    createDuplicateAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
-} from '../utils/resolvers'
+} from '../utils/resolvers/errors'
 import { config } from '../config/config'
 import { categoryConnectionNodeFields } from '../pagination/categoriesConnection'
 import { subcategoryConnectionNodeFields } from '../pagination/subcategoriesConnection'
 import { customErrors } from '../types/errors/customError'
-import { DeleteMutation, EntityMap } from '../utils/mutations/commonStructure'
+import {
+    DeleteEntityMap,
+    DeleteMutation,
+} from '../utils/mutations/commonStructure'
 
 interface InputAndOrgRelation {
     id: string
@@ -131,7 +134,7 @@ export async function updateCategories(
 
         if (duplicateInputId) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['id'],
                     'UpdateCategoryInput'
@@ -179,7 +182,7 @@ export async function updateCategories(
 
             if (duplicatedInputName) {
                 errors.push(
-                    createDuplicateInputAPIError(
+                    createDuplicateAttributeAPIError(
                         index,
                         ['name'],
                         'UpdateCategoryInput'
@@ -359,7 +362,7 @@ export async function createCategories(
 
         if (categoriesInputIsDuplicated) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['organizationId', 'name'],
                     'CreateCategoryInput'
@@ -426,7 +429,7 @@ export class DeleteCategories extends DeleteMutation<
         this.mainEntityIds = input.map((val) => val.id)
     }
 
-    protected async generateEntityMaps(): Promise<EntityMap<Category>> {
+    protected async generateEntityMaps(): Promise<DeleteEntityMap<Category>> {
         const categories = await Category.createQueryBuilder()
             .select([
                 ...categoryConnectionNodeFields,
@@ -440,7 +443,7 @@ export class DeleteCategories extends DeleteMutation<
 
     protected async authorize(
         _input: DeleteCategoryInput[],
-        entityMaps: EntityMap<Category>
+        entityMaps: DeleteEntityMap<Category>
     ) {
         const organizationIds: string[] = []
         for (const c of entityMaps.mainEntity.values()) {
@@ -453,7 +456,7 @@ export class DeleteCategories extends DeleteMutation<
         )
     }
 
-    protected buildOutput(currentEntity: Category): void {
+    protected async buildOutput(currentEntity: Category): Promise<void> {
         this.output.categories.push(
             mapCategoryToCategoryConnectionNode(currentEntity)
         )
@@ -618,7 +621,7 @@ export async function removeSubcategoriesFromCategories(
 
         if (inputIdIsDuplicate) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['categoryId'],
                     'RemoveSubcategoriesFromCategoryInput'
@@ -638,7 +641,7 @@ export async function removeSubcategoriesFromCategories(
 
         if (subcategoryIdsDuplicate) {
             errors.push(
-                createDuplicateInputAPIError(
+                createDuplicateAttributeAPIError(
                     index,
                     ['subcategoryIds'],
                     'RemoveSubcategoriesFromCategoryInput.subcategoryIds'

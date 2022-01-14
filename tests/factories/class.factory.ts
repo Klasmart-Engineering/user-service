@@ -13,7 +13,10 @@ export function createClass(
 ) {
     const cls = new Class()
 
-    cls.class_name = name ?? faker.random.word()
+    cls.class_name =
+        name ??
+        // uniqueness is enforced in DB schema, so guarantee* it here while maintaining readability
+        `${faker.random.word()}_${faker.datatype.uuid().substring(0, 5)}`
 
     if (org) {
         cls.organization = Promise.resolve(org)
