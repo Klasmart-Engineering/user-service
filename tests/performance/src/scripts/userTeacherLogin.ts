@@ -13,7 +13,7 @@ export default function() {
         deviceId: "webpage",
         deviceName: "k6",
         email: process.env.EMAIL_TEACHER_1 as string,
-        pw: process.env.PW_TEACHER_1 as string,
+        pw: process.env.PW as string,
     });
     sleep(2);
     switchUser();

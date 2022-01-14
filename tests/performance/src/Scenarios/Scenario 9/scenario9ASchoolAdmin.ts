@@ -180,7 +180,7 @@ export function setup() {
             deviceId: "webpage",
             deviceName: "k6",
             email: `${process.env.SCHOOLADMIN_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
-            pw: process.env.PW_SCHOOL_ADMIN_1 as string,
+            pw: process.env.PW as string,
         };
         
         const teacherLoginData = loginSetup(teacherLoginPayload);

@@ -21,8 +21,6 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
     const accessCookie = data[`teacher${random}`].res.cookies?.access[0].Value;
     const refreshCookie = data[`teacher${random}`].res.cookies?.refresh[0].Value;
 
-    console.log(accessCookie);
-
     jar.set(process.env.COOKIE_URL as string, 'access', accessCookie, {
         domain: process.env.COOKIE_DOMAIN,
     });

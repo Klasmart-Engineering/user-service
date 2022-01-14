@@ -7,7 +7,7 @@ const defaultPayload: LoginPayload = {
     deviceId: "webpage",
     deviceName: "k6",
     email: process.env.EMAIL_ORG_ADMIN_1 as string,
-    pw: process.env.PW_ORG_ADMIN_1 as string,
+    pw: process.env.PW as string,
 };
 
 const params = {
