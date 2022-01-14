@@ -1,3 +1,4 @@
+
 import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
 import { sleep } from 'k6';

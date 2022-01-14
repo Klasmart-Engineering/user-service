@@ -46,6 +46,7 @@ module.exports = {
         getSchools: `./getSchools.ts`,
         getAgeRanges: `./getAgeRanges.ts`,
         getUsers: `./getUsers.ts`,
+        parallelLandingContentLibrary: "./parallelLandingContentLibrary.ts",
         getContentsAuthEdMore: `./getContentsAuthEdMore.ts`,
         getContentsAuthEd: `./getContentsAuthEd.ts`,
         getContentsFolder: `./getContentsFolder.ts`,

@@ -34,7 +34,8 @@
       "test:endpoint:LandingOrganization2": "k6 run ./dist/testEndPointLandingOrganization2.js",
       "test:endpoint:LandingOrganization3": "k6 run ./dist/testEndPointLandingOrganization3.js",
       "test:endpoint:LandingUser1": "k6 run ./dist/testEndPointLandingUser1.js",
-      "test:endpoint:LandingUser2": "k6 run ./dist/testEndPointLandingUser2.js"
+      "test:endpoint:LandingUser2": "k6 run ./dist/testEndPointLandingUser2.js",
+      "test:landing:contentLibrary": "k6 run ./dist/parallelLandingContentLibrary.js"
       
     },
     "dependencies": {
