@@ -200,5 +200,8 @@ export async function validateToken(
             message: stringInject(message, { reason: e.message })!,
         })
     }
+<<<<<<< HEAD
     next()
+=======
+>>>>>>> AD-1759-APIKey-Auth
 }
