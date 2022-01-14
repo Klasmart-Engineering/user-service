@@ -12,7 +12,7 @@ import endPointCmsRequest1Published from './scripts/endPointCmsRequest1Published
 import endPointCmsRequest2Pending from './scripts/endPointCmsRequest2Pending'
 import generateStages from './utils/generateStages';
 
-// command to run the scritp
+// command to run the script
 // k6 run -e STAGE_QTY=1 ./dist/parallelLandingContentLibrary.js
 // k6 run -e STAGE_QTY=1 parallelLandingContentLibrary.js  > located in the dist folder
 
@@ -180,12 +180,14 @@ export function teacher00(data: { [key: string]: { res: any, userId: string }}) 
     contentLibraryOrgPropertys();
     getCmsMemerships();
     getCmsMemerships2();
-    endPointCmsRequest1Published();
+    // endPointCmsRequest1Published();
     // Next functios are called twice
+    
     endPointHomeRequest1();
     sleep(0.2)
     endPointHomeRequest1();
-    //endPointCmsRequest2Pending();
+    
+    
     
 
 }
