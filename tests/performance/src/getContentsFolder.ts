@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
+import contentsFolder from './scripts/contentsFolder';
 import loginSetup from './utils/loginSetup';
-import endPointUserRequest1 from './scripts/endPointUserRequest1';
 
 export const options: Options = {
     vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
@@ -27,7 +27,6 @@ export function setup() {
 }
 
 export default function(data: { [key: string]: { res: any, userId: string }}) {
-    
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
@@ -35,6 +34,6 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
     jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    
-    endPointUserRequest1("Org admin");
+
+    contentsFolder();
 }

@@ -46,8 +46,14 @@ module.exports = {
         getSchools: `./getSchools.ts`,
         getAgeRanges: `./getAgeRanges.ts`,
         getUsers: `./getUsers.ts`,
-        parallelLandingContentLibrary: "./parallelLandingContentLibrary.ts"
-
+        parallelLandingContentLibrary: "./parallelLandingContentLibrary.ts",
+        getContentsAuthEdMore: `./getContentsAuthEdMore.ts`,
+        getContentsAuthEd: `./getContentsAuthEd.ts`,
+        getContentsFolder: `./getContentsFolder.ts`,
+        getContentsMe1: `./getContentsMe1.ts`,
+        getContentsMe2: `./getContentsMe2.ts`,
+        postCreateContent: `./postCreateContent.ts`,
+        getMultiUniqueUsersSchedule: `./getMultiUniqueUsersSchedule.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),

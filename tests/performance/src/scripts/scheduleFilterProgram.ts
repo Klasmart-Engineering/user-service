@@ -1,7 +1,6 @@
 import { check } from 'k6';
 import http from 'k6/http';
 
-
 const params = {
     headers: {
         'Content-Type': `application/json`,

@@ -3,22 +3,6 @@ import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
 import endPointUserRequest2 from './scripts/endPointUserRequest2';
 
-/*
-
-Script that evaluates the endPoint:
-https://api.loadtest.kidsloop.live/user/
-    {
-        "operationName": "getOrganizationRoles",
-        "variables": {
-            "organization_id": "360b46fe-3579-42d4-9a39-dc48726d033f"
-            }
-*/
-
-/* export const options: Options = {
-    vus: 1,
-    duration: '1m',
-}; */
-
 export const options: Options = {
     vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
     duration: __ENV.DURATION ?? '1m',
