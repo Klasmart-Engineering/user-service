@@ -140,15 +140,15 @@ export function setup() {
             deviceId: "webpage",
             deviceName: "k6",
             email: `${process.env.TEACHER_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
-            pw: process.env.PW_TEACHER_1 as string,
+            pw: process.env.PW as string,
         };
         const schoolLoginPayload = {
             deviceId: "webpage",
             deviceName: "k6",
             email: `${process.env.SCHOOL_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
-            pw: process.env.PW_SCHOOL_ADMIN_1 as string,
+            pw: process.env.PW as string,
             //email: `${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
-            //pw: process.env.PW_STUDENT_1 as string,
+            //pw: process.env.PW as string,
         };
         const teacherLoginData = loginSetup(teacherLoginPayload);
         const schoolLoginData = loginSetup(schoolLoginPayload);

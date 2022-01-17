@@ -2,7 +2,11 @@ const path = require(`path`);
 const Dotenv = require(`dotenv-webpack`);
 const { CleanWebpackPlugin } = require(`clean-webpack-plugin`);
 
-module.exports = {
+// config({
+//     path: process.env.ENV_PATH,
+// });
+
+module.exports = env => ({
     mode: `production`,
     context: path.join(__dirname, `src`),
     entry: {
@@ -53,7 +57,8 @@ module.exports = {
         getContentsMe1: `./getContentsMe1.ts`,
         getContentsMe2: `./getContentsMe2.ts`,
         postCreateContent: `./postCreateContent.ts`,
-        getMultiUniqueUsersSchedule: `./getMultiUniqueUsersSchedule.ts`
+        getMultiUniqueUsersSchedule: `./getMultiUniqueUsersSchedule.ts`,
+        createClass: `./createClass.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),
@@ -81,5 +86,5 @@ module.exports = {
     stats: {
         colors: true,
     },
-    plugins: [ new CleanWebpackPlugin(), new Dotenv() ],
-};
+    plugins: [ new CleanWebpackPlugin(), new Dotenv({ path: `./.env.${env.env}` }) ],
+});
