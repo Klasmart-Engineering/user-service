@@ -13,6 +13,182 @@ import { Subcategory } from '../../entities/subcategory'
 import { Program } from '../../entities/program'
 import { AgeRange } from '../../entities/ageRange'
 
+// BASE FUNCTIONS
+
+/**
+ * Checks `ids` against an map.
+ *
+ * Returns a 'nonExistent'/'duplicate' error for each
+ * entity 'not found'/'found' (depending on the value of `checkType`)
+ *
+ * Also returns the objects which where found on the map.
+ */
+function checkForNonExistentOrDuplicate<T>(
+    checkType: 'nonExistent' | 'duplicate',
+    entityName: string
+) {
+    return (index: number, ids: string[], map: Map<string, T>) => {
+        const values: T[] = []
+        const errors: APIError[] = []
+        for (const id of ids) {
+            const entity = map.get(id)
+            if (entity) values.push(entity)
+            if (
+                (!entity && checkType === 'nonExistent') ||
+                (entity && checkType === 'duplicate')
+            ) {
+                errors.push(
+                    createEntityAPIError(checkType, index, entityName, id)
+                )
+            }
+        }
+        return { values, errors }
+    }
+}
+
+/**
+ * Checks `ids` against a set.
+ *
+ * Returns a 'nonExistentChild'/'duplicateChild' error for each
+ * id 'not found'/'found' (depending on the value of `checkType`)
+ */
+function checkForNonExistentOrDuplicateChild(
+    checkType: 'nonExistentChild' | 'duplicateChild',
+    parentEntityName: string,
+    childEntityName: string
+) {
+    return (
+        index: number,
+        parentId: string,
+        childIds: string[],
+        childIdsInParentSet: Set<string>
+    ) => {
+        const errors: APIError[] = []
+        for (const childId of childIds) {
+            const hasChild = childIdsInParentSet.has(childId)
+            if (checkType === 'duplicateChild' ? hasChild : !hasChild) {
+                errors.push(
+                    createEntityAPIError(
+                        checkType,
+                        index,
+                        childEntityName,
+                        childId,
+                        parentEntityName,
+                        parentId
+                    )
+                )
+            }
+        }
+        return errors
+    }
+}
+
+/**
+ * Checks composite id `{schoolId, userId}` of a
+ * `SchoolMembership` against a map. Can check the
+ * memberships of a list of users for a school.
+ *
+ * Returns a `nonExistentChild` error for each user which does
+ * not have a membership on the school.
+ *
+ * Also returns the `SchoolMembership` entities that where found
+ * on the map.
+ */
+function nonExistentSchoolMembership(
+    index: number,
+    schoolId: string,
+    userIds: string[],
+    map: SchoolMembershipMap
+) {
+    const values: SchoolMembership[] = []
+    const errors: APIError[] = []
+    for (const userId of userIds) {
+        const membership = map.get({ schoolId, userId })
+        if (membership) values.push(membership)
+        else {
+            errors.push(
+                createEntityAPIError(
+                    'nonExistentChild',
+                    index,
+                    'User',
+                    userId,
+                    'School',
+                    schoolId
+                )
+            )
+        }
+    }
+    return { values, errors }
+}
+
+/**
+ * Checks composite id `{organization, userId}` of a
+ * `OrganizationMembership` against a map. Can check the
+ * memberships of a list of users for a organizations.
+ *
+ * Returns a `nonExistentChild` error for each user which does
+ * not have a membership on the organization.
+ *
+ * Also returns the `OrganizationMembership` entities that
+ * where found on the map.
+ */
+function nonExistentOrganizationMembership(
+    index: number,
+    organizationId: string,
+    userIds: string[],
+    map: OrganizationMembershipMap
+) {
+    const values: OrganizationMembership[] = []
+    const errors: APIError[] = []
+    for (const userId of userIds) {
+        const membership = map.get({ organizationId, userId })
+        if (membership) values.push(membership)
+        else {
+            errors.push(
+                createEntityAPIError(
+                    'nonExistentChild',
+                    index,
+                    'User',
+                    userId,
+                    'Organization',
+                    organizationId
+                )
+            )
+        }
+    }
+    return { values, errors }
+}
+
+// INTERMEDIATE FUNCTIONS
+
+const checkForNonExistent = <T>(entityName: string) =>
+    checkForNonExistentOrDuplicate<T>('nonExistent', entityName)
+
+const checkForDuplicate = <T>(entityName: string) =>
+    checkForNonExistentOrDuplicate<T>('duplicate', entityName)
+
+const checkForNonExistentChild = (
+    parentEntityName: string,
+    childEntityName: string
+) =>
+    checkForNonExistentOrDuplicateChild(
+        'nonExistentChild',
+        parentEntityName,
+        childEntityName
+    )
+
+const checkForDuplicateChild = (
+    parentEntityName: string,
+    childEntityName: string
+) =>
+    checkForNonExistentOrDuplicateChild(
+        'duplicateChild',
+        parentEntityName,
+        childEntityName
+    )
+
+// BASE OBJECTS
+
 const nonExistent = {
     user: checkForNonExistent<User>('User'),
     school: checkForNonExistent<School>('School'),
@@ -23,118 +199,29 @@ const nonExistent = {
     subcategory: checkForNonExistent<Subcategory>('Subcategory'),
     program: checkForNonExistent<Program>('Program'),
     ageRange: checkForNonExistent<AgeRange>('AgeRange'),
+    users: {
+        in: {
+            school: nonExistentSchoolMembership,
+            organization: nonExistentOrganizationMembership,
+        },
+    },
+    programs: { in: { class: checkForNonExistentChild('Class', 'Program') } },
 }
 
-/**
- * Checks `ids` against an map.
- *
- * Returns a `nonExistent` error for each which does not match a
- * key of the map.
- *
- * Also returns the objects which where found on the map.
- */
-function checkForNonExistent<T>(entityTypeName: string) {
-    return (index: number, ids: string[], map: Map<string, T>) => {
-        const values: T[] = []
-        const errors: APIError[] = []
-        for (const id of ids) {
-            const entity = map.get(id)
-            if (entity) values.push(entity)
-            else {
-                errors.push(
-                    createEntityAPIError(
-                        'nonExistent',
-                        index,
-                        entityTypeName,
-                        id
-                    )
-                )
-            }
-        }
-        return { values, errors }
-    }
+const duplicate = {
+    user: checkForDuplicate<User>('User'),
+    school: checkForDuplicate<School>('School'),
+    organization: checkForDuplicate<Organization>('Organization'),
+    role: checkForDuplicate<Role>('Role'),
+    class: checkForDuplicate<Class>('Class'),
+    category: checkForDuplicate<Category>('Category'),
+    subcategory: checkForDuplicate<Subcategory>('Subcategory'),
+    program: checkForDuplicate<Program>('Program'),
+    ageRange: checkForDuplicate<AgeRange>('AgeRange'),
+    programs: { in: { class: checkForDuplicateChild('Class', 'Program') } },
 }
 
-const nonExistentChild = {
-    /**
-     * Checks composite id `{schoolId, userId}` of a
-     * `SchoolMembership` against a map. Can check the
-     * memberships of a list of users for a school.
-     *
-     * Returns a `nonExistentChild` error for each user which does
-     * not have a membership on the school.
-     *
-     * Also returns the `SchoolMembership` entities that where found
-     * on the map.
-     */
-    school: (
-        index: number,
-        school: School,
-        users: User[],
-        map: SchoolMembershipMap
-    ) => {
-        const schoolId = school.school_id
-        const values: SchoolMembership[] = []
-        const errors: APIError[] = []
-        for (const user of users) {
-            const userId = user.user_id
-            const membership = map.get({ schoolId, userId })
-            if (membership) values.push(membership)
-            else {
-                errors.push(
-                    createEntityAPIError(
-                        'nonExistentChild',
-                        index,
-                        'User',
-                        userId,
-                        'School',
-                        schoolId
-                    )
-                )
-            }
-        }
-        return { values, errors }
-    },
-    /**
-     * Checks composite id `{organization, userId}` of a
-     * `OrganizationMembership` against a map. Can check the
-     * memberships of a list of users for a organizations.
-     *
-     * Returns a `nonExistentChild` error for each user which does
-     * not have a membership on the organization.
-     *
-     * Also returns the `OrganizationMembership` entities that
-     * where found on the map.
-     */
-    organization: (
-        index: number,
-        organization: Organization,
-        users: User[],
-        map: OrganizationMembershipMap
-    ) => {
-        const organizationId = organization.organization_id
-        const values: OrganizationMembership[] = []
-        const errors: APIError[] = []
-        for (const user of users) {
-            const userId = user.user_id
-            const membership = map.get({ organizationId, userId })
-            if (membership) values.push(membership)
-            else {
-                errors.push(
-                    createEntityAPIError(
-                        'nonExistentChild',
-                        index,
-                        'User',
-                        userId,
-                        'Organization',
-                        organizationId
-                    )
-                )
-            }
-        }
-        return { values, errors }
-    },
-}
+// INTERFACE OBJECT
 
 /**
  * Returns a function which outputs the objects that where validated
@@ -142,5 +229,5 @@ const nonExistentChild = {
  */
 export const validate = {
     nonExistent,
-    nonExistentChild,
+    duplicate,
 }

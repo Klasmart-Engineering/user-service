@@ -129,25 +129,23 @@ async function modifyOrganizationRoles(
         const users = validate.nonExistent.user(index, [userId], preloadedUsers)
         errors.push(...orgs.errors, ...roles.errors, ...users.errors)
 
-        if (!users.values.length) continue
-        for (const org of orgs.values) {
-            const dbMemberships = validate.nonExistentChild.organization(
-                index,
-                org,
-                users.values,
-                preloadedMemberships
-            )
-            if (dbMemberships.errors) errors.push(...dbMemberships.errors)
+        if (orgs.errors.length || users.errors.length) continue
+        const dbMemberships = validate.nonExistent.users.in.organization(
+            index,
+            organizationId,
+            [userId],
+            preloadedMemberships
+        )
+        if (dbMemberships.errors) errors.push(...dbMemberships.errors)
 
-            for (const dbMembership of dbMemberships.values) {
-                if (errors.length > 0) continue
-                // eslint-disable-next-line no-await-in-loop
-                const dbMembershipRoles = (await dbMembership.roles) || [] // already fetched
-                dbMembership.roles = Promise.resolve(
-                    roleModificationFn(dbMembershipRoles, roles.values)
-                )
-                memberships.push(dbMembership)
-            }
+        for (const dbMembership of dbMemberships.values) {
+            if (errors.length > 0) continue
+            // eslint-disable-next-line no-await-in-loop
+            const dbMembershipRoles = (await dbMembership.roles) || [] // already fetched
+            dbMembership.roles = Promise.resolve(
+                roleModificationFn(dbMembershipRoles, roles.values)
+            )
+            memberships.push(dbMembership)
         }
 
         // Build output
@@ -287,16 +285,14 @@ export class RemoveSchoolRolesFromUsers extends RemoveMutation<
         const roles = validate.nonExistent.role(index, roleIds, roleMap)
         errors.push(...schools.errors, ...users.errors, ...roles.errors)
 
-        if (!users.values.length) return errors
-        for (const school of schools.values) {
-            const membership = validate.nonExistentChild.school(
-                index,
-                school,
-                users.values,
-                entityMaps.memberships
-            )
-            if (membership.errors.length) errors.push(...membership.errors)
-        }
+        if (schools.errors.length || users.errors.length) return errors
+        const membership = validate.nonExistent.users.in.school(
+            index,
+            schoolId,
+            [userId],
+            entityMaps.memberships
+        )
+        if (membership.errors.length) errors.push(...membership.errors)
 
         return errors
     }
@@ -359,7 +355,7 @@ function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
 
 // We check the entire input array in the database in ONE query to find if any of the input records that we are intending to submit
 // already exist in the database.
-// Note: The query, though in separate "OrWhere" clauses, is ONE query and the varable name contexts share
+// Note: The query, though in separate "OrWhere" clauses, is ONE query and the variable name contexts share
 //       a namespace in the same query map. Thus a distinguishing value is added to the names of the variables passed to the
 //       query so that they don't overwrite one another. In this case that distinguishing value is the index in the incoming
 //       array of input values.

@@ -44,6 +44,7 @@ import { User } from '../../src/entities/user'
 import {
     AddProgramsToClasses,
     deleteClasses as deleteClassesResolver,
+    RemoveProgramsFromClasses,
     CreateClasses,
     EntityMapCreateClass,
 } from '../../src/resolvers/class'
@@ -90,25 +91,44 @@ import {
     AddProgramsToClassInput,
     DeleteClassInput,
     CreateClassInput,
+    RemoveProgramsFromClassInput,
 } from '../../src/types/graphQL/class'
-import { UserPermissions } from '../../src/permissions/userPermissions'
-import { mutate } from '../../src/utils/mutations/commonStructure'
-import { buildPermissionError } from '../utils/errors'
 import {
     compareErrors,
-    expectAPIError,
     checkNotFoundErrors,
+    expectAPIError,
+    expectAPIErrorCollection,
 } from '../utils/apiError'
-import { generateShortCode, validateShortCode } from '../../src/utils/shortcode'
-import { APIError } from '../../src/types/errors/apiError'
-import { customErrors } from '../../src/types/errors/customError'
-import { ObjMap } from '../../src/utils/stringUtils'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { mutate } from '../../src/utils/mutations/commonStructure'
+import { buildPermissionError, permErrorMeta } from '../utils/errors'
+import status from '../../src/schemas/enums/status'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { string } from 'joi'
+import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateChildEntityAttributeAPIError,
     createDuplicateAttributeAPIError,
+    createEntityAPIError,
 } from '../../src/utils/resolvers/errors'
+import { NIL_UUID } from '../utils/database'
+import { generateShortCode, validateShortCode } from '../../src/utils/shortcode'
+import { customErrors } from '../../src/types/errors/customError'
+import { ObjMap } from '../../src/utils/stringUtils'
+
+type ClassSpecs = {
+    class: Class
+    progsToRemove: Program[]
+    progsToKeep: Program[]
+}
+interface OrgsData {
+    org: Organization
+    classes: ClassSpecs[]
+    programs: Program[]
+}
 
 use(chaiAsPromised)
+use(deepEqualInAnyOrder)
 
 describe('class', () => {
     let connection: TestConnection
@@ -5260,9 +5280,9 @@ describe('class', () => {
                             res,
                             {
                                 entity: 'Program',
-                                entityName: programs[0].name || '',
+                                entityName: programs[0].id,
                                 parentEntity: 'Class',
-                                parentName: classes[0].class_name || '',
+                                parentName: classes[0].class_id,
                                 index: 0,
                             },
                             [''],
@@ -5396,5 +5416,410 @@ describe('class', () => {
                 await checkNoChangesMade(false)
             }
         )
+    })
+
+    describe('RemoveProgramsFromClasses', () => {
+        let admin: User
+        let memberWithPermission: User
+        let memberWithoutPermission: User
+        let nonMember: User
+        let orgsData: OrgsData[]
+        let programsKept: Map<string, Program[]>
+        let classesBefore: Map<string, Class>
+        const orgsCount = 2
+        const programsCount = 4
+
+        const removeProgramsFromResolver = async (
+            user: User,
+            input: RemoveProgramsFromClassInput[]
+        ) => {
+            const permissions = new UserPermissions(userToPayload(user))
+            return mutate(RemoveProgramsFromClasses, { input }, permissions)
+        }
+
+        const expectRemovePrograms = async (
+            user: User,
+            input: RemoveProgramsFromClassInput[]
+        ) => {
+            const { classes } = await removeProgramsFromResolver(user, input)
+
+            for (const [i, cls] of classes.entries()) {
+                const inputRelated = input[i]
+                expect(cls.id).to.eq(inputRelated.classId)
+            }
+
+            const classesDB = await Class.findByIds(input.map((i) => i.classId))
+
+            expect(classes).to.have.lengthOf(input.length)
+            expect(classesDB).to.not.be.empty
+
+            for (const cdb of classesDB) {
+                const classRelated = classes.find((c) => c.id === cdb.class_id)!
+                const classBefore = classesBefore.get(cdb.class_id)!
+
+                expect(classRelated).to.exist
+                expect(cdb.class_name).to.eq(classRelated.name)
+                expect(cdb.status).to.eq(classRelated.status)
+
+                expect(cdb.class_name).to.eq(classBefore.class_name)
+                expect(cdb.status).to.eq(classBefore.status)
+
+                const programIds = (await cdb.programs)!.map((p) => p.id)
+                const programsRelatedIds = programsKept
+                    .get(cdb.class_id)!
+                    .map((p) => p.id)
+
+                expect(programIds).to.have.lengthOf(programsRelatedIds.length)
+                expect(programIds).to.deep.equalInAnyOrder(programsRelatedIds)
+            }
+        }
+
+        const buildDefaultInput = (classes: ClassSpecs[]) => {
+            return Array.from(classes, (c) => {
+                return {
+                    classId: c.class.class_id,
+                    programIds: c.progsToRemove.map((p) => p.id),
+                }
+            })
+        }
+
+        const expectNoRemoves = async (classes: Class[]) => {
+            const classesDB = await Class.findByIds(
+                classes.map((c) => c.class_id)
+            )
+
+            expect(classesDB).to.have.lengthOf(classes.length)
+
+            for (const cdb of classesDB) {
+                const cls = classes.find((c) => c.class_id === cdb.class_id)!
+                const programsDBIds = (await cdb.programs)!.map((p) => p.id)
+                const programIds = (await cls.programs)!.map((p) => p.id)
+
+                expect(programsDBIds).to.have.lengthOf(programIds.length)
+                expect(programsDBIds).to.deep.equalInAnyOrder(programIds)
+            }
+        }
+
+        const expectPermissionError = async (
+            caller: User,
+            input: RemoveProgramsFromClassInput[]
+        ) => {
+            const permError = permErrorMeta(PermissionName.edit_class_20334)
+
+            const operation = removeProgramsFromResolver(caller, input)
+            await expect(operation).to.be.rejectedWith(permError(caller))
+        }
+
+        const expectInputErrors = async (
+            input: RemoveProgramsFromClassInput[],
+            expectedErrors: APIError[]
+        ) => {
+            const operation = removeProgramsFromResolver(admin, input)
+            await expectAPIErrorCollection(
+                operation,
+                new APIErrorCollection(expectedErrors)
+            )
+        }
+
+        const resetProgramsInClasses = async (classes: ClassSpecs[]) => {
+            classes.forEach((c) => {
+                c.class.programs = Promise.resolve([
+                    ...c.progsToKeep,
+                    ...c.progsToRemove,
+                ])
+            })
+
+            await Class.save(classes.map((c) => c.class))
+        }
+
+        const createPermissionMemberships = async (
+            org: Organization,
+            role: Role
+        ) => {
+            await createOrganizationMembership({
+                user: memberWithPermission,
+                organization: org,
+                roles: [role],
+            }).save()
+
+            await createOrganizationMembership({
+                user: memberWithoutPermission,
+                organization: org,
+            }).save()
+        }
+
+        beforeEach(async () => {
+            admin = await adminUserFactory().save()
+            memberWithPermission = await createUser().save()
+            memberWithoutPermission = await createUser().save()
+            nonMember = await createUser().save()
+
+            const roleForRemovePrograms = await createRoleFactory(
+                'Remove Programs from Classes',
+                undefined,
+                { permissions: [PermissionName.edit_class_20334] },
+                true
+            ).save()
+
+            orgsData = []
+
+            for (let i = 0; i < orgsCount; i += 1) {
+                const org = createOrganization()
+                const programs = Array.from(new Array(programsCount), () =>
+                    createProgram(org)
+                )
+
+                const cls = createClassFactory(undefined, org)
+                const progsToRemove = programs.slice(0, 2)
+                const progsToKeep = programs.slice(2, programs.length)
+                cls.programs = Promise.resolve(programs)
+
+                const classes = [{ class: cls, progsToRemove, progsToKeep }]
+                orgsData.push({ org, programs, classes })
+            }
+
+            await Organization.save(orgsData.map((d) => d.org))
+            await Program.save(orgsData.map((d) => d.programs).flat())
+            const savedClasses = await Class.save(
+                orgsData.map((d) => d.classes.map((c) => c.class)).flat()
+            )
+
+            const classSpecsSaved = orgsData.map((d) => d.classes).flat()
+
+            classesBefore = new Map(savedClasses.map((c) => [c.class_id, c]))
+            programsKept = new Map(
+                classSpecsSaved.map((css) => [
+                    css.class.class_id,
+                    css.progsToKeep,
+                ])
+            )
+
+            await createPermissionMemberships(
+                orgsData[0].org,
+                roleForRemovePrograms
+            )
+        })
+
+        context('permissions', () => {
+            context('successful cases', () => {
+                context('when caller is not admin', () => {
+                    context('but has permission', () => {
+                        it('should remove programs from classes in their organization', async () => {
+                            const classesToUse = orgsData[0].classes
+                            const input = buildDefaultInput(classesToUse)
+                            await expectRemovePrograms(
+                                memberWithPermission,
+                                input
+                            )
+                        })
+                    })
+                })
+            })
+
+            context('error handling', () => {
+                context('when caller is not admin', () => {
+                    context('but has permissions', () => {
+                        context(
+                            'and tries to remove programs from classes in an organization which does not belong',
+                            () => {
+                                it('should throw a permission error', async () => {
+                                    const classesToUse = orgsData[1].classes
+                                    const input = buildDefaultInput(
+                                        classesToUse
+                                    )
+
+                                    await expectPermissionError(
+                                        memberWithPermission,
+                                        input
+                                    )
+
+                                    await expectNoRemoves(
+                                        classesToUse.map((c) => c.class)
+                                    )
+                                })
+                            }
+                        )
+                    })
+
+                    context('and has not permission', () => {
+                        context('but has membership', () => {
+                            context(
+                                'and tries to remove programs from classes in the organization which belongs',
+                                () => {
+                                    it('should throw a permission error', async () => {
+                                        const classesToUse = orgsData[0].classes
+                                        const input = buildDefaultInput(
+                                            classesToUse
+                                        )
+
+                                        await expectPermissionError(
+                                            memberWithoutPermission,
+                                            input
+                                        )
+
+                                        await expectNoRemoves(
+                                            classesToUse.map((c) => c.class)
+                                        )
+                                    })
+                                }
+                            )
+                        })
+
+                        context('also has not membership', () => {
+                            context(
+                                'and tries to remove programs from classes in any organization',
+                                () => {
+                                    it('should throw a permission error', async () => {
+                                        const classesToUse = orgsData
+                                            .map((d) => d.classes)
+                                            .flat()
+
+                                        const input = buildDefaultInput(
+                                            classesToUse
+                                        )
+
+                                        await expectPermissionError(
+                                            nonMember,
+                                            input
+                                        )
+
+                                        await expectNoRemoves(
+                                            classesToUse.map((c) => c.class)
+                                        )
+                                    })
+                                }
+                            )
+                        })
+                    })
+                })
+            })
+        })
+
+        context('inputs', () => {
+            context("when 'programIds' has duplicated ids", () => {
+                it('should throw an ErrorCollection', async () => {
+                    const classesToUse = orgsData[0].classes
+                    const input = buildDefaultInput(classesToUse)
+                    const inputIndex = 0
+                    const programIdToDuplicate = input[inputIndex].programIds[0]
+                    input[inputIndex].programIds = [
+                        programIdToDuplicate,
+                        programIdToDuplicate,
+                    ]
+
+                    const expectedErrors = [
+                        createDuplicateAttributeAPIError(
+                            inputIndex,
+                            ['programIds'],
+                            'RemoveProgramsFromClassInput'
+                        ),
+                    ]
+
+                    await expectInputErrors(input, expectedErrors)
+                    await expectNoRemoves(classesToUse.map((c) => c.class))
+                })
+            })
+
+            context("when program in 'programIds' does not exists", () => {
+                it('should throw an ErrorCollection', async () => {
+                    const nonExistentId = NIL_UUID
+                    const classesToUse = orgsData[0].classes
+                    const input = buildDefaultInput(classesToUse)
+                    const inputIndex = 0
+                    input[inputIndex].programIds.push(nonExistentId)
+
+                    const expectedErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            inputIndex,
+                            'Program',
+                            nonExistentId
+                        ),
+                    ]
+
+                    await expectInputErrors(input, expectedErrors)
+                    await expectNoRemoves(classesToUse.map((c) => c.class))
+                })
+            })
+
+            context("when program in 'programIds' is inactive", () => {
+                let classesToUse: ClassSpecs[]
+                let inactiveProg: Program
+                const inputIndex = 0
+
+                beforeEach(async () => {
+                    classesToUse = orgsData[0].classes
+                    inactiveProg = classesToUse[inputIndex].progsToRemove[0]
+                    await inactiveProg.inactivate()
+                    await inactiveProg.save()
+                })
+
+                it('should throw an ErrorCollection', async () => {
+                    const input = buildDefaultInput(classesToUse)
+                    const expectedErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            inputIndex,
+                            'Program',
+                            inactiveProg.id
+                        ),
+                    ]
+
+                    await expectInputErrors(input, expectedErrors)
+                    await expectNoRemoves(classesToUse.map((c) => c.class))
+                })
+            })
+
+            context(
+                "when program in 'programIds' doesn't exist for that class",
+                () => {
+                    it('should throw an ErrorCollection', async () => {
+                        const classesToUse = orgsData[0].classes
+                        const progToCopy = orgsData[1].programs[0]
+                        const input = buildDefaultInput(classesToUse)
+                        const inputIndex = 0
+                        input[inputIndex].programIds.push(progToCopy.id)
+
+                        const expectedErrors = [
+                            createEntityAPIError(
+                                'nonExistentChild',
+                                inputIndex,
+                                'Program',
+                                progToCopy.id,
+                                'Class',
+                                classesToUse[inputIndex].class.class_id
+                            ),
+                        ]
+
+                        await expectInputErrors(input, expectedErrors)
+                        await expectNoRemoves(classesToUse.map((c) => c.class))
+                    })
+                }
+            )
+        })
+
+        context('calls to DB', () => {
+            it('should do the same DB calls for remove programs from 1 or 4 classes', async () => {
+                const classesToUse = orgsData.map((d) => d.classes).flat()
+                let input = buildDefaultInput(classesToUse)
+
+                // warm up permission caches
+                await removeProgramsFromResolver(admin, input)
+                await resetProgramsInClasses(classesToUse)
+
+                input = buildDefaultInput([classesToUse[0]])
+                connection.logger.reset()
+                await removeProgramsFromResolver(admin, input)
+                const oneClassDBCalls = connection.logger.count
+                await resetProgramsInClasses(classesToUse)
+
+                input = buildDefaultInput(classesToUse)
+                connection.logger.reset()
+                await removeProgramsFromResolver(admin, input)
+                const fourClassesDBCalls = connection.logger.count
+
+                expect(oneClassDBCalls).to.equal(fourClassesDBCalls)
+            })
+        })
     })
 })

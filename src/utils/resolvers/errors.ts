@@ -12,7 +12,9 @@ type entityErrorType =
 
 export function createInputLengthAPIError(
     entity: string,
-    limit: 'min' | 'max'
+    limit: 'min' | 'max',
+    attribute = 'input array',
+    index?: number
 ): APIError {
     const lengthLimitValues = {
         min: {
@@ -32,9 +34,10 @@ export function createInputLengthAPIError(
         message: lengthLimitValues[limit].message,
         variables: [],
         entity,
-        attribute: 'input array',
+        attribute,
         min: limit === 'min' ? lengthLimitValues[limit].value : undefined,
         max: limit === 'max' ? lengthLimitValues[limit].value : undefined,
+        index,
     })
 }
 

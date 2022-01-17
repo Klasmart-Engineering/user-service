@@ -287,6 +287,14 @@ export const CREATE_CLASSES = `mutation($input: [CreateClassInput!]!) {
     }
 }`
 
+export const REMOVE_PROGRAMS_FROM_CLASSES = gql`
+    mutation RemovePrograms($input: [RemoveProgramsFromClassInput!]!) {
+        removeProgramsFromClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export async function updateClass(
     testClient: ApolloServerTestClient,
     classId: string,

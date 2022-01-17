@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection, In } from 'typeorm'
+import { In } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -54,7 +54,6 @@ import {
     createUser,
 } from '../factories/user.factory'
 import { createRole as createARole } from '../factories/role.factory'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { getManager } from 'typeorm'
 import { NIL_UUID } from '../utils/database'
@@ -64,6 +63,7 @@ import {
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
 } from '../../src/utils/resolvers/errors'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 chai.use(chaiAsPromised)
 
@@ -1428,33 +1428,6 @@ describe('role', () => {
             expect(roleCount).to.eq(quantity)
         }
 
-        const createMemberships = async (org: Organization, role: Role) => {
-            await createOrganizationMembership({
-                user: memberWithPermission,
-                organization: org,
-                roles: [role],
-            }).save()
-
-            await createOrganizationMembership({
-                user: memberWithoutPermission,
-                organization: org,
-            }).save()
-        }
-
-        const createPermissionRole = async (
-            roleName: string,
-            permissionNames: PermissionName[]
-        ) => {
-            const role = createARole(roleName, undefined, {
-                permissions: permissionNames,
-            })
-
-            role.system_role = true
-            await role.save()
-
-            return role
-        }
-
         const createOrgsData = async () => {
             const orgsData = []
 
@@ -1470,6 +1443,22 @@ describe('role', () => {
             }
 
             return orgsData
+        }
+
+        const createPermissionMemberships = async (
+            org: Organization,
+            role: Role
+        ) => {
+            await createOrganizationMembership({
+                user: memberWithPermission,
+                organization: org,
+                roles: [role],
+            }).save()
+
+            await createOrganizationMembership({
+                user: memberWithoutPermission,
+                organization: org,
+            }).save()
         }
 
         beforeEach(async () => {
@@ -1563,16 +1552,22 @@ describe('role', () => {
             }
 
             beforeEach(async () => {
-                const roleForCreate = await createPermissionRole(
+                const roleForCreate = await createARole(
                     'Create Roles',
-                    [PermissionName.create_role_with_permissions_30222]
-                )
+                    undefined,
+                    {
+                        permissions: [
+                            PermissionName.create_role_with_permissions_30222,
+                        ],
+                    },
+                    true
+                ).save()
 
                 orgs = await Organization.save(
                     Array.from(new Array(orgsCount), () => createOrganization())
                 )
 
-                await createMemberships(orgs[0], roleForCreate)
+                await createPermissionMemberships(orgs[0], roleForCreate)
             })
 
             context('permissions', () => {
@@ -2050,13 +2045,22 @@ describe('role', () => {
 
             beforeEach(async () => {
                 systemRoles = await Role.find({ take: rolesCount })
-                const roleForUpdate = await createPermissionRole(
+                const roleForUpdate = await createARole(
                     'Update Roles',
-                    [PermissionName.edit_role_and_permissions_30332]
-                )
+                    undefined,
+                    {
+                        permissions: [
+                            PermissionName.edit_role_and_permissions_30332,
+                        ],
+                    },
+                    true
+                ).save()
 
                 orgsData = await createOrgsData()
-                await createMemberships(orgsData[0].org, roleForUpdate)
+                await createPermissionMemberships(
+                    orgsData[0].org,
+                    roleForUpdate
+                )
             })
 
             context('permissions', () => {
@@ -2583,13 +2587,19 @@ describe('role', () => {
 
             beforeEach(async () => {
                 systemRoles = await Role.find({ take: rolesCount })
-                const roleForDelete = await createPermissionRole(
+                const roleForDelete = await createARole(
                     'Update Roles',
-                    [PermissionName.delete_role_30440]
-                )
+                    undefined,
+                    { permissions: [PermissionName.delete_role_30440] },
+                    true
+                ).save()
 
                 orgsData = await createOrgsData()
-                await createMemberships(orgsData[0].org, roleForDelete)
+                await createPermissionMemberships(
+                    orgsData[0].org,
+                    roleForDelete
+                )
+
                 rolesTotalCount = await Role.count({
                     where: { system_role: false },
                 })
