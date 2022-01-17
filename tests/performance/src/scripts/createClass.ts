@@ -15,14 +15,12 @@ export default function () {
         variables: {
             organization_id: process.env.ORG_ID,
             class_name: `test-${randomNumber(999999999)}`,
-            school_ids: [`ed74f70f-ff41-48ec-91f3-7d9e7dcea7a7`]
+            school_ids: [ process.env.SCHOOL_ID_1 ]
         },
         query: CREATE_CLASS,
     });
 
     const res = http.post(process.env.SERVICE_URL as string, payload, params);
-
-    console.log(JSON.stringify(res));
 
     check(res, {
         'create class status is 200': () => res.status === 200,

@@ -58,7 +58,8 @@ module.exports = env => ({
         getContentsMe2: `./getContentsMe2.ts`,
         postCreateContent: `./postCreateContent.ts`,
         getMultiUniqueUsersSchedule: `./getMultiUniqueUsersSchedule.ts`,
-        createClass: `./createClass.ts`
+        createClass: `./createClass.ts`,
+        createClassParallel: `./createClassParallel.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),
