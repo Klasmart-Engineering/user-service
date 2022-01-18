@@ -43,7 +43,10 @@ export class UserPermissions {
     public isAdmin?: boolean
     public apiKeyAuth?: boolean
 
-    public constructor(token?: { id?: string; email?: string; phone?: string }, apiKeyAuth?: boolean ) {
+    public constructor(
+        token?: { id?: string; email?: string; phone?: string },
+        apiKeyAuth?: boolean
+    ) {
         if (apiKeyAuth == true) {
             this.apiKeyAuth = true
         } else {
@@ -111,9 +114,11 @@ export class UserPermissions {
         user: User | undefined,
         permission_name: PermissionName
     ): boolean {
-        return <boolean>(
-            this.isAdminEmail(user?.email || '') || this.apiKeyAuth) &&
-            superAdminRole.permissions.includes(permission_name)
+        return (
+            <boolean>(
+                (this.isAdminEmail(user?.email || '') || this.apiKeyAuth)
+            ) && superAdminRole.permissions.includes(permission_name)
+        )
     }
 
     private isUserActive(user: User | undefined) {

@@ -139,7 +139,7 @@ export async function isAPIKey(auth: string) {
 }
 
 export async function checkAPIKey(auth: string) {
-    if (!await isAPIKey(auth)) {
+    if (!(await isAPIKey(auth))) {
         return false
     }
     const apiKey = auth?.slice(auth?.indexOf('=') + 1)

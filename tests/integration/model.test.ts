@@ -116,7 +116,6 @@ describe('model', () => {
             }
             permissions = new UserPermissions(userToken)
 
-
             for (const user of [clientUser, profile]) {
                 await createOrganizationMembership({
                     user,

@@ -64,7 +64,6 @@ export async function authenticate(req: Request) {
     return permissions
 }
 
-
 async function createContext({
     res,
     req,
