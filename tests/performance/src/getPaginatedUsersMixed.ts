@@ -166,6 +166,75 @@ export const options: Options = {
                 },
             ],
         },
+        teacher07: {
+            executor: 'ramping-vus',
+            exec: 'teacher07',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages: [
+                // Ramp up               
+                {
+                    duration: '20s',
+                    target: 2
+                },
+                // Hold
+                {
+                    duration: '2s',
+                    target: 4
+                },
+                // Ramp down
+                {
+                    duration: '20s',
+                    target: 0
+                },
+            ],
+        },
+         teacher08: {
+            executor: 'ramping-vus',
+            exec: 'teacher08',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages: [
+                // Ramp up               
+                {
+                    duration: '20s',
+                    target: 2
+                },
+                // Hold
+                {
+                    duration: '2s',
+                    target: 4
+                },
+                // Ramp down
+                {
+                    duration: '20s',
+                    target: 0
+                },
+            ],
+        }, 
+         teacher09: {
+            executor: 'ramping-vus',
+            exec: 'teacher09',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages: [
+                // Ramp up               
+                {
+                    duration: '20s',
+                    target: 2
+                },
+                // Hold
+                {
+                    duration: '2s',
+                    target: 2
+                },
+                // Ramp down
+                {
+                    duration: '20s',
+                    target: 0
+                },
+            ],
+        }, 
         orgAdmin: {
             executor: 'ramping-vus',
             exec: 'orgAdmin',
@@ -197,7 +266,7 @@ export function setup() {
     const l = 9;
     let data = {};
 
-    for (i; i < l; i++) {
+    for (i; i <= l; i++) {
         const prefix = ('0' + i).slice(-2);
         const teacherLoginPayload = {
             deviceId: "webpage",
@@ -280,7 +349,7 @@ export function teacher04(data: { [key: string]: { res: any, userId: string }}) 
             },
             email: {
                 operator: "contains", 
-                value: "edgardo"
+                value: "parralel"
             }
         }
     ]);
@@ -291,7 +360,7 @@ export function teacher05(data: { [key: string]: { res: any, userId: string }}) 
 
    while (pageInfo?.hasNextPage) {
         sleep(2);
-        pageInfo = getUsers({ count: 10, search: 'student'  }, data.teacher05, [{email: {operator: "contains", value: "edgardo"}}], pageInfo.endCursor);
+        pageInfo = getUsers({ count: 10, search: 'parralel'  }, data.teacher05, [{email: {operator: "contains", value: "edgardo"}}], pageInfo.endCursor);
     }
 }
 
@@ -299,8 +368,53 @@ export function teacher06(data: { [key: string]: { res: any, userId: string }}) 
     getUsers({ count: 10, search: 'student' }, data.teacher06, [{schoolId: {operator: "eq", value: "7b11aaae-8e8b-4370-b8a7-6bb069088967"}}]);
  }
 
+ export function teacher07(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'parralel' }, data.teacher07, [
+        { 
+            roleId: {
+                operator: 'eq',
+                value: process.env.ROLE_ID_STUDENT as string,
+            },
+            email: {
+                operator: "contains", 
+                value: "edgardo"
+            }
+        }
+    ]);
+}
+
+ export function teacher08(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'student' }, data.teacher08, [
+        { 
+            roleId: {
+                operator: 'eq',
+                value: process.env.ROLE_ID_STUDENT as string,
+            },
+            email: {
+                operator: "contains", 
+                value: "edgardo"
+            }
+        }
+    ]);
+}
+
+export function teacher09(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'student' }, data.teacher09, [
+        { 
+            roleId: {
+                operator: 'eq',
+                value: process.env.ROLE_ID_STUDENT as string,
+            },
+            email: {
+                operator: "contains", 
+                value: "edgardo"
+            }
+        }
+    ]);
+} 
+
 export function orgAdmin(data: { [key: string]: { res: any, userId: string }}) {
-    getUsers({ count: 10, search: 'student' }, data.orgAdmin, [{ roleId: {
+    getUsers({ count: 10, search: 'parralel' }, data.orgAdmin, [{ roleId: {
         operator: 'eq',
         value: process.env.ROLE_ID_STUDENT as string,
     }}]);

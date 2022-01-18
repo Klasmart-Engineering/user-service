@@ -45,5 +45,5 @@ export function createUsersAdmin2() {
     sleep(0.5);
     switchUser();
     sleep(0.5);
-    createUsersParallel(10, 19);
+    createUsersParallel(30, 35);
 }
