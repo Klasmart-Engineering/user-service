@@ -157,34 +157,26 @@ export async function validateToken(
     const auth = req.headers.authorization || ''
     if (await isAPIKey(auth)) {
         try {
-            if (process.env.NODE_ENV !== 'development') {
-                await checkAPIKey(auth)
-            }
-            next()
+            await checkAPIKey(auth)
         } catch (e) {
             const { code, message } = customErrors.invalid_api_key
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, { reason: e.message })!,
+                message: stringInject(message, { reason: message })!,
             })
         }
-        next()
     } else {
         try {
-            if (process.env.NODE_ENV !== 'development') {
-                res.locals.token = await checkToken(req)
-            }
-
-            next()
+            res.locals.token = await checkToken(req)
         } catch (e) {
             const { code, message } = customErrors.invalid_token
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, { reason: e.message })!,
+                message: stringInject(message, { reason: message })!,
             })
         }
-        next()
     }
+    next()
 }
