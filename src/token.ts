@@ -1,5 +1,5 @@
 import { AuthenticationError } from 'apollo-server-express'
-import express, { NextFunction, Request } from 'express'
+import express, { Request } from 'express'
 import { decode, Secret, verify, VerifyOptions } from 'jsonwebtoken'
 import getAuthenticatedUser from './services/azureAdB2C'
 import { customErrors } from './types/errors/customError'
@@ -162,27 +162,27 @@ export async function validateToken(
             }
             next()
         } catch (e) {
-            const { code, message } = customErrors.invalid_api_key
+            const {code, message} = customErrors.invalid_api_key
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, { reason: e.message })!,
+                message: stringInject(message, {reason: e.message})!,
             })
         }
         next()
     } else {
         try {
             if (process.env.NODE_ENV !== 'development') {
-                await checkToken(req)
+                res.locals.token = await checkToken(req)
             }
 
             next()
         } catch (e) {
-            const { code, message } = customErrors.invalid_token
+            const {code, message} = customErrors.invalid_token
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, { reason: e.message })!,
+                message: stringInject(message, {reason: e.message})!,
             })
         }
         next()

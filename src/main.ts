@@ -11,7 +11,7 @@ import { TokenPayload } from './token'
 const port = process.env.PORT || 8080
 
 export interface Context {
-    // token: TokenPayload //
+    token: TokenPayload | undefined
     res: express.Response
     req: express.Request
     permissions: UserPermissions

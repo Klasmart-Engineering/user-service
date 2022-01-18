@@ -72,9 +72,12 @@ async function createContext({
     res: Response<any, { token: TokenPayload | undefined }>
     req: Request
 }): Promise<Context> {
-    const permissions = await authenticate(req)
+    const token = res.locals.token
+
+    const permissions = new UserPermissions(token)
 
     return {
+        token,
         permissions,
         res,
         req,
