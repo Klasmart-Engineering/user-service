@@ -107,6 +107,9 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
         resolvers: {
             MyUser: {
                 node: async (_parent, _args, ctx: Context, _info) => {
+                    if (!ctx.permissions.getUserId()) {
+                        throw new AuthenticationError('No authentication token')
+                    }
                     const user = await model.getMyUser(ctx.permissions)
                     if (!user) {
                         throw new APIErrorCollection([
@@ -123,6 +126,9 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                     return mapUserToUserConnectionNode(user)
                 },
                 profiles: async (_parent, _args, ctx: Context, info) => {
+                    if (!ctx.permissions.getUserId()) {
+                        throw new AuthenticationError('No authentication token')
+                    }
                     const users = await model.myUsers(ctx.permissions)
                     return users.map(mapUserToUserConnectionNode)
                 },
