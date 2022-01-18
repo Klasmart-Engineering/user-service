@@ -12,8 +12,6 @@ export function setup() {
    return loginSetup();
 }
 
-const prefixLimit: number = !isNaN(parseInt(__ENV.PREFIX_LIMIT, 10)) ? parseInt(__ENV.PREFIX_LIMIT) : 9;
-
 export default function(data: { [key: string]: { res: any, userId: string }}) {
     randomCookieSetup(data);    
     schedulesTimeView();

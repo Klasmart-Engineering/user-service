@@ -16,7 +16,7 @@ export default function (roleType?: string) {
     const userPayload = JSON.stringify(
         {
             "view_type": "month",
-            "time_at": 1637707512,
+            "time_at": Math.round(new Date().getTime() / 1000),
             "time_zone_offset": -10800,
             "class_types": [],
             "class_ids": [],

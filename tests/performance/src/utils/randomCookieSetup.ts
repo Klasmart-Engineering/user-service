@@ -8,5 +8,12 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
     const random = ('0' + randomNumber(prefixLimit)).slice(-2);
     const accessCookie = data[`teacher${random}`].res.cookies?.access[0].Value;
     const refreshCookie = data[`teacher${random}`].res.cookies?.refresh[0].Value;
+
+    jar.set(process.env.COOKIE_URL as string, 'access', accessCookie, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', refreshCookie, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
 }
 
