@@ -31,6 +31,7 @@ import {
     validateNoDuplicate,
     RemoveMutation,
     validateSubItemsLengthAndNoDuplicates,
+    filterInvalidInputs,
 } from '../utils/mutations/commonStructure'
 import { Organization } from '../entities/organization'
 import {
@@ -185,12 +186,15 @@ export class AddProgramsToClasses extends AddMutation<
         validInputs: { index: number; input: AddProgramsToClassInput }[]
         apiErrors: APIError[]
     } {
-        return validateActiveAndNoDuplicates(
+        return filterInvalidInputs(
             inputs,
-            entityMaps,
-            inputs.map((val) => val.classId),
-            this.EntityType.name,
-            this.inputTypeName
+            validateActiveAndNoDuplicates(
+                inputs,
+                entityMaps,
+                inputs.map((val) => val.classId),
+                this.EntityType.name,
+                this.inputTypeName
+            )
         )
     }
 
@@ -308,22 +312,10 @@ export class RemoveProgramsFromClasses extends RemoveMutation<
             this.inputTypeName
         )
 
-        const validInputs = Array.from(
-            new Map(
-                [
-                    ...validateActAndNoDup.validInputs,
-                    ...validateSubItems.validInputs,
-                ].map((i) => [i.index, i])
-            ).values()
-        )
-
-        return {
-            validInputs,
-            apiErrors: [
-                ...validateSubItems.apiErrors,
-                ...validateActAndNoDup.apiErrors,
-            ],
-        }
+        return filterInvalidInputs(inputs, [
+            ...validateActAndNoDup,
+            ...validateSubItems,
+        ])
     }
 
     protected validate = (

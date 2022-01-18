@@ -21,6 +21,7 @@ import {
     DeleteEntityMap,
     DeleteMutation,
     EntityMap,
+    filterInvalidInputs,
     UpdateMutation,
     validateActiveAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
@@ -262,12 +263,15 @@ export class UpdateRoles extends UpdateMutation<
         validInputs: { index: number; input: UpdateRoleInput }[]
         apiErrors: APIError[]
     } {
-        return validateActiveAndNoDuplicates(
+        return filterInvalidInputs(
             inputs,
-            entityMaps,
-            inputs.map((val) => val.id),
-            this.EntityType.name,
-            this.inputTypeName
+            validateActiveAndNoDuplicates(
+                inputs,
+                entityMaps,
+                inputs.map((val) => val.id),
+                this.EntityType.name,
+                this.inputTypeName
+            )
         )
     }
 

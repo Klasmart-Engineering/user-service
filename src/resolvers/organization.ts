@@ -22,6 +22,7 @@ import {
     AddMembershipMutation,
     ProcessedResult,
     validateActiveAndNoDuplicates,
+    filterInvalidInputs,
 } from '../utils/mutations/commonStructure'
 import { getMembershipMapKey } from '../utils/resolvers/entityMaps'
 
@@ -73,12 +74,15 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
         validInputs: { index: number; input: AddUsersToOrganizationInput }[]
         apiErrors: APIError[]
     } {
-        return validateActiveAndNoDuplicates(
+        return filterInvalidInputs(
             inputs,
-            entityMaps,
-            inputs.map((val) => val.organizationId),
-            this.EntityType.name,
-            this.inputTypeName
+            validateActiveAndNoDuplicates(
+                inputs,
+                entityMaps,
+                inputs.map((val) => val.organizationId),
+                this.EntityType.name,
+                this.inputTypeName
+            )
         )
     }
 
@@ -244,12 +248,15 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
         }[]
         apiErrors: APIError[]
     } {
-        return validateActiveAndNoDuplicates(
+        return filterInvalidInputs(
             inputs,
-            entityMaps,
-            inputs.map((val) => val.organizationId),
-            this.EntityType.name,
-            this.inputTypeName
+            validateActiveAndNoDuplicates(
+                inputs,
+                entityMaps,
+                inputs.map((val) => val.organizationId),
+                this.EntityType.name,
+                this.inputTypeName
+            )
         )
     }
 

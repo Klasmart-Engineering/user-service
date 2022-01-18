@@ -21,11 +21,6 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
         | undefined
 }
 
-export interface InputsAndErrors<InputType> {
-    validInputs: { index: number; input: InputType }[]
-    apiErrors: APIError[]
-}
-
 type MembershipIdPair = { entityId: string; attributeValue: string }
 
 // this will not create an error for the first input
@@ -146,7 +141,7 @@ function validateSubItemsArrayLength(
     return errors
 }
 
-function validateSubItemsArrayNoDuplicates(
+export function validateSubItemsArrayNoDuplicates(
     allSubItemIds: string[][],
     inputTypeName: string,
     subItemName: string
@@ -174,7 +169,7 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     mainEntityIds: string[],
     entityTypeName: string,
     inputTypeName: string
-): InputsAndErrors<A> {
+) {
     const errors: APIError[] = []
     const ids = inputs.map((_, index) => mainEntityIds[index])
 
@@ -188,10 +183,7 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     const failedDuplicateInputs = validateNoDuplicate(ids, inputTypeName, 'id')
     errors.push(...failedDuplicateInputs.values())
 
-    return filterInvalidInputs(inputs, [
-        failedActiveInputs,
-        failedDuplicateInputs,
-    ])
+    return [failedActiveInputs, failedDuplicateInputs]
 }
 
 export function validateSubItemsLengthAndNoDuplicates<
@@ -220,10 +212,7 @@ export function validateSubItemsLengthAndNoDuplicates<
         ...failedSubItemDuplicates.values()
     )
 
-    return filterInvalidInputs(inputs, [
-        failedSubItemsLength,
-        failedSubItemDuplicates,
-    ])
+    return [failedSubItemsLength, failedSubItemDuplicates]
 }
 
 /**
@@ -507,12 +496,15 @@ export abstract class DeleteMutation<
     } {
         // todo: the active checks should be moved into `validate`
         // as they can be done on each input in isolation
-        return validateActiveAndNoDuplicates(
+        return filterInvalidInputs(
             inputs,
-            entityMaps,
-            this.mainEntityIds,
-            this.EntityType.name,
-            this.inputTypeName
+            validateActiveAndNoDuplicates(
+                inputs,
+                entityMaps,
+                this.mainEntityIds,
+                this.EntityType.name,
+                this.inputTypeName
+            )
         )
     }
 
