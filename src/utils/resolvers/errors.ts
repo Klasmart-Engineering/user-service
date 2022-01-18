@@ -7,8 +7,8 @@ type entityErrorType =
     | 'nonExistentChild'
     | 'inactive'
     | 'unauthorized'
-    | 'duplicate'
-    | 'duplicateChild'
+    | 'existent'
+    | 'existentChild'
 
 export function createInputLengthAPIError(
     entity: string,
@@ -190,14 +190,14 @@ export function createEntityAPIError(
             message: customErrors.unauthorized.message,
             variables: ['id'],
         },
-        duplicate: {
-            code: customErrors.duplicate_entity.code,
-            message: customErrors.duplicate_entity.message,
+        existent: {
+            code: customErrors.existent_entity.code,
+            message: customErrors.existent_entity.message,
             variables: ['name'],
         },
-        duplicateChild: {
-            code: customErrors.duplicate_child_entity.code,
-            message: customErrors.duplicate_child_entity.message,
+        existentChild: {
+            code: customErrors.existent_child_entity.code,
+            message: customErrors.existent_child_entity.message,
             variables: variables || [''],
         },
     }
@@ -211,7 +211,7 @@ export function createEntityAPIError(
         index,
     }
 
-    if (['duplicateChild', 'nonExistentChild'].includes(errorType)) {
+    if (['existentChild', 'nonExistentChild'].includes(errorType)) {
         errorDetails.parentEntity = parentEntity
         errorDetails.parentName = parentName
     }

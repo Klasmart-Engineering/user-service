@@ -118,7 +118,7 @@ export class CreateSchools extends CreateMutation<
         if (schoolExist) {
             errors.push(
                 createEntityAPIError(
-                    'duplicateChild',
+                    'existentChild',
                     index,
                     'School',
                     name,
@@ -134,7 +134,7 @@ export class CreateSchools extends CreateMutation<
         if (matchingOrgAndShortcode) {
             errors.push(
                 createEntityAPIError(
-                    'duplicateChild',
+                    'existentChild',
                     index,
                     'School',
                     shortCode,
@@ -295,7 +295,7 @@ export class UpdateSchools extends UpdateMutation<
         ) {
             errors.push(
                 createEntityAPIError(
-                    'duplicateChild',
+                    'existentChild',
                     index,
                     'School',
                     name,
@@ -311,7 +311,7 @@ export class UpdateSchools extends UpdateMutation<
         ) {
             errors.push(
                 createEntityAPIError(
-                    'duplicateChild',
+                    'existentChild',
                     index,
                     'School',
                     shortCode,
@@ -650,7 +650,7 @@ export class AddClassesToSchools extends AddMutation<
             if (itemHasSubitem) {
                 errors.push(
                     createEntityAPIError(
-                        'duplicateChild',
+                        'existentChild',
                         index,
                         subEntityName,
                         subitem[subEntityKeyName],
@@ -844,7 +844,7 @@ export class AddProgramsToSchools extends AddMutation<
             if (itemHasSubitem) {
                 errors.push(
                     createEntityAPIError(
-                        'duplicateChild',
+                        'existentChild',
                         index,
                         subEntityName,
                         subitem[subEntityKeyName],

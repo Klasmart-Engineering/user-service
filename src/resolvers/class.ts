@@ -41,7 +41,11 @@ import {
 import clean from '../utils/clean'
 import { ObjMap } from '../utils/stringUtils'
 import { getMap } from '../utils/resolvers/entityMaps'
-import { validate } from '../utils/resolvers/inputValidation'
+import {
+    flagExistentChild,
+    flagNonExistent,
+    flagNonExistentChild,
+} from '../utils/resolvers/inputValidation'
 
 export async function deleteClasses(
     args: { input: DeleteClassInput[] },
@@ -200,18 +204,16 @@ export class AddProgramsToClasses extends AddMutation<
         const { classId, programIds } = currentInput
         const programMap = maps.programs
 
-        const programs = validate.nonExistent.program(
-            index,
-            programIds,
-            programMap
-        )
+        const programs = flagNonExistent(Program, index, programIds, programMap)
         errors.push(...programs.errors)
 
         if (programs.errors.length) return errors
         const classProgramIds = new Set(
             maps.classPrograms.get(classId)?.map((p) => p.id)
         )
-        const programChildErrors = validate.duplicate.programs.in.class(
+        const programChildErrors = flagExistentChild(
+            Class,
+            Program,
             index,
             classId,
             programIds,
@@ -334,18 +336,16 @@ export class RemoveProgramsFromClasses extends RemoveMutation<
         const { classId, programIds } = currentInput
         const programMap = maps.programs
 
-        const programs = validate.nonExistent.program(
-            index,
-            programIds,
-            programMap
-        )
+        const programs = flagNonExistent(Program, index, programIds, programMap)
         errors.push(...programs.errors)
 
         if (programs.errors.length) return errors
         const classProgramIds = new Set(
             maps.classPrograms.get(classId)?.map((p) => p.id)
         )
-        const programChildErrors = validate.nonExistent.programs.in.class(
+        const programChildErrors = flagNonExistentChild(
+            Class,
+            Program,
             index,
             classId,
             programIds,

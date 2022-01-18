@@ -614,8 +614,8 @@ export class Organization extends CustomBaseEntity {
             if (duplicateShortcode) {
                 errors.push(
                     new APIError({
-                        code: customErrors.duplicate_child_entity.code,
-                        message: customErrors.duplicate_child_entity.message,
+                        code: customErrors.existent_child_entity.code,
+                        message: customErrors.existent_child_entity.message,
                         variables: ['shortcode'],
                         entity: 'OrganizationMembership',
                         entityName: shortcode,
@@ -651,9 +651,8 @@ export class Organization extends CustomBaseEntity {
                 if (existingMembership) {
                     errors.push(
                         new APIError({
-                            code: customErrors.duplicate_child_entity.code,
-                            message:
-                                customErrors.duplicate_child_entity.message,
+                            code: customErrors.existent_child_entity.code,
+                            message: customErrors.existent_child_entity.message,
                             variables: [
                                 'email',
                                 'phone',
@@ -812,8 +811,8 @@ export class Organization extends CustomBaseEntity {
             if (duplicateShortcode) {
                 errors.push(
                     new APIError({
-                        code: customErrors.duplicate_child_entity.code,
-                        message: customErrors.duplicate_child_entity.message,
+                        code: customErrors.existent_child_entity.code,
+                        message: customErrors.existent_child_entity.message,
                         variables: ['shortcode'],
                         entity: 'OrganizationMembership',
                         entityName: shortcode,
@@ -883,8 +882,8 @@ export class Organization extends CustomBaseEntity {
             if (duplicateUser) {
                 errors.push(
                     new APIError({
-                        code: customErrors.duplicate_entity.code,
-                        message: customErrors.duplicate_entity.message,
+                        code: customErrors.existent_entity.code,
+                        message: customErrors.existent_entity.message,
                         variables: ['given_name', 'family_name'],
                         entity: 'User',
                         entityName: `${given_name} ${family_name}`,

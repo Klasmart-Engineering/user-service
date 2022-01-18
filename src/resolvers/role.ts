@@ -112,7 +112,7 @@ export class CreateRoles extends CreateMutation<
         if (roleExist) {
             errors.push(
                 createEntityAPIError(
-                    'duplicateChild',
+                    'existentChild',
                     index,
                     'Role',
                     roleName,
@@ -304,7 +304,7 @@ export class UpdateRoles extends UpdateMutation<
             ) {
                 errors.push(
                     createEntityAPIError(
-                        'duplicateChild',
+                        'existentChild',
                         index,
                         'Role',
                         roleName,

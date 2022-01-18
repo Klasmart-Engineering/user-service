@@ -168,7 +168,7 @@ export async function updateCategories(
 
             if (categoryExist) {
                 errors.push(
-                    createEntityAPIError('duplicate', index, 'Category', name)
+                    createEntityAPIError('existent', index, 'Category', name)
                 )
             }
 
@@ -377,7 +377,7 @@ export async function createCategories(
         if (organization && categoryExist) {
             errors.push(
                 createEntityAPIError(
-                    'duplicateChild',
+                    'existentChild',
                     index,
                     'Category',
                     name,
@@ -838,8 +838,8 @@ const extraValidationForSubcategory = (
     if (existentCategorySubcategory) {
         errors.push(
             new APIError({
-                code: customErrors.duplicate_child_entity.code,
-                message: customErrors.duplicate_child_entity.message,
+                code: customErrors.existent_child_entity.code,
+                message: customErrors.existent_child_entity.message,
                 variables: ['categoryId', 'subcategoryId'],
                 entity: 'Category',
                 entityName: category.name,

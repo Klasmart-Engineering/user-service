@@ -1835,7 +1835,7 @@ describe('role', () => {
                             input[index].roleName = existentRole.role_name!
                             const expectedErrors = [
                                 createEntityAPIError(
-                                    'duplicateChild',
+                                    'existentChild',
                                     index,
                                     'Role',
                                     existentRole.role_name,
@@ -2305,7 +2305,7 @@ describe('role', () => {
                                     input,
                                     (i, index) =>
                                         createEntityAPIError(
-                                            'duplicateChild',
+                                            'existentChild',
                                             index,
                                             'Role',
                                             i.roleName,

@@ -10,7 +10,6 @@ import {
     OrganizationMembershipMap,
     SchoolMembershipMap,
 } from '../../../../src/utils/resolvers/entityMaps'
-import { validate } from '../../../../src/utils/resolvers/inputValidation'
 import { ObjMap } from '../../../../src/utils/stringUtils'
 import { createOrganization } from '../../../factories/organization.factory'
 import { createOrganizationMemberships } from '../../../factories/organizationMembership.factory'
@@ -19,6 +18,16 @@ import { createSchoolMemberships } from '../../../factories/schoolMembership.fac
 import { createUsers } from '../../../factories/user.factory'
 import { compareMultipleErrors } from '../../../utils/apiError'
 import { compareMultipleEntities } from '../../../utils/assertions'
+import {
+    flagExistent,
+    flagExistentChild,
+    flagNonExistent,
+    flagNonExistentChild,
+    flagNonExistentOrganizationMembership,
+    flagNonExistentSchoolMembership,
+} from '../../../../src/utils/resolvers/inputValidation'
+import { Program } from '../../../../src/entities/program'
+import { Class } from '../../../../src/entities/class'
 
 describe('inputValidation', () => {
     const index = 0
@@ -55,7 +64,8 @@ describe('inputValidation', () => {
                 beforeEach(() => (fakeIds = getMockIdList(3)))
 
                 it('returns errors containing the ids', () => {
-                    const { values, errors } = validate.nonExistent.user(
+                    const { values, errors } = flagNonExistent(
+                        User,
                         index,
                         fakeIds,
                         userMap
@@ -74,7 +84,8 @@ describe('inputValidation', () => {
                 )
 
                 it('returns the entities', () => {
-                    const { values, errors } = validate.nonExistent.user(
+                    const { values, errors } = flagNonExistent(
+                        User,
                         index,
                         requestedUsers.map((ru) => ru.user_id),
                         userMap
@@ -95,7 +106,8 @@ describe('inputValidation', () => {
                 })
 
                 it('returns the entities when they exist and errors otherwise', () => {
-                    const { values, errors } = validate.nonExistent.user(
+                    const { values, errors } = flagNonExistent(
+                        User,
                         index,
                         [...realUsers.map((ru) => ru.user_id), ...fakeIds],
                         userMap
@@ -119,7 +131,8 @@ describe('inputValidation', () => {
                 })
 
                 it('returns the entities and errors when they exist', () => {
-                    const { values, errors } = validate.duplicate.user(
+                    const { values, errors } = flagExistent(
+                        User,
                         index,
                         [
                             ...existentUsers.map((ru) => ru.user_id),
@@ -129,7 +142,7 @@ describe('inputValidation', () => {
                     )
                     const xErrors = existentUsers.map((u) =>
                         createEntityAPIError(
-                            'duplicate',
+                            'existent',
                             index,
                             'User',
                             u.user_id
@@ -176,7 +189,9 @@ describe('inputValidation', () => {
                 beforeEach(() => (fakeIds = getMockIdList(3)))
 
                 it('returns errors containing the ids', () => {
-                    const errors = validate.nonExistent.programs.in.class(
+                    const errors = flagNonExistentChild(
+                        Class,
+                        Program,
                         index,
                         classId,
                         fakeIds,
@@ -201,7 +216,9 @@ describe('inputValidation', () => {
                 )
 
                 it('returns no errors', () => {
-                    const errors = validate.nonExistent.programs.in.class(
+                    const errors = flagNonExistentChild(
+                        Class,
+                        Program,
                         index,
                         classId,
                         requestedProgramIds,
@@ -222,7 +239,9 @@ describe('inputValidation', () => {
                 })
 
                 it('returns a errors for the ones that do not exist', () => {
-                    const errors = validate.nonExistent.programs.in.class(
+                    const errors = flagNonExistentChild(
+                        Class,
+                        Program,
                         index,
                         classId,
                         [...realProgramIds, ...fakeIds],
@@ -251,7 +270,9 @@ describe('inputValidation', () => {
                 })
 
                 it('returns an error when they exist', () => {
-                    const errors = validate.duplicate.programs.in.class(
+                    const errors = flagExistentChild(
+                        Class,
+                        Program,
                         index,
                         classId,
                         [...existentProgramIds, ...newProgramIds],
@@ -259,7 +280,7 @@ describe('inputValidation', () => {
                     )
                     const xErrors = existentProgramIds.map((progId) =>
                         createEntityAPIError(
-                            'duplicateChild',
+                            'existentChild',
                             index,
                             'Program',
                             progId,
@@ -300,15 +321,6 @@ describe('inputValidation', () => {
             let memberships: OrganizationMembership[]
             let membershipMap: OrganizationMembershipMap
 
-            function validateNonExistentChildOrganizations() {
-                return validate.nonExistent.users.in.organization(
-                    index,
-                    organization.organization_id,
-                    users.map((u) => u.user_id),
-                    membershipMap
-                )
-            }
-
             function makeOrgMembershipsIntoMap(
                 orgMemberships: OrganizationMembership[]
             ): OrganizationMembershipMap {
@@ -339,7 +351,12 @@ describe('inputValidation', () => {
                 })
 
                 it('returns all the memberships', () => {
-                    const val = validateNonExistentChildOrganizations()
+                    const val = flagNonExistentOrganizationMembership(
+                        index,
+                        organization.organization_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     expect(val.errors).to.be.empty
                     expect(val.values).to.deep.equal(memberships)
                 })
@@ -360,7 +377,12 @@ describe('inputValidation', () => {
                 })
 
                 it('returns the valid memberships and errors for the others', () => {
-                    const val = validateNonExistentChildOrganizations()
+                    const val = flagNonExistentOrganizationMembership(
+                        index,
+                        organization.organization_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     const xErrors = usersNotInOrg.map((u) => {
                         return createNonExistentChildError(
                             u.user_id,
@@ -375,7 +397,12 @@ describe('inputValidation', () => {
 
             context('when the organization contains none of the users', () => {
                 it('returns an error for each user', () => {
-                    const val = validateNonExistentChildOrganizations()
+                    const val = flagNonExistentOrganizationMembership(
+                        index,
+                        organization.organization_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     const xErrors = users.map((u) => {
                         return createNonExistentChildError(
                             u.user_id,
@@ -409,15 +436,6 @@ describe('inputValidation', () => {
                 )
             }
 
-            function validateNonExistentChildSchool() {
-                return validate.nonExistent.users.in.school(
-                    index,
-                    school.school_id,
-                    users.map((u) => u.user_id),
-                    membershipMap
-                )
-            }
-
             beforeEach(() => {
                 school = createSchool()
                 school.school_id = uuid_v4()
@@ -430,7 +448,12 @@ describe('inputValidation', () => {
                 })
 
                 it('returns all the memberships', () => {
-                    const val = validateNonExistentChildSchool()
+                    const val = flagNonExistentSchoolMembership(
+                        index,
+                        school.school_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     expect(val.errors).to.be.empty
                     expect(val.values).to.deep.equal(memberships)
                 })
@@ -448,7 +471,12 @@ describe('inputValidation', () => {
                 })
 
                 it('returns the valid memberships and errors for the others', () => {
-                    const val = validateNonExistentChildSchool()
+                    const val = flagNonExistentSchoolMembership(
+                        index,
+                        school.school_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     const xErrors = usersNotInSchool.map((u) => {
                         return createNonExistentChildError(
                             u.user_id,
@@ -463,7 +491,12 @@ describe('inputValidation', () => {
 
             context('when the school contains none of the users', () => {
                 it('returns an error for each user', () => {
-                    const val = validateNonExistentChildSchool()
+                    const val = flagNonExistentSchoolMembership(
+                        index,
+                        school.school_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     const xErrors = users.map((u) => {
                         return createNonExistentChildError(
                             u.user_id,

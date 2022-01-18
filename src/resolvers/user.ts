@@ -37,7 +37,6 @@ import {
     createInputLengthAPIError,
     createUnauthorizedAPIError,
 } from '../utils/resolvers/errors'
-import { validate } from '../utils/resolvers/inputValidation'
 import { getMap, SchoolMembershipMap } from '../utils/resolvers/entityMaps'
 import { config } from '../config/config'
 import {
@@ -50,6 +49,12 @@ import {
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { ObjMap } from '../utils/stringUtils'
+import {
+    flagNonExistent,
+    flagNonExistentOrganizationMembership,
+    flagNonExistentSchoolMembership,
+} from '../utils/resolvers/inputValidation'
+import { Organization } from '../entities/organization'
 
 export function addOrganizationRolesToUsers(
     args: { input: AddOrganizationRolesToUserInput[] },
@@ -120,17 +125,18 @@ async function modifyOrganizationRoles(
     for (const [index, subArgs] of args.input.entries()) {
         const { organizationId, userId, roleIds } = subArgs
 
-        const orgs = validate.nonExistent.organization(
+        const orgs = flagNonExistent(
+            Organization,
             index,
             [organizationId],
             preloadedOrganizations
         )
-        const roles = validate.nonExistent.role(index, roleIds, preloadedRoles)
-        const users = validate.nonExistent.user(index, [userId], preloadedUsers)
+        const roles = flagNonExistent(Role, index, roleIds, preloadedRoles)
+        const users = flagNonExistent(User, index, [userId], preloadedUsers)
         errors.push(...orgs.errors, ...roles.errors, ...users.errors)
 
         if (orgs.errors.length || users.errors.length) continue
-        const dbMemberships = validate.nonExistent.users.in.organization(
+        const dbMemberships = flagNonExistentOrganizationMembership(
             index,
             organizationId,
             [userId],
@@ -274,19 +280,15 @@ export class RemoveSchoolRolesFromUsers extends RemoveMutation<
         const errors: APIError[] = []
 
         const schoolMap = entityMaps.schools
-        const schools = validate.nonExistent.school(
-            index,
-            [schoolId],
-            schoolMap
-        )
+        const schools = flagNonExistent(School, index, [schoolId], schoolMap)
         const userMap = entityMaps.mainEntity
-        const users = validate.nonExistent.user(index, [userId], userMap)
+        const users = flagNonExistent(User, index, [userId], userMap)
         const roleMap = entityMaps.roles
-        const roles = validate.nonExistent.role(index, roleIds, roleMap)
+        const roles = flagNonExistent(Role, index, roleIds, roleMap)
         errors.push(...schools.errors, ...users.errors, ...roles.errors)
 
         if (schools.errors.length || users.errors.length) return errors
-        const membership = validate.nonExistent.users.in.school(
+        const membership = flagNonExistentSchoolMembership(
             index,
             schoolId,
             [userId],
@@ -444,8 +446,8 @@ function buildListOfExistingUserErrors(
         )
         errs.push(
             new APIError({
-                code: customErrors.duplicate_entity.code,
-                message: customErrors.duplicate_entity.message,
+                code: customErrors.existent_entity.code,
+                message: customErrors.existent_entity.message,
                 variables: [
                     'givenName',
                     'familyName',
@@ -871,8 +873,8 @@ function buildConflictsErrors(conflictcheck: ConflictCheck): APIError[] {
                         ? 'email'
                         : 'phone'
                 const e = new APIError({
-                    code: customErrors.duplicate_entity.code,
-                    message: customErrors.duplicate_entity.message,
+                    code: customErrors.existent_entity.code,
+                    message: customErrors.existent_entity.message,
                     variables: ['givenName', 'familyName', `${contactInfo}`],
                     entity: 'User',
                     attribute: '',
