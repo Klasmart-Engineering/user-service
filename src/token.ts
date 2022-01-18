@@ -163,7 +163,7 @@ export async function validateToken(
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, { reason: message })!,
+                message: stringInject(message, { reason: e.message })!,
             })
         }
     } else {
@@ -174,7 +174,7 @@ export async function validateToken(
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, { reason: message })!,
+                message: stringInject(message, { reason: e.message })!,
             })
         }
     }
