@@ -75,6 +75,7 @@ async function createContext({
     const permissions = await authenticate(req)
 
     return {
+        token,
         permissions,
         res,
         req,

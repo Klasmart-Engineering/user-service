@@ -80,7 +80,7 @@ describe('model', () => {
                 iss: 'calmid-debug',
             }
             const permissions = new UserPermissions(token)
-            const result = await model.getMyUser(permissions)
+            const result = await model.getMyUser(token)
             expect(result?.user_id).to.deep.eq(user.user_id)
         })
         it('returns the user with matching user ID and phone', async () => {
@@ -91,7 +91,7 @@ describe('model', () => {
                 iss: 'calmid-debug',
             }
             const permissions = new UserPermissions(token)
-            const result = await model.getMyUser(permissions)
+            const result = await model.getMyUser(token)
             expect(result?.user_id).to.deep.eq(user.user_id)
         })
     })
@@ -125,7 +125,7 @@ describe('model', () => {
         })
 
         it('returns the expected users', async () => {
-            const users = await model.myUsers(permissions)
+            const users = await model.myUsers(userToken)
             expect(users).to.have.length(2)
         })
         context('when user membership is inactive', () => {
@@ -143,7 +143,7 @@ describe('model', () => {
             })
 
             it('is excluded from results', async () => {
-                const users = await model.myUsers(permissions)
+                const users = await model.myUsers(userToken)
                 expect(users.length).to.equal(1)
             })
         })
@@ -154,7 +154,7 @@ describe('model', () => {
             })
 
             it('is excluded from results', async () => {
-                const users = await model.myUsers(permissions)
+                const users = await model.myUsers(userToken)
                 expect(users.length).to.equal(1)
             })
         })
