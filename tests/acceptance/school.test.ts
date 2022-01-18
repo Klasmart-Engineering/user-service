@@ -17,6 +17,7 @@ import {
     UpdateSchoolInput,
     RemoveProgramsFromSchoolInput,
     DeleteSchoolInput,
+    AddUsersToSchoolInput,
 } from '../../src/types/graphQL/school'
 import { createClass } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
@@ -51,6 +52,7 @@ import {
     UPDATE_SCHOOLS,
     REMOVE_USERS_FROM_SCHOOLS,
     REMOVE_PROGRAMS_FROM_SCHOOLS,
+    ADD_USERS_TO_SCHOOLS,
 } from '../utils/operations/schoolOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { userToPayload } from '../utils/operations/userOps'
@@ -565,6 +567,60 @@ describe('acceptance.school', () => {
                 expect(schoolsUpdated).to.be.null
                 expect(errors).to.exist
             })
+        })
+    })
+
+    context('addUsersToSchools', () => {
+        let adminUser: User
+        let input: AddUsersToSchoolInput[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+
+            const org = await createOrganization().save()
+            const school = await createSchoolFactory(org).save()
+            const user = await createUser().save()
+            const role = await createRole().save()
+
+            input = [
+                {
+                    schoolId: school.school_id,
+                    userIds: [user.user_id],
+                    schoolRoleIds: [role.role_id],
+                },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_USERS_TO_SCHOOLS),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.addUsersToSchools.schools
+            ).to.have.lengthOf(1)
+        })
+
+        it('has mandatory schoolId & userIds input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_USERS_TO_SCHOOLS),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.have.lengthOf(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "schoolId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "userIds" of required type "[ID!]!" was not provided.'
+            )
         })
     })
 

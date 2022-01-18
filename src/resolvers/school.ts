@@ -20,6 +20,7 @@ import {
     UpdateSchoolInput,
     AddProgramsToSchoolInput,
     RemoveProgramsFromSchoolInput,
+    AddUsersToSchoolInput,
 } from '../types/graphQL/school'
 import {
     CreateMutation,
@@ -28,8 +29,11 @@ import {
     AddMutation,
     UpdateMutation,
     RemoveMembershipMutation,
+    AddMembershipMutation,
     DeleteEntityMap,
     validateActiveAndNoDuplicates,
+    ProcessedResult,
+    validateSubItemsLengthAndNoDuplicates,
     filterInvalidInputs,
 } from '../utils/mutations/commonStructure'
 import { Class } from '../entities/class'
@@ -40,8 +44,17 @@ import {
 } from '../utils/resolvers/errors'
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
 import { config } from '../config/config'
-import { getMembershipMapKey } from '../utils/resolvers/entityMaps'
+import {
+    getMap,
+    getMembershipMapKey,
+    SchoolMembershipMap,
+} from '../utils/resolvers/entityMaps'
 import { Program } from '../entities/program'
+import { Role } from '../entities/role'
+import {
+    flagExistentSchoolMembership,
+    flagNonExistent,
+} from '../utils/resolvers/inputValidation'
 
 export interface CreateSchoolEntityMap extends EntityMap<School> {
     mainEntity: Map<string, School>
@@ -402,6 +415,172 @@ export class DeleteSchools extends DeleteMutation<
     }
 
     protected async buildOutput(currentEntity: School): Promise<void> {
+        this.output.schools.push(
+            await mapSchoolToSchoolConnectionNode(currentEntity)
+        )
+    }
+}
+
+export interface AddUsersToSchoolsEntityMap extends EntityMap<School> {
+    mainEntity: Map<string, School>
+    users: Map<string, User>
+    memberships: SchoolMembershipMap
+    roles: Map<string, Role>
+}
+
+export class AddUsersToSchools extends AddMembershipMutation<
+    School,
+    AddUsersToSchoolInput,
+    SchoolsMutationResult,
+    SchoolMembership
+> {
+    protected readonly EntityType = School
+    protected readonly inputTypeName = 'AddUsersToSchoolInput'
+    protected readonly output: SchoolsMutationResult = { schools: [] }
+    protected readonly mainEntityIds: string[]
+
+    constructor(
+        input: AddUsersToSchoolInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.schoolId)
+    }
+
+    validationOverAllInputs(
+        inputs: AddUsersToSchoolInput[],
+        entityMaps: AddUsersToSchoolsEntityMap
+    ) {
+        const schoolsErrorMap = validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((val) => val.schoolId),
+            this.EntityType.name,
+            this.inputTypeName
+        )
+        const roleIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'schoolRoleIds'
+        )
+
+        const userIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'userIds'
+        )
+
+        return filterInvalidInputs(
+            inputs,
+            [schoolsErrorMap, roleIdsErrorMap, userIdsErrorMap].flat()
+        )
+    }
+
+    async generateEntityMaps(
+        input: AddUsersToSchoolInput[]
+    ): Promise<AddUsersToSchoolsEntityMap> {
+        const userIds = input.map((val) => val.userIds).flat()
+        const schoolsPromise = getMap.school(this.mainEntityIds, [
+            'organization',
+        ])
+        const usersPromise = getMap.user(userIds)
+        const rolesPromise = getMap.role(
+            input.flatMap((val) => val.schoolRoleIds ?? [])
+        )
+        const membershipsPromise = getMap.membership.school(
+            this.mainEntityIds,
+            userIds
+        )
+
+        return {
+            mainEntity: await schoolsPromise,
+            users: await usersPromise,
+            memberships: await membershipsPromise,
+            roles: await rolesPromise,
+        }
+    }
+
+    async authorize(
+        input: AddUsersToSchoolInput[],
+        maps: AddUsersToSchoolsEntityMap
+    ) {
+        const orgIds = await Promise.all(
+            input
+                .map((i) =>
+                    maps.mainEntity
+                        .get(i.schoolId)
+                        ?.organization?.then((o) => o.organization_id)
+                )
+                .filter((op): op is Promise<string> => op !== undefined)
+        )
+
+        return this.permissions.rejectIfNotAllowed(
+            {
+                organization_ids: orgIds,
+                school_ids: this.mainEntityIds,
+            },
+            PermissionName.edit_school_20330
+        )
+    }
+
+    validate(
+        index: number,
+        currentEntity: School,
+        currentInput: AddUsersToSchoolInput,
+        maps: AddUsersToSchoolsEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+
+        const users = flagNonExistent(
+            User,
+            index,
+            currentInput.userIds,
+            maps.users
+        )
+        const roles = flagNonExistent(
+            Role,
+            index,
+            currentInput.schoolRoleIds ?? [],
+            maps.roles
+        )
+        const memberships = flagExistentSchoolMembership(
+            index,
+            currentInput.schoolId,
+            currentInput.userIds,
+            maps.memberships
+        )
+
+        errors.push(...roles.errors, ...users.errors, ...memberships.errors)
+
+        return errors
+    }
+
+    process(
+        currentInput: AddUsersToSchoolInput,
+        maps: AddUsersToSchoolsEntityMap,
+        index: number
+    ): ProcessedResult<School, SchoolMembership> {
+        const memberships: SchoolMembership[] = []
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+
+        for (const userId of currentInput.userIds) {
+            const membership = new SchoolMembership()
+            membership.school_id = currentEntity.school_id
+            membership.school = Promise.resolve(currentEntity)
+            membership.user_id = userId
+            membership.user = Promise.resolve(maps.users.get(userId) as User)
+            membership.roles = Promise.resolve(
+                currentInput.schoolRoleIds?.map(
+                    (r) => maps.roles.get(r) as Role
+                ) ?? []
+            )
+            memberships.push(membership)
+        }
+
+        return { outputEntity: currentEntity, modifiedEntity: memberships }
+    }
+
+    async buildOutput(currentEntity: School): Promise<void> {
         this.output.schools.push(
             await mapSchoolToSchoolConnectionNode(currentEntity)
         )

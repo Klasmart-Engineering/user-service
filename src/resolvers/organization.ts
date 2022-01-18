@@ -1,4 +1,4 @@
-import { getManager, In } from 'typeorm'
+import { In } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Role } from '../entities/role'
@@ -176,20 +176,6 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
             memberships.push(membership)
         }
         return { outputEntity: currentEntity, modifiedEntity: memberships }
-    }
-
-    protected async applyToDatabase(
-        results: ProcessedResult<Organization, OrganizationMembership>[]
-    ): Promise<void> {
-        const allEntitiesToSave = []
-        for (const r of results) {
-            // we don't change the organization itself
-            // so no need to save it
-            if (r.modifiedEntity !== undefined) {
-                allEntitiesToSave.push(...r.modifiedEntity)
-            }
-        }
-        await getManager().save(allEntitiesToSave)
     }
 
     protected buildOutput = async (

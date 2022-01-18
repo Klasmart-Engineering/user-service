@@ -1,5 +1,6 @@
+/* eslint-disable no-await-in-loop */
 import { expect, use } from 'chai'
-import { getManager } from 'typeorm'
+import { getManager, In } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -56,6 +57,7 @@ import {
     SchoolsMutationResult,
     UpdateSchoolInput,
     RemoveProgramsFromSchoolInput,
+    AddUsersToSchoolInput,
 } from '../../src/types/graphQL/school'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { mutate } from '../../src/utils/mutations/commonStructure'
@@ -67,19 +69,24 @@ import {
     DeleteSchools,
     UpdateSchools,
     RemoveProgramsFromSchools,
+    AddUsersToSchools,
 } from '../../src/resolvers/school'
 import { buildPermissionError, permErrorMeta } from '../utils/errors'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import {
     createUser,
     createAdminUser as createAdmin,
+    createUsers,
 } from '../factories/user.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { formatShortCode, generateShortCode } from '../../src/utils/shortcode'
 import faker from 'faker'
 import { createSchools } from '../factories/school.factory'
 import { createClasses } from '../factories/class.factory'
-import { createRole as roleFactory } from '../factories/role.factory'
+import {
+    createRole as roleFactory,
+    createRoles,
+} from '../factories/role.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createRole as createARole } from '../factories/role.factory'
 import { createSchool as createASchool } from '../factories/school.factory'
@@ -88,16 +95,20 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import {
     checkNotFoundErrors,
     compareErrors,
+    compareMultipleErrors,
     expectAPIError,
 } from '../utils/apiError'
 import { APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateAttributeAPIError,
+    createDuplicateInputAttributeAPIError,
     createEntityAPIError,
+    createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../../src/utils/resolvers/errors'
 import { NIL_UUID } from '../utils/database'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { Role } from '../../src/entities/role'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -3170,5 +3181,333 @@ describe('school', () => {
                 await checkNoChangesMade(false)
             }
         )
+    })
+
+    describe('AddUsersToSchools', () => {
+        let adminUser: User
+        let nonAdminUser: User
+
+        let org: Organization
+        let users: User[]
+        let schools: School[]
+        let roles: Role[]
+
+        let input: AddUsersToSchoolInput[]
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
+
+            org = await createOrganization().save()
+            schools = createSchools(2, org)
+            users = createUsers(3)
+            roles = createRoles(3)
+            await connection.manager.save([...users, ...schools, ...roles])
+
+            input = [
+                {
+                    schoolId: schools[0].school_id,
+                    userIds: [users[0].user_id, users[1].user_id],
+                    schoolRoleIds: [roles[0].role_id],
+                },
+                {
+                    schoolId: schools[1].school_id,
+                    userIds: [users[1].user_id, users[2].user_id],
+                    schoolRoleIds: [roles[1].role_id],
+                },
+            ]
+        })
+        async function checkUsersAdded() {
+            for (const i of input) {
+                const memberships = await SchoolMembership.find({
+                    where: {
+                        school_id: i.schoolId,
+                        user_id: In(i.userIds),
+                        status: Status.ACTIVE,
+                    },
+                })
+                expect(memberships.length).to.equal(i.userIds.length)
+                expect(memberships.map((m) => m.user_id)).to.have.same.members(
+                    i.userIds
+                )
+
+                for (const m of memberships) {
+                    const mRoles = await m.roles
+                    expect(mRoles?.map((r) => r.role_id)).to.have.same.members(
+                        i.schoolRoleIds ?? []
+                    )
+                }
+            }
+        }
+
+        async function checkNoChangesMade() {
+            const memberships = await SchoolMembership.find({
+                where: {
+                    school_id: In(schools.map((s) => s.school_id)),
+                    user_id: In(users.map((u) => u.user_id)),
+                    status: Status.ACTIVE,
+                },
+            })
+            expect(memberships).to.be.empty
+        }
+
+        function getAddUsersToSchools(clientUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(clientUser))
+            return new AddUsersToSchools(input, permissions)
+        }
+
+        context('.run', () => {
+            context('when all attributes are valid', () => {
+                it('adds all the users', async () => {
+                    await expect(getAddUsersToSchools().run()).to.be.fulfilled
+                    await checkUsersAdded()
+                })
+
+                it('makes the expected number of db calls', async () => {
+                    connection.logger.reset()
+                    await getAddUsersToSchools().run()
+                    expect(connection.logger.count).to.equal(
+                        10,
+                        'preload: 4, authorize: 1, save: 1 select for all memberships, 1 membership insert, 1 roles insert, 2 for transaction start/commit'
+                    )
+                })
+            })
+        })
+        context('.authorize', () => {
+            context('when caller has permissions', () => {
+                it('does not raise an error', async () => {
+                    const mutation = getAddUsersToSchools(adminUser)
+                    const maps = await mutation.generateEntityMaps(input)
+                    await expect(mutation.authorize(input, maps)).to.be
+                        .fulfilled
+                })
+            })
+            context('when caller does not have permissions', () => {
+                beforeEach(async () => {
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: org,
+                        roles: [],
+                    }).save()
+                })
+                it('returns a permission error', async () => {
+                    const mutation = getAddUsersToSchools(nonAdminUser)
+                    const maps = await mutation.generateEntityMaps(input)
+                    await expect(
+                        mutation.authorize(input, maps)
+                    ).to.be.rejectedWith(
+                        buildPermissionError(
+                            PermissionName.edit_school_20330,
+                            nonAdminUser,
+                            [org]
+                        )
+                    )
+                    await checkNoChangesMade()
+                })
+            })
+        })
+        context('.validationOverAllInputs', () => {
+            async function validateOverAllInputs() {
+                const mutation = getAddUsersToSchools()
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.validationOverAllInputs(input, maps)
+            }
+            it('produces errors for nonexistent schools', async () => {
+                await schools[0].inactivate(getManager())
+                const result = await validateOverAllInputs()
+                const xErrors = [
+                    createEntityAPIError(
+                        'nonExistent',
+                        0,
+                        'School',
+                        schools[0].school_id
+                    ),
+                ]
+                compareMultipleErrors(result.apiErrors, xErrors)
+                expect(result.validInputs).to.have.length(1)
+            })
+            it('produces errors for duplicate schools', async () => {
+                input.push(input[0])
+
+                const result = await validateOverAllInputs()
+                const xErrors = [
+                    createDuplicateAttributeAPIError(
+                        input.length - 1,
+                        ['id'],
+                        'AddUsersToSchoolInput'
+                    ),
+                ]
+                compareMultipleErrors(result.apiErrors, xErrors)
+                expect(result.validInputs).to.have.length(2)
+            })
+            context('subarrays', () => {
+                context('userIds', () => {
+                    it('checks for duplicates', async () => {
+                        input[0].userIds.push(input[0].userIds[0])
+                        const result = await validateOverAllInputs()
+                        const xErrors = [
+                            createDuplicateAttributeAPIError(
+                                0,
+                                ['userIds'],
+                                'AddUsersToSchoolInput'
+                            ),
+                        ]
+                        compareMultipleErrors(result.apiErrors, xErrors)
+                        expect(result.validInputs).to.have.length(
+                            input.length - 1
+                        )
+                    })
+                    it('checks for length', async () => {
+                        input[0].userIds = []
+                        const result = await validateOverAllInputs()
+                        const xErrors = [
+                            createInputLengthAPIError(
+                                'AddUsersToSchoolInput',
+                                'min',
+                                'userIds',
+                                0
+                            ),
+                        ]
+                        compareMultipleErrors(result.apiErrors, xErrors)
+                        expect(result.validInputs).to.have.length(
+                            input.length - 1
+                        )
+                    })
+                })
+            })
+            context('subarrays', () => {
+                context('schoolRoleIds', () => {
+                    it('checks for duplicates', async () => {
+                        input[0].schoolRoleIds!.push(input[0].schoolRoleIds![0])
+                        const result = await validateOverAllInputs()
+                        const xErrors = [
+                            createDuplicateAttributeAPIError(
+                                0,
+                                ['schoolRoleIds'],
+                                'AddUsersToSchoolInput'
+                            ),
+                        ]
+                        compareMultipleErrors(result.apiErrors, xErrors)
+                        expect(result.validInputs).to.have.length(
+                            input.length - 1
+                        )
+                    })
+                    it('checks for length', async () => {
+                        input[0].schoolRoleIds = []
+                        const result = await validateOverAllInputs()
+                        const xErrors = [
+                            createInputLengthAPIError(
+                                'AddUsersToSchoolInput',
+                                'min',
+                                'schoolRoleIds',
+                                0
+                            ),
+                        ]
+                        compareMultipleErrors(result.apiErrors, xErrors)
+                        expect(result.validInputs).to.have.length(
+                            input.length - 1
+                        )
+                    })
+                })
+            })
+        })
+        context('.validate', () => {
+            async function validate(clientUser = adminUser) {
+                const mutation = getAddUsersToSchools(clientUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return input.flatMap((i, index) =>
+                    mutation.validate(
+                        index,
+                        maps.mainEntity.get(i.schoolId)!,
+                        i,
+                        maps
+                    )
+                )
+            }
+            context('when one of the users was already added', () => {
+                beforeEach(async () => {
+                    await createSchoolMembership({
+                        user: users[0],
+                        school: schools[0],
+                    }).save()
+                })
+                it('returns a duplicate_child_entity error', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'existentChild',
+                            0,
+                            'User',
+                            users[0].user_id,
+                            'School',
+                            schools[0].school_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of the users is inactive', async () => {
+                beforeEach(async () => await users[0].inactivate(getManager()))
+                it('returns an nonexistent_entity error', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            users[0].user_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade()
+                })
+            })
+
+            context('when one of the roles is inactive', async () => {
+                beforeEach(async () => await roles[0].inactivate(getManager()))
+                it('returns an nonexistent_entity error', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Role',
+                            roles[0].role_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade()
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        users[2].inactivate(getManager()),
+                        roles[1].inactivate(getManager()),
+                    ])
+                })
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'Role',
+                            roles[1].role_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'User',
+                            users[2].user_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade()
+                })
+            })
+        })
     })
 })

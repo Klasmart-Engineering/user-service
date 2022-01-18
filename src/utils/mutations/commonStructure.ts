@@ -565,7 +565,31 @@ export const RemoveMutation = AddRemoveMutation
  * give memberships (i.e. `OrganizationMembership` and
  * `SchoolMembership`) their own mutations.
  */
-export const AddMembershipMutation = AddRemoveMutation
+export abstract class AddMembershipMutation<
+    EntityType extends CustomBaseEntity,
+    InputType,
+    OutputType,
+    ModifiedEntityType extends CustomBaseEntity = EntityType
+> extends AddRemoveMutation<
+    EntityType,
+    InputType,
+    OutputType,
+    ModifiedEntityType
+> {
+    protected async applyToDatabase(
+        results: ProcessedResult<EntityType, ModifiedEntityType>[]
+    ): Promise<void> {
+        const allEntitiesToSave = []
+        for (const r of results) {
+            // we don't change the outputEntity itself
+            // so no need to save it
+            if (r.modifiedEntity !== undefined) {
+                allEntitiesToSave.push(...r.modifiedEntity)
+            }
+        }
+        await getManager().save(allEntitiesToSave)
+    }
+}
 
 /**
  * This abstract class is a variation on RemoveMutation for when

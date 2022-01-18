@@ -193,6 +193,18 @@ export const UPDATE_SCHOOLS = gql`
     }
 `
 
+export const ADD_USERS_TO_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
+    mutation addUsersToSchools($input: [AddUsersToSchoolInput!]!) {
+        addUsersToSchools(input: $input) {
+            schools {
+                ...schoolFields
+            }
+        }
+    }
+`
+
 export const REMOVE_USERS_FROM_SCHOOLS = gql`
     ${SCHOOL_FIELDS}
 

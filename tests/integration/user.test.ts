@@ -2534,6 +2534,7 @@ describe('user', () => {
                             roles[1].role_id
                         ),
                     ]
+                    compareMultipleErrors(errors, xErrors)
                     await checkNoChangesMade(input)
                 })
             })
