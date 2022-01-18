@@ -43,3 +43,70 @@ export const meMembershipForCMS2 =`
         }
     }
 `;
+
+// Query for meMemership 1 used in the Schedule section
+export const getProgramsAndSubjects =`{
+    query getProgramsAndSubjects(
+        $count: PageSize!
+        $cursor: String!
+        $filter: ProgramFilter!
+    ) {
+        programsConnection(
+            filter: $filter
+            directionArgs: { count: $count, cursor: $cursor }
+            direction: FORWARD
+        ) {
+            totalCount
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
+            edges {
+                node {
+                    id
+                    name
+                    status
+                    system
+                    ageRanges {
+                        id
+                        name
+                        status
+                        system
+                    }
+                    grades {
+                        id
+                        name
+                        status
+                        system
+                    }
+                    subjects {
+                        id
+                        name
+                        status
+                        system
+                    }
+                }
+            }
+        }
+    }
+}
+`;
+
+// Query for meMemership 1 used in the Schedule section
+export const meMembershipForPlan =`
+    query meMembership { 
+        me {
+            membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
+                edit_org_published_content_235: checkAllowed(permission_name: "edit_org_published_content_235"
+)
+                create_asset_320: checkAllowed(permission_name: "create_asset_320")
+                edit_lesson_material_metadata_and_content_236: checkAllowed(permission_name: "edit_lesson_material_metadata_and_content_236"
+                )
+                edit_lesson_plan_content_238: checkAllowed(permission_name: "edit_lesson_plan_content_238"
+                )
+                edit_lesson_plan_metadata_237: checkAllowed(permission_name: "edit_lesson_plan_metadata_237"
+                )
+            }
+        }
+    }
+`;
