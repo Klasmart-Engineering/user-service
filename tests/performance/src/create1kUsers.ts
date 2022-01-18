@@ -12,5 +12,5 @@ export default function() {
     testLogin();
     switchUser();
     sleep(2);
-    createUsersSequential(0, 999);
+    createUsersSequential(parseInt(__ENV.START, 10), parseInt(__ENV.END, 10));
 }
