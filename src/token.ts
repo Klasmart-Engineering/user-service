@@ -1,5 +1,5 @@
 import { AuthenticationError } from 'apollo-server-express'
-import express, { Request } from 'express'
+import express, { NextFunction, Request } from 'express'
 import { decode, Secret, verify, VerifyOptions } from 'jsonwebtoken'
 import getAuthenticatedUser from './services/azureAdB2C'
 import { customErrors } from './types/errors/customError'
@@ -134,74 +134,57 @@ export async function checkToken(
     return tokenPayload
 }
 
-export function checkIssuerAuthorization(
-    req: Request,
-    res: Response,
-    next: NextFunction
-) {
-    const token = req.headers?.authorization
-
-    if (token) {
-        const payload = decode(token)
-
-        if (payload && typeof payload !== 'string') {
-            const issuer = payload['iss']
-
-            if (
-                !issuer ||
-                typeof issuer !== 'string' ||
-                blackListIssuers.includes(issuer)
-            ) {
-                res.status(401)
-                return res.send({ message: 'User not authorized' })
-            }
-        }
-    }
-
-    next()
-}
-
 export async function isAPIKey(auth: string) {
-    return !!auth?.includes('Bearer=')
+    return auth.includes('Bearer=')
 }
 
 export async function checkAPIKey(auth: string) {
-    const apiKey = auth?.slice(auth?.indexOf('=')+1)
+    if (!await isAPIKey(auth)) {
+        return false
+    }
+    const apiKey = auth?.slice(auth?.indexOf('=') + 1)
     if (apiKey == 'GoToAWSInsteadOfHardCoding') {
         return true
     }
-    return false
+    return Error('Invalid API Key')
 }
 
-// check if its using api
-// if so validate api
-// if not validate token
 export async function validateToken(
     req: express.Request,
     res: express.Response,
     next: express.NextFunction
 ) {
-    try {
-        if (process.env.NODE_ENV !== 'development') {
-            // Check API key in headers
-            const auth = req.headers.authorization || ""
-            if (isAPIKey(auth)) {
+    const auth = req.headers.authorization || ''
+    if (await isAPIKey(auth)) {
+        try {
+            if (process.env.NODE_ENV !== 'development') {
                 await checkAPIKey(auth)
-            } else {
-                await checkToken(req)
             }
+            next()
+        } catch (e) {
+            const { code, message } = customErrors.invalid_api_key
+
+            return res.status(401).send({
+                code,
+                message: stringInject(message, { reason: e.message })!,
+            })
         }
         next()
-    } catch (e) {
-        const { code, message } = customErrors.invalid_token
+    } else {
+        try {
+            if (process.env.NODE_ENV !== 'development') {
+                await checkToken(req)
+            }
 
-        return res.status(401).send({
-            code,
-            message: stringInject(message, { reason: e.message })!,
-        })
+            next()
+        } catch (e) {
+            const { code, message } = customErrors.invalid_token
+
+            return res.status(401).send({
+                code,
+                message: stringInject(message, { reason: e.message })!,
+            })
+        }
+        next()
     }
-<<<<<<< HEAD
-    next()
-=======
->>>>>>> AD-1759-APIKey-Auth
 }

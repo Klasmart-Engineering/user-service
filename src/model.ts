@@ -87,13 +87,10 @@ import { ageRangesConnectionResolver } from './pagination/ageRangesConnection'
 import { subjectsConnectionResolver } from './pagination/subjectsConnection'
 import { TokenPayload } from './token'
 import { UserPermissions } from './permissions/userPermissions'
-<<<<<<< HEAD
 import {
     eligibleMembersConnectionResolver,
     EligibleMembersPaginationArgs,
 } from './pagination/eligibleMembersConnection'
-=======
->>>>>>> AD-1759-APIKey-Auth
 
 export class Model {
     public static async create() {

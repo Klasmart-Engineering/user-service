@@ -43,7 +43,7 @@ export class UserPermissions {
     public isAdmin?: boolean
     public apiKeyAuth?: boolean
 
-    public constructor(token?: { id: string; email?: string; phone?: string }, apiKeyAuth?: boolean ) {
+    public constructor(token?: { id?: string; email?: string; phone?: string }, apiKeyAuth?: boolean ) {
         if (apiKeyAuth == true) {
             this.apiKeyAuth = true
         } else {
