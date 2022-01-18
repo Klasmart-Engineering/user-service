@@ -1,4 +1,4 @@
-import { expect } from 'chai'
+import { expect, use } from 'chai'
 import supertest from 'supertest'
 import { Connection, In } from 'typeorm'
 import faker from 'faker'
@@ -12,6 +12,7 @@ import {
     ClassConnectionNode,
     CreateClassInput,
     DeleteClassInput,
+    RemoveProgramsFromClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
@@ -35,6 +36,7 @@ import {
     DELETE_CLASS,
     DELETE_CLASSES,
     ADD_PROGRAMS_TO_CLASSES,
+    REMOVE_PROGRAMS_FROM_CLASSES,
     CREATE_CLASSES,
 } from '../utils/operations/classOps'
 import {
@@ -61,6 +63,9 @@ import { createProgram } from '../factories/program.factory'
 import { createClass as createClassFactory } from '../factories/class.factory'
 import { NIL_UUID } from '../utils/database'
 import { generateShortCode } from '../../src/utils/shortcode'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+
+use(deepEqualInAnyOrder)
 
 interface IClassEdge {
     node: ClassConnectionNode
@@ -1219,6 +1224,7 @@ describe('acceptance.class', () => {
             })
         })
     })
+
     context('createClasses', () => {
         let input: CreateClassInput[]
 
@@ -1260,6 +1266,87 @@ describe('acceptance.class', () => {
             )
             expect(response.body.errors[1].message).to.contain(
                 'Field "name" of required type "String!" was not provided.'
+            )
+        })
+    })
+
+    context('removeProgramsFromClasses', () => {
+        let adminUser: User
+        const programsCount = 5
+        let programs: Program[]
+        let classes: Class[]
+
+        const makeRemoveProgramsFromClassesMutation = async (
+            input: any,
+            caller: User
+        ) => {
+            return await makeRequest(
+                request,
+                print(REMOVE_PROGRAMS_FROM_CLASSES),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            const classCount = 10
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+
+            programs = await Program.save(
+                Array.from(new Array(programsCount), () => createProgram())
+            )
+
+            classes = await Class.save(
+                Array.from(new Array(classCount), () => {
+                    const c = createClassFactory()
+                    c.programs = Promise.resolve(programs)
+                    return c
+                })
+            )
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const removeQuantity = programsCount - 2
+                const programsToRemove = programs.slice(0, removeQuantity)
+
+                const input = [
+                    {
+                        classId: classes[0].class_id,
+                        programIds: programsToRemove.map((p) => p.id),
+                    },
+                ]
+
+                const response = await makeRemoveProgramsFromClassesMutation(
+                    input,
+                    adminUser
+                )
+
+                const resClasses =
+                    response.body.data.removeProgramsFromClasses.classes
+
+                expect(response.status).to.eq(200)
+                expect(resClasses).to.have.lengthOf(input.length)
+            })
+        })
+
+        it('has mandatory classId and programIds input fields', async () => {
+            const response = await makeRemoveProgramsFromClassesMutation(
+                [{}],
+                adminUser
+            )
+
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "programIds" of required type "[ID!]!" was not provided.'
             )
         })
     })

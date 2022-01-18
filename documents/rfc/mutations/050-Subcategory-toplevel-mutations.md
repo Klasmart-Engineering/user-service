@@ -84,7 +84,6 @@ input CreateSubcategoryInput {
 input UpdateSubcategoryInput {
     id: ID!
     name: String
-    status: Status
 }
 
 input DeleteSubcategoryInput {

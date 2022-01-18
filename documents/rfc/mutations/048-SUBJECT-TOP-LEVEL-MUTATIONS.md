@@ -90,7 +90,6 @@ input CreateSubjectInput {
 input UpdateSubjectInput {
     id: ID!
     name: String
-    status: Status
     categories: [ID!]
 }
 

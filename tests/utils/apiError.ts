@@ -70,8 +70,8 @@ type ExpectAPIErrors = Implements<
         [key in GenericErrorCode]: ExpectAPIError<keyof ErrorParams>
     },
     {
-        duplicate_entity: ExpectAPIError<'entity' | 'entityName'>
-        duplicate_child_entity: ExpectAPIError<
+        existent_entity: ExpectAPIError<'entity' | 'entityName'>
+        existent_child_entity: ExpectAPIError<
             'entity' | 'entityName' | 'parentEntity' | 'parentName'
         >
         duplicate_attribute_values: ExpectAPIError<'entity' | 'attribute'>

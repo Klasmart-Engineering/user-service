@@ -128,7 +128,7 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
             ) {
                 errors.push(
                     createEntityAPIError(
-                        'duplicateChild',
+                        'existentChild',
                         index,
                         'User',
                         user.user_name(),

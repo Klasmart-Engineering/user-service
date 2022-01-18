@@ -95,7 +95,6 @@ input UpdateGradeInput {
     name: String
     progressFromGradeId: ID
     progressToGradeId: ID
-    status: Status
 }
 
 input DeleteGradeInput {

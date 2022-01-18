@@ -6,6 +6,9 @@ import { Role } from '../../../src/entities/role'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { Class } from '../../../src/entities/class'
+import { Organization } from '../../../src/entities/organization'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { User } from '../../../src/entities/user'
 
 export const ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP = `
     mutation myMutation(

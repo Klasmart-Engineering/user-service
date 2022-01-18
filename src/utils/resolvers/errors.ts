@@ -7,12 +7,14 @@ type entityErrorType =
     | 'nonExistentChild'
     | 'inactive'
     | 'unauthorized'
-    | 'duplicate'
-    | 'duplicateChild'
+    | 'existent'
+    | 'existentChild'
 
 export function createInputLengthAPIError(
     entity: string,
-    limit: 'min' | 'max'
+    limit: 'min' | 'max',
+    attribute = 'input array',
+    index?: number
 ): APIError {
     const lengthLimitValues = {
         min: {
@@ -32,9 +34,10 @@ export function createInputLengthAPIError(
         message: lengthLimitValues[limit].message,
         variables: [],
         entity,
-        attribute: 'input array',
+        attribute,
         min: limit === 'min' ? lengthLimitValues[limit].value : undefined,
         max: limit === 'max' ? lengthLimitValues[limit].value : undefined,
+        index,
     })
 }
 
@@ -187,14 +190,14 @@ export function createEntityAPIError(
             message: customErrors.unauthorized.message,
             variables: ['id'],
         },
-        duplicate: {
-            code: customErrors.duplicate_entity.code,
-            message: customErrors.duplicate_entity.message,
+        existent: {
+            code: customErrors.existent_entity.code,
+            message: customErrors.existent_entity.message,
             variables: ['name'],
         },
-        duplicateChild: {
-            code: customErrors.duplicate_child_entity.code,
-            message: customErrors.duplicate_child_entity.message,
+        existentChild: {
+            code: customErrors.existent_child_entity.code,
+            message: customErrors.existent_child_entity.message,
             variables: variables || [''],
         },
     }
@@ -208,7 +211,7 @@ export function createEntityAPIError(
         index,
     }
 
-    if (['duplicateChild', 'nonExistentChild'].includes(errorType)) {
+    if (['existentChild', 'nonExistentChild'].includes(errorType)) {
         errorDetails.parentEntity = parentEntity
         errorDetails.parentName = parentName
     }

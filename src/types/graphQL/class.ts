@@ -41,3 +41,8 @@ export interface AddProgramsToClassInput {
     classId: string
     programIds: string[]
 }
+
+export interface RemoveProgramsFromClassInput {
+    classId: string
+    programIds: string[]
+}

@@ -10,7 +10,6 @@ import {
     OrganizationMembershipMap,
     SchoolMembershipMap,
 } from '../../../../src/utils/resolvers/entityMaps'
-import { validate } from '../../../../src/utils/resolvers/inputValidation'
 import { ObjMap } from '../../../../src/utils/stringUtils'
 import { createOrganization } from '../../../factories/organization.factory'
 import { createOrganizationMemberships } from '../../../factories/organizationMembership.factory'
@@ -19,6 +18,16 @@ import { createSchoolMemberships } from '../../../factories/schoolMembership.fac
 import { createUsers } from '../../../factories/user.factory'
 import { compareMultipleErrors } from '../../../utils/apiError'
 import { compareMultipleEntities } from '../../../utils/assertions'
+import {
+    flagExistent,
+    flagExistentChild,
+    flagNonExistent,
+    flagNonExistentChild,
+    flagNonExistentOrganizationMembership,
+    flagNonExistentSchoolMembership,
+} from '../../../../src/utils/resolvers/inputValidation'
+import { Program } from '../../../../src/entities/program'
+import { Class } from '../../../../src/entities/class'
 
 describe('inputValidation', () => {
     const index = 0
@@ -28,15 +37,9 @@ describe('inputValidation', () => {
             .fill(undefined)
             .map(() => uuid_v4())
 
-    describe('#checkForNonExistent', () => {
+    describe('#checkForNonExistentOrDuplicate', () => {
         let users: User[]
         let userMap: Map<string, User>
-
-        function createNonExistentUserErrors(idList: string[]) {
-            return idList.map((id) =>
-                createEntityAPIError('nonExistent', index, 'User', id)
-            )
-        }
 
         beforeEach(() => {
             users = createUsers(5)
@@ -48,62 +51,252 @@ describe('inputValidation', () => {
             )
         })
 
-        context('when the requested entities do not exist', () => {
-            let fakeIds: string[]
-            beforeEach(() => (fakeIds = getMockIdList(3)))
-
-            it('returns an error containing the ids', () => {
-                const { values, errors } = validate.nonExistent.user(
-                    index,
-                    fakeIds,
-                    userMap
+        context('when nonExistent', () => {
+            function createNonExistentUserErrors(idList: string[]) {
+                return idList.map((id) =>
+                    createEntityAPIError('nonExistent', index, 'User', id)
                 )
-                const xErrors = createNonExistentUserErrors(fakeIds)
-                expect(values).to.be.empty
-                compareMultipleErrors(errors, xErrors)
+            }
+
+            context('when the requested entities do not exist', () => {
+                let fakeIds: string[]
+
+                beforeEach(() => (fakeIds = getMockIdList(3)))
+
+                it('returns errors containing the ids', () => {
+                    const { values, errors } = flagNonExistent(
+                        User,
+                        index,
+                        fakeIds,
+                        userMap
+                    )
+                    const xErrors = createNonExistentUserErrors(fakeIds)
+                    expect(values).to.be.empty
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when all the requested entities exist', () => {
+                let requestedUsers: User[]
+
+                beforeEach(
+                    () => (requestedUsers = [0, 2, 3].map((i) => users[i]))
+                )
+
+                it('returns the entities', () => {
+                    const { values, errors } = flagNonExistent(
+                        User,
+                        index,
+                        requestedUsers.map((ru) => ru.user_id),
+                        userMap
+                    )
+                    expect(errors).to.be.empty
+                    expect(values).to.deep.equal(requestedUsers)
+                })
+            })
+
+            context('when some of the requested entities exist', () => {
+                let realUsers: User[]
+                let fakeIds: string[]
+
+                beforeEach(() => {
+                    const realIndices = [0, 1]
+                    realUsers = realIndices.map((i) => users[i])
+                    fakeIds = getMockIdList(2)
+                })
+
+                it('returns the entities when they exist and errors otherwise', () => {
+                    const { values, errors } = flagNonExistent(
+                        User,
+                        index,
+                        [...realUsers.map((ru) => ru.user_id), ...fakeIds],
+                        userMap
+                    )
+                    const xErrors = createNonExistentUserErrors(fakeIds)
+                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleEntities(values, realUsers)
+                })
             })
         })
 
-        context('when all the requested entities exist', () => {
-            let requestedUsers: User[]
+        context('when duplicate', () => {
+            context('when some of the requested entities exist', () => {
+                let existentUsers: User[]
+                let newUserIds: string[]
 
-            beforeEach(() => (requestedUsers = [0, 2, 3].map((i) => users[i])))
+                beforeEach(() => {
+                    const existentIndices = [0, 1]
+                    existentUsers = existentIndices.map((i) => users[i])
+                    newUserIds = getMockIdList(2)
+                })
 
-            it('returns the entities', () => {
-                const { values, errors } = validate.nonExistent.user(
-                    index,
-                    requestedUsers.map((ru) => ru.user_id),
-                    userMap
+                it('returns the entities and errors when they exist', () => {
+                    const { values, errors } = flagExistent(
+                        User,
+                        index,
+                        [
+                            ...existentUsers.map((ru) => ru.user_id),
+                            ...newUserIds,
+                        ],
+                        userMap
+                    )
+                    const xErrors = existentUsers.map((u) =>
+                        createEntityAPIError(
+                            'existent',
+                            index,
+                            'User',
+                            u.user_id
+                        )
+                    )
+                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleEntities(values, existentUsers)
+                })
+            })
+        })
+    })
+
+    describe('#checkForNonExistentOrDuplicateChild', () => {
+        let classId: string
+        let programIds: string[]
+        let programIdsInClassSet: Set<string>
+
+        beforeEach(() => {
+            classId = uuid_v4()
+            programIds = getMockIdList(5)
+            programIdsInClassSet = new Set(programIds)
+        })
+
+        context('when nonExistentChild', () => {
+            function createNonExistentProgramInClassErrors(
+                clsId: string,
+                progIds: string[]
+            ) {
+                return progIds.map((progId) =>
+                    createEntityAPIError(
+                        'nonExistentChild',
+                        index,
+                        'Program',
+                        progId,
+                        'Class',
+                        clsId
+                    )
                 )
-                expect(errors).to.be.empty
-                expect(values).to.deep.equal(requestedUsers)
+            }
+
+            context('when the requested entities do not exist', () => {
+                let fakeIds: string[]
+
+                beforeEach(() => (fakeIds = getMockIdList(3)))
+
+                it('returns errors containing the ids', () => {
+                    const errors = flagNonExistentChild(
+                        Class,
+                        Program,
+                        index,
+                        classId,
+                        fakeIds,
+                        programIdsInClassSet
+                    )
+                    const xErrors = createNonExistentProgramInClassErrors(
+                        classId,
+                        fakeIds
+                    )
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when all the requested entities exist', () => {
+                let requestedProgramIds: string[]
+
+                beforeEach(
+                    () =>
+                        (requestedProgramIds = [0, 2, 3].map(
+                            (i) => programIds[i]
+                        ))
+                )
+
+                it('returns no errors', () => {
+                    const errors = flagNonExistentChild(
+                        Class,
+                        Program,
+                        index,
+                        classId,
+                        requestedProgramIds,
+                        programIdsInClassSet
+                    )
+                    expect(errors).to.be.empty
+                })
+            })
+
+            context('when some of the requested entities exist', () => {
+                let realProgramIds: string[]
+                let fakeIds: string[]
+
+                beforeEach(() => {
+                    const realIndices = [0, 1]
+                    realProgramIds = realIndices.map((i) => programIds[i])
+                    fakeIds = getMockIdList(2)
+                })
+
+                it('returns a errors for the ones that do not exist', () => {
+                    const errors = flagNonExistentChild(
+                        Class,
+                        Program,
+                        index,
+                        classId,
+                        [...realProgramIds, ...fakeIds],
+                        programIdsInClassSet
+                    )
+                    const xErrors = createNonExistentProgramInClassErrors(
+                        classId,
+                        fakeIds
+                    )
+                    compareMultipleErrors(errors, xErrors)
+                })
             })
         })
 
-        context('when some of the requested entities exist', () => {
-            let realUsers: User[]
-            let fakeIds: string[]
-            beforeEach(() => {
-                const realIndices = [0, 1]
-                realUsers = realIndices.map((i) => users[i])
-                fakeIds = getMockIdList(2)
-            })
+        context('when duplicate', () => {
+            context('when some of the requested entities exist', () => {
+                let existentProgramIds: string[]
+                let newProgramIds: string[]
 
-            it('returns the entities when they exist and an error otherwise', () => {
-                const { values, errors } = validate.nonExistent.user(
-                    index,
-                    [...realUsers.map((ru) => ru.user_id), ...fakeIds],
-                    userMap
-                )
-                const xErrors = createNonExistentUserErrors(fakeIds)
-                compareMultipleErrors(errors, xErrors)
-                compareMultipleEntities(values, realUsers)
+                beforeEach(() => {
+                    const existentIndices = [0, 1]
+                    existentProgramIds = existentIndices.map(
+                        (i) => programIds[i]
+                    )
+                    newProgramIds = getMockIdList(2)
+                })
+
+                it('returns an error when they exist', () => {
+                    const errors = flagExistentChild(
+                        Class,
+                        Program,
+                        index,
+                        classId,
+                        [...existentProgramIds, ...newProgramIds],
+                        programIdsInClassSet
+                    )
+                    const xErrors = existentProgramIds.map((progId) =>
+                        createEntityAPIError(
+                            'existentChild',
+                            index,
+                            'Program',
+                            progId,
+                            'Class',
+                            classId
+                        )
+                    )
+                    compareMultipleErrors(errors, xErrors)
+                })
             })
         })
     })
 
     describe('#validate.nonExistentChild', () => {
         let users: User[]
+
         beforeEach(() => {
             users = createUsers(5)
             users.forEach((u) => (u.user_id = uuid_v4()))
@@ -127,15 +320,6 @@ describe('inputValidation', () => {
             let organization: Organization
             let memberships: OrganizationMembership[]
             let membershipMap: OrganizationMembershipMap
-
-            function validateNonExistentChildOrganizations() {
-                return validate.nonExistentChild.organization(
-                    index,
-                    organization,
-                    users,
-                    membershipMap
-                )
-            }
 
             function makeOrgMembershipsIntoMap(
                 orgMemberships: OrganizationMembership[]
@@ -167,7 +351,12 @@ describe('inputValidation', () => {
                 })
 
                 it('returns all the memberships', () => {
-                    const val = validateNonExistentChildOrganizations()
+                    const val = flagNonExistentOrganizationMembership(
+                        index,
+                        organization.organization_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     expect(val.errors).to.be.empty
                     expect(val.values).to.deep.equal(memberships)
                 })
@@ -176,6 +365,7 @@ describe('inputValidation', () => {
             context('when the organization contains some of the users', () => {
                 let usersInOrg: User[]
                 let usersNotInOrg: User[]
+
                 beforeEach(() => {
                     usersNotInOrg = users.slice(0, 3)
                     usersInOrg = users.slice(3)
@@ -187,7 +377,12 @@ describe('inputValidation', () => {
                 })
 
                 it('returns the valid memberships and errors for the others', () => {
-                    const val = validateNonExistentChildOrganizations()
+                    const val = flagNonExistentOrganizationMembership(
+                        index,
+                        organization.organization_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     const xErrors = usersNotInOrg.map((u) => {
                         return createNonExistentChildError(
                             u.user_id,
@@ -202,7 +397,12 @@ describe('inputValidation', () => {
 
             context('when the organization contains none of the users', () => {
                 it('returns an error for each user', () => {
-                    const val = validateNonExistentChildOrganizations()
+                    const val = flagNonExistentOrganizationMembership(
+                        index,
+                        organization.organization_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     const xErrors = users.map((u) => {
                         return createNonExistentChildError(
                             u.user_id,
@@ -236,15 +436,6 @@ describe('inputValidation', () => {
                 )
             }
 
-            function validateNonExistentChildSchool() {
-                return validate.nonExistentChild.school(
-                    index,
-                    school,
-                    users,
-                    membershipMap
-                )
-            }
-
             beforeEach(() => {
                 school = createSchool()
                 school.school_id = uuid_v4()
@@ -257,7 +448,12 @@ describe('inputValidation', () => {
                 })
 
                 it('returns all the memberships', () => {
-                    const val = validateNonExistentChildSchool()
+                    const val = flagNonExistentSchoolMembership(
+                        index,
+                        school.school_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     expect(val.errors).to.be.empty
                     expect(val.values).to.deep.equal(memberships)
                 })
@@ -266,6 +462,7 @@ describe('inputValidation', () => {
             context('when the school contains some of the users', () => {
                 let usersInSchool: User[]
                 let usersNotInSchool: User[]
+
                 beforeEach(() => {
                     usersNotInSchool = users.slice(0, 3)
                     usersInSchool = users.slice(3)
@@ -274,7 +471,12 @@ describe('inputValidation', () => {
                 })
 
                 it('returns the valid memberships and errors for the others', () => {
-                    const val = validateNonExistentChildSchool()
+                    const val = flagNonExistentSchoolMembership(
+                        index,
+                        school.school_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     const xErrors = usersNotInSchool.map((u) => {
                         return createNonExistentChildError(
                             u.user_id,
@@ -289,7 +491,12 @@ describe('inputValidation', () => {
 
             context('when the school contains none of the users', () => {
                 it('returns an error for each user', () => {
-                    const val = validateNonExistentChildSchool()
+                    const val = flagNonExistentSchoolMembership(
+                        index,
+                        school.school_id,
+                        users.map((u) => u.user_id),
+                        membershipMap
+                    )
                     const xErrors = users.map((u) => {
                         return createNonExistentChildError(
                             u.user_id,

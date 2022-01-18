@@ -977,7 +977,7 @@ describe('processUserFromCSVRow', async () => {
                 queryResultCache
             )
             err = rowErrors[0]
-            expect(err.code).to.eq(customErrors.duplicate_entity.code)
+            expect(err.code).to.eq(customErrors.existent_entity.code)
             expect(err.entity).to.eq('Short Code')
             expect(err.entityName).to.eq(row.user_shortcode)
             for (const v of getCustomErrorMessageVariables(err.message)) {

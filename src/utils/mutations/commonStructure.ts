@@ -21,6 +21,11 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
         | undefined
 }
 
+export interface InputsAndErrors<InputType> {
+    validInputs: { index: number; input: InputType }[]
+    apiErrors: APIError[]
+}
+
 type MembershipIdPair = { entityId: string; attributeValue: string }
 
 // this will not create an error for the first input
@@ -105,16 +110,71 @@ function validateActiveEntityExists(
     return errors
 }
 
+function validateSubItemsArrayLength(
+    allSubItemIds: string[][],
+    inputTypeName: string,
+    subItemName: string
+): Map<number, APIError> {
+    const errors: Map<number, APIError> = new Map()
+
+    allSubItemIds.forEach((subItemIds, index) => {
+        if (subItemIds.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
+            errors.set(
+                index,
+                createInputLengthAPIError(
+                    inputTypeName,
+                    'min',
+                    subItemName,
+                    index
+                )
+            )
+        }
+
+        if (subItemIds.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
+            errors.set(
+                index,
+                createInputLengthAPIError(
+                    inputTypeName,
+                    'max',
+                    subItemName,
+                    index
+                )
+            )
+        }
+    })
+
+    return errors
+}
+
+function validateSubItemsArrayNoDuplicates(
+    allSubItemIds: string[][],
+    inputTypeName: string,
+    subItemName: string
+): Map<number, APIError> {
+    const errors: Map<number, APIError> = new Map()
+    allSubItemIds.forEach((ids, index) => {
+        const idsSet = new Set(ids)
+        if (idsSet.size < ids.length) {
+            errors.set(
+                index,
+                createDuplicateAttributeAPIError(
+                    index,
+                    [subItemName],
+                    inputTypeName
+                )
+            )
+        }
+    })
+    return errors
+}
+
 export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     inputs: A[],
     entityMaps: EntityMap<B>,
     mainEntityIds: string[],
     entityTypeName: string,
     inputTypeName: string
-): {
-    validInputs: { index: number; input: A }[]
-    apiErrors: APIError[]
-} {
+): InputsAndErrors<A> {
     const errors: APIError[] = []
     const ids = inputs.map((_, index) => mainEntityIds[index])
 
@@ -131,6 +191,38 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     return filterInvalidInputs(inputs, [
         failedActiveInputs,
         failedDuplicateInputs,
+    ])
+}
+
+export function validateSubItemsLengthAndNoDuplicates<
+    InputType,
+    SubItemName extends keyof InputType
+>(inputs: InputType[], inputTypeName: string, subItemName: SubItemName) {
+    const errors: APIError[] = []
+    const subItemIds = inputs.map(
+        (input) => (input[subItemName] as unknown) as string[]
+    )
+
+    const failedSubItemsLength = validateSubItemsArrayLength(
+        subItemIds,
+        inputTypeName,
+        subItemName as string
+    )
+
+    const failedSubItemDuplicates = validateSubItemsArrayNoDuplicates(
+        subItemIds,
+        inputTypeName,
+        subItemName as string
+    )
+
+    errors.push(
+        ...failedSubItemsLength.values(),
+        ...failedSubItemDuplicates.values()
+    )
+
+    return filterInvalidInputs(inputs, [
+        failedSubItemsLength,
+        failedSubItemDuplicates,
     ])
 }
 

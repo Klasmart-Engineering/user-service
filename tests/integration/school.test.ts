@@ -1542,7 +1542,7 @@ describe('school', () => {
                             updateSchoolsFromResolver(admin, input),
                             new APIErrorCollection([
                                 createEntityAPIError(
-                                    'duplicateChild',
+                                    'existentChild',
                                     0,
                                     'School',
                                     newSchool.school_name,
@@ -1567,7 +1567,7 @@ describe('school', () => {
                             updateSchoolsFromResolver(admin, input),
                             new APIErrorCollection([
                                 createEntityAPIError(
-                                    'duplicateChild',
+                                    'existentChild',
                                     0,
                                     'School',
                                     shortCode,
@@ -1722,7 +1722,7 @@ describe('school', () => {
                             createSchoolsFromResolver(admin, input),
                             new APIErrorCollection([
                                 createEntityAPIError(
-                                    'duplicateChild',
+                                    'existentChild',
                                     0,
                                     'School',
                                     school.school_name,
@@ -1748,7 +1748,7 @@ describe('school', () => {
                             createSchoolsFromResolver(admin, input),
                             new APIErrorCollection([
                                 createEntityAPIError(
-                                    'duplicateChild',
+                                    'existentChild',
                                     0,
                                     'School',
                                     shortCode,
@@ -1854,7 +1854,7 @@ describe('school', () => {
 
                 it('returns a duplicate user error', async () => {
                     const res = await expect(addClasses()).to.be.rejected
-                    expectAPIError.duplicate_child_entity(
+                    expectAPIError.existent_child_entity(
                         res,
                         {
                             entity: 'Class',
@@ -2773,7 +2773,7 @@ describe('school', () => {
 
                     it('returns a duplicate user error', async () => {
                         const res = await expect(addPrograms()).to.be.rejected
-                        expectAPIError.duplicate_child_entity(
+                        expectAPIError.existent_child_entity(
                             res,
                             {
                                 entity: 'Program',

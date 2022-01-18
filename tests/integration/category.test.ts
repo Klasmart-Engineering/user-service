@@ -553,7 +553,7 @@ describe('category', () => {
                 it('throws an ErrorCollection', async () => {
                     const expectedErrors = Array.from(input, (i, index) =>
                         createEntityAPIError(
-                            'duplicateChild',
+                            'existentChild',
                             index,
                             'Category',
                             i.name,
@@ -1176,7 +1176,7 @@ describe('category', () => {
                                 catsToUpdate,
                                 (_, index) => {
                                     return createEntityAPIError(
-                                        'duplicate',
+                                        'existent',
                                         index,
                                         'Category',
                                         org1Categories[index + 1].name
@@ -1786,8 +1786,8 @@ describe('category', () => {
             it('is rejected when some subcategory already existed on the category', async () => {
                 apiErrors = [
                     new APIError({
-                        code: customErrors.duplicate_child_entity.code,
-                        message: customErrors.duplicate_child_entity.message,
+                        code: customErrors.existent_child_entity.code,
+                        message: customErrors.existent_child_entity.message,
                         variables: ['categoryId', 'subcategoryId'],
                         entity: 'Category',
                         entityName: categoriesOrg1[0].name,
