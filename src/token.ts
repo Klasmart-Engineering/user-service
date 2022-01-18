@@ -162,11 +162,11 @@ export async function validateToken(
             }
             next()
         } catch (e) {
-            const {code, message} = customErrors.invalid_api_key
+            const { code, message } = customErrors.invalid_api_key
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, {reason: e.message})!,
+                message: stringInject(message, { reason: e.message })!,
             })
         }
         next()
@@ -178,11 +178,11 @@ export async function validateToken(
 
             next()
         } catch (e) {
-            const {code, message} = customErrors.invalid_token
+            const { code, message } = customErrors.invalid_token
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, {reason: e.message})!,
+                message: stringInject(message, { reason: e.message })!,
             })
         }
         next()

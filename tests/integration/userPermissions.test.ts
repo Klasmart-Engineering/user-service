@@ -749,9 +749,8 @@ describe('userPermissions', () => {
 
         describe('orgMembershipsWithPermissions', () => {
             it('includes all organizations you are a member if no permissions are provided', async () => {
-                const orgIds = await userPermissions?.orgMembershipsWithPermissions(
-                    []
-                )
+                const orgIds =
+                    await userPermissions?.orgMembershipsWithPermissions([])
                 expect(orgIds.length).to.eq(2)
             })
             context(
@@ -764,13 +763,14 @@ describe('userPermissions', () => {
                             PermissionName.view_users_40110,
                             { authorization: getAdminAuthToken() }
                         )
-                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'AND'
-                        )
+                        const orgIds =
+                            await userPermissions?.orgMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'AND'
+                            )
                         expect(orgIds.length).to.eq(0)
                     })
                     it('returns orgs if the user has ALL permissions', async () => {
@@ -786,13 +786,14 @@ describe('userPermissions', () => {
                             PermissionName.view_user_page_40101,
                             { authorization: getAdminAuthToken() }
                         )
-                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'AND'
-                        )
+                        const orgIds =
+                            await userPermissions?.orgMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'AND'
+                            )
                         expect(orgIds.length).to.eq(1)
                     })
                 }
@@ -802,13 +803,14 @@ describe('userPermissions', () => {
                 'returns orgs with memberships with ANY permissions',
                 () => {
                     it("returns no orgs if the user doesn't have any of the permissions", async () => {
-                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'OR'
-                        )
+                        const orgIds =
+                            await userPermissions?.orgMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'OR'
+                            )
                         expect(orgIds.length).to.eq(0)
                     })
                     it('returns orgs if the user has ANY of the permissions', async () => {
@@ -818,13 +820,14 @@ describe('userPermissions', () => {
                             PermissionName.view_users_40110,
                             { authorization: getAdminAuthToken() }
                         )
-                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'OR'
-                        )
+                        const orgIds =
+                            await userPermissions?.orgMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'OR'
+                            )
                         expect(orgIds.length).to.eq(1)
                     })
                 }
@@ -833,9 +836,8 @@ describe('userPermissions', () => {
 
         describe('schoolMembershipsWithPermissions', () => {
             it('returns all schools you are a member of if no permissions are provided', async () => {
-                const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
-                    []
-                )
+                const schoolIds =
+                    await userPermissions?.schoolMembershipsWithPermissions([])
                 expect(schoolIds.length).to.eq(2)
             })
 
@@ -843,13 +845,14 @@ describe('userPermissions', () => {
                 'returns school with memberships with ALL permissions',
                 () => {
                     it("returns no schools if the user doesn't have any the permissions", async () => {
-                        const schoolIds = await userPermissions?.orgMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'AND'
-                        )
+                        const schoolIds =
+                            await userPermissions?.orgMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'AND'
+                            )
                         expect(schoolIds.length).to.eq(0)
                     })
                     it('returns no schools if the user is missing one of the permissions', async () => {
@@ -859,13 +862,14 @@ describe('userPermissions', () => {
                             PermissionName.view_users_40110,
                             { authorization: getAdminAuthToken() }
                         )
-                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'AND'
-                        )
+                        const schoolIds =
+                            await userPermissions?.schoolMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'AND'
+                            )
                         expect(schoolIds.length).to.eq(0)
                     })
                     it('returns schools if the user has ALL permissions', async () => {
@@ -881,13 +885,14 @@ describe('userPermissions', () => {
                             PermissionName.view_user_page_40101,
                             { authorization: getAdminAuthToken() }
                         )
-                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'AND'
-                        )
+                        const schoolIds =
+                            await userPermissions?.schoolMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'AND'
+                            )
                         expect(schoolIds.length).to.eq(1)
                     })
                 }
@@ -897,13 +902,14 @@ describe('userPermissions', () => {
                 'returns schools with memberships with ANY permissions',
                 () => {
                     it("returns no schools if the user doesn't have any the permissions", async () => {
-                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'OR'
-                        )
+                        const schoolIds =
+                            await userPermissions?.schoolMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'OR'
+                            )
                         expect(schoolIds.length).to.eq(0)
                     })
                     it('returns schools if the user has ANY of the permissions', async () => {
@@ -913,13 +919,14 @@ describe('userPermissions', () => {
                             PermissionName.view_users_40110,
                             { authorization: getAdminAuthToken() }
                         )
-                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'OR'
-                        )
+                        const schoolIds =
+                            await userPermissions?.schoolMembershipsWithPermissions(
+                                [
+                                    PermissionName.view_users_40110,
+                                    PermissionName.view_user_page_40101,
+                                ],
+                                'OR'
+                            )
                         expect(schoolIds.length).to.eq(1)
                     })
                 }
