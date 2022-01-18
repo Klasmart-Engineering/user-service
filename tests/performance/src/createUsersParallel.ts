@@ -40,7 +40,7 @@ export function createUsersAdmin2() {
         deviceId: "webpage",
         deviceName: "k6",
         email: process.env.EMAIL_ORG_ADMIN_2 as string,
-        pw: process.env.PW_ORG_ADMIN_2 as string,
+        pw: process.env.PW as string,
     });
     sleep(0.5);
     switchUser();

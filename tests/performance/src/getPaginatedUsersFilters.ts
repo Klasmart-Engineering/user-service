@@ -203,7 +203,7 @@ export function setup() {
             deviceId: "webpage",
             deviceName: "k6",
             email: `${process.env.TEACHER_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
-            pw: process.env.PW_TEACHER_1 as string,
+            pw: process.env.PW as string,
         };
         
         const teacherLoginData = loginSetup(teacherLoginPayload);
@@ -217,7 +217,7 @@ export function setup() {
         deviceId: "webpage",
         deviceName: "k6",
         email: process.env.EMAIL_ORG_ADMIN_1 as string,
-        pw: process.env.PW_ORG_ADMIN_1 as string,
+        pw: process.env.PW as string,
     };
     
     const orgAdminLoginData = loginSetup(orgAdminLoginPayload);
