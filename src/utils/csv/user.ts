@@ -356,10 +356,10 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         if (userShortcode && user.user_id !== userShortcode.user_id) {
             addCsvError(
                 rowErrors,
-                customErrors.duplicate_entity.code,
+                customErrors.existent_entity.code,
                 rowNumber,
                 'user_shortcode',
-                customErrors.duplicate_entity.message,
+                customErrors.existent_entity.message,
                 {
                     entity: 'Short Code',
                     entityName: row.user_shortcode,

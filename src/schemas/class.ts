@@ -14,6 +14,7 @@ import {
 import {
     deleteClasses,
     AddProgramsToClasses,
+    RemoveProgramsFromClasses,
     CreateClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
@@ -32,6 +33,9 @@ const typeDefs = gql`
         deleteClasses(input: [DeleteClassInput!]!): ClassesMutationResult
         addProgramsToClasses(
             input: [AddProgramsToClassInput!]!
+        ): ClassesMutationResult
+        removeProgramsFromClasses(
+            input: [RemoveProgramsFromClassInput!]!
         ): ClassesMutationResult
     }
 
@@ -261,6 +265,11 @@ const typeDefs = gql`
     }
 
     input AddProgramsToClassInput {
+        classId: ID!
+        programIds: [ID!]!
+    }
+
+    input RemoveProgramsFromClassInput {
         classId: ID!
         programIds: [ID!]!
     }
@@ -499,6 +508,8 @@ export default function getDefault(
                     model.uploadClassesFromCSV(args, ctx, info),
                 addProgramsToClasses: (_parent, args, ctx, _info) =>
                     mutate(AddProgramsToClasses, args, ctx.permissions),
+                removeProgramsFromClasses: (_parent, args, ctx) =>
+                    mutate(RemoveProgramsFromClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),

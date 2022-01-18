@@ -7192,7 +7192,7 @@ describe('organization', () => {
 
                     it('returns a duplicate_child_entity error', async () => {
                         const res = await expect(addUsers()).to.be.rejected
-                        expectAPIError.duplicate_child_entity(
+                        expectAPIError.existent_child_entity(
                             res,
                             {
                                 entity: 'User',

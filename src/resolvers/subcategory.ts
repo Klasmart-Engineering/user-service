@@ -110,8 +110,8 @@ export async function createSubcategories(
         if (organization && subcategoryExist) {
             errors.push(
                 new APIError({
-                    code: customErrors.duplicate_child_entity.code,
-                    message: customErrors.duplicate_child_entity.message,
+                    code: customErrors.existent_child_entity.code,
+                    message: customErrors.existent_child_entity.message,
                     variables: ['organization_id', 'name'],
                     entity: 'Subcategory',
                     entityName: name,
@@ -420,8 +420,8 @@ export function createSubcategoryAPIError(
             message: customErrors.unauthorized.message,
         },
         duplicate: {
-            code: customErrors.duplicate_entity.code,
-            message: customErrors.duplicate_entity.message,
+            code: customErrors.existent_entity.code,
+            message: customErrors.existent_entity.message,
             variables: ['name'],
         },
     }

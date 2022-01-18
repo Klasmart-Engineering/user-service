@@ -1,8 +1,8 @@
 import { CSVErrorParams } from '../csv/csvError'
 
 export const genericErrorCodes = [
-    'duplicate_entity',
-    'duplicate_child_entity',
+    'existent_entity',
+    'existent_child_entity',
     'duplicate_attribute_values',
     'nonexistent_entity',
     'nonexistent_child',
@@ -72,11 +72,11 @@ export const customErrors = {
     },
 
     // generic
-    duplicate_entity: {
+    existent_entity: {
         code: 'ERR_DUPLICATE_ENTITY',
         message: '{entity} {entityName} already exists.',
     },
-    duplicate_child_entity: {
+    existent_child_entity: {
         code: 'ERR_DUPLICATE_CHILD_ENTITY',
         message:
             '{entity} {entityName} already exists for {parentEntity} {parentName}.',

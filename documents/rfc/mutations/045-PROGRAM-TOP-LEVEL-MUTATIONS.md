@@ -141,7 +141,6 @@ input CreateProgramInput {
 input UpdateProgramInput {
     id: ID!
     name: String
-    status: Status
     ageRanges: [ID!]
     grades: [ID!]
     subjects: [ID!]
