@@ -143,8 +143,11 @@ export async function checkAPIKey(auth: string) {
         return false
     }
     const apiKey = auth?.slice(auth?.indexOf('=') + 1)
-    if (apiKey == 'GoToAWSInsteadOfHardCoding') {
-        return false // change to enable, functionality not implemented
+
+    // Development check enables testing before full solution,
+    // remove when secrets integration complete
+    if (apiKey == 'GoToAWSInsteadOfHardCoding'  && process.env.NODE_ENV === 'development') {
+        return true
     }
     throw Error('Invalid API Key')
 }
