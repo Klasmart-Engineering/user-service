@@ -40,11 +40,11 @@ export class UserPermissions {
     private readonly email?: string
     private readonly phone?: string
     private user?: User
-    public isAdmin: boolean = false
+    public readonly isAdmin: boolean = false
 
     // Used to mark that auth was done by API Key, but checks use isAdmin
     // for consistency
-    public authViaAPIKey: boolean = false
+    public readonly authViaAPIKey: boolean = false
 
     public constructor(
         token?: { id?: string; email?: string; phone?: string },
