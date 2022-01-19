@@ -48,7 +48,7 @@ export class UserPermissions {
 
     public constructor(
         token?: { id?: string; email?: string; phone?: string },
-        apiKeyAuth: boolean = false
+        apiKeyAuth = false
     ) {
         this.user_id = token?.id
 
