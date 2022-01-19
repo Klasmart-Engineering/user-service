@@ -158,13 +158,14 @@ export async function checkAPIKey(auth: string) {
 export type resLocal = { token: TokenPayload | undefined; hasApiKey: boolean }
 export async function validateToken(
     req: express.Request,
-    res: express.Response,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    res: express.Response<any, resLocal>,
     next: express.NextFunction
 ) {
     const auth = req.headers.authorization
     if (auth !== undefined && isAPIKey(auth)) {
         try {
-            res.locals.hasApiKey = checkAPIKey(auth)
+            res.locals.hasApiKey = await checkAPIKey(auth)
         } catch (e) {
             const { code, message } = customErrors.invalid_api_key
 
