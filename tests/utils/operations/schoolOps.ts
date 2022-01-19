@@ -216,6 +216,17 @@ export const REMOVE_USERS_FROM_SCHOOLS = gql`
         }
     }
 `
+export const REMOVE_CLASSES_FROM_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
+    mutation myMutation($input: [RemoveClassesFromSchoolInput!]!) {
+        removeClassesFromSchools(input: $input) {
+            schools {
+                ...schoolFields
+            }
+        }
+    }
+`
 
 export async function getSchoolOrganization(
     testClient: ApolloServerTestClient,
