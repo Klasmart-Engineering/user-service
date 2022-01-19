@@ -99,7 +99,7 @@ describe('userPermissions', () => {
             })
 
             it('returns true', async () => {
-                expect(userPermissions.apiKeyAuth).to.be.true
+                expect(userPermissions.isAdmin).to.be.true
             })
         })
     })

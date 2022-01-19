@@ -134,8 +134,8 @@ export async function checkToken(
     return tokenPayload
 }
 
-export async function isAPIKey(auth: string) {
-    return auth.includes('Bearer=')
+export function isAPIKey(auth: string) {
+    return auth.includes('Bearer: ')
 }
 
 export async function checkAPIKey(auth: string) {
@@ -144,11 +144,12 @@ export async function checkAPIKey(auth: string) {
     }
     const apiKey = auth?.slice(auth?.indexOf('=') + 1)
     if (apiKey == 'GoToAWSInsteadOfHardCoding') {
-        return true
+        return false // change to enable, functionality not implemented
     }
-    return Error('Invalid API Key')
+    throw Error('Invalid API Key')
 }
 
+export type resLocal = { token: TokenPayload | undefined; hasApiKey: boolean }
 export async function validateToken(
     req: express.Request,
     res: express.Response,
@@ -157,7 +158,7 @@ export async function validateToken(
     const auth = req.headers.authorization || ''
     if (await isAPIKey(auth)) {
         try {
-            await checkAPIKey(auth)
+            res.locals.hasApiKey = checkAPIKey(auth)
         } catch (e) {
             const { code, message } = customErrors.invalid_api_key
 

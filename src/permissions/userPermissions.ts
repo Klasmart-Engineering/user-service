@@ -40,27 +40,23 @@ export class UserPermissions {
     private readonly email?: string
     private readonly phone?: string
     private user?: User
-    public isAdmin?: boolean
-    public apiKeyAuth?: boolean
+    public isAdmin: boolean = false
+
+    // Used to mark that auth was done by API Key, but checks use isAdmin
+    // for consistency
+    public authViaAPIKey: boolean = false
 
     public constructor(
         token?: { id?: string; email?: string; phone?: string },
-        apiKeyAuth?: boolean
+        apiKeyAuth: boolean = false
     ) {
-        if (apiKeyAuth == true) {
-            this.apiKeyAuth = true
-        } else {
-            this.apiKeyAuth = false
-            this.user_id = token?.id
-            if (typeof token?.email == 'string' && token?.email?.length > 0) {
-                this.email = token?.email
-                this.isAdmin = this.isAdminEmail(this.email!)
-            } else {
-                this.isAdmin = false
-            }
-            if (typeof token?.phone == 'string' && token?.phone?.length > 0) {
-                this.phone = token?.phone
-            }
+        this.user_id = token?.id
+        this.email = token?.email
+        this.phone = token?.phone
+        this.authViaAPIKey = apiKeyAuth
+
+        if (this.authViaAPIKey || this.isAdminEmail(this.email!)) {
+            this.isAdmin = true
         }
     }
 
@@ -95,7 +91,7 @@ export class UserPermissions {
     }
 
     public rejectIfNotAdmin(): void {
-        if (!this.isAdmin && !this.apiKeyAuth) {
+        if (!this.isAdmin) {
             throw new Error(
                 `User(${this.user_id}) does not have Admin permissions`
             )
@@ -103,7 +99,7 @@ export class UserPermissions {
     }
 
     public rejectIfNotAuthenticated(): void {
-        if (!this.user_id && !this.apiKeyAuth) {
+        if (!this.user_id) {
             throw new Error(
                 `User not authenticated. Please authenticate to proceed`
             )
@@ -114,11 +110,16 @@ export class UserPermissions {
         user: User | undefined,
         permission_name: PermissionName
     ): boolean {
-        return (
-            <boolean>(
-                (this.isAdminEmail(user?.email || '') || this.apiKeyAuth)
-            ) && superAdminRole.permissions.includes(permission_name)
-        )
+        if (superAdminRole.permissions.includes(permission_name)) {
+            if (this.isAdminEmail(user?.email || '')) {
+                return true
+            }
+
+            if (this.authViaAPIKey && this.isAdmin) {
+                return true
+            }
+        }
+        return false
     }
 
     private isUserActive(user: User | undefined) {
@@ -160,7 +161,12 @@ export class UserPermissions {
         permission_context: PermissionContext,
         permission_name: PermissionName
     ): Promise<PermissionCheckOutput> {
-        if (this.apiKeyAuth) return { passed: true }
+        if (this.authViaAPIKey) {
+            if (this.hasAdminAccess(undefined, permission_name)) {
+                return { passed: true }
+            }
+        }
+
         // Clean & fetch data
         const cpc = cleanPermissionContext(permission_context)
         const userId = cpc.user_id
@@ -169,8 +175,12 @@ export class UserPermissions {
         const user = await this.getUser(userId)
 
         // Perform initial checks
-        if (!this.isUserActive(user))
+        if (!this.isUserActive(user)) {
             return { passed: false, userId: user.user_id, isInactive: true }
+        }
+
+        // The user object allows us to check the email attached to the user
+        // rather than just the email passed in the token
         if (this.hasAdminAccess(user, permission_name)) return { passed: true }
         if (!orgIds?.length && !schoolIds?.length)
             return { passed: false, userId: user.user_id }
@@ -229,8 +239,10 @@ export class UserPermissions {
         }
 
         // Pass if all schools and orgs  are authorized, fail otherwise
-        if (!unauthorisedSchoolIds.length && !unauthorisedOrgIds.length)
+        if (!unauthorisedSchoolIds.length && !unauthorisedOrgIds.length) {
             return { passed: true }
+        }
+
         return {
             passed: false,
             userId: user.user_id,
