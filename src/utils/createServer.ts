@@ -3,9 +3,7 @@ import depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
 import { Context } from '../main'
 import { Model } from '../model'
-import {
-    resLocal,
-} from '../token'
+import { resLocal } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
 import { CustomError } from '../types/csv/csvError'
