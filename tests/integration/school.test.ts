@@ -3210,7 +3210,6 @@ describe('school', () => {
     describe('RemoveClassesFromSchools', () => {
         let adminUser: User
         let nonAdminUser: User
-        let organization: Organization
         let schools: School[]
         let classes: Class[]
         const classLengths: number[] = []
@@ -3219,12 +3218,12 @@ describe('school', () => {
 
         let input: RemoveClassesFromSchoolInput[]
 
-        function removeClasses(
+        async function removeClasses(
             theInput: RemoveClassesFromSchoolInput[],
             authUser = adminUser
         ) {
             const permissions = new UserPermissions(userToPayload(authUser))
-            return mutate(
+            return await mutate(
                 RemoveClassesFromSchools,
                 { input: theInput },
                 permissions
@@ -3236,9 +3235,9 @@ describe('school', () => {
             for (const schoolInputs of input) {
                 const { schoolId, classIds } = schoolInputs
                 // eslint-disable-next-line no-await-in-loop
-                const school = await School.findOne(schoolId)
+                const school1 = await School.findOne(schoolId)
                 // eslint-disable-next-line no-await-in-loop
-                const dbClasses = await school?.classes
+                const dbClasses = await school1?.classes
 
                 const classIdsSet = new Set(classIds)
 
@@ -3279,7 +3278,7 @@ describe('school', () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization(adminUser).save()
-            schools = createSchools(3)
+            schools = createSchools(3, organization)
             classes = createClasses(4, organization)
             await connection.manager.save([...schools, ...classes])
 
@@ -3380,6 +3379,7 @@ describe('school', () => {
                     it('returns an nonexistent class error', async () => {
                         const res = await expect(removeClasses(input)).to.be
                             .rejected
+
                         checkNotFoundErrors(res, [
                             {
                                 entity: 'Class',
@@ -3459,7 +3459,9 @@ describe('school', () => {
                         'Non Admin Role',
                         organization,
                         {
-                            permissions: [PermissionName.edit_school_20330],
+                            permissions: [
+                                PermissionName.attend_live_class_as_a_student_187,
+                            ],
                         }
                     ).save()
                     await createOrganizationMembership({
@@ -3475,11 +3477,11 @@ describe('school', () => {
                 })
 
                 it('returns a permission error', async () => {
-                    const sc = [schools[1], schools[2]]
+                    const sc = [schools[0], schools[1], schools[2]]
                     const errorMessage = buildPermissionError(
                         PermissionName.edit_school_20330,
                         nonAdminUser,
-                        undefined,
+                        [organization],
                         sc
                     )
                     await expect(
