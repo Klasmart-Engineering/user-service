@@ -146,7 +146,10 @@ export async function checkAPIKey(auth: string) {
 
     // Development check enables testing before full solution,
     // remove when secrets integration complete
-    if (apiKey == 'GoToAWSInsteadOfHardCoding'  && process.env.NODE_ENV === 'development') {
+    if (
+        apiKey == 'GoToAWSInsteadOfHardCoding' &&
+        process.env.NODE_ENV === 'development'
+    ) {
         return true
     }
     throw Error('Invalid API Key')
