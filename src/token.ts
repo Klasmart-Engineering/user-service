@@ -156,7 +156,7 @@ export async function validateToken(
     next: express.NextFunction
 ) {
     const auth = req.headers.authorization || ''
-    if (await isAPIKey(auth)) {
+    if (isAPIKey(auth)) {
         try {
             res.locals.hasApiKey = checkAPIKey(auth)
         } catch (e) {

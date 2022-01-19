@@ -57,19 +57,6 @@ export function maxQueryDepth(): number {
     }
 }
 
-export async function authenticate(req: Request) {
-    let permissions: UserPermissions
-    const auth = req.headers.authorization || ''
-    if ((await isAPIKey(auth)) && (await checkAPIKey(auth))) {
-        permissions = new UserPermissions(undefined, true)
-    } else {
-        const token: TokenPayload | undefined = await checkToken(req)
-        permissions = new UserPermissions(token)
-    }
-
-    return permissions
-}
-
 async function createContext({
     res,
     req,
