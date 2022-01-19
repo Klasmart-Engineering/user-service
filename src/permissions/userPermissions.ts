@@ -51,8 +51,15 @@ export class UserPermissions {
         apiKeyAuth: boolean = false
     ) {
         this.user_id = token?.id
-        this.email = token?.email
-        this.phone = token?.phone
+
+        if (token?.email && token?.email.length > 0) {
+            this.email = token?.email
+        }
+
+        if (token?.phone && token?.phone.length > 0) {
+            this.phone = token?.phone
+        }
+
         this.authViaAPIKey = apiKeyAuth
 
         if (this.authViaAPIKey || this.isAdminEmail(this.email!)) {

@@ -139,14 +139,17 @@ export function isAPIKey(auth: string) {
 }
 
 export async function checkAPIKey(auth: string) {
-    if (!(await isAPIKey(auth))) {
+    if (!isAPIKey(auth)) {
         return false
     }
     const apiKey = auth?.slice(auth?.indexOf('=') + 1)
 
     // Development check enables testing before full solution,
     // remove when secrets integration complete
-    if (apiKey == 'GoToAWSInsteadOfHardCoding'  && process.env.NODE_ENV === 'development') {
+    if (
+        apiKey == 'GoToAWSInsteadOfHardCoding' &&
+        process.env.NODE_ENV === 'development'
+    ) {
         return true
     }
     throw Error('Invalid API Key')
@@ -158,8 +161,8 @@ export async function validateToken(
     res: express.Response,
     next: express.NextFunction
 ) {
-    const auth = req.headers.authorization || ''
-    if (isAPIKey(auth)) {
+    const auth = req.headers.authorization
+    if (auth !== undefined && isAPIKey(auth)) {
         try {
             res.locals.hasApiKey = checkAPIKey(auth)
         } catch (e) {
