@@ -653,7 +653,6 @@ describe('userPermissions', () => {
                     superAdminRole.permissions[0]
                 )
                 expect(connection.logger.count).to.be.eq(1)
-                // 1 to get user
             })
         })
 
@@ -682,7 +681,6 @@ describe('userPermissions', () => {
                     superAdminRole.permissions[0]
                 )
                 expect(connection.logger.count).to.be.eq(0)
-                // 1 to get user
             })
         })
     })
