@@ -109,11 +109,7 @@ export class Organization extends CustomBaseEntity {
     @JoinColumn()
     public primary_contact?: Promise<User>
 
-    public async roles(
-        args?: Record<string, unknown>,
-        context?: Context,
-        info?: Record<string, unknown>
-    ): Promise<Role[]> {
+    public async roles(): Promise<Role[]> {
         return Role.find({
             where: [
                 { system_role: true, organization: { organization_id: null } },
