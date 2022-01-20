@@ -109,7 +109,7 @@ describe('acceptance.authentication', () => {
         })
     })
 
-    context.only('apiKeyAuth', () => {
+    context('apiKeyAuth', () => {
         it('accepts APIKeys', async () => {
             const organization = new Organization()
             await organization.save()
