@@ -197,6 +197,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 22/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2457174175"
             )
         createOrUpdateSubjects(subjects: [SubjectDetail]!): [Subject]
+            @deprecated(
+                reason: "Sunset Date: 11/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         createOrUpdatePrograms(programs: [ProgramDetail]!): [Program]
         delete(_: Int): Boolean
     }

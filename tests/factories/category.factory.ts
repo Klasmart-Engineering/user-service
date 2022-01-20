@@ -6,14 +6,15 @@ import { Subcategory } from '../../src/entities/subcategory'
 
 export function createCategory(
     org: Organization = createOrganization(),
-    subcategories: Subcategory[] = []
+    subcategories: Subcategory[] = [],
+    system = false
 ) {
     const category = new Category()
 
     category.name = faker.random.word()
     category.organization = Promise.resolve(org)
     category.subcategories = Promise.resolve(subcategories)
-    category.system = false
+    category.system = system
 
     return category
 }
@@ -21,8 +22,9 @@ export function createCategory(
 export const createCategories = (
     length: number,
     org?: Organization,
-    subCats?: Subcategory[]
+    subCats?: Subcategory[],
+    system = false
 ) =>
     Array(length)
         .fill(undefined)
-        .map(() => createCategory(org, subCats))
+        .map(() => createCategory(org, subCats, system))

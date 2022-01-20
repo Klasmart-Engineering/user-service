@@ -4,6 +4,7 @@ import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 
 import { Subject } from '../../../src/entities/subject'
+import { gql } from 'graphql-tag'
 
 const DESCRIBE_SUBJECT = `
     query describeSubject($id: ID!) {
@@ -24,6 +25,30 @@ export const DELETE_SUBJECT = `
     mutation deleteSubject($id: ID!) {
         subject(id: $id) {
             delete
+        }
+    }
+`
+
+const SUBJECTS_MUTATION_OUTPUT = `
+    subjects {
+        id
+        name
+        status
+        system
+        categoriesConnection {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+    }
+`
+
+export const CREATE_SUBJECTS = gql`
+    mutation CreateSubjects($input: [CreateSubjectInput!]!) {
+        createSubjects(input: $input) {
+            ${SUBJECTS_MUTATION_OUTPUT}
         }
     }
 `

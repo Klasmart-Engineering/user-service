@@ -8,6 +8,8 @@ import { GraphQLResolveInfo } from 'graphql'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Category } from '../entities/category'
+import { mutate } from '../utils/mutations/commonStructure'
+import { CreateSubjects } from '../resolvers/subject'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -15,6 +17,7 @@ const typeDefs = gql`
         uploadSubjectsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateSubjects: Boolean @isAdmin
+        createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationOutput
     }
 
     # pagination extension types start here
@@ -116,6 +119,17 @@ const typeDefs = gql`
         categories: [ID!]
         system: Boolean
     }
+
+    # mutation types
+    input CreateSubjectInput {
+        name: String!
+        organizationId: ID!
+        categoryIds: [ID!]
+    }
+
+    type SubjectsMutationOutput {
+        subjects: [SubjectConnectionNode!]!
+    }
 `
 
 export default function getDefault(
@@ -144,6 +158,8 @@ export default function getDefault(
                     model.uploadSubjectsFromCSV(args, ctx, info),
                 renameDuplicateSubjects: (_parent, args, ctx, info) =>
                     model.renameDuplicateSubjects(args, ctx, info),
+                createSubjects: (_parent, args, ctx) =>
+                    mutate(CreateSubjects, args, ctx.permissions),
             },
             Query: {
                 subject: (_parent, args, ctx, _info) =>

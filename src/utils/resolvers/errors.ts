@@ -137,6 +137,25 @@ export function createUnauthorizedAPIError(
     })
 }
 
+export function createExistentEntityAttributeAPIError(
+    entity: string,
+    entityName: string,
+    attribute: string,
+    attributeValue: string,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.existent_entity_attribute.code,
+        message: customErrors.existent_entity_attribute.message,
+        variables: [],
+        entity,
+        entityName,
+        index,
+        attribute,
+        attributeValue,
+    })
+}
+
 export function createDuplicateChildEntityAttributeAPIError(
     entity: string,
     entityName: string,

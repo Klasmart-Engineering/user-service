@@ -110,15 +110,18 @@ function validateActiveEntityExists(
     return errors
 }
 
-function validateSubItemsArrayLength(
-    allSubItemIds: string[][],
+export function validateSubItemsArrayLength(
+    allSubItemIds: (string[] | undefined)[],
     inputTypeName: string,
     subItemName: string
 ): Map<number, APIError> {
     const errors: Map<number, APIError> = new Map()
 
     allSubItemIds.forEach((subItemIds, index) => {
-        if (subItemIds.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
+        if (
+            subItemIds &&
+            subItemIds.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE
+        ) {
             errors.set(
                 index,
                 createInputLengthAPIError(
@@ -130,7 +133,10 @@ function validateSubItemsArrayLength(
             )
         }
 
-        if (subItemIds.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
+        if (
+            subItemIds &&
+            subItemIds.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE
+        ) {
             errors.set(
                 index,
                 createInputLengthAPIError(
@@ -147,14 +153,15 @@ function validateSubItemsArrayLength(
 }
 
 export function validateSubItemsArrayNoDuplicates(
-    allSubItemIds: string[][],
+    allSubItemIds: (string[] | undefined)[],
     inputTypeName: string,
     subItemName: string
 ): Map<number, APIError> {
     const errors: Map<number, APIError> = new Map()
+
     allSubItemIds.forEach((ids, index) => {
         const idsSet = new Set(ids)
-        if (idsSet.size < ids.length) {
+        if (ids && idsSet.size < ids.length) {
             errors.set(
                 index,
                 createDuplicateAttributeAPIError(
@@ -210,7 +217,7 @@ export function validateSubItemsLengthAndNoDuplicates<
 >(inputs: InputType[], inputTypeName: string, subItemName: SubItemName) {
     const errors: APIError[] = []
     const subItemIds = inputs.map(
-        (input) => (input[subItemName] as unknown) as string[]
+        (input) => (input[subItemName] as unknown) as string[] | undefined
     )
 
     const failedSubItemsLength = validateSubItemsArrayLength(

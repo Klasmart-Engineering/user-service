@@ -81,6 +81,11 @@ export const customErrors = {
         message:
             '{entity} {entityName} already exists for {parentEntity} {parentName}.',
     },
+    existent_entity_attribute: {
+        code: 'ERR_DUPLICATE_ENTITY_ATTRIBUTE',
+        message:
+            '{entity} {entityName} with the same {attribute} of {attributeValue} already exists.',
+    },
     duplicate_child_entity_attribute: {
         code: 'ERR_DUPLICATE_CHILD_ENTITY_ATTRIBUTE',
         message:

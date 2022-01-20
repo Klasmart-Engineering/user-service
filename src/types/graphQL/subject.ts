@@ -8,3 +8,13 @@ export interface SubjectConnectionNode {
     system: boolean
     categories?: CategoryConnectionNode[]
 }
+
+export interface CreateSubjectInput {
+    name: string
+    organizationId: string
+    categoryIds?: string[]
+}
+
+export interface SubjectsMutationOutput {
+    subjects: SubjectConnectionNode[]
+}
