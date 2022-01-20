@@ -21,10 +21,11 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
         | undefined
 }
 
-type MembershipIdPair = { entityId: string; attributeValue: string }
+type MembershipIdPair = { entityId?: string; attributeValue?: string }
 
 // this will not create an error for the first input
 // with a given attribute value, only subsequent duplicates
+// Undefined values should also be allowed, to preserve original array index
 export function validateNoDuplicateAttribute(
     values: MembershipIdPair[],
     entityTypeName: string,
@@ -33,20 +34,24 @@ export function validateNoDuplicateAttribute(
     const valueSet = new Set<string>()
     const errors = new Map<number, APIError>()
     for (const [index, value] of values.entries()) {
-        const key = objectToKey(value)
-        if (valueSet.has(key)) {
-            errors.set(
-                index,
-                createDuplicateInputAttributeAPIError(
+        if (value.entityId != undefined && value.attributeValue != undefined) {
+            const key = objectToKey(value)
+            if (valueSet.has(key)) {
+                errors.set(
                     index,
-                    entityTypeName,
-                    value.entityId,
-                    attributeName,
-                    value.attributeValue
+                    createDuplicateInputAttributeAPIError(
+                        index,
+                        entityTypeName,
+                        value.entityId,
+                        attributeName,
+                        value.attributeValue
+                    )
                 )
-            )
+            } else {
+                valueSet.add(key)
+            }
         } else {
-            valueSet.add(key)
+            continue
         }
     }
     return errors

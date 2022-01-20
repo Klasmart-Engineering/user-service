@@ -13,6 +13,7 @@ import {
     CreateClassInput,
     DeleteClassInput,
     RemoveProgramsFromClassInput,
+    UpdateClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
@@ -38,6 +39,7 @@ import {
     ADD_PROGRAMS_TO_CLASSES,
     REMOVE_PROGRAMS_FROM_CLASSES,
     CREATE_CLASSES,
+    UPDATE_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASSES_CONNECTION,
@@ -64,6 +66,8 @@ import { createClass as createClassFactory } from '../factories/class.factory'
 import { NIL_UUID } from '../utils/database'
 import { generateShortCode } from '../../src/utils/shortcode'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { Organization } from '../../src/entities/organization'
+import { createOrganization } from '../factories/organization.factory'
 
 use(deepEqualInAnyOrder)
 
@@ -1266,6 +1270,61 @@ describe('acceptance.class', () => {
             )
             expect(response.body.errors[1].message).to.contain(
                 'Field "name" of required type "String!" was not provided.'
+            )
+        })
+    })
+
+    context('updateClasses', () => {
+        let input: UpdateClassInput[]
+        let classNameUpdated: string
+        let classShortcodeUpdated: string
+        let activeClass: Class
+
+        beforeEach(async () => {
+            activeClass = (
+                await connection.manager.find(Class, {
+                    where: { class_id: In(class1Ids), status: Status.ACTIVE },
+                })
+            )[0]
+
+            classNameUpdated = 'Updated Class Name'
+            classShortcodeUpdated = 'UPDATEDSC'
+
+            input = [
+                {
+                    classId: activeClass.class_id,
+                    className: classNameUpdated,
+                    shortcode: classShortcodeUpdated,
+                },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                UPDATE_CLASSES,
+                { input },
+                getAdminAuthToken()
+            )
+
+            expect(response.status).to.eq(200)
+            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.data.updateClasses.classes).to.have.lengthOf(
+                input.length
+            )
+        })
+
+        it('has mandatory className input field', async () => {
+            const response = await makeRequest(
+                request,
+                UPDATE_CLASSES,
+                { input: [{}] },
+                getAdminAuthToken()
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
             )
         })
     })

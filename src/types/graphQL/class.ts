@@ -33,6 +33,12 @@ export interface CreateClassInput {
     shortcode?: string
 }
 
+export interface UpdateClassInput {
+    classId: string
+    className?: string
+    shortcode?: string
+}
+
 export interface ClassesMutationResult {
     classes: ClassConnectionNode[]
 }

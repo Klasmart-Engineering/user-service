@@ -7,6 +7,7 @@ import {
     AddProgramsToClassInput,
     RemoveProgramsFromClassInput,
     CreateClassInput,
+    UpdateClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -31,7 +32,9 @@ import {
     validateNoDuplicate,
     RemoveMutation,
     validateSubItemsLengthAndNoDuplicates,
+    UpdateMutation,
     filterInvalidInputs,
+    validateNoDuplicateAttribute,
 } from '../utils/mutations/commonStructure'
 import { Organization } from '../entities/organization'
 import {
@@ -47,6 +50,7 @@ import {
     flagNonExistent,
     flagNonExistentChild,
 } from '../utils/resolvers/inputValidation'
+import logger from '../logging'
 
 export async function deleteClasses(
     args: { input: DeleteClassInput[] },
@@ -658,6 +662,318 @@ export class CreateClasses extends CreateMutation<
         )
 
         return { outputEntity }
+    }
+
+    async buildOutput(outputEntity: Class): Promise<void> {
+        this.output.classes.push(mapClassToClassConnectionNode(outputEntity))
+    }
+}
+
+export interface UpdateClassEntityMap extends EntityMap<Class> {
+    mainEntity: Map<string, Class>
+    classOrgs: Map<string, Organization>
+    existingOrgClassesWithMatchingNames: ObjMap<
+        { className: string; orgId: string },
+        Class
+    >
+    existingOrgClassesWithMatchingShortcodes: ObjMap<
+        { classShortcode: string; orgId: string },
+        Class
+    >
+}
+
+export class UpdateClasses extends UpdateMutation<
+    Class,
+    UpdateClassInput,
+    ClassesMutationResult
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'UpdateClassInput'
+    protected readonly mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: UpdateClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    normalize(inputs: UpdateClassInput[]) {
+        for (const input of inputs) {
+            if (input.shortcode) {
+                input.shortcode = clean.shortcode(input.shortcode)
+            }
+        }
+        return inputs
+    }
+
+    async generateEntityMaps(
+        inputs: UpdateClassInput[]
+    ): Promise<UpdateClassEntityMap> {
+        const classMap = await getMap.class(
+            inputs.map((i) => i.classId),
+            ['organization']
+        )
+
+        const classOrgsMap = new Map<string, Organization>()
+        for (const cls of classMap.values()) {
+            // eslint-disable-next-line no-await-in-loop
+            const classOrg = await cls.organization
+            if (classOrg) classOrgsMap.set(cls.class_id, classOrg)
+        }
+
+        const inputClassNames = inputs
+            .map((cls) => cls.className)
+            .filter((name): name is string => name !== undefined)
+        const inputClassShortcodes = inputs
+            .map((cls) => cls.shortcode)
+            .filter((shortcode): shortcode is string => shortcode !== undefined)
+
+        const existingClassesWithMatchingNames = await Class.find({
+            where: [{ class_name: In(inputClassNames) }],
+            relations: ['organization'],
+        })
+        const existingClassesWithMatchingShortcodes = await Class.find({
+            where: [{ shortcode: In(inputClassShortcodes) }],
+            relations: ['organization'],
+        })
+
+        const matchingNamesMap = new ObjMap<
+            { className: string; orgId: string },
+            Class
+        >()
+        for (const cls of existingClassesWithMatchingNames) {
+            // eslint-disable-next-line no-await-in-loop
+            const orgId = (await cls.organization)?.organization_id
+            const key = {
+                // Guaranteed to be populated given previous Class.find for classes with shortcodes
+                className: cls.class_name!,
+                orgId: orgId ? orgId : '',
+            }
+            matchingNamesMap.set(key, cls)
+        }
+
+        const matchingShortcodesMap = new ObjMap<
+            { classShortcode: string; orgId: string },
+            Class
+        >()
+        for (const cls of existingClassesWithMatchingShortcodes) {
+            // eslint-disable-next-line no-await-in-loop
+            const orgId = (await cls.organization)?.organization_id
+            const key = {
+                // Guaranteed to be populated given previous Class.find for classes with shortcodes
+                classShortcode: cls.shortcode!,
+                orgId: orgId ? orgId : '',
+            }
+            matchingShortcodesMap.set(key, cls)
+        }
+
+        return {
+            mainEntity: classMap,
+            classOrgs: classOrgsMap,
+            existingOrgClassesWithMatchingNames: matchingNamesMap,
+            existingOrgClassesWithMatchingShortcodes: matchingShortcodesMap,
+        }
+    }
+
+    async authorize(
+        inputs: UpdateClassInput[],
+        entityMaps: UpdateClassEntityMap
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            {
+                organization_ids: Array.from(entityMaps.classOrgs.values()).map(
+                    (org) => org.organization_id
+                ),
+            },
+            PermissionName.edit_class_20334
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: UpdateClassInput[],
+        entityMaps: UpdateClassEntityMap
+    ) {
+        const errorMaps: Map<number, APIError>[] = []
+
+        // Check for duplicate class IDs in input
+        errorMaps.push(
+            validateNoDuplicate(
+                inputs.map((cls) => cls.classId),
+                this.inputTypeName,
+                'classId'
+            )
+        )
+
+        // Check for duplicate (orgId, className) entries in input
+        errorMaps.push(
+            validateNoDuplicateAttribute(
+                inputs.map((cls) => {
+                    return {
+                        entityId: entityMaps.classOrgs.get(cls.classId)
+                            ?.organization_id,
+                        attributeValue: cls.className,
+                    }
+                }),
+                'Class',
+                'className'
+            )
+        )
+
+        // Check for duplicate (orgId, classShortcode) entries in input
+        errorMaps.push(
+            validateNoDuplicateAttribute(
+                inputs.map((cls) => {
+                    return {
+                        entityId: entityMaps.classOrgs.get(cls.classId)
+                            ?.organization_id,
+                        attributeValue: cls.shortcode,
+                    }
+                }),
+                'Class',
+                'shortcode'
+            )
+        )
+
+        return filterInvalidInputs(inputs, errorMaps)
+    }
+
+    validate(
+        index: number,
+        _currentEntity: undefined,
+        currentInput: UpdateClassInput,
+        maps: UpdateClassEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+
+        // Check for non-existent class ID in input
+        const { errors: classErrors } = flagNonExistent(
+            Class,
+            index,
+            [currentInput.classId],
+            maps.mainEntity
+        )
+        errors.push(...classErrors)
+        if (errors.length) {
+            // If class ID is invalid, then we cannot validate attributes so we return errors here
+            return errors
+        }
+
+        // Determine org of class to prepare for name/shortcode validation
+        const currentClassOrgId = maps.classOrgs.get(currentInput.classId)
+            ?.organization_id
+
+        // Check for classes with matching names, either in the same org, or among classes with no orgs
+        if (currentInput.className) {
+            const matchingOrgAndName = maps.existingOrgClassesWithMatchingNames.get(
+                {
+                    className: currentInput.className,
+                    orgId: currentClassOrgId ? currentClassOrgId : '',
+                }
+            )
+
+            if (
+                matchingOrgAndName &&
+                matchingOrgAndName.class_id !== currentInput.classId
+            ) {
+                if (currentClassOrgId) {
+                    // For duplicate names of classes with the same org
+                    errors.push(
+                        createEntityAPIError(
+                            'existentChild',
+                            index,
+                            'Class',
+                            currentInput.className,
+                            'Organization',
+                            currentClassOrgId,
+                            ['organizationId', 'className']
+                        )
+                    )
+                } else {
+                    // For duplicate names of classes without an org
+                    logger.info(
+                        `During UpdateClasses input className validation, class ${currentInput.classId} without an org was passed in`
+                    )
+                    errors.push(
+                        createEntityAPIError(
+                            'existent',
+                            index,
+                            'Class',
+                            currentInput.className
+                        )
+                    )
+                }
+            }
+        }
+
+        if (currentInput.shortcode) {
+            // First validate the shortcode - record any errors
+            errors.push(
+                ...newValidateShortCode('Class', currentInput.shortcode, index)
+            )
+
+            // Check for classes with matching shortcodes, either in the same org, or among classes with no orgs
+            const matchingOrgAndShortcode = maps.existingOrgClassesWithMatchingShortcodes.get(
+                {
+                    classShortcode: currentInput.shortcode,
+                    orgId: currentClassOrgId ? currentClassOrgId : '',
+                }
+            )
+
+            if (
+                matchingOrgAndShortcode &&
+                matchingOrgAndShortcode.class_id !== currentInput.classId
+            ) {
+                if (currentClassOrgId) {
+                    // For duplicate shortcodes of classes with the same org
+                    errors.push(
+                        createEntityAPIError(
+                            'existentChild',
+                            index,
+                            'Class',
+                            currentInput.shortcode,
+                            'Organization',
+                            currentClassOrgId,
+                            ['organizationId', 'shortcode']
+                        )
+                    )
+                } else {
+                    // For duplicate shortcodes of classes without an org
+                    logger.info(
+                        `During UpdateClasses input shortcode validation, class ${currentInput.classId} without an org was passed in`
+                    )
+                    errors.push(
+                        createEntityAPIError(
+                            'existent',
+                            index,
+                            'Class',
+                            currentInput.shortcode
+                        )
+                    )
+                }
+            }
+        }
+
+        return errors
+    }
+
+    process(
+        currentInput: UpdateClassInput,
+        maps: UpdateClassEntityMap
+    ): { outputEntity: Class } {
+        const classToOutput = maps.mainEntity.get(currentInput.classId)!
+
+        if (currentInput.className) {
+            classToOutput.class_name = currentInput.className
+        }
+
+        if (currentInput.shortcode) {
+            classToOutput.shortcode = currentInput.shortcode
+        }
+
+        return { outputEntity: classToOutput }
     }
 
     async buildOutput(outputEntity: Class): Promise<void> {
