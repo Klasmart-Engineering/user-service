@@ -20,12 +20,17 @@ import { Model } from '../model'
 import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import {
     addOrganizationRolesToUsers,
+    AddSchoolRolesToUsers,
     createUsers,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
     updateUsers,
 } from '../resolvers/user'
-import { UserConnectionNode } from '../types/graphQL/user'
+import {
+    AddSchoolRolesToUserInput,
+    UserConnectionNode,
+    UsersMutationResult,
+} from '../types/graphQL/user'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { mutate } from '../utils/mutations/commonStructure'
@@ -473,6 +478,12 @@ export default function getDefault(
                     addOrganizationRolesToUsers(args, ctx),
                 removeOrganizationRolesFromUsers: (_parent, args, ctx, _info) =>
                     removeOrganizationRolesFromUsers(args, ctx),
+                addSchoolRolesToUsers: (
+                    _parent,
+                    args: { input: AddSchoolRolesToUserInput[] },
+                    ctx: Context
+                ): Promise<UsersMutationResult> =>
+                    mutate(AddSchoolRolesToUsers, args, ctx.permissions),
                 removeSchoolRolesFromUsers: (_parent, args, ctx, _info) =>
                     mutate(RemoveSchoolRolesFromUsers, args, ctx.permissions),
                 createUsers: (_parent, args, ctx, _info) =>

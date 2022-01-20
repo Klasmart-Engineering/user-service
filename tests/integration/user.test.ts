@@ -86,9 +86,15 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { expectIsNonNullable } from '../utils/assertions'
-import { compareMultipleErrors, expectAPIError } from '../utils/apiError'
+import {
+    compareErrors,
+    compareMultipleErrors,
+    expectAPIError,
+} from '../utils/apiError'
 import {
     addOrganizationRolesToUsers,
+    AddSchoolRolesToUsers,
+    AddSchoolRolesToUsersEntityMap,
     createUsers,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
@@ -97,6 +103,7 @@ import {
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     AddOrganizationRolesToUserInput,
+    AddSchoolRolesToUserInput,
     CreateUserInput,
     RemoveOrganizationRolesFromUserInput,
     RemoveSchoolRolesFromUserInput,
@@ -113,9 +120,12 @@ import { buildPermissionError } from '../utils/errors'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { getMap } from '../../src/utils/resolvers/entityMaps'
 import {
+    createDuplicateAttributeAPIError,
     createDuplicateInputAttributeAPIError,
     createEntityAPIError,
+    createInputLengthAPIError,
 } from '../../src/utils/resolvers/errors'
+import { mapRoleToRoleConnectionNode } from '../../src/pagination/rolesConnection'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -2096,6 +2106,648 @@ describe('user', () => {
         })
     })
 
+    describe('AddSchoolRolesToUsers', () => {
+        let input: AddSchoolRolesToUserInput[]
+        let org: Organization
+        let users: User[]
+        let roles: Role[]
+        let systemRole: Role
+        let schools: School[]
+        let memberships: SchoolMembership[]
+
+        function getAddRoles(authUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new AddSchoolRolesToUsers([], permissions)
+        }
+
+        async function inactivateMembership(
+            school_id: string,
+            user_id: string
+        ) {
+            const membership = await SchoolMembership.findOneOrFail({
+                where: { school_id, user_id },
+            })
+            await membership.inactivate(getManager())
+        }
+
+        beforeEach(async () => {
+            org = await organizationFactory().save()
+            schools = createSchools(3, org)
+            await School.save(schools)
+            users = userFactory(3)
+            roles = createRoles(3)
+            roles.forEach((r) => (r.organization = Promise.resolve(org)))
+            systemRole = roleFactory(undefined, undefined, undefined, true)
+            await connection.manager.save([...users, ...roles, systemRole])
+
+            memberships = users.map((user, index) =>
+                createSchoolMembership({
+                    user,
+                    school: schools[index],
+                })
+            )
+            await SchoolMembership.save(memberships)
+
+            // Generate input
+            input = []
+            const inputRoleIndices = [
+                [0, 1],
+                [1, 2],
+                [0, 1, 2],
+            ]
+            for (let i = 0; i < 3; i++) {
+                input.push({
+                    userId: users[i].user_id,
+                    schoolId: schools[i].school_id,
+                    roleIds: inputRoleIndices[i].map((rr) => roles[rr].role_id),
+                })
+            }
+            input[2].roleIds.push(systemRole.role_id)
+        })
+
+        context('.run', () => {
+            it('returns the expected output', async () => {
+                input = [
+                    {
+                        userId: users[0].user_id,
+                        schoolId: schools[0].school_id,
+                        roleIds: [roles[0].role_id],
+                    },
+                ]
+
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutationResult = mutate(
+                    AddSchoolRolesToUsers,
+                    { input },
+                    permissions
+                )
+
+                const { users: usersNodes }: UsersMutationResult = await expect(
+                    mutationResult
+                ).to.be.fulfilled
+                expect(usersNodes).to.have.length(1)
+                expect(usersNodes[0]).to.deep.eq(
+                    mapUserToUserConnectionNode(users[0])
+                )
+                const dbRoles = await memberships[0].roles!
+                expect(dbRoles).to.have.length(1)
+                expect(mapRoleToRoleConnectionNode(dbRoles[0])).to.deep.eq(
+                    mapRoleToRoleConnectionNode(roles[0])
+                )
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            it('makes constant number of queries regardless of input length', async () => {
+                const mutation = getAddRoles()
+                connection.logger.reset()
+                await mutation.generateEntityMaps([input[0]])
+                const countForOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.generateEntityMaps(input)
+                const countForTwo = connection.logger.count
+                expect(countForTwo).to.eq(8)
+                expect(countForTwo).to.eq(countForOneInput)
+            })
+
+            context('populates the maps correctly', () => {
+                let maps: AddSchoolRolesToUsersEntityMap
+
+                beforeEach(async () => {
+                    // add existing roles to membership
+                    // to test membershipRoles map
+                    memberships[0].roles = Promise.resolve([
+                        systemRole,
+                        roles[0],
+                    ])
+                    await memberships[0].save()
+
+                    const permissions = new UserPermissions(
+                        userToPayload(adminUser)
+                    )
+
+                    const mutation = new AddSchoolRolesToUsers(
+                        input,
+                        permissions
+                    )
+                    maps = await mutation.generateEntityMaps(input)
+                })
+
+                it('populates mainEntity correctly', () => {
+                    expect(
+                        Array.from(
+                            maps.mainEntity.entries()
+                        ).map(([id, user]) => [id, user.user_id])
+                    ).to.deep.equalInAnyOrder(
+                        users.map((u) => [u.user_id, u.user_id])
+                    )
+                })
+
+                it('populates membership roles correctly', async () => {
+                    const membershipRoles = []
+
+                    for (const membership of memberships) {
+                        membershipRoles.push([
+                            {
+                                userId: membership.user_id,
+                                schoolId: membership.school_id,
+                            },
+                            (await membership.roles)!.map((r) => r.role_id),
+                        ])
+                    }
+
+                    expect(
+                        Array.from(
+                            maps.membershipRoles.entries()
+                        ).map(([id, entity]) => [
+                            id,
+                            entity.map((e) => e.role_id),
+                        ])
+                    ).to.deep.equalInAnyOrder(membershipRoles)
+                })
+
+                it('populates memberships correctly', () => {
+                    const expectedMembershipIds = memberships
+                        .map((m) => {
+                            return {
+                                userId: m.user_id,
+                                schoolId: m.school_id,
+                            }
+                        })
+                        .map((membershipId) => [membershipId, membershipId])
+
+                    expect(
+                        Array.from(maps.memberships.entries()).map(
+                            ([id, entity]) => [
+                                id,
+                                {
+                                    userId: entity.user_id,
+                                    schoolId: entity.school_id,
+                                },
+                            ]
+                        )
+                    ).to.deep.equalInAnyOrder(expectedMembershipIds)
+                })
+
+                it('populates schoolOrg correclty', async () => {
+                    const schoolOrgs = []
+
+                    for (const school of schools) {
+                        schoolOrgs.push([
+                            school.school_id,
+                            (await school.organization)!.organization_id,
+                        ])
+                    }
+
+                    expect(
+                        Array.from(
+                            maps.schoolOrg.entries()
+                        ).map(([id, entity]) => [id, entity.organization_id])
+                    ).to.deep.equalInAnyOrder(schoolOrgs)
+                })
+
+                it('populates schools correctly', () => {
+                    expect(
+                        Array.from(
+                            maps.schools.entries()
+                        ).map(([id, school]) => [id, school.school_id])
+                    ).to.deep.equalInAnyOrder(
+                        schools.map((s) => [s.school_id, s.school_id])
+                    )
+                })
+
+                it('popualtes orgRoles correctly', () => {
+                    expect(
+                        Array.from(
+                            maps.orgRoles.entries()
+                        ).map(([id, roles]) => [
+                            id,
+                            roles.map((r) => r.role_id),
+                        ])
+                    ).to.deep.equalInAnyOrder([
+                        [org.organization_id, roles.map((r) => r.role_id)],
+                    ])
+                })
+
+                it('populates roles correctly', () => {
+                    expect(
+                        Array.from(maps.roles.entries()).map(([id, role]) => [
+                            id,
+                            role.role_id,
+                        ])
+                    ).to.deep.equalInAnyOrder(
+                        [...roles, systemRole].map((r) => [
+                            r.role_id,
+                            r.role_id,
+                        ])
+                    )
+                })
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getAddRoles(authUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.edit_users_40330
+            context(
+                'when user has permissions to remove users from all schools',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await roleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: org,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to remove users from all schools',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await roleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createSchoolMembership({
+                            user: nonAdminUser,
+                            school: schools[1],
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(
+                                permission,
+                                nonAdminUser,
+                                [org],
+                                [schools[0], schools[2]]
+                            )
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            context('when the same membership is used three times', () => {
+                beforeEach(() => {
+                    input = [input[0], input[0], input[0]]
+                })
+
+                it('returns duplicate errors for the last two memberships', () => {
+                    const val = getAddRoles().validationOverAllInputs(input)
+                    const expectedErrors = [1, 2].map((inputIndex) =>
+                        createDuplicateInputAttributeAPIError(
+                            inputIndex,
+                            'School',
+                            input[0].schoolId,
+                            'user_id',
+                            input[0].userId
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getAddRoles().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context(
+                'when there are duplicate users and orgs but unique combinations thereof',
+                () => {
+                    beforeEach(() => {
+                        const roleIds = roles.map((r) => r.role_id)
+                        input = [
+                            {
+                                schoolId: schools[0].school_id,
+                                userId: users[0].user_id,
+                                roleIds,
+                            },
+                            {
+                                schoolId: schools[1].school_id,
+                                userId: users[0].user_id,
+                                roleIds,
+                            },
+                            {
+                                schoolId: schools[0].school_id,
+                                userId: users[1].user_id,
+                                roleIds,
+                            },
+                        ]
+                    })
+
+                    it('returns no errors', () => {
+                        const val = getAddRoles().validationOverAllInputs(input)
+                        expect(val.apiErrors).to.be.empty
+                        expect(
+                            val.validInputs.map((vi) => vi.input)
+                        ).to.deep.equal(input)
+                    })
+
+                    it('returns the full input list', () => {
+                        const val = getAddRoles().validationOverAllInputs(input)
+                        expect(
+                            val.validInputs.map((vi) => vi.input)
+                        ).to.deep.equal(input)
+                    })
+                }
+            )
+
+            context('when there are too many roleIds', () => {
+                beforeEach(async () => {
+                    const tooManyRoles = createRoles(
+                        config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                    )
+                    await Role.save(tooManyRoles)
+                    input[0].roleIds = tooManyRoles.map((role) => role.role_id)
+                    input[2].roleIds = tooManyRoles.map((role) => role.role_id)
+                })
+
+                it('returns an error', async () => {
+                    const val = getAddRoles().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(1)
+                    expect(val.validInputs[0].input).to.deep.equal(input[1])
+                    const xErrors = [0, 2].map((i) =>
+                        createInputLengthAPIError(
+                            'AddSchoolRolesToUsersInput',
+                            'max',
+                            'roleIds',
+                            i
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, xErrors)
+                })
+            })
+
+            context(
+                'when there are duplicated roleIds in a single input elemnet',
+                () => {
+                    beforeEach(async () => {
+                        input[0].roleIds = [
+                            input[0].roleIds[0],
+                            input[0].roleIds[0],
+                        ]
+                        input[2].roleIds = [
+                            input[2].roleIds[0],
+                            input[2].roleIds[0],
+                        ]
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getAddRoles().validationOverAllInputs(input)
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['roleIds'],
+                                'AddSchoolRolesToUsersInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(mutationInput: AddSchoolRolesToUserInput) {
+                const mutation = getAddRoles()
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return mutation.validate(0, undefined, mutationInput, maps)
+            }
+
+            it('returns no errors when all inputs are valid', async () => {
+                const apiErrors = await validate(input[0])
+                expect(apiErrors).to.be.length(0)
+            })
+
+            context('when a user is not a member the school', () => {
+                beforeEach(async () => {
+                    await inactivateMembership(
+                        schools[0].school_id,
+                        users[0].user_id
+                    )
+                })
+
+                it('returns a nonexistent_child error', async () => {
+                    const apiErrors = await validate(input[0])
+                    const expectedError = createEntityAPIError(
+                        'nonExistentChild',
+                        0,
+                        'User',
+                        users[0].user_id,
+                        'School',
+                        schools[0].school_id
+                    )
+                    expect(apiErrors).to.be.length(1)
+                    compareErrors(apiErrors[0], expectedError)
+                })
+            })
+
+            context('when one of the schools is inactive', async () => {
+                beforeEach(async () => {
+                    await schools[1].inactivate(getManager())
+                })
+
+                it('returns a nonexistent_entity error', async () => {
+                    const errors = await validate(input[1])
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'School',
+                            schools[1].school_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of the roles is inactive', async () => {
+                beforeEach(() => roles[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity error', async () => {
+                    const errors = await validate(input[0])
+                    const xErrors = [0].map((index) =>
+                        createEntityAPIError(
+                            'nonExistent',
+                            index,
+                            'Role',
+                            roles[1].role_id
+                        )
+                    )
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        schools[1].inactivate(getManager()),
+                        users[1].inactivate(getManager()),
+                        roles[1].inactivate(getManager()),
+                        memberships[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate(input[1])
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'School',
+                            schools[1].school_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            users[1].user_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Role',
+                            roles[1].role_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+        })
+
+        context('.process', () => {
+            async function process(mutationInput: AddSchoolRolesToUserInput) {
+                const permissions = new UserPermissions(adminUser)
+                const mutation = new AddSchoolRolesToUsers(
+                    [mutationInput],
+                    permissions
+                )
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return {
+                    mutationResult: mutation.process(mutationInput, maps, 0),
+                    originalUser: maps.mainEntity.get(mutationInput.userId)!,
+                    originalRoles: maps.membershipRoles.get({
+                        schoolId: mutationInput.schoolId,
+                        userId: mutationInput.userId,
+                    }),
+                }
+            }
+
+            it('includes existing roles', async () => {
+                memberships[0].roles = Promise.resolve([roles[0], systemRole])
+                await memberships[0].save()
+                input[0].roleIds = []
+
+                const {
+                    mutationResult: { outputEntity, modifiedEntity },
+                    originalUser,
+                    originalRoles,
+                } = await process(input[0])
+                expect(originalUser).to.deep.eq(outputEntity)
+                expect(originalRoles).to.deep.equalInAnyOrder(
+                    await modifiedEntity[0].roles
+                )
+            })
+
+            it('adds new roles', async () => {
+                memberships[0].roles = Promise.resolve([roles[0], systemRole])
+                await memberships[0].save()
+                const newRoles = [roles[1], roles[2]]
+                input[0].roleIds = newRoles.map((r) => r.role_id)
+
+                const {
+                    mutationResult: { outputEntity, modifiedEntity },
+                    originalUser,
+                    originalRoles,
+                } = await process(input[0])
+                expect(originalUser).to.deep.eq(outputEntity)
+                expect(
+                    [...originalRoles!, ...newRoles].map((r) => r.role_id)
+                ).to.deep.equalInAnyOrder(
+                    (await modifiedEntity[0].roles!).map((r) => r.role_id)
+                )
+            })
+        })
+
+        context('.applyToDatabase', () => {
+            it('adds roles to the membership', async () => {
+                const mutation = getAddRoles()
+                memberships[0].roles = Promise.resolve(roles)
+                await memberships[0].save()
+                await mutation.applyToDatabase([
+                    { modifiedEntity: [memberships[0]] },
+                ])
+                const dbMembership = (
+                    await SchoolMembership.find({
+                        user_id: memberships[0].user_id,
+                        school_id: memberships[0].school_id,
+                    })
+                )[0]
+                const dbMembershipRoles = await dbMembership.roles
+                expect(
+                    dbMembershipRoles?.map((r) =>
+                        mapRoleToRoleConnectionNode(r)
+                    )
+                ).to.deep.equalInAnyOrder(
+                    roles?.map((r) => mapRoleToRoleConnectionNode(r))
+                )
+            })
+            it('makes constant number of queries', async () => {
+                const mutation = getAddRoles()
+                const existingRoles = await memberships[0].roles!
+                memberships[0].roles = Promise.resolve(existingRoles.slice(1))
+                memberships[0].roles = Promise.resolve([
+                    existingRoles[0],
+                    existingRoles[2],
+                ])
+                connection.logger.reset()
+                await mutation.applyToDatabase([
+                    { modifiedEntity: [memberships[0]] },
+                ])
+                const countWithOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.applyToDatabase([
+                    { modifiedEntity: [memberships[0]] },
+                    { modifiedEntity: [memberships[1]] },
+                    { modifiedEntity: [memberships[1]] },
+                ])
+                const countWithThreeInputs = connection.logger.count
+                expect(countWithThreeInputs).to.eq(2)
+                expect(countWithThreeInputs).to.eq(countWithOneInput)
+            })
+        })
+    })
+
     /**
      * Some of the methods of RemoveSchoolRolesFromUsers are not tested here.
      *
@@ -2404,6 +3056,66 @@ describe('user', () => {
                     })
                 }
             )
+
+            context('when there are too many roleIds', () => {
+                beforeEach(async () => {
+                    const tooManyRoles = createRoles(
+                        config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                    )
+                    await Role.save(tooManyRoles)
+                    input[0].roleIds = tooManyRoles.map((role) => role.role_id)
+                    input[2].roleIds = tooManyRoles.map((role) => role.role_id)
+                })
+
+                it('returns an error', async () => {
+                    const val = getRemoveRoles().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(1)
+                    expect(val.validInputs[0].input).to.deep.equal(input[1])
+                    const xErrors = [0, 2].map((i) =>
+                        createInputLengthAPIError(
+                            'RemoveSchoolRolesFromUserInput',
+                            'max',
+                            'roleIds',
+                            i
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, xErrors)
+                })
+            })
+
+            context(
+                'when there are duplicated roleIds in a single input elemnet',
+                () => {
+                    beforeEach(async () => {
+                        input[0].roleIds = [
+                            input[0].roleIds[0],
+                            input[0].roleIds[0],
+                        ]
+                        input[2].roleIds = [
+                            input[2].roleIds[0],
+                            input[2].roleIds[0],
+                        ]
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getRemoveRoles().validationOverAllInputs(
+                            input
+                        )
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['roleIds'],
+                                'RemoveSchoolRolesFromUserInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
         })
 
         context('.validate', () => {
@@ -2425,11 +3137,34 @@ describe('user', () => {
 
             context('when one of the roles was already removed', () => {
                 beforeEach(async () => {
+                    memberships[0].roles = Promise.resolve(
+                        (await memberships[0].roles)!.slice(1)
+                    )
+                    await memberships[0].save()
+                })
+
+                it('returns a nonexistent_child error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'Role',
+                            roles[0].role_id,
+                            'School',
+                            schools[0].school_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when user is not a member of the school', async () => {
+                beforeEach(async () => {
                     await inactivateMembership(
                         schools[0].school_id,
                         users[0].user_id
                     )
-                    initialRoles = [[], roles, roles]
                 })
 
                 it('returns a nonexistent_child error', async () => {
@@ -2445,8 +3180,6 @@ describe('user', () => {
                         ),
                     ]
                     compareMultipleErrors(errors, xErrors)
-
-                    await checkNoChangesMade(input)
                 })
             })
 

@@ -19,6 +19,7 @@ import {
 } from '../utils/operations/modelOps'
 import {
     ADD_ORG_ROLES_TO_USERS,
+    ADD_SCHOOL_ROLES_TO_USERS,
     CREATE_USERS,
     GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
     randomChangeToUpdateUserInput,
@@ -45,6 +46,7 @@ import { createClass } from '../factories/class.factory'
 import { Class } from '../../src/entities/class'
 import {
     AddOrganizationRolesToUserInput,
+    AddSchoolRolesToUserInput,
     RemoveOrganizationRolesFromUserInput,
     RemoveSchoolRolesFromUserInput,
     UpdateUserInput,
@@ -845,6 +847,78 @@ describe('acceptance.user', () => {
                 expect(response.status).to.eq(200)
                 expect(resUsers.length).to.equal(usersCount)
             })
+        })
+    })
+
+    context('addSchoolRolesToUsers', () => {
+        let adminUser: User
+        let input: AddSchoolRolesToUserInput[]
+        let users: User[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const roles = createRoles(2)
+            roles.forEach((r) => (r.organization = Promise.resolve(org)))
+            users = createUsers(2)
+            await connection.manager.save([...roles, ...users])
+            const school = await createSchool(org).save()
+
+            schoolMemberships = []
+            input = []
+            for (const user of users) {
+                schoolMemberships.push(
+                    createSchoolMembership({
+                        user,
+                        school,
+                        roles: [],
+                    })
+                )
+                input.push({
+                    userId: user.user_id,
+                    schoolId: school.school_id,
+                    roleIds: roles.map((role) => role.role_id),
+                })
+            }
+            await SchoolMembership.save(schoolMemberships)
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                ADD_SCHOOL_ROLES_TO_USERS,
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resUsers: UserConnectionNode[] =
+                response.body.data.addSchoolRolesToUsers.users
+            expect(resUsers).to.have.length(users.length)
+            expect(resUsers).to.deep.equal(
+                users.map((user) => mapUserToUserConnectionNode(user))
+            )
+        })
+
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                ADD_SCHOOL_ROLES_TO_USERS,
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(3)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "userId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "schoolId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[2].message).to.contain(
+                'Field "roleIds" of required type "[ID!]!" was not provided.'
+            )
         })
     })
 
