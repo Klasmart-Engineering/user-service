@@ -142,7 +142,7 @@ export async function checkAPIKey(auth: string) {
     if (!isAPIKey(auth)) {
         return false
     }
-    const apiKey = auth?.slice(auth?.indexOf('=') + 1)
+    const apiKey = auth?.slice(auth?.indexOf(':') + 2)
 
     // Development check enables testing before full solution,
     // remove when secrets integration complete
