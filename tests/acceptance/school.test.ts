@@ -17,8 +17,10 @@ import {
     UpdateSchoolInput,
     RemoveProgramsFromSchoolInput,
     DeleteSchoolInput,
+    AddUsersToSchoolInput,
+    RemoveClassesFromSchoolInput,
 } from '../../src/types/graphQL/school'
-import { createClass } from '../factories/class.factory'
+import { createClass, createClasses } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
@@ -51,6 +53,8 @@ import {
     UPDATE_SCHOOLS,
     REMOVE_USERS_FROM_SCHOOLS,
     REMOVE_PROGRAMS_FROM_SCHOOLS,
+    ADD_USERS_TO_SCHOOLS,
+    REMOVE_CLASSES_FROM_SCHOOLS,
 } from '../utils/operations/schoolOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { userToPayload } from '../utils/operations/userOps'
@@ -568,6 +572,60 @@ describe('acceptance.school', () => {
         })
     })
 
+    context('addUsersToSchools', () => {
+        let adminUser: User
+        let input: AddUsersToSchoolInput[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+
+            const org = await createOrganization().save()
+            const school = await createSchoolFactory(org).save()
+            const user = await createUser().save()
+            const role = await createRole().save()
+
+            input = [
+                {
+                    schoolId: school.school_id,
+                    userIds: [user.user_id],
+                    schoolRoleIds: [role.role_id],
+                },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_USERS_TO_SCHOOLS),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.addUsersToSchools.schools
+            ).to.have.lengthOf(1)
+        })
+
+        it('has mandatory schoolId & userIds input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_USERS_TO_SCHOOLS),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.have.lengthOf(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "schoolId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "userIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
     context('removeUsersFromSchools', () => {
         let users: User[]
 
@@ -774,6 +832,73 @@ describe('acceptance.school', () => {
                 expect(response.status).to.eq(200)
                 expect(schoolsUpdated).to.be.null
                 expect(errors).to.exist
+            })
+        })
+    })
+
+    context('removeClassesFromSchools', () => {
+        let adminUser: User
+        let input: RemoveClassesFromSchoolInput[]
+        const schoolsCount = 1
+        let classes: Class[] = []
+
+        const makeRemoveClassesFromSchoolsMutation = async (
+            input: RemoveClassesFromSchoolInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(REMOVE_CLASSES_FROM_SCHOOLS),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+        }
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            classes = createClasses(3)
+            const schools = createSchools(3)
+            await connection.manager.save([...schools, ...classes])
+            schools[0].classes = Promise.resolve(classes)
+            await schools[0].save()
+            input = [
+                {
+                    schoolId: schools[0].school_id,
+                    classIds: classes.map((v) => v.class_id),
+                },
+            ]
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const response = await makeRemoveClassesFromSchoolsMutation(
+                    input
+                )
+                const resSchools =
+                    response.body.data.removeClassesFromSchools.schools
+                expect(response.status).to.eq(200)
+                expect(resSchools.length).to.equal(schoolsCount)
+            })
+        })
+
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                const response = await makeRequest(
+                    request,
+                    print(REMOVE_CLASSES_FROM_SCHOOLS),
+                    { input: [{}] },
+                    generateToken(userToPayload(adminUser))
+                )
+
+                expect(response.status).to.eq(400)
+                expect(response.body.errors).to.be.length(2)
+                expect(response.body.errors[0].message).to.contain(
+                    'Field "schoolId" of required type "ID!" was not provided.'
+                )
+                expect(response.body.errors[1].message).to.contain(
+                    'Field "classIds" of required type "[ID!]!" was not provided.'
+                )
             })
         })
     })

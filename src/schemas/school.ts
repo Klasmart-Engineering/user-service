@@ -15,6 +15,8 @@ import { Program } from '../entities/program'
 import {
     AddClassesToSchools,
     AddProgramsToSchools,
+    AddUsersToSchools,
+    RemoveClassesFromSchools,
     RemoveProgramsFromSchools,
 } from '../resolvers/school'
 import {
@@ -33,6 +35,9 @@ const typeDefs = gql`
         createSchools(input: [CreateSchoolInput!]!): SchoolsMutationResult
         updateSchools(input: [UpdateSchoolInput!]!): SchoolsMutationResult
         deleteSchools(input: [DeleteSchoolInput!]!): SchoolsMutationResult
+        addUsersToSchools(
+            input: [AddUsersToSchoolInput!]!
+        ): SchoolsMutationResult
         removeUsersFromSchools(
             input: [RemoveUsersFromSchoolInput!]!
         ): SchoolsMutationResult
@@ -44,6 +49,9 @@ const typeDefs = gql`
         ): SchoolsMutationResult
         removeProgramsFromSchools(
             input: [RemoveProgramsFromSchoolInput!]!
+        ): SchoolsMutationResult
+        removeClassesFromSchools(
+            input: [RemoveClassesFromSchoolInput!]!
         ): SchoolsMutationResult
     }
     extend type Query {
@@ -173,6 +181,11 @@ const typeDefs = gql`
         programIds: [ID!]!
     }
 
+    input RemoveClassesFromSchoolInput {
+        schoolId: ID!
+        classIds: [ID!]!
+    }
+
     input SchoolFilter {
         # table columns
         schoolId: UUIDFilter
@@ -218,6 +231,12 @@ const typeDefs = gql`
 
     input DeleteSchoolInput {
         id: ID!
+    }
+
+    input AddUsersToSchoolInput {
+        schoolId: ID!
+        schoolRoleIds: [ID!]
+        userIds: [ID!]!
     }
 
     input RemoveUsersFromSchoolInput {
@@ -321,10 +340,14 @@ export default function getDefault(
                     mutate(CreateSchools, args, ctx.permissions),
                 updateSchools: (_parent, args, ctx, _info) =>
                     mutate(UpdateSchools, args, ctx.permissions),
+                addUsersToSchools: (_parent, args, ctx, _info) =>
+                    mutate(AddUsersToSchools, args, ctx.permissions),
                 removeUsersFromSchools: (_parent, args, ctx, _info) =>
                     mutate(RemoveUsersFromSchools, args, ctx.permissions),
                 removeProgramsFromSchools: (_parent, args, ctx, _info) =>
                     mutate(RemoveProgramsFromSchools, args, ctx.permissions),
+                removeClassesFromSchools: (_parent, args, ctx, _info) =>
+                    mutate(RemoveClassesFromSchools, args, ctx.permissions),
             },
             Query: {
                 school: (_parent, args, ctx, _info) =>

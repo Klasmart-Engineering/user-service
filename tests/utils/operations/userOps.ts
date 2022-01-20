@@ -250,6 +250,25 @@ const ADD_SCHOOL = `
     }
 `
 
+const USERS_MUTATION_RESULT_CORE = `users {
+    id
+    givenName
+    familyName
+    avatar
+    contactInfo {
+        email
+        phone
+    }
+    alternateContactInfo {
+        email
+        phone
+    }
+    status
+    dateOfBirth
+    gender
+}
+`
+
 const USERS_MUTATION_RESULT = `users {
                 id
                 givenName
@@ -318,6 +337,14 @@ export const UPDATE_USERS = `
             ${USERS_MUTATION_RESULT}
         }
     }
+`
+
+export const ADD_SCHOOL_ROLES_TO_USERS = `
+mutation myMutation($input: [AddSchoolRolesToUserInput!]!) {
+    addSchoolRolesToUsers(input: $input) {
+        ${USERS_MUTATION_RESULT_CORE}
+    }
+}
 `
 
 export const REMOVE_SCHOOL_ROLES_FROM_USERS = `

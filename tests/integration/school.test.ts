@@ -1,5 +1,6 @@
+/* eslint-disable no-await-in-loop */
 import { expect, use } from 'chai'
-import { getManager } from 'typeorm'
+import { getManager, In } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -56,6 +57,8 @@ import {
     SchoolsMutationResult,
     UpdateSchoolInput,
     RemoveProgramsFromSchoolInput,
+    AddUsersToSchoolInput,
+    RemoveClassesFromSchoolInput,
 } from '../../src/types/graphQL/school'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { mutate } from '../../src/utils/mutations/commonStructure'
@@ -67,19 +70,25 @@ import {
     DeleteSchools,
     UpdateSchools,
     RemoveProgramsFromSchools,
+    AddUsersToSchools,
+    RemoveClassesFromSchools,
 } from '../../src/resolvers/school'
 import { buildPermissionError, permErrorMeta } from '../utils/errors'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import {
     createUser,
     createAdminUser as createAdmin,
+    createUsers,
 } from '../factories/user.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { formatShortCode, generateShortCode } from '../../src/utils/shortcode'
 import faker from 'faker'
 import { createSchools } from '../factories/school.factory'
 import { createClasses } from '../factories/class.factory'
-import { createRole as roleFactory } from '../factories/role.factory'
+import {
+    createRole as roleFactory,
+    createRoles,
+} from '../factories/role.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createRole as createARole } from '../factories/role.factory'
 import { createSchool as createASchool } from '../factories/school.factory'
@@ -88,16 +97,20 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import {
     checkNotFoundErrors,
     compareErrors,
+    compareMultipleErrors,
     expectAPIError,
 } from '../utils/apiError'
 import { APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateAttributeAPIError,
+    createDuplicateInputAttributeAPIError,
     createEntityAPIError,
+    createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../../src/utils/resolvers/errors'
 import { NIL_UUID } from '../utils/database'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { Role } from '../../src/entities/role'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -131,6 +144,15 @@ const expectAPIErrorCollection = async (
         compareErrors(errors[x], expectedErrors.errors[x])
 }
 
+function intersection<T>(setA: Set<T>, setB: Set<T>) {
+    const _intersection = new Set<T>()
+    for (const elem of setB) {
+        if (setA.has(elem)) {
+            _intersection.add(elem)
+        }
+    }
+    return _intersection
+}
 describe('school', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
@@ -2737,7 +2759,7 @@ describe('school', () => {
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
             schools = createSchools(3)
-            programs = createPrograms(3, organization)
+            programs = createPrograms(4, organization)
             await connection.manager.save([...schools, ...programs])
             input = [
                 {
@@ -2750,7 +2772,11 @@ describe('school', () => {
                 },
                 {
                     schoolId: schools[2].school_id,
-                    programIds: [programs[0].id, programs[2].id],
+                    programIds: [
+                        programs[0].id,
+                        programs[2].id,
+                        programs[3].id,
+                    ],
                 },
             ]
         })
@@ -2928,7 +2954,9 @@ describe('school', () => {
         let organization: Organization
         let schools: School[]
         let programs: Program[]
-        const programsCount = 5
+        const programLengths: number[] = []
+
+        const programsCount = 6
         let input: RemoveProgramsFromSchoolInput[]
 
         function removePrograms(authUser = adminUser) {
@@ -2937,19 +2965,19 @@ describe('school', () => {
         }
 
         async function checkOutput() {
+            let index = 0
             for (const schoolInputs of input) {
                 const { schoolId, programIds } = schoolInputs
-
+                const programIdsSet = new Set(programIds)
                 const school = await School.findOne(schoolId)
                 const dbPrograms = await school?.programs
 
                 const dbProgramIds = new Set(dbPrograms?.map((val) => val.id))
-                const programIdsSet = new Set(programIds)
-
-                expect(dbProgramIds.size).to.equal(programIdsSet.size)
-                dbProgramIds.forEach(
-                    (val) => expect(programIdsSet.has(val)).to.be.true
+                expect(dbProgramIds.size).to.equal(
+                    programLengths[index] - programIdsSet.size
                 )
+                expect(intersection(programIdsSet, dbProgramIds).size).equals(0)
+                index++
             }
         }
 
@@ -2977,11 +3005,18 @@ describe('school', () => {
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
             schools = createSchools(3)
-            programs = createPrograms(3, organization)
+            programs = createPrograms(4, organization)
             await connection.manager.save([...schools, ...programs])
             schools[0].programs = Promise.resolve([programs[0]])
+            programLengths.push((await schools[0].programs).length)
             schools[1].programs = Promise.resolve([programs[1], programs[2]])
-            schools[2].programs = Promise.resolve([programs[0], programs[2]])
+            programLengths.push((await schools[1].programs).length)
+            schools[2].programs = Promise.resolve([
+                programs[0],
+                programs[2],
+                programs[3],
+            ])
+            programLengths.push((await schools[2].programs).length)
             await connection.manager.save(schools)
             input = [
                 {
@@ -3003,7 +3038,7 @@ describe('school', () => {
             'when caller has permissions to remove programs from schools',
             () => {
                 context('and all attributes are valid', () => {
-                    it('removes all the programs', async () => {
+                    it('removes all the programs in the input, leaving any not in the input', async () => {
                         await expect(removePrograms()).to.be.fulfilled
                         await checkOutput()
                     })
@@ -3170,5 +3205,620 @@ describe('school', () => {
                 await checkNoChangesMade(false)
             }
         )
+    })
+
+    describe('RemoveClassesFromSchools', () => {
+        let adminUser: User
+        let nonAdminUser: User
+        let schools: School[]
+        let classes: Class[]
+        const classLengths: number[] = []
+
+        const classesCount = 6
+
+        let input: RemoveClassesFromSchoolInput[]
+
+        async function removeClasses(
+            theInput: RemoveClassesFromSchoolInput[],
+            authUser = adminUser
+        ) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return await mutate(
+                RemoveClassesFromSchools,
+                { input: theInput },
+                permissions
+            )
+        }
+
+        async function checkOutput() {
+            let index = 0
+            for (const schoolInputs of input) {
+                const { schoolId, classIds } = schoolInputs
+                // eslint-disable-next-line no-await-in-loop
+                const school1 = await School.findOne(schoolId)
+                // eslint-disable-next-line no-await-in-loop
+                const dbClasses = await school1?.classes
+
+                const classIdsSet = new Set(classIds)
+
+                const dbClassIds = new Set(
+                    dbClasses?.map((val) => val.class_id)
+                )
+                expect(dbClassIds.size).to.equal(
+                    classLengths[index] - classIdsSet.size
+                )
+                expect(intersection(classIdsSet, dbClassIds).size).equals(0)
+                index++
+            }
+        }
+
+        async function checkNoChangesMade(useAdminUser = true) {
+            it(`does not remove the classes (useAdminUser=${useAdminUser})`, async () => {
+                await expect(
+                    removeClasses(
+                        input,
+                        useAdminUser ? adminUser : nonAdminUser
+                    )
+                ).to.be.rejected
+                const promises = schools.reduce(
+                    (acc: Promise<Class[]>[], current) => {
+                        if (current.classes) {
+                            acc.push(current.classes)
+                        }
+                        return acc
+                    },
+                    []
+                )
+                const finalClasses = (await Promise.all(promises)).flat()
+                expect(finalClasses).to.have.lengthOf(classesCount)
+            })
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
+            organization = await createOrganization(adminUser).save()
+            schools = createSchools(3, organization)
+            classes = createClasses(4, organization)
+            await connection.manager.save([...schools, ...classes])
+
+            schools[0].classes = Promise.resolve([classes[0]])
+            classLengths.push((await schools[0].classes).length)
+            schools[1].classes = Promise.resolve([classes[1], classes[2]])
+            classLengths.push((await schools[1].classes).length)
+            schools[2].classes = Promise.resolve([
+                classes[0],
+                classes[2],
+                classes[3],
+            ])
+            classLengths.push((await schools[2].classes).length)
+
+            await connection.manager.save(schools)
+
+            input = [
+                {
+                    schoolId: schools[0].school_id,
+                    classIds: [classes[0].class_id],
+                },
+                {
+                    schoolId: schools[1].school_id,
+                    classIds: [classes[1].class_id, classes[2].class_id],
+                },
+                {
+                    schoolId: schools[2].school_id,
+                    classIds: [classes[0].class_id, classes[2].class_id],
+                },
+            ]
+        })
+
+        context(
+            'when caller has permissions to remove classes from schools',
+            () => {
+                context('and all attributes are valid', () => {
+                    it("removes the schools' classes specified the input leaving any class not in the input", async () => {
+                        await expect(removeClasses(input)).to.be.fulfilled
+                        await checkOutput()
+                    })
+                })
+
+                context(
+                    'and the only class of school[0] was already removed',
+                    () => {
+                        beforeEach(async () => {
+                            schools[0].classes = Promise.resolve([])
+                            await schools[0].save()
+                        })
+
+                        it('returns a nonexistent child error', async () => {
+                            const res = await expect(removeClasses(input)).to.be
+                                .rejected
+                            expectAPIError.nonexistent_child(
+                                res,
+                                {
+                                    entity: 'Class',
+                                    entityName: classes[0].class_id || '',
+                                    parentEntity: 'School',
+                                    parentName: schools[0].school_id || '',
+                                    index: 0,
+                                },
+                                [''],
+                                0,
+                                1
+                            )
+                        })
+                    }
+                )
+
+                context('and one of the schools is inactive', async () => {
+                    beforeEach(async () => {
+                        schools[2].status = Status.INACTIVE
+                        await schools[2].save()
+                    })
+
+                    it('returns an nonexistent school error', async () => {
+                        const res = await expect(removeClasses(input)).to.be
+                            .rejected
+
+                        checkNotFoundErrors(res, [
+                            {
+                                entity: 'School',
+                                id: schools[2].school_id,
+                                entryIndex: 2,
+                            },
+                        ])
+                    })
+
+                    await checkNoChangesMade()
+                })
+
+                context('and one of the classes is inactive', async () => {
+                    beforeEach(async () => {
+                        await classes[1].inactivate(getManager())
+                    })
+
+                    it('returns an nonexistent class error', async () => {
+                        const res = await expect(removeClasses(input)).to.be
+                            .rejected
+
+                        checkNotFoundErrors(res, [
+                            {
+                                entity: 'Class',
+                                id: classes[1].class_id,
+                                entryIndex: 1,
+                            },
+                        ])
+                    })
+
+                    await checkNoChangesMade()
+                })
+
+                context('and one of each attribute is inactive', async () => {
+                    beforeEach(async () => {
+                        schools[2].status = Status.INACTIVE
+                        await Promise.all([
+                            schools[2].save(),
+                            classes[1].inactivate(getManager()),
+                        ])
+                    })
+
+                    it('returns several nonexistent errors', async () => {
+                        const res = await expect(removeClasses(input)).to.be
+                            .rejected
+
+                        checkNotFoundErrors(res, [
+                            {
+                                entity: 'Class',
+                                id: classes[1].class_id,
+                                entryIndex: 1,
+                            },
+                            {
+                                entity: 'School',
+                                id: schools[2].school_id,
+                                entryIndex: 2,
+                            },
+                        ])
+                    })
+
+                    await checkNoChangesMade()
+                })
+
+                context('when removing 1 class then 20 classes', () => {
+                    it('makes the same number of database calls', async () => {
+                        const twentyClasses = createClasses(20, organization)
+                        connection.logger.reset()
+                        input = [
+                            {
+                                schoolId: schools[0].school_id,
+                                classIds: [classes[0].class_id],
+                            },
+                        ]
+                        await expect(removeClasses(input)).to.be.fulfilled
+                        const baseCount = connection.logger.count
+                        await connection.manager.save([...twentyClasses])
+                        schools[0].classes = Promise.resolve(twentyClasses)
+                        await schools[0].save()
+                        input = [
+                            {
+                                schoolId: schools[0].school_id,
+                                classIds: twentyClasses.map((p) => p.class_id),
+                            },
+                        ]
+                        connection.logger.reset()
+                        await expect(removeClasses(input)).to.be.fulfilled
+                        expect(connection.logger.count).to.equal(baseCount)
+                    })
+                })
+            }
+        )
+
+        context(
+            'when caller does not have permissions to remove classes from all schools',
+            async () => {
+                beforeEach(async () => {
+                    const nonAdminRole = await roleFactory(
+                        'Non Admin Role',
+                        organization,
+                        {
+                            permissions: [
+                                PermissionName.attend_live_class_as_a_student_187,
+                            ],
+                        }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: organization,
+                        roles: [nonAdminRole],
+                    }).save()
+                    await createSchoolMembership({
+                        user: nonAdminUser,
+                        school: schools[0],
+                        roles: [nonAdminRole],
+                    }).save()
+                })
+
+                it('returns a permission error', async () => {
+                    const sc = [schools[0], schools[1], schools[2]]
+                    const errorMessage = buildPermissionError(
+                        PermissionName.edit_school_20330,
+                        nonAdminUser,
+                        [organization],
+                        sc
+                    )
+                    await expect(
+                        removeClasses(input, nonAdminUser)
+                    ).to.be.rejectedWith(errorMessage)
+                })
+
+                await checkNoChangesMade(false)
+            }
+        )
+    })
+
+    describe('AddUsersToSchools', () => {
+        let adminUser: User
+        let nonAdminUser: User
+
+        let org: Organization
+        let users: User[]
+        let schools: School[]
+        let roles: Role[]
+
+        let input: AddUsersToSchoolInput[]
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
+
+            org = await createOrganization().save()
+            schools = createSchools(2, org)
+            users = createUsers(3)
+            roles = createRoles(3)
+            await connection.manager.save([...users, ...schools, ...roles])
+
+            input = [
+                {
+                    schoolId: schools[0].school_id,
+                    userIds: [users[0].user_id, users[1].user_id],
+                    schoolRoleIds: [roles[0].role_id],
+                },
+                {
+                    schoolId: schools[1].school_id,
+                    userIds: [users[1].user_id, users[2].user_id],
+                    schoolRoleIds: [roles[1].role_id],
+                },
+            ]
+        })
+        async function checkUsersAdded() {
+            for (const i of input) {
+                const memberships = await SchoolMembership.find({
+                    where: {
+                        school_id: i.schoolId,
+                        user_id: In(i.userIds),
+                        status: Status.ACTIVE,
+                    },
+                })
+                expect(memberships.length).to.equal(i.userIds.length)
+                expect(memberships.map((m) => m.user_id)).to.have.same.members(
+                    i.userIds
+                )
+
+                for (const m of memberships) {
+                    const mRoles = await m.roles
+                    expect(mRoles?.map((r) => r.role_id)).to.have.same.members(
+                        i.schoolRoleIds ?? []
+                    )
+                }
+            }
+        }
+
+        async function checkNoChangesMade() {
+            const memberships = await SchoolMembership.find({
+                where: {
+                    school_id: In(schools.map((s) => s.school_id)),
+                    user_id: In(users.map((u) => u.user_id)),
+                    status: Status.ACTIVE,
+                },
+            })
+            expect(memberships).to.be.empty
+        }
+
+        function getAddUsersToSchools(clientUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(clientUser))
+            return new AddUsersToSchools(input, permissions)
+        }
+
+        context('.run', () => {
+            context('when all attributes are valid', () => {
+                it('adds all the users', async () => {
+                    await expect(getAddUsersToSchools().run()).to.be.fulfilled
+                    await checkUsersAdded()
+                })
+
+                it('makes the expected number of db calls', async () => {
+                    connection.logger.reset()
+                    await getAddUsersToSchools().run()
+                    expect(connection.logger.count).to.equal(
+                        10,
+                        'preload: 4, authorize: 1, save: 1 select for all memberships, 1 membership insert, 1 roles insert, 2 for transaction start/commit'
+                    )
+                })
+            })
+        })
+        context('.authorize', () => {
+            context('when caller has permissions', () => {
+                it('does not raise an error', async () => {
+                    const mutation = getAddUsersToSchools(adminUser)
+                    const maps = await mutation.generateEntityMaps(input)
+                    await expect(mutation.authorize(input, maps)).to.be
+                        .fulfilled
+                })
+            })
+            context('when caller does not have permissions', () => {
+                beforeEach(async () => {
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: org,
+                        roles: [],
+                    }).save()
+                })
+                it('returns a permission error', async () => {
+                    const mutation = getAddUsersToSchools(nonAdminUser)
+                    const maps = await mutation.generateEntityMaps(input)
+                    await expect(
+                        mutation.authorize(input, maps)
+                    ).to.be.rejectedWith(
+                        buildPermissionError(
+                            PermissionName.edit_school_20330,
+                            nonAdminUser,
+                            [org]
+                        )
+                    )
+                    await checkNoChangesMade()
+                })
+            })
+        })
+        context('.validationOverAllInputs', () => {
+            async function validateOverAllInputs() {
+                const mutation = getAddUsersToSchools()
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.validationOverAllInputs(input, maps)
+            }
+            it('produces errors for nonexistent schools', async () => {
+                await schools[0].inactivate(getManager())
+                const result = await validateOverAllInputs()
+                const xErrors = [
+                    createEntityAPIError(
+                        'nonExistent',
+                        0,
+                        'School',
+                        schools[0].school_id
+                    ),
+                ]
+                compareMultipleErrors(result.apiErrors, xErrors)
+                expect(result.validInputs).to.have.length(1)
+            })
+            it('produces errors for duplicate schools', async () => {
+                input.push(input[0])
+
+                const result = await validateOverAllInputs()
+                const xErrors = [
+                    createDuplicateAttributeAPIError(
+                        input.length - 1,
+                        ['id'],
+                        'AddUsersToSchoolInput'
+                    ),
+                ]
+                compareMultipleErrors(result.apiErrors, xErrors)
+                expect(result.validInputs).to.have.length(2)
+            })
+            context('subarrays', () => {
+                context('userIds', () => {
+                    it('checks for duplicates', async () => {
+                        input[0].userIds.push(input[0].userIds[0])
+                        const result = await validateOverAllInputs()
+                        const xErrors = [
+                            createDuplicateAttributeAPIError(
+                                0,
+                                ['userIds'],
+                                'AddUsersToSchoolInput'
+                            ),
+                        ]
+                        compareMultipleErrors(result.apiErrors, xErrors)
+                        expect(result.validInputs).to.have.length(
+                            input.length - 1
+                        )
+                    })
+                    it('checks for length', async () => {
+                        input[0].userIds = []
+                        const result = await validateOverAllInputs()
+                        const xErrors = [
+                            createInputLengthAPIError(
+                                'AddUsersToSchoolInput',
+                                'min',
+                                'userIds',
+                                0
+                            ),
+                        ]
+                        compareMultipleErrors(result.apiErrors, xErrors)
+                        expect(result.validInputs).to.have.length(
+                            input.length - 1
+                        )
+                    })
+                })
+            })
+            context('subarrays', () => {
+                context('schoolRoleIds', () => {
+                    it('checks for duplicates', async () => {
+                        input[0].schoolRoleIds!.push(input[0].schoolRoleIds![0])
+                        const result = await validateOverAllInputs()
+                        const xErrors = [
+                            createDuplicateAttributeAPIError(
+                                0,
+                                ['schoolRoleIds'],
+                                'AddUsersToSchoolInput'
+                            ),
+                        ]
+                        compareMultipleErrors(result.apiErrors, xErrors)
+                        expect(result.validInputs).to.have.length(
+                            input.length - 1
+                        )
+                    })
+                    it('checks for length', async () => {
+                        input[0].schoolRoleIds = []
+                        const result = await validateOverAllInputs()
+                        const xErrors = [
+                            createInputLengthAPIError(
+                                'AddUsersToSchoolInput',
+                                'min',
+                                'schoolRoleIds',
+                                0
+                            ),
+                        ]
+                        compareMultipleErrors(result.apiErrors, xErrors)
+                        expect(result.validInputs).to.have.length(
+                            input.length - 1
+                        )
+                    })
+                })
+            })
+        })
+        context('.validate', () => {
+            async function validate(clientUser = adminUser) {
+                const mutation = getAddUsersToSchools(clientUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return input.flatMap((i, index) =>
+                    mutation.validate(
+                        index,
+                        maps.mainEntity.get(i.schoolId)!,
+                        i,
+                        maps
+                    )
+                )
+            }
+            context('when one of the users was already added', () => {
+                beforeEach(async () => {
+                    await createSchoolMembership({
+                        user: users[0],
+                        school: schools[0],
+                    }).save()
+                })
+                it('returns a duplicate_child_entity error', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'existentChild',
+                            0,
+                            'User',
+                            users[0].user_id,
+                            'School',
+                            schools[0].school_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of the users is inactive', async () => {
+                beforeEach(async () => await users[0].inactivate(getManager()))
+                it('returns an nonexistent_entity error', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            users[0].user_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade()
+                })
+            })
+
+            context('when one of the roles is inactive', async () => {
+                beforeEach(async () => await roles[0].inactivate(getManager()))
+                it('returns an nonexistent_entity error', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Role',
+                            roles[0].role_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade()
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        users[2].inactivate(getManager()),
+                        roles[1].inactivate(getManager()),
+                    ])
+                })
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'Role',
+                            roles[1].role_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'User',
+                            users[2].user_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade()
+                })
+            })
+        })
     })
 })

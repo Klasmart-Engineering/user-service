@@ -193,11 +193,34 @@ export const UPDATE_SCHOOLS = gql`
     }
 `
 
+export const ADD_USERS_TO_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
+    mutation addUsersToSchools($input: [AddUsersToSchoolInput!]!) {
+        addUsersToSchools(input: $input) {
+            schools {
+                ...schoolFields
+            }
+        }
+    }
+`
+
 export const REMOVE_USERS_FROM_SCHOOLS = gql`
     ${SCHOOL_FIELDS}
 
     mutation removeUsersFromSchools($input: [RemoveUsersFromSchoolInput!]!) {
         removeUsersFromSchools(input: $input) {
+            schools {
+                ...schoolFields
+            }
+        }
+    }
+`
+export const REMOVE_CLASSES_FROM_SCHOOLS = gql`
+    ${SCHOOL_FIELDS}
+
+    mutation myMutation($input: [RemoveClassesFromSchoolInput!]!) {
+        removeClassesFromSchools(input: $input) {
             schools {
                 ...schoolFields
             }

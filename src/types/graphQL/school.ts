@@ -41,6 +41,12 @@ export interface DeleteSchoolInput {
     id: string
 }
 
+export interface AddUsersToSchoolInput {
+    schoolId: string
+    schoolRoleIds?: string[]
+    userIds: string[]
+}
+
 export interface RemoveUsersFromSchoolInput {
     schoolId: string
     userIds: string[]
@@ -50,6 +56,8 @@ export interface AddClassesToSchoolInput {
     schoolId: string
     classIds: string[]
 }
+
+export type RemoveClassesFromSchoolInput = AddClassesToSchoolInput
 
 export interface SchoolsMutationResult {
     schools: ISchoolsConnectionNode[]

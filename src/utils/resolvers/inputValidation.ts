@@ -2,7 +2,6 @@ import { APIError } from '../../types/errors/apiError'
 import { User } from '../../entities/user'
 import { School } from '../../entities/school'
 import { Organization } from '../../entities/organization'
-import { SchoolMembership } from '../../entities/schoolMembership'
 import { OrganizationMembership } from '../../entities/organizationMembership'
 import { createEntityAPIError } from './errors'
 import { OrganizationMembershipMap, SchoolMembershipMap } from './entityMaps'
@@ -12,6 +11,7 @@ import { Category } from '../../entities/category'
 import { Subcategory } from '../../entities/subcategory'
 import { Program } from '../../entities/program'
 import { AgeRange } from '../../entities/ageRange'
+import { SchoolMembership } from '../../entities/schoolMembership'
 
 type Entities =
     | User

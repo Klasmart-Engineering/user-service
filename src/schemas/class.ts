@@ -16,6 +16,7 @@ import {
     AddProgramsToClasses,
     RemoveProgramsFromClasses,
     CreateClasses,
+    UpdateClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -27,9 +28,10 @@ const typeDefs = gql`
     extend type Mutation {
         classes: [Class]
         class(class_id: ID!): Class
-        createClasses(input: [CreateClassInput!]!): ClassesMutationResult
         uploadClassesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        createClasses(input: [CreateClassInput!]!): ClassesMutationResult
+        updateClasses(input: [UpdateClassInput!]!): ClassesMutationResult
         deleteClasses(input: [DeleteClassInput!]!): ClassesMutationResult
         addProgramsToClasses(
             input: [AddProgramsToClassInput!]!
@@ -257,6 +259,12 @@ const typeDefs = gql`
     input CreateClassInput {
         organizationId: ID!
         name: String!
+        shortcode: String
+    }
+
+    input UpdateClassInput {
+        classId: ID!
+        className: String
         shortcode: String
     }
 
@@ -502,6 +510,8 @@ export default function getDefault(
                     deleteClasses(args, ctx),
                 createClasses: (_parent, args, ctx, _info) =>
                     mutate(CreateClasses, args, ctx.permissions),
+                updateClasses: (_parent, args, ctx, _info) =>
+                    mutate(UpdateClasses, args, ctx.permissions),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>
