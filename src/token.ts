@@ -155,7 +155,7 @@ export async function checkAPIKey(auth: string) {
     throw Error('Invalid API Key')
 }
 
-export type resLocal = { token: TokenPayload | undefined; hasApiKey: boolean }
+export type resLocal = { token?: TokenPayload | undefined; hasApiKey?: boolean }
 export async function validateToken(
     req: express.Request,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
