@@ -92,6 +92,16 @@ describe('userPermissions', () => {
                 expect(userPermissions.isAdmin).to.be.true
             })
         })
+
+        context('when API key enables super admin', () => {
+            beforeEach(async () => {
+                userPermissions = new UserPermissions(undefined, true)
+            })
+
+            it('returns true', async () => {
+                expect(userPermissions.isAdmin).to.be.true
+            })
+        })
     })
 
     describe('allowed', () => {
@@ -192,6 +202,19 @@ describe('userPermissions', () => {
                 }
                 token = await checkToken(req)
                 userPermissions = new UserPermissions(token)
+            })
+
+            it('allows all the actions of a super admin', async () => {
+                for (const permission of superAdminRole.permissions) {
+                    expect(await userPermissions.allowed({}, permission)).to.be
+                        .true
+                }
+            })
+        })
+
+        context('when API key enables super admin', () => {
+            beforeEach(async () => {
+                userPermissions = new UserPermissions(undefined, true)
             })
 
             it('allows all the actions of a super admin', async () => {
@@ -649,7 +672,34 @@ describe('userPermissions', () => {
                     superAdminRole.permissions[0]
                 )
                 expect(connection.logger.count).to.be.eq(1)
-                // 1 to get user
+            })
+        })
+
+        context('when API key enables super admin', () => {
+            beforeEach(async () => {
+                userPermissions = new UserPermissions(undefined, true)
+            })
+
+            permissionContext = {}
+
+            it('allows all the actions of a super admin', async () => {
+                for (const permission of superAdminRole.permissions) {
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            permission
+                        )
+                    ).to.be.fulfilled
+                }
+            })
+
+            it('should make exactly 0 database calls', async () => {
+                connection.logger.reset()
+                await userPermissions.rejectIfNotAllowed(
+                    permissionContext,
+                    superAdminRole.permissions[0]
+                )
+                expect(connection.logger.count).to.be.eq(0)
             })
         })
     })

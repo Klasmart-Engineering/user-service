@@ -33,6 +33,8 @@ let AdminAuthWithoutIdToken =
 let NonAdminAuthToken =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImZjZjkyMmU1LTI1YzktNWRjZS1iZTlmLTk4N2E2MDBjMTM1NiIsImVtYWlsIjoiYmlsbHlAZ21haWwuY29tIiwiZ2l2ZW5fbmFtZSI6IkJpbGx5IiwiZmFtaWx5X25hbWUiOiJCb2IiLCJuYW1lIjoiQmlsbHkgQm9iIiwiaXNzIjoiY2FsbWlkLWRlYnVnIn0.Aza7YU5AbKty56djaCl6vAgPTswui8I_My090xJbQcA'
 
+const APIKeyAuth = 'Bearer: GoToAWSInsteadOfHardCoding'
+
 const secret = 'iXtZx1D5AqEB0B9pfn+hRQ=='
 
 // set expiresIn to undefined to have the token never expire
@@ -67,4 +69,8 @@ export function getNonAdminAuthToken() {
 
 export function getAdminAuthToken() {
     return AdminAuthToken
+}
+
+export function getAPIKeyAuth() {
+    return APIKeyAuth
 }
