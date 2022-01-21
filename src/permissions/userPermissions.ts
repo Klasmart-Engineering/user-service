@@ -176,6 +176,8 @@ export class UserPermissions {
         if (this.authViaAPIKey) {
             if (this.hasAdminAccess(undefined, permission_name)) {
                 return { passed: true }
+            } else {
+                return { passed: false }
             }
         }
 
