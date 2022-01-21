@@ -482,9 +482,15 @@ export default function getDefault(
             },
             Query: {
                 me: (_parent, _args, ctx: Context, _info) => {
+                    /* eslint no-console: off */
+                    console.log('HIT THIS ME RESOLVER')
                     if (ctx.token === undefined) {
                         throw new AuthenticationError('No authentication token')
                     }
+                    const result = model.getMyUser(ctx.token)
+                    console.log('ME RESULT:')
+                    console.log(result)
+
                     return model.getMyUser(ctx.token)
                 },
                 usersConnection: (_parent, args, ctx: Context, info) => {

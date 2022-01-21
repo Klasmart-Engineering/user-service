@@ -65,6 +65,9 @@ async function didResolveOperation(
         ? separateOperations(document)[operationName]
         : document
 
+    /* eslint no-console: off */
+    console.log(request)
+
     const complexity = getComplexity({
         schema,
         query,
