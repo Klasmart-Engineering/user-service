@@ -37,6 +37,12 @@ const typeDefs = gql`
 
     type MyUser {
         node: UserConnectionNode
+
+        """
+        Finds user profiles matching the username/email/phone provided in the token.
+        Properties are checked in the following order of precedence: username>email>phone.
+        e.g. email & phone won't be checked if username is provided.
+        """
         profiles: [UserConnectionNode!]!
 
         hasPermissionsInOrganization(

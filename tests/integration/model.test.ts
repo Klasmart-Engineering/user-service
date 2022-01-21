@@ -17,10 +17,13 @@ import { createServer } from '../../src/utils/createServer'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
 import { createOrganization } from '../factories/organization.factory'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import {
+    createOrganizationMembership,
+    createOrganizationMemberships,
+} from '../factories/organizationMembership.factory'
 import { createProgram } from '../factories/program.factory'
 import { createSubcategory } from '../factories/subcategory.factory'
-import { createUser } from '../factories/user.factory'
+import { createUser, createUsers } from '../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -96,38 +99,99 @@ describe('model', () => {
     describe('myUsers', () => {
         let organization: Organization
         let clientUser: User
-        let profile: User
-        let userToken: TokenPayload
+        let profiles: User[]
+
+        const numEmailProfiles = 3
+        const numPhoneProfiles = 4
+        const numUsernameProfiles = 1
 
         beforeEach(async () => {
             organization = await createOrganization().save()
             clientUser = await createUser().save()
-            profile = await createUser({ email: clientUser.email }).save()
+            profiles = [
+                await createUsers(numEmailProfiles - 1, {
+                    email: clientUser.email,
+                }),
+                await createUsers(numPhoneProfiles - 1, {
+                    phone: clientUser.phone,
+                }),
+                clientUser,
+            ].flat()
 
-            userToken = {
-                id: clientUser.user_id,
+            await User.save(profiles)
+            await OrganizationMembership.save(
+                createOrganizationMemberships(profiles, organization)
+            )
+        })
+
+        it('matches users by email', async () => {
+            const users = await model.myUsers({
+                email: clientUser.email,
+                iss: 'calmid-debug',
+            })
+            expect(users).to.have.length(numEmailProfiles)
+        })
+        it('matches users by phone', async () => {
+            const users = await model.myUsers({
+                phone: clientUser.phone,
+                iss: 'calmid-debug',
+            })
+            expect(users).to.have.length(numPhoneProfiles)
+        })
+        it('matches users by username', async () => {
+            const users = await model.myUsers({
+                username: clientUser.username,
+                iss: 'calmid-debug',
+            })
+            expect(users).to.have.length(numUsernameProfiles)
+        })
+
+        it('matches users in username>email>phone precedence', async () => {
+            let users = await model.myUsers({
+                username: clientUser.username,
                 email: clientUser.email,
                 phone: clientUser.phone,
                 iss: 'calmid-debug',
-            }
+            })
+            expect(users).to.have.length(numUsernameProfiles)
 
-            for (const user of [clientUser, profile]) {
-                await createOrganizationMembership({
-                    user,
-                    organization,
-                }).save()
-            }
+            users = await model.myUsers({
+                email: clientUser.email,
+                phone: clientUser.phone,
+                iss: 'calmid-debug',
+            })
+            expect(users).to.have.length(numEmailProfiles)
         })
 
-        it('returns the expected users', async () => {
-            const users = await model.myUsers(userToken)
-            expect(users).to.have.length(2)
+        it('throws an error if multiple users with the username are found', async () => {
+            const user = await createUser({
+                username: clientUser.username,
+            }).save()
+            await createOrganizationMembership({
+                user,
+                organization,
+            }).save()
+
+            await expect(
+                model.myUsers({
+                    username: clientUser.username,
+                    iss: 'calmid-debug',
+                })
+            ).to.be.rejectedWith(Error, 'Username is not unique')
         })
+        it('does not match by user ID', async () => {
+            const users = await model.myUsers({
+                id: clientUser.user_id,
+                iss: 'calmid-debug',
+            })
+            expect(users).to.have.length(0)
+        })
+
         context('when user membership is inactive', () => {
             beforeEach(async () => {
                 const dbOtherMembership = await OrganizationMembership.findOneOrFail(
                     {
-                        user_id: profile.user_id,
+                        user_id: profiles[0].user_id,
                         organization_id: organization.organization_id,
                     }
                 )
@@ -138,19 +202,25 @@ describe('model', () => {
             })
 
             it('is excluded from results', async () => {
-                const users = await model.myUsers(userToken)
-                expect(users.length).to.equal(1)
+                const users = await model.myUsers({
+                    email: clientUser.email,
+                    iss: 'calmid-debug',
+                })
+                expect(users.length).to.equal(numEmailProfiles - 1)
             })
         })
         context('when user is inactive', () => {
             beforeEach(async () => {
-                profile.status = Status.INACTIVE
-                await profile.save()
+                profiles[0].status = Status.INACTIVE
+                await profiles[0].save()
             })
 
             it('is excluded from results', async () => {
-                const users = await model.myUsers(userToken)
-                expect(users.length).to.equal(1)
+                const users = await model.myUsers({
+                    email: clientUser.email,
+                    iss: 'calmid-debug',
+                })
+                expect(users.length).to.equal(numEmailProfiles - 1)
             })
         })
     })

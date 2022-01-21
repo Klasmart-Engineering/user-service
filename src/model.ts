@@ -179,8 +179,8 @@ export class Model {
             return undefined
         }
 
-        const email = token?.email
-        const phone = token?.phone
+        const email = token.email
+        const phone = token.phone
 
         const user = await this.userRepository.findOne({
             where: [
@@ -305,8 +305,9 @@ export class Model {
     }
 
     public async myUsers(token: TokenPayload) {
-        const userEmail = token?.email
-        const userPhone = token?.phone
+        const userEmail = token.email
+        const userPhone = token.phone
+        const username = token.username
         let users: User[] = []
 
         const scope = getRepository(User)
@@ -319,7 +320,19 @@ export class Model {
             .andWhere('User.status=:status', {
                 status: Status.ACTIVE,
             })
-        if (userEmail) {
+        if (username) {
+            users = await scope
+                .andWhere('User.username = :username', {
+                    username,
+                })
+                .getMany()
+            // we expect usernames to be globally unique
+            // so throw an error instead of leaking data
+            // https://calmisland.atlassian.net/browse/AD-1868
+            if (users.length > 1) {
+                throw new Error('Username is not unique')
+            }
+        } else if (userEmail) {
             users = await scope
                 .andWhere('User.email = :email', {
                     email: userEmail,
