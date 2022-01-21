@@ -43,7 +43,8 @@ export interface CreateRoleEntityMap extends EntityMap<Role> {
 export class CreateRoles extends CreateMutation<
     Role,
     CreateRoleInput,
-    RolesMutationResult
+    RolesMutationResult,
+    CreateRoleEntityMap
 > {
     protected readonly EntityType = Role
     protected inputTypeName = 'CreateRoleInput'
@@ -64,9 +65,8 @@ export class CreateRoles extends CreateMutation<
         }
     }
 
-    generateEntityMaps = (
-        input: CreateRoleInput[]
-    ): Promise<CreateRoleEntityMap> => generateMapsForCreate(input, this.orgIds)
+    generateEntityMaps = (input: CreateRoleInput[]) =>
+        generateMapsForCreate(input, this.orgIds)
 
     protected authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
@@ -162,7 +162,8 @@ interface UpdateRolesEntityMap extends EntityMap<Role> {
 export class UpdateRoles extends UpdateMutation<
     Role,
     UpdateRoleInput,
-    RolesMutationResult
+    RolesMutationResult,
+    UpdateRolesEntityMap
 > {
     protected readonly EntityType = Role
     protected readonly EntityPrimaryKey = Role
@@ -175,9 +176,7 @@ export class UpdateRoles extends UpdateMutation<
         this.mainEntityIds = input.map((val) => val.id)
     }
 
-    protected async generateEntityMaps(
-        input: UpdateRoleInput[]
-    ): Promise<UpdateRolesEntityMap> {
+    protected async generateEntityMaps(input: UpdateRoleInput[]) {
         const names = input.map((val) => val.roleName)
         const ids = input.map((val) => val.permissionIds).flat()
         const preloadedRoleArray = Role.find({

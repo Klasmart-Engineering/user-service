@@ -153,7 +153,8 @@ export interface EntityMapAddRemovePrograms extends EntityMap<Class> {
 export class AddProgramsToClasses extends AddMutation<
     Class,
     AddProgramsToClassInput,
-    ClassesMutationResult
+    ClassesMutationResult,
+    EntityMapAddRemovePrograms
 > {
     protected readonly EntityType = Class
     protected inputTypeName = 'AddProgramsToClassInput'
@@ -168,9 +169,7 @@ export class AddProgramsToClasses extends AddMutation<
         this.mainEntityIds = input.map((val) => val.classId)
     }
 
-    generateEntityMaps = async (
-        input: AddProgramsToClassInput[]
-    ): Promise<EntityMap<Class>> =>
+    generateEntityMaps = async (input: AddProgramsToClassInput[]) =>
         generateMapsForAddingRemovingPrograms(this.mainEntityIds, input)
 
     protected async authorize(
@@ -265,7 +264,8 @@ export class AddProgramsToClasses extends AddMutation<
 export class RemoveProgramsFromClasses extends RemoveMutation<
     Class,
     RemoveProgramsFromClassInput,
-    ClassesMutationResult
+    ClassesMutationResult,
+    EntityMapAddRemovePrograms
 > {
     protected readonly EntityType = Class
     protected inputTypeName = 'RemoveProgramsFromClassInput'
@@ -432,7 +432,8 @@ export interface EntityMapCreateClass extends EntityMap<Class> {
 export class CreateClasses extends CreateMutation<
     Class,
     CreateClassInput,
-    ClassesMutationResult
+    ClassesMutationResult,
+    EntityMapCreateClass
 > {
     protected readonly EntityType = Class
     protected inputTypeName = 'CreateClassInput'
@@ -685,7 +686,8 @@ export interface UpdateClassEntityMap extends EntityMap<Class> {
 export class UpdateClasses extends UpdateMutation<
     Class,
     UpdateClassInput,
-    ClassesMutationResult
+    ClassesMutationResult,
+    UpdateClassEntityMap
 > {
     protected readonly EntityType = Class
     protected inputTypeName = 'UpdateClassInput'

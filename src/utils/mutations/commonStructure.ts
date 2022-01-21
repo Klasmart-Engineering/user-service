@@ -272,6 +272,7 @@ abstract class Mutation<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType,
+    EntityMapType extends EntityMap<EntityType>,
     ModifiedEntityType extends CustomBaseEntity = EntityType
 > {
     // Abstract variables
@@ -283,7 +284,7 @@ abstract class Mutation<
     // Concrete variables
     protected readonly input: InputType[]
     protected readonly permissions: Context['permissions']
-    protected entityMaps?: EntityMap<EntityType>
+    protected entityMaps?: EntityMapType
     protected processedEntities: ModifiedEntityType[] = []
 
     protected constructor(
@@ -304,7 +305,7 @@ abstract class Mutation<
      */
     protected abstract generateEntityMaps(
         input: InputType[]
-    ): Promise<EntityMap<EntityType>>
+    ): Promise<EntityMapType>
 
     /**
      * Standardises the format of the input if possible
@@ -321,7 +322,7 @@ abstract class Mutation<
      */
     protected abstract authorize(
         input: InputType[],
-        entityMaps: EntityMap<EntityType>
+        entityMaps: EntityMapType
     ): Promise<void>
 
     /**
@@ -334,7 +335,7 @@ abstract class Mutation<
         index: number,
         currentEntity: EntityType | undefined,
         currentInput: InputType,
-        entityMaps: EntityMap<EntityType>
+        entityMaps: EntityMapType
     ): APIError[]
 
     /**
@@ -343,7 +344,7 @@ abstract class Mutation<
      */
     protected abstract process(
         currentInput: InputType,
-        entityMaps: EntityMap<EntityType>,
+        entityMaps: EntityMapType,
         index: number
     ): ProcessedResult<EntityType, ModifiedEntityType>
 
@@ -372,7 +373,7 @@ abstract class Mutation<
     // Concrete Methods
     protected abstract validationOverAllInputs(
         inputs: InputType[],
-        entityMaps: EntityMap<EntityType>
+        entityMaps: EntityMapType
     ): {
         validInputs: { index: number; input: InputType }[]
         apiErrors: APIError[]
@@ -380,7 +381,7 @@ abstract class Mutation<
 
     private inputLoop(
         normalizedInput: InputType[],
-        entityMaps: EntityMap<EntityType>
+        entityMaps: EntityMapType
     ): ProcessedResult<EntityType, ModifiedEntityType>[] {
         const errors: APIError[] = []
         const { validInputs, apiErrors } = this.validationOverAllInputs(
@@ -445,12 +446,19 @@ export function mutate<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType,
+    EntityMapType extends EntityMap<EntityType>,
     ModifiedEntityType extends CustomBaseEntity
 >(
     mutation: new (
         argsInput: InputType[],
         perms: Context['permissions']
-    ) => Mutation<EntityType, InputType, OutputType, ModifiedEntityType>,
+    ) => Mutation<
+        EntityType,
+        InputType,
+        OutputType,
+        EntityMapType,
+        ModifiedEntityType
+    >,
     args: Record<'input', InputType[]>,
     permissions: Context['permissions']
 ): Promise<OutputType> {
@@ -460,8 +468,9 @@ export function mutate<
 export abstract class CreateMutation<
     EntityType extends CustomBaseEntity,
     InputType,
-    OutputType
-> extends Mutation<EntityType, InputType, OutputType> {
+    OutputType,
+    EntityMapType extends EntityMap<EntityType>
+> extends Mutation<EntityType, InputType, OutputType, EntityMapType> {
     protected mainEntityIds: string[] = []
     protected abstract buildOutput(outputEntity: EntityType): Promise<void>
 
@@ -479,8 +488,9 @@ export abstract class CreateMutation<
 export abstract class UpdateMutation<
     EntityType extends CustomBaseEntity,
     InputType,
-    OutputType
-> extends Mutation<EntityType, InputType, OutputType> {
+    OutputType,
+    EntityMapType extends EntityMap<EntityType>
+> extends Mutation<EntityType, InputType, OutputType, EntityMapType> {
     constructor(input: InputType[], permissions: Context['permissions']) {
         super(input, permissions)
     }
@@ -502,7 +512,12 @@ export abstract class DeleteMutation<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType
-> extends Mutation<EntityType, InputType, OutputType> {
+> extends Mutation<
+    EntityType,
+    InputType,
+    OutputType,
+    DeleteEntityMap<EntityType>
+> {
     private readonly partialEntity = {
         status: Status.INACTIVE,
         deleted_at: new Date(),
@@ -514,7 +529,7 @@ export abstract class DeleteMutation<
 
     validationOverAllInputs(
         inputs: InputType[],
-        entityMaps: EntityMap<EntityType>
+        entityMaps: DeleteEntityMap<EntityType>
     ): {
         validInputs: { index: number; input: InputType }[]
         apiErrors: APIError[]
@@ -561,15 +576,22 @@ export abstract class AddRemoveMutation<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType,
+    EntityMapType extends EntityMap<EntityType>,
     ModifiedEntityType extends CustomBaseEntity = EntityType
-> extends Mutation<EntityType, InputType, OutputType, ModifiedEntityType> {
+> extends Mutation<
+    EntityType,
+    InputType,
+    OutputType,
+    EntityMapType,
+    ModifiedEntityType
+> {
     constructor(input: InputType[], permissions: Context['permissions']) {
         super(input, permissions)
     }
 
     protected abstract process(
         currentInput: InputType,
-        entityMaps: EntityMap<EntityType>,
+        entityMaps: EntityMapType,
         index: number
     ): Pick<ProcessedResult<EntityType, ModifiedEntityType>, 'outputEntity'>
 
@@ -594,11 +616,13 @@ export abstract class AddMembershipMutation<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType,
+    EntityMapType extends EntityMap<EntityType>,
     ModifiedEntityType extends CustomBaseEntity = EntityType
 > extends AddRemoveMutation<
     EntityType,
     InputType,
     OutputType,
+    EntityMapType,
     ModifiedEntityType
 > {
     protected async applyToDatabase(
@@ -628,8 +652,15 @@ export abstract class RemoveMembershipMutation<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType,
+    EntityMapType extends EntityMap<EntityType>,
     MembershipType extends CustomBaseEntity
-> extends Mutation<EntityType, InputType, OutputType, MembershipType> {
+> extends Mutation<
+    EntityType,
+    InputType,
+    OutputType,
+    EntityMapType,
+    MembershipType
+> {
     protected readonly partialEntity = {
         status: Status.INACTIVE,
         deleted_at: new Date(),
