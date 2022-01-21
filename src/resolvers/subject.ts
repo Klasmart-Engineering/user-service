@@ -42,7 +42,8 @@ export interface CreateSubjectsEntityMap extends EntityMap<Subject> {
 export class CreateSubjects extends CreateMutation<
     Subject,
     CreateSubjectInput,
-    SubjectsMutationOutput
+    SubjectsMutationOutput,
+    CreateSubjectsEntityMap
 > {
     protected readonly EntityType = Subject
     protected inputTypeName = 'CreateSubjectInput'
