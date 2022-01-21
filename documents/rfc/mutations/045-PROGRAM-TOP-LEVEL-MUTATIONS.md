@@ -133,17 +133,17 @@ extend type Mutation {
 input CreateProgramInput {
     name: String!
     organizationId: ID!
-    ageRanges: [ID!]
-    grades: [ID!]
-    subjects: [ID!]
+    ageRangeIds: [ID!]
+    gradeIds: [ID!]
+    subjectIds: [ID!]
 }
 
 input UpdateProgramInput {
     id: ID!
     name: String
-    ageRanges: [ID!]
-    grades: [ID!]
-    subjects: [ID!]
+    ageRangeIds: [ID!]
+    gradeIds: [ID!]
+    subjectIds: [ID!]
 }
 
 input DeleteProgramInput {
