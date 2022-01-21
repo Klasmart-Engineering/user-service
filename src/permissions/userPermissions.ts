@@ -41,6 +41,7 @@ export class UserPermissions {
     private readonly phone?: string
     private user?: User
     public readonly isAdmin?: boolean
+    private _userResolver?: Promise<User | undefined>
 
     public constructor(token?: {
         id?: string
@@ -74,9 +75,13 @@ export class UserPermissions {
 
     private async getUser(uid = this.user_id): Promise<User> {
         if (this.user && this.user?.user_id === uid) return this.user
-        this.user = await getRepository(User).findOne(
-            this.getUserIdOrError(uid)
-        )
+
+        if (!this._userResolver) {
+            this._userResolver = getRepository(User).findOne(
+                this.getUserIdOrError(uid)
+            )
+        }
+        this.user = await this._userResolver
         if (!this.user) throw new Error(`User(${uid}) not found`)
         return this.user
     }

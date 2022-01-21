@@ -162,6 +162,25 @@ describe('userPermissions', () => {
                         await userPermissions.allowed(permissionContext, perm)
                     ).to.be.false
                 })
+                it('executes a fixed number of database queries when called in parallel', async () => {
+                    const permissionContext = {
+                        organization_ids: [org1.organization_id],
+                    }
+                    connection.logger.reset()
+                    await Promise.all(
+                        superAdminRole.permissions.map((permission) =>
+                            userPermissions.allowed(
+                                permissionContext,
+                                permission
+                            )
+                        )
+                    )
+                    const queriesForMany = connection.logger.count
+                    expect(queriesForMany).to.eq(
+                        2,
+                        '1 user select, 1 permission select'
+                    )
+                })
             })
         })
 
