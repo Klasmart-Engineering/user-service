@@ -68,7 +68,8 @@ export interface CreateSchoolEntityMap extends EntityMap<School> {
 export class CreateSchools extends CreateMutation<
     School,
     CreateSchoolInput,
-    SchoolsMutationResult
+    SchoolsMutationResult,
+    CreateSchoolEntityMap
 > {
     protected readonly EntityType = School
     protected inputTypeName = 'CreateSchoolInput'
@@ -200,7 +201,8 @@ export interface UpdateSchoolEntityMap extends EntityMap<School> {
 export class UpdateSchools extends UpdateMutation<
     School,
     UpdateSchoolInput,
-    SchoolsMutationResult
+    SchoolsMutationResult,
+    UpdateSchoolEntityMap
 > {
     protected readonly EntityType = School
     protected readonly EntityPrimaryKey = School
@@ -437,6 +439,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
     School,
     AddUsersToSchoolInput,
     SchoolsMutationResult,
+    AddUsersToSchoolsEntityMap,
     SchoolMembership
 > {
     protected readonly EntityType = School
@@ -603,6 +606,7 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
     School,
     RemoveUsersFromSchoolInput,
     SchoolsMutationResult,
+    RemoveUsersFromSchoolsEntityMap,
     SchoolMembership
 > {
     protected readonly EntityType = School
@@ -757,7 +761,8 @@ export interface AddRemoveClassesToFromSchoolsEntityMap
 export class AddClassesToSchools extends AddMutation<
     School,
     AddClassesToSchoolInput,
-    SchoolsMutationResult
+    SchoolsMutationResult,
+    AddRemoveClassesToFromSchoolsEntityMap
 > {
     protected readonly EntityType = School
     protected inputTypeName = 'AddClassesToSchoolInput'
@@ -905,7 +910,8 @@ export interface AddProgramsToSchoolsEntityMap extends EntityMap<School> {
 export class AddProgramsToSchools extends AddMutation<
     School,
     AddProgramsToSchoolInput,
-    SchoolsMutationResult
+    SchoolsMutationResult,
+    AddProgramsToSchoolsEntityMap
 > {
     protected readonly EntityType = School
     protected inputTypeName = 'AddProgramsToSchoolInput'
@@ -1236,7 +1242,8 @@ export interface RemoveProgramsFromSchoolsEntityMap extends EntityMap<School> {
 export class RemoveProgramsFromSchools extends AddMutation<
     School,
     RemoveProgramsFromSchoolInput,
-    SchoolsMutationResult
+    SchoolsMutationResult,
+    RemoveProgramsFromSchoolsEntityMap
 > {
     protected readonly EntityType = School
     protected inputTypeName = 'RemoveProgramsFromSchoolInput'
@@ -1421,7 +1428,8 @@ async function generateMapsForAddingRemovingPrograms(
 export class RemoveClassesFromSchools extends RemoveMutation<
     School,
     RemoveClassesFromSchoolInput,
-    SchoolsMutationResult
+    SchoolsMutationResult,
+    EntityMap<School>
 > {
     protected readonly EntityType = School
     protected inputTypeName = 'RemoveClassesFromSchoolInput'

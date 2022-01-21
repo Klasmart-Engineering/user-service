@@ -69,6 +69,8 @@ export interface TokenPayload {
     email?: string
     phone?: string
     iss: string
+
+    username?: string
 }
 
 async function checkTokenAMS(req: Request): Promise<TokenPayload | undefined> {

@@ -84,13 +84,13 @@ extend type Mutation {
 input CreateSubjectInput {
     name: String!
     organizationId: ID!
-    categories: [ID!]
+    categoryIds: [ID!]
 }
 
 input UpdateSubjectInput {
     id: ID!
     name: String
-    categories: [ID!]
+    categoryIds: [ID!]
 }
 
 input DeleteSubjectInput {

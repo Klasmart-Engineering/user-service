@@ -39,6 +39,10 @@ import { Program } from '../../src/entities/program'
 import { ProgramConnectionNode } from '../../src/types/graphQL/program'
 import { createRole } from '../factories/role.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
+import { CREATE_SUBJECTS } from '../utils/operations/subjectOps'
+import { userToPayload } from '../utils/operations/userOps'
+import { beforeEach } from 'mocha'
+import { UserPermissions } from '../../src/permissions/userPermissions'
 
 interface ISubjectEdge {
     node: SubjectConnectionNode
@@ -694,6 +698,80 @@ describe('acceptance.subject', () => {
                     }
                 )
             })
+        })
+    })
+
+    context('createSubjects', () => {
+        let adminUser: User
+        let organization: Organization
+        let catIds: string[]
+
+        const makeCreateSubjectsMutation = async (input: any, caller: User) => {
+            return await makeRequest(
+                request,
+                print(CREATE_SUBJECTS),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            catIds = (
+                await Category.save(
+                    Array.from(new Array(5), () => {
+                        const category = createCategory(undefined)
+                        category.system = true
+
+                        return category
+                    })
+                )
+            ).map((c) => c.id)
+
+            organization = await createOrganization().save()
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [
+                    {
+                        organizationId: organization.organization_id,
+                        name: 'New Subject',
+                        categoryIds: catIds,
+                    },
+                ]
+
+                const response = await makeCreateSubjectsMutation(
+                    input,
+                    adminUser
+                )
+
+                const { subjects } = response.body.data.createSubjects
+                expect(response.status).to.eq(200)
+                expect(subjects).to.have.lengthOf(input.length)
+            })
+        })
+
+        it('has mandatory organizationId and name input fields', async () => {
+            const response = await makeCreateSubjectsMutation(
+                [{ categoryIds: catIds }],
+                adminUser
+            )
+
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(2)
+
+            expect(response.body.errors[0].message).to.contain(
+                'Field "name" of required type "String!" was not provided.'
+            )
+
+            expect(response.body.errors[1].message).to.contain(
+                'Field "organizationId" of required type "ID!" was not provided.'
+            )
         })
     })
 })

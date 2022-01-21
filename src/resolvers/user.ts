@@ -71,6 +71,7 @@ export class AddSchoolRolesToUsers extends AddMutation<
     User,
     AddSchoolRolesToUserInput,
     UsersMutationResult,
+    AddSchoolRolesToUsersEntityMap,
     SchoolMembership
 > {
     protected EntityType = User
@@ -433,6 +434,7 @@ export class RemoveSchoolRolesFromUsers extends RemoveMutation<
     User,
     RemoveSchoolRolesFromUserInput,
     UsersMutationResult,
+    RemoveSchoolRolesFromUsersEntityMap,
     SchoolMembership
 > {
     protected EntityType = User
@@ -448,9 +450,7 @@ export class RemoveSchoolRolesFromUsers extends RemoveMutation<
         this.mainEntityIds = input.map((i) => i.userId)
     }
 
-    async generateEntityMaps(
-        input: RemoveSchoolRolesFromUserInput[]
-    ): Promise<RemoveSchoolRolesFromUsersEntityMap> {
+    async generateEntityMaps(input: RemoveSchoolRolesFromUserInput[]) {
         // Kick off db requests
         const schoolIds = input.map((i) => i.schoolId)
         const userIds = input.map((i) => i.userId)

@@ -11,6 +11,7 @@ import { Category } from '../../entities/category'
 import { Subcategory } from '../../entities/subcategory'
 import { Program } from '../../entities/program'
 import { AgeRange } from '../../entities/ageRange'
+import { Subject } from '../../entities/subject'
 import { SchoolMembership } from '../../entities/schoolMembership'
 
 type Entities =
@@ -23,6 +24,7 @@ type Entities =
     | Subcategory
     | Program
     | AgeRange
+    | Subject
 
 /**
  * Checks `ids` against an map and flags an existent/non_existent error.

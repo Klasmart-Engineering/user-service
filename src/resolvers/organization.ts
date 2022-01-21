@@ -40,6 +40,7 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
     Organization,
     AddUsersToOrganizationInput,
     OrganizationsMutationResult,
+    AddUsersToOrganizationsEntityMap,
     OrganizationMembership
 > {
     protected readonly EntityType = Organization
@@ -187,6 +188,7 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
     Organization,
     RemoveUsersFromOrganizationInput,
     OrganizationsMutationResult,
+    RemoveUsersFromOrganizationsEntityMap,
     OrganizationMembership
 > {
     protected readonly EntityType = Organization
