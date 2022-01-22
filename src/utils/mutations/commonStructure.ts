@@ -13,6 +13,11 @@ import {
 } from '../resolvers/errors'
 import { objectToKey, ObjMap } from '../stringUtils'
 
+export type ConflictingNameKey = {
+    organizationId: string
+    name: string
+}
+
 export interface EntityMap<EntityType extends CustomBaseEntity> {
     mainEntity?: Map<string, EntityType>
     [key: string]:

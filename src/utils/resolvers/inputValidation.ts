@@ -13,8 +13,9 @@ import { Program } from '../../entities/program'
 import { AgeRange } from '../../entities/ageRange'
 import { Subject } from '../../entities/subject'
 import { SchoolMembership } from '../../entities/schoolMembership'
+import { Grade } from '../../entities/grade'
 
-type Entities =
+export type Entities =
     | User
     | School
     | Organization
@@ -25,6 +26,7 @@ type Entities =
     | Program
     | AgeRange
     | Subject
+    | Grade
 
 /**
  * Checks `ids` against an map and flags an existent/non_existent error.

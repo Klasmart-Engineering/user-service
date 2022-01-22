@@ -12,6 +12,7 @@ import {
     SubjectsMutationOutput,
 } from '../types/graphQL/subject'
 import {
+    ConflictingNameKey,
     CreateMutation,
     EntityMap,
     filterInvalidInputs,
@@ -28,11 +29,6 @@ import { flagNonExistent } from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
 
 export type CatAndOrg = Category & { __organization__?: Organization }
-
-export type ConflictingNameKey = {
-    organizationId: string
-    name: string
-}
 export interface CreateSubjectsEntityMap extends EntityMap<Subject> {
     organizations: Map<string, Organization>
     categories: Map<string, Category>
