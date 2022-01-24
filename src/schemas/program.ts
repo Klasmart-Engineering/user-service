@@ -11,7 +11,7 @@ import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { Subject } from '../entities/subject'
 import { mutate } from '../utils/mutations/commonStructure'
-import { CreatePrograms } from '../resolvers/programs'
+import { CreatePrograms } from '../resolvers/program'
 
 const typeDefs = gql`
     extend type Mutation {

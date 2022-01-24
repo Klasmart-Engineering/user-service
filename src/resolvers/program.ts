@@ -26,13 +26,15 @@ import {
     createEntityAPIError,
     createExistentEntityAttributeAPIError,
 } from '../utils/resolvers/errors'
-import { Entities, flagNonExistent } from '../utils/resolvers/inputValidation'
+import {
+    Entities,
+    flagNonExistent,
+    SystemEntities,
+} from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
 
-export interface BasicSubItem {
-    system?: boolean
+export type SystemEntityAndOrg = SystemEntities & {
     __organization__?: Organization
-    id: string
 }
 
 export interface CreateProgramsEntityMap extends EntityMap<Program> {
@@ -332,14 +334,14 @@ function validateSubItemsExistence<Entity extends Entities>(
     return flagNonExistent(entity, index, subItemIds, subItemMap).errors
 }
 
-function validateSubItemsInOrg(
+function validateSubItemsInOrg<Entity extends SystemEntities>(
     entityName: string,
     index: number,
     organizationId: string,
-    map: Map<string, BasicSubItem>
+    map: Map<string, Entity>
 ) {
     return Array.from(map.values())
-        .filter((si) => {
+        .filter((si: SystemEntityAndOrg) => {
             const isSystem = !!si.system
             const isInOrg =
                 si.__organization__?.organization_id === organizationId
