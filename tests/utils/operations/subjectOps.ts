@@ -53,6 +53,14 @@ export const CREATE_SUBJECTS = gql`
     }
 `
 
+export const UPDATE_SUBJECTS = gql`
+    mutation UpdateSubjects($input: [UpdateSubjectInput!]!) {
+        updateSubjects(input: $input) {
+            ${SUBJECTS_MUTATION_OUTPUT}
+        }
+    }
+`
+
 export async function deleteSubject(
     testClient: ApolloServerTestClient,
     id: string,

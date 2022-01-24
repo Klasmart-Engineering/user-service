@@ -39,7 +39,10 @@ import { Program } from '../../src/entities/program'
 import { ProgramConnectionNode } from '../../src/types/graphQL/program'
 import { createRole } from '../factories/role.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
-import { CREATE_SUBJECTS } from '../utils/operations/subjectOps'
+import {
+    CREATE_SUBJECTS,
+    UPDATE_SUBJECTS,
+} from '../utils/operations/subjectOps'
 import { userToPayload } from '../utils/operations/userOps'
 import { beforeEach } from 'mocha'
 import { UserPermissions } from '../../src/permissions/userPermissions'
@@ -701,6 +704,17 @@ describe('acceptance.subject', () => {
         })
     })
 
+    const createCatIds = async () =>
+        (
+            await Category.save(
+                Array.from(new Array(5), () => {
+                    const category = createCategory(undefined)
+                    category.system = true
+                    return category
+                })
+            )
+        ).map((c) => c.id)
+
     context('createSubjects', () => {
         let adminUser: User
         let organization: Organization
@@ -716,17 +730,7 @@ describe('acceptance.subject', () => {
         }
 
         beforeEach(async () => {
-            catIds = (
-                await Category.save(
-                    Array.from(new Array(5), () => {
-                        const category = createCategory(undefined)
-                        category.system = true
-
-                        return category
-                    })
-                )
-            ).map((c) => c.id)
-
+            catIds = await createCatIds()
             organization = await createOrganization().save()
             adminUser = await createUser({
                 email: UserPermissions.ADMIN_EMAILS[0],
@@ -771,6 +775,69 @@ describe('acceptance.subject', () => {
 
             expect(response.body.errors[1].message).to.contain(
                 'Field "organizationId" of required type "ID!" was not provided.'
+            )
+        })
+    })
+
+    context('updateSubjects', () => {
+        let adminUser: User
+        let catIds: string[]
+        let subjectsToEdit: Subject[]
+
+        const makeUpdateSubjectsMutation = async (input: any, caller: User) => {
+            return await makeRequest(
+                request,
+                print(UPDATE_SUBJECTS),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            const org = await createOrganization().save()
+            subjectsToEdit = await Subject.save(
+                Array.from(new Array(3), () => createSubject(org))
+            )
+
+            catIds = await createCatIds()
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [
+                    {
+                        id: subjectsToEdit[0].id,
+                        name: 'New Name',
+                        categoryIds: catIds,
+                    },
+                ]
+
+                const response = await makeUpdateSubjectsMutation(
+                    input,
+                    adminUser
+                )
+
+                const { subjects } = response.body.data.updateSubjects
+                expect(response.status).to.eq(200)
+                expect(subjects).to.have.lengthOf(input.length)
+            })
+        })
+
+        it('has mandatory id field', async () => {
+            const response = await makeUpdateSubjectsMutation(
+                [{ name: 'New Name', categoryIds: catIds }],
+                adminUser
+            )
+
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
             )
         })
     })
