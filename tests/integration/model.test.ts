@@ -944,6 +944,9 @@ describe('model', () => {
                 grade.organization = Promise.resolve(organization)
                 await grade.save()
             }
+            process.env = {
+                USER_SERVICE_API_KEY: 'test-api-token',
+            }
         })
 
         context('when operation is not a mutation', () => {
@@ -1011,7 +1014,7 @@ describe('model', () => {
                 await expect(
                     renameDuplicateGradesMutation(
                         testClient,
-                        'Bearer: InccorectAPIKey'
+                        'Bearer IncorrectAPIKey'
                     )
                 ).to.be.rejected
 
