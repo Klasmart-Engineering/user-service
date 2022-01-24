@@ -61,19 +61,6 @@ describe('Grade', () => {
             await connection.manager.save(grade)
         })
 
-        context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
-                const gqlResult = deleteGrade(testClient, grade.id, {
-                    authorization: undefined,
-                })
-
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
-
         context('when user is logged in', () => {
             let otherUserId: string
             let roleId: string

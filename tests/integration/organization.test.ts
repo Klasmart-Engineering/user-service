@@ -5939,7 +5939,7 @@ describe('organization', () => {
         })
 
         context('when not authenticated', () => {
-            xit('fails to list subjects in the organization', async () => {
+            it('fails to list subjects in the organization', async () => {
                 await expect(
                     listSubjects(testClient, organization.organization_id, {
                         authorization: undefined,

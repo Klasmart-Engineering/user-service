@@ -61,21 +61,6 @@ describe('Subcategory', () => {
             await connection.manager.save(subcategory)
         })
 
-        context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
-                const gqlResult = deleteSubcategory(
-                    testClient,
-                    subcategory.id,
-                    { authorization: undefined }
-                )
-
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
-
         context('when user is logged in', () => {
             let otherUserId: string
             let otherUserToken: string

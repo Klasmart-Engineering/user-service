@@ -4353,16 +4353,6 @@ describe('class', () => {
             })
         })
 
-        context('when not authenticated', () => {
-            xit('fails to list age ranges in the class', async () => {
-                await expect(
-                    listAgeRanges(testClient, cls.class_id, {
-                        authorization: undefined,
-                    })
-                ).to.be.rejected
-            })
-        })
-
         context('when authenticated', () => {
             context('and the user does not have view class permissions', () => {
                 // Test skipped because permission check no longer occurs in source
@@ -4453,16 +4443,6 @@ describe('class', () => {
             })
         })
 
-        context('when not authenticated', () => {
-            xit('fails to list grades in the class', async () => {
-                await expect(
-                    listGrades(testClient, cls.class_id, {
-                        authorization: undefined,
-                    })
-                ).to.be.rejected
-            })
-        })
-
         context('when authenticated', () => {
             context('and the user does not have view class permissions', () => {
                 // Test skipped because permission check no longer occurs in source
@@ -4550,16 +4530,6 @@ describe('class', () => {
             await program.save()
             await editPrograms(testClient, cls.class_id, [program.id], {
                 authorization: getAdminAuthToken(),
-            })
-        })
-
-        context('when not authenticated', () => {
-            xit('fails to list subjects in the class', async () => {
-                await expect(
-                    listSubjects(testClient, cls.class_id, {
-                        authorization: undefined,
-                    })
-                ).to.be.rejected
             })
         })
 

@@ -30,19 +30,19 @@ describe('Check Token', () => {
     })
 
     context('throw errors when validation fails when', () => {
-        xit('no token passed in', async () => {
+        it('no token passed in', async () => {
             req.headers = { authorization: undefined }
             await expect(checkToken(req)).to.be.rejectedWith(
                 'No authentication token'
             )
         })
-        xit('malformed token passed in', async () => {
+        it('malformed token passed in', async () => {
             req.headers = { authorization: 'not_a_token' }
             await expect(checkToken(req)).to.be.rejectedWith(
                 'Malformed authentication token'
             )
         })
-        xit('issuer has wrong type in token', async () => {
+        it('issuer has wrong type in token', async () => {
             payload['iss'] = 1
 
             const token = generateToken(payload)
@@ -51,7 +51,7 @@ describe('Check Token', () => {
                 'Malformed authentication token issuer'
             )
         })
-        xit('missing issuer in token', async () => {
+        it('missing issuer in token', async () => {
             payload = {}
             const token = generateToken(payload)
             req.headers = { authorization: token }
@@ -59,7 +59,7 @@ describe('Check Token', () => {
                 'Malformed authentication token issuer'
             )
         })
-        xit('unknown token issuer', async () => {
+        it('unknown token issuer', async () => {
             payload['iss'] = 'not-allowed-issuer'
             const token = generateToken(payload)
             req.headers = { authorization: token }
@@ -67,7 +67,7 @@ describe('Check Token', () => {
                 'Unknown authentication token issuer'
             )
         })
-        xit('bad signature', async () => {
+        it('bad signature', async () => {
             const token = sign(payload, 'the_wrong_secret', {
                 expiresIn: '1800s',
             })

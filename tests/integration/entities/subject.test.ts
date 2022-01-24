@@ -95,16 +95,6 @@ describe('Subject', () => {
             await subject.save()
         })
 
-        context('when not authenticated', () => {
-            xit('fails to list subjects in the organization', async () => {
-                await expect(
-                    describeSubject(testClient, subject.id, {
-                        authorization: undefined,
-                    })
-                ).to.be.rejected
-            })
-        })
-
         context('when authenticated', () => {
             context(
                 'and the user does not have view subject permissions',
@@ -186,19 +176,6 @@ describe('Subject', () => {
             organizationId = org.organization_id
             subject = createSubject(org)
             await connection.manager.save(subject)
-        })
-
-        context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
-                const gqlResult = deleteSubject(testClient, subject.id, {
-                    authorization: undefined,
-                })
-
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
         })
 
         context('when user is logged in', () => {
