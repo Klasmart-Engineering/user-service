@@ -1324,17 +1324,6 @@ describe('isAdmin', () => {
                 .getCount()
         })
 
-        context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
-                const gqlResult = queryVisiblePermissions()
-
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
-
         context('when user is logged in', () => {
             context('and user is admin', () => {
                 it('allows access to all the permissions', async () => {
@@ -2143,17 +2132,6 @@ describe('isAdmin', () => {
             allGradesCount = await Grade.count()
         })
 
-        context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
-                const visibleGrades = queryVisibleGrades()
-
-                await expect(visibleGrades).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
-
         context('when user is logged in', () => {
             context('and user is an admin', () => {
                 it('should have access to all the existent grades', async () => {
@@ -2326,17 +2304,6 @@ describe('isAdmin', () => {
             }).save()
 
             allAgeRangesCount = await AgeRange.count()
-        })
-
-        context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
-                const visibleAgeRanges = queryVisibleAgeRanges()
-
-                await expect(visibleAgeRanges).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
         })
 
         context('when user is logged in', () => {
