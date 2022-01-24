@@ -71,7 +71,7 @@ describe('acceptance.authentication', () => {
         expect(response.body.data.me.user_id).to.eq(user.user_id!)
     })
 
-    xit('errors for invalid tokens with correct message', async () => {
+    it('errors for invalid tokens with correct message', async () => {
         const user = await createUser().save()
         const token = generateToken({
             id: user.user_id,
