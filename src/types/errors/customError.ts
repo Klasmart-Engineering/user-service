@@ -210,6 +210,13 @@ export const customErrors = {
                 Please login to the hub to refresh the cookie,
                 or provide a token in the Authorization header.`,
     },
+    invalid_api_key: {
+        code: 'UNAUTHORIZED',
+        message: `Invalid API key provided: {reason}.
+                Please check the bearer field in the Authorization header
+                contains a correct API Key, alternatively you can
+                provide a user token in the Authorization header.`,
+    },
 
     // generic fallback if a joi constraint is not overridden
     // see messages.ts

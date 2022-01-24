@@ -50,7 +50,11 @@ import {
     renameDuplicateSubjectsQuery,
 } from '../utils/operations/renameDuplicateSubjects'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
-import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
+import {
+    getAdminAuthToken,
+    getAPIKeyAuth,
+    getNonAdminAuthToken,
+} from '../utils/testConfig'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 
@@ -940,6 +944,9 @@ describe('model', () => {
                 grade.organization = Promise.resolve(organization)
                 await grade.save()
             }
+            process.env = {
+                USER_SERVICE_API_KEY: 'test-api-token',
+            }
         })
 
         context('when operation is not a mutation', () => {
@@ -982,6 +989,40 @@ describe('model', () => {
                 })
 
                 expect(duplicatedGrades).eq(1)
+            })
+        })
+
+        context('when API key gives Admin permissions', () => {
+            it('should rename the duplicated grades', async () => {
+                const result = await renameDuplicateGradesMutation(
+                    testClient,
+                    getAPIKeyAuth()
+                )
+
+                expect(result).eq(true)
+
+                const duplicatedGrades = await Grade.count({
+                    where: { name: gradeName, organization },
+                })
+
+                expect(duplicatedGrades).eq(1)
+            })
+        })
+
+        context('when API key is incorrect', () => {
+            it('should throw an error', async () => {
+                await expect(
+                    renameDuplicateGradesMutation(
+                        testClient,
+                        'Bearer IncorrectAPIKey'
+                    )
+                ).to.be.rejected
+
+                const duplicatedGrades = await Grade.count({
+                    where: { name: gradeName, organization },
+                })
+
+                expect(duplicatedGrades).eq(3)
             })
         })
     })

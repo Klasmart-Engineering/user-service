@@ -15,6 +15,12 @@ export interface CreateSubjectInput {
     categoryIds?: string[]
 }
 
+export interface UpdateSubjectInput {
+    id: string
+    name?: string
+    categoryIds?: string[]
+}
+
 export interface SubjectsMutationOutput {
     subjects: SubjectConnectionNode[]
 }

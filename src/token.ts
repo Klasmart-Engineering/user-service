@@ -136,20 +136,52 @@ export async function checkToken(
     return tokenPayload
 }
 
+export function isAPIKey(auth: string) {
+    return auth.startsWith('Bearer ')
+}
+
+export async function checkAPIKey(auth: string) {
+    if (!isAPIKey(auth)) {
+        return false
+    }
+    const clientApiKey = auth.substr(7)
+    const serverApiKey = process.env.USER_SERVICE_API_KEY
+    if (clientApiKey === serverApiKey) {
+        return true
+    }
+    throw Error('Invalid API Key')
+}
+
+export type resLocal = { token?: TokenPayload | undefined; hasApiKey?: boolean }
 export async function validateToken(
     req: express.Request,
-    res: express.Response,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    res: express.Response<any, resLocal>,
     next: express.NextFunction
 ) {
-    try {
-        res.locals.token = await checkToken(req)
-    } catch (e) {
-        const { code, message } = customErrors.invalid_token
+    const auth = req.headers.authorization
+    if (auth !== undefined && isAPIKey(auth)) {
+        try {
+            res.locals.hasApiKey = await checkAPIKey(auth)
+        } catch (e) {
+            const { code, message } = customErrors.invalid_api_key
 
-        return res.status(401).send({
-            code,
-            message: stringInject(message, { reason: e.message })!,
-        })
+            return res.status(401).send({
+                code,
+                message: stringInject(message, { reason: e.message })!,
+            })
+        }
+    } else {
+        try {
+            res.locals.token = await checkToken(req)
+        } catch (e) {
+            const { code, message } = customErrors.invalid_token
+
+            return res.status(401).send({
+                code,
+                message: stringInject(message, { reason: e.message })!,
+            })
+        }
     }
     next()
 }
