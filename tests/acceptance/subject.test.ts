@@ -42,6 +42,7 @@ import { PermissionName } from '../../src/permissions/permissionNames'
 import {
     CREATE_SUBJECTS,
     UPDATE_SUBJECTS,
+    DELETE_SUBJECTS,
 } from '../utils/operations/subjectOps'
 import { userToPayload } from '../utils/operations/userOps'
 import { beforeEach } from 'mocha'
@@ -782,7 +783,7 @@ describe('acceptance.subject', () => {
     context('updateSubjects', () => {
         let adminUser: User
         let catIds: string[]
-        let subjectsToEdit: Subject[]
+        let subjectToEdit: Subject
 
         const makeUpdateSubjectsMutation = async (input: any, caller: User) => {
             return await makeRequest(
@@ -795,10 +796,7 @@ describe('acceptance.subject', () => {
 
         beforeEach(async () => {
             const org = await createOrganization().save()
-            subjectsToEdit = await Subject.save(
-                Array.from(new Array(3), () => createSubject(org))
-            )
-
+            subjectToEdit = await createSubject(org).save()
             catIds = await createCatIds()
             adminUser = await createUser({
                 email: UserPermissions.ADMIN_EMAILS[0],
@@ -809,7 +807,7 @@ describe('acceptance.subject', () => {
             it('should pass gql schema validation', async () => {
                 const input = [
                     {
-                        id: subjectsToEdit[0].id,
+                        id: subjectToEdit.id,
                         name: 'New Name',
                         categoryIds: catIds,
                     },
@@ -832,6 +830,53 @@ describe('acceptance.subject', () => {
                 adminUser
             )
 
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
+            )
+        })
+    })
+
+    context('deleteSubjects', () => {
+        let adminUser: User
+        let subjectToDelete: Subject
+
+        const makeDeleteSubjectsMutation = async (input: any, caller: User) => {
+            return await makeRequest(
+                request,
+                print(DELETE_SUBJECTS),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            const org = await createOrganization().save()
+            subjectToDelete = await createSubject(org).save()
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [{ id: subjectToDelete.id }]
+                const response = await makeDeleteSubjectsMutation(
+                    input,
+                    adminUser
+                )
+
+                const { subjects } = response.body.data.deleteSubjects
+                expect(response.status).to.eq(200)
+                expect(subjects).to.have.lengthOf(input.length)
+            })
+        })
+
+        it('has mandatory id field', async () => {
+            const response = await makeDeleteSubjectsMutation([{}], adminUser)
             const { data } = response.body
             expect(response.status).to.eq(400)
             expect(data).to.be.undefined

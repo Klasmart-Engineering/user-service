@@ -15,10 +15,12 @@ import {
     UpdateSubjects,
     CreateSubjectsEntityMap,
     UpdateSubjectsEntityMap,
+    DeleteSubjects,
 } from '../../src/resolvers/subject'
 import { APIError } from '../../src/types/errors/apiError'
 import {
     CreateSubjectInput,
+    DeleteSubjectInput,
     SubjectConnectionNode,
     UpdateSubjectInput,
 } from '../../src/types/graphQL/subject'
@@ -37,7 +39,7 @@ import { createCategories, createCategory } from '../factories/category.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
-import { createSubject } from '../factories/subject.factory'
+import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
 import { compareErrors } from '../utils/apiError'
 import {
@@ -85,6 +87,9 @@ describe('subject', () => {
 
     const createCats = async () =>
         await Category.save(createCategories(3, undefined, undefined, true))
+
+    const createSubjectsToUse = async (org: Organization) =>
+        await Subject.save(createSubjects(10, org))
 
     const compareSubjectConnectionNodeWithInput = (
         subject: SubjectConnectionNode,
@@ -580,10 +585,7 @@ describe('subject', () => {
             org = data.organization
             ctx = data.context
             categories = await createCats()
-            subjectsToEdit = await Subject.save(
-                Array.from(new Array(10), () => createSubject(org))
-            )
-
+            subjectsToEdit = await createSubjectsToUse(org)
             updateSubjects = new UpdateSubjects([], ctx.permissions)
         })
 
@@ -750,7 +752,7 @@ describe('subject', () => {
 
             it('checks all organizations', async () => {
                 const { permittedOrg, userCtx } = await makeUserWithPermission(
-                    PermissionName.create_subjects_20227
+                    PermissionName.edit_subjects_20337
                 )
 
                 const permittedSubject = await createSubject(
@@ -1047,6 +1049,142 @@ describe('subject', () => {
                 )
 
                 runTestCases(testCases, entityMap)
+            })
+        })
+    })
+
+    describe('deleteSubjects', () => {
+        let ctx: { permissions: UserPermissions }
+        let org: Organization
+        let subjectsToDelete: Subject[]
+        let deleteSubjects: DeleteSubjects
+
+        beforeEach(async () => {
+            const data = await createInitialData([
+                PermissionName.delete_subjects_20447,
+            ])
+
+            org = data.organization
+            ctx = data.context
+            subjectsToDelete = await createSubjectsToUse(org)
+            deleteSubjects = new DeleteSubjects([], ctx.permissions)
+        })
+
+        const buildDefaultInput = (subjects: Subject[]): DeleteSubjectInput[] =>
+            Array.from(subjects, ({ id }) => {
+                return { id }
+            })
+
+        context('complete mutation calls', () => {
+            it('can delete a subject', async () => {
+                const input = buildDefaultInput([subjectsToDelete[0]])
+                const { subjects } = await mutate(
+                    DeleteSubjects,
+                    { input },
+                    ctx.permissions
+                )
+
+                expect(subjects).to.have.lengthOf(1)
+                expect(subjects[0].id).to.eq(input[0].id)
+                expect(subjects[0].status).to.eq(Status.INACTIVE)
+
+                const dbSubjects = await Subject.findByIds([input[0].id])
+                expect(dbSubjects).to.have.lengthOf(1)
+                expect(dbSubjects[0].status).to.eq(Status.INACTIVE)
+            })
+
+            const getDbCallCount = async (input: DeleteSubjectInput[]) => {
+                connection.logger.reset()
+                await mutate(DeleteSubjects, { input }, ctx.permissions)
+                return connection.logger.count
+            }
+
+            it('makes the same number of db connections regardless of input length', async () => {
+                await getDbCallCount(buildDefaultInput([subjectsToDelete[0]])) // warm up permissions cache)
+
+                const singleSubjectCount = await getDbCallCount(
+                    buildDefaultInput([subjectsToDelete[1]])
+                )
+
+                const twoSubjectCount = await getDbCallCount(
+                    buildDefaultInput(subjectsToDelete.slice(2, 4))
+                )
+
+                expect(twoSubjectCount).to.be.eq(singleSubjectCount)
+                expect(twoSubjectCount).to.be.equal(2)
+            })
+        })
+
+        context('authorize', () => {
+            const callAuthorize = async (
+                userCtx: { permissions: UserPermissions },
+                subjects: Subject[]
+            ) => {
+                const mutation = new DeleteSubjects([], userCtx.permissions)
+                const input = buildDefaultInput(subjects)
+                const maps = await deleteSubjects.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const expectPermissionError = async (
+                userCtx: { permissions: UserPermissions },
+                subjects: Subject[]
+            ) => {
+                await expect(
+                    callAuthorize(userCtx, subjects)
+                ).to.be.eventually.rejectedWith(
+                    /User\(.*\) does not have Permission\(delete_subjects_20447\) in Organizations\(.*\)/
+                )
+            }
+
+            it('checks the correct permission', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.delete_subjects_20447
+                )
+
+                const permittedSubject = await createSubject(
+                    permittedOrg
+                ).save()
+
+                await expect(callAuthorize(userCtx, [permittedSubject])).to.be
+                    .eventually.fulfilled
+            })
+
+            it('rejects when user is not authorized', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.create_subjects_20227
+                )
+
+                const permittedSubject = await createSubject(
+                    permittedOrg
+                ).save()
+
+                await expectPermissionError(userCtx, [permittedSubject])
+            })
+
+            it('checks all organizations', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.delete_subjects_20447
+                )
+
+                const permittedSubject = await createSubject(
+                    permittedOrg
+                ).save()
+
+                const {
+                    permittedOrg: notPermittedOrg,
+                } = await makeUserWithPermission(
+                    PermissionName.create_subjects_20227
+                )
+
+                const notPermittedSubject = await createSubject(
+                    notPermittedOrg
+                ).save()
+
+                await expectPermissionError(userCtx, [
+                    permittedSubject,
+                    notPermittedSubject,
+                ])
             })
         })
     })

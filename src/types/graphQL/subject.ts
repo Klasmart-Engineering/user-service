@@ -21,6 +21,10 @@ export interface UpdateSubjectInput {
     categoryIds?: string[]
 }
 
+export interface DeleteSubjectInput {
+    id: string
+}
+
 export interface SubjectsMutationOutput {
     subjects: SubjectConnectionNode[]
 }
