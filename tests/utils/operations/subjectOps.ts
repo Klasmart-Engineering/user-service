@@ -35,19 +35,28 @@ const SUBJECTS_MUTATION_OUTPUT = `
         name
         status
         system
-        categoriesConnection {
-            edges {
-              node {
-                id
-              }
-            }
-          }
     }
 `
 
 export const CREATE_SUBJECTS = gql`
     mutation CreateSubjects($input: [CreateSubjectInput!]!) {
         createSubjects(input: $input) {
+            ${SUBJECTS_MUTATION_OUTPUT}
+        }
+    }
+`
+
+export const UPDATE_SUBJECTS = gql`
+    mutation UpdateSubjects($input: [UpdateSubjectInput!]!) {
+        updateSubjects(input: $input) {
+            ${SUBJECTS_MUTATION_OUTPUT}
+        }
+    }
+`
+
+export const DELETE_SUBJECTS = gql`
+    mutation DeleteSubjects($input: [DeleteSubjectInput!]!) {
+        deleteSubjects(input: $input) {
             ${SUBJECTS_MUTATION_OUTPUT}
         }
     }

@@ -9,7 +9,11 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Category } from '../entities/category'
 import { mutate } from '../utils/mutations/commonStructure'
-import { CreateSubjects } from '../resolvers/subject'
+import {
+    CreateSubjects,
+    UpdateSubjects,
+    DeleteSubjects,
+} from '../resolvers/subject'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -18,6 +22,8 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateSubjects: Boolean @isAdmin
         createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationOutput
+        updateSubjects(input: [UpdateSubjectInput!]!): SubjectsMutationOutput
+        deleteSubjects(input: [DeleteSubjectInput!]!): SubjectsMutationOutput
     }
 
     # pagination extension types start here
@@ -111,6 +117,9 @@ const typeDefs = gql`
 
         # Mutations
         delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 20/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
     }
 
     input SubjectDetail {
@@ -125,6 +134,16 @@ const typeDefs = gql`
         name: String!
         organizationId: ID!
         categoryIds: [ID!]
+    }
+
+    input UpdateSubjectInput {
+        id: ID!
+        name: String
+        categoryIds: [ID!]
+    }
+
+    input DeleteSubjectInput {
+        id: ID!
     }
 
     type SubjectsMutationOutput {
@@ -160,6 +179,10 @@ export default function getDefault(
                     model.renameDuplicateSubjects(args, ctx, info),
                 createSubjects: (_parent, args, ctx) =>
                     mutate(CreateSubjects, args, ctx.permissions),
+                updateSubjects: (_parent, args, ctx) =>
+                    mutate(UpdateSubjects, args, ctx.permissions),
+                deleteSubjects: (_parent, args, ctx) =>
+                    mutate(DeleteSubjects, args, ctx.permissions),
             },
             Query: {
                 subject: (_parent, args, ctx, _info) =>

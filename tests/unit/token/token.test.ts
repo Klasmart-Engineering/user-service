@@ -6,7 +6,7 @@ import { Request } from 'express'
 import { generateToken, getNonAdminAuthToken } from '../../utils/testConfig'
 import { createTestConnection } from '../../utils/testConnection'
 import { createResponse, createRequest } from 'node-mocks-http'
-import { checkToken } from '../../../src/token'
+import { checkAPIKey, checkToken } from '../../../src/token'
 
 use(chaiAsPromised)
 
@@ -82,6 +82,29 @@ describe('Check Token', () => {
         const token = generateToken(payload)
         req.headers = { authorization: token }
         await expect(checkToken(req)).to.eventually.have.deep.include(payload)
+    })
+
+    context('when API key is used for authentication', () => {
+        beforeEach(() => {
+            process.env = {
+                USER_SERVICE_API_KEY: 'test-api-token',
+            }
+        })
+
+        it('with valid and matching API Key', async () => {
+            req.headers = { authorization: 'Bearer test-api-token' }
+            expect(checkAPIKey(req.headers.authorization!)).to.be.true
+        })
+
+        it('with non-matching API Key', async () => {
+            req.headers = { authorization: 'Bearer different-test-api-token' }
+            expect(checkAPIKey(req.headers.authorization!)).to.be.false
+        })
+
+        it('with invalid API Key', async () => {
+            req.headers = { authorization: 'invalid-test-api-token' }
+            expect(checkAPIKey(req.headers.authorization!)).to.be.false
+        })
     })
 
     context('email normalization', () => {

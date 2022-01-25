@@ -10,11 +10,12 @@ import {
     createDuplicateInputAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
+    createInputRequiresAtLeastOne,
 } from '../resolvers/errors'
 import { objectToKey, ObjMap } from '../stringUtils'
 
 export type ConflictingNameKey = {
-    organizationId: string
+    organizationId?: string
     name: string
 }
 
@@ -177,6 +178,36 @@ export function validateSubItemsArrayNoDuplicates(
             )
         }
     })
+    return errors
+}
+
+export function validateAtLeastOne<InputType>(
+    inputs: InputType[],
+    entityName: string,
+    requiredAttributes: (keyof InputType)[]
+) {
+    const errors: Map<number, APIError> = new Map()
+    inputs.forEach((input, index) => {
+        let hasOne = false
+        for (const attr of requiredAttributes) {
+            if (input[attr]) {
+                hasOne = true
+                break
+            }
+        }
+
+        if (!hasOne) {
+            errors.set(
+                index,
+                createInputRequiresAtLeastOne(
+                    index,
+                    entityName,
+                    requiredAttributes as string[]
+                )
+            )
+        }
+    })
+
     return errors
 }
 

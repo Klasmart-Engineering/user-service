@@ -137,21 +137,16 @@ export async function checkToken(
 }
 
 export function isAPIKey(auth: string) {
-    return auth.includes('Bearer: ')
+    return auth.startsWith('Bearer ')
 }
 
 export async function checkAPIKey(auth: string) {
     if (!isAPIKey(auth)) {
         return false
     }
-    const apiKey = auth?.slice(auth?.indexOf(':') + 2)
-
-    // Development check enables testing before full solution,
-    // remove when secrets integration complete
-    if (
-        apiKey == 'GoToAWSInsteadOfHardCoding' &&
-        process.env.NODE_ENV === 'development'
-    ) {
+    const clientApiKey = auth.substr(7)
+    const serverApiKey = process.env.USER_SERVICE_API_KEY
+    if (clientApiKey === serverApiKey) {
         return true
     }
     throw Error('Invalid API Key')

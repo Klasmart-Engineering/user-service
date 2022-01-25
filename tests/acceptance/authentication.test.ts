@@ -33,7 +33,7 @@ describe('acceptance.authentication', () => {
 
     context('tokenAuth', () => {
         // categoriesConnection chosen because it doesn't error
-        // without token infomation
+        // without token information
         const VALID_WITH_NO_TOKEN_QUERY = `query{
             categoriesConnection(direction: FORWARD) {
                 totalCount
@@ -110,7 +110,11 @@ describe('acceptance.authentication', () => {
     })
 
     context('apiKeyAuth', () => {
-        it('accepts APIKeys', async () => {
+        const RemoveDuplicateGrades = `mutation {
+                    renameDuplicateGrades
+                }`
+
+        beforeEach(async () => {
             const organization = new Organization()
             await organization.save()
 
@@ -120,14 +124,12 @@ describe('acceptance.authentication', () => {
                 grade.organization = Promise.resolve(organization)
                 await grade.save()
             }
+        })
 
-            const RemoveDeuplicateGrades = `mutation {
-                    renameDuplicateGrades
-                }`
-
+        it('accepts APIKeys', async () => {
             const response = await makeRequest(
                 request,
-                RemoveDeuplicateGrades,
+                RemoveDuplicateGrades,
                 {},
                 getAPIKeyAuth()
             )
@@ -137,25 +139,11 @@ describe('acceptance.authentication', () => {
         })
 
         it('errors for invalid API key with correct message', async () => {
-            const organization = new Organization()
-            await organization.save()
-
-            for (let i = 0; i < 3; i += 1) {
-                const grade = new Grade()
-                grade.name = 'testGrade'
-                grade.organization = Promise.resolve(organization)
-                await grade.save()
-            }
-
-            const RemoveDeuplicateGrades = `mutation {
-                    renameDuplicateGrades
-                }`
-
             const response = await makeRequest(
                 request,
-                RemoveDeuplicateGrades,
+                RemoveDuplicateGrades,
                 {},
-                'Bearer: IncorrectAPIKey'
+                'Bearer IncorrectAPIKey'
             )
 
             expect(response.status).to.eq(401)
