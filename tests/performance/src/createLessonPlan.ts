@@ -1,5 +1,7 @@
+import { sleep } from 'k6';
 import http from 'k6/http';
 import createNewContentPlan from './scripts/createNewContentPlan';
+import userSettings from './scripts/userSettings';
 import loginSetup from './utils/loginSetup';
 
 export function setup() {
@@ -29,5 +31,7 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
         domain: process.env.COOKIE_DOMAIN,
     });
     
+    userSettings();
+    sleep(1);
     createNewContentPlan();
 }
