@@ -460,9 +460,9 @@ describe('acceptance.program', () => {
                     adminUser
                 )
 
-                const { subjects } = response.body.data.createSubjects
+                const { programs } = response.body.data.createPrograms
                 expect(response.status).to.eq(200)
-                expect(subjects).to.have.lengthOf(input.length)
+                expect(programs).to.have.lengthOf(input.length)
             })
         })
 
