@@ -6,6 +6,7 @@ import { gqlTry } from '../gqlTry'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { Grade } from '../../../src/entities/grade'
 import { Subject } from '../../../src/entities/subject'
+import { gql } from 'graphql-tag'
 
 const DELETE_PROGRAM = `
     mutation deleteProgram($id: ID!) {
@@ -45,6 +46,23 @@ const EDIT_SUBJECT_PROGRAM = `
             name
           }
        }
+    }
+`
+
+const PROGRAMS_MUTATION_OUTPUT = `
+    programs {
+        id
+        name
+        status
+        system
+    }
+`
+
+export const CREATE_PROGRAMS = gql`
+    mutation CreatePrograms($input: [CreateProgramInput!]!) {
+        createPrograms(input: $input) {
+            ${PROGRAMS_MUTATION_OUTPUT}
+        }
     }
 `
 

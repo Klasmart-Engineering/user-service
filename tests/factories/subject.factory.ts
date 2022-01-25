@@ -18,3 +18,12 @@ export function createSubject(
 
     return subject
 }
+
+export const createSubjects = (
+    length: number,
+    org?: Organization,
+    categories?: Category[]
+) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createSubject(org, categories))

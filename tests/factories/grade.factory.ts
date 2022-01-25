@@ -25,3 +25,13 @@ export function createGrade(
 
     return grade
 }
+
+export const createGrades = (
+    length: number,
+    org?: Organization,
+    progressFromGrade?: Grade,
+    progressToGrade?: Grade
+) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createGrade(org, progressFromGrade, progressToGrade))
