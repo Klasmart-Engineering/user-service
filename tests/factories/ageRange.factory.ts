@@ -34,7 +34,34 @@ export function createAgeRange(
     return ageRange
 }
 
-export const createAgeRanges = (length: number, org?: Organization) =>
+function createSystemAgeRange(lowValue?: number, highValue?: number) {
+    const ageRange = new AgeRange()
+    ageRange.name = faker.random.word()
+    ageRange.low_value = lowValue || faker.datatype.number({ min: 1, max: 99 })
+    ageRange.low_value_unit = faker.random.arrayElement(
+        Object.values(AgeRangeUnit)
+    )
+
+    ageRange.high_value =
+        highValue ||
+        faker.datatype.number({
+            min: ageRange.low_value,
+            max: 99,
+        })
+
+    ageRange.high_value_unit = faker.random.arrayElement(
+        Object.values(AgeRangeUnit)
+    )
+
+    ageRange.system = true
+    return ageRange
+}
+
+export const createSystemAgeRanges = (
+    length: number,
+    lowValue?: number,
+    highValue?: number
+) =>
     Array(length)
         .fill(undefined)
-        .map(() => createAgeRange(org))
+        .map(() => createSystemAgeRange(lowValue, highValue))

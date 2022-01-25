@@ -26,12 +26,27 @@ export function createGrade(
     return grade
 }
 
-export const createGrades = (
+function createSystemGrade(progressFromGrade?: Grade, progressToGrade?: Grade) {
+    const grade = new Grade()
+    grade.name = faker.random.word()
+    grade.system = true
+
+    if (progressFromGrade) {
+        grade.progress_from_grade = Promise.resolve(progressFromGrade)
+    }
+
+    if (progressToGrade) {
+        grade.progress_to_grade = Promise.resolve(progressToGrade)
+    }
+
+    return grade
+}
+
+export const createSystemGrades = (
     length: number,
-    org?: Organization,
     progressFromGrade?: Grade,
     progressToGrade?: Grade
 ) =>
     Array(length)
         .fill(undefined)
-        .map(() => createGrade(org, progressFromGrade, progressToGrade))
+        .map(() => createSystemGrade(progressFromGrade, progressToGrade))

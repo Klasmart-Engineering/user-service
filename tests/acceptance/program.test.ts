@@ -29,9 +29,9 @@ import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
-import { createAgeRanges as createAgeRangesFactory } from './../factories/ageRange.factory'
-import { createGrades as createGradesFactory } from './../factories/grade.factory'
-import { createSubjects as createSubjectsFactory } from './../factories/subject.factory'
+import { createSystemAgeRanges } from './../factories/ageRange.factory'
+import { createSystemGrades } from './../factories/grade.factory'
+import { createSystemSubjects } from './../factories/subject.factory'
 import { createUser as createUserFactory } from './../factories/user.factory'
 import { Grade } from '../../src/entities/grade'
 import { Subject } from '../../src/entities/subject'
@@ -410,13 +410,13 @@ describe('acceptance.program', () => {
     })
 
     const createAgeRangeIds = async () =>
-        (await AgeRange.save(createAgeRangesFactory(3))).map((ar) => ar.id)
+        (await AgeRange.save(createSystemAgeRanges(3))).map((ar) => ar.id)
 
     const createGradeIds = async () =>
-        (await Grade.save(createGradesFactory(3))).map((g) => g.id)
+        (await Grade.save(createSystemGrades(3))).map((g) => g.id)
 
     const createSubjectIds = async () =>
-        (await Subject.save(createSubjectsFactory(3))).map((s) => s.id)
+        (await Subject.save(createSystemSubjects(3))).map((s) => s.id)
 
     context('createPrograms', () => {
         let adminUser: User

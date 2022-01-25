@@ -19,11 +19,15 @@ export function createSubject(
     return subject
 }
 
-export const createSubjects = (
-    length: number,
-    org?: Organization,
-    categories?: Category[]
-) =>
+function createSystemSubject(categories: Category[] = []) {
+    const subject = new Subject()
+    subject.name = faker.random.word()
+    subject.categories = Promise.resolve(categories)
+    subject.system = true
+    return subject
+}
+
+export const createSystemSubjects = (length: number, categories?: Category[]) =>
     Array(length)
         .fill(undefined)
-        .map(() => createSubject(org, categories))
+        .map(() => createSystemSubject(categories))
