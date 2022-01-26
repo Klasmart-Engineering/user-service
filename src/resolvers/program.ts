@@ -461,14 +461,14 @@ export class UpdatePrograms extends UpdateMutation<
     ): APIError[] {
         const errors: APIError[] = []
         const { id, name, ageRangeIds, gradeIds, subjectIds } = currentInput
-        const programMap = maps.mainEntity
-        const ageRangeMap = maps.ageRanges
-        const gradeMap = maps.grades
-        const subjectMap = maps.subjects
-        const conflictNamesMap = maps.conflictingNames
 
         // Checking that the program exist
-        const programExists = flagNonExistent(Program, index, [id], programMap)
+        const programExists = flagNonExistent(
+            Program,
+            index,
+            [id],
+            maps.mainEntity
+        )
         errors.push(...programExists.errors)
 
         if (!programExists.values.length) return errors
@@ -478,7 +478,7 @@ export class UpdatePrograms extends UpdateMutation<
 
         if (name) {
             // Checking that there is not another program in the same organization with the given name
-            const conflictingNameProgramId = conflictNamesMap.get({
+            const conflictingNameProgramId = maps.conflictingNames.get({
                 organizationId,
                 name,
             })?.id
@@ -499,7 +499,7 @@ export class UpdatePrograms extends UpdateMutation<
         if (ageRangeIds) {
             // Checking that the age ranges already exist
             errors.push(
-                ...flagNonExistent(AgeRange, index, ageRangeIds, ageRangeMap)
+                ...flagNonExistent(AgeRange, index, ageRangeIds, maps.ageRanges)
                     .errors
             )
 
@@ -509,7 +509,7 @@ export class UpdatePrograms extends UpdateMutation<
                     'AgeRange',
                     index,
                     organizationId,
-                    ageRangeMap
+                    maps.ageRanges
                 )
             )
         }
@@ -517,7 +517,7 @@ export class UpdatePrograms extends UpdateMutation<
         if (gradeIds) {
             // Checking that the grades already exist
             errors.push(
-                ...flagNonExistent(Grade, index, gradeIds, gradeMap).errors
+                ...flagNonExistent(Grade, index, gradeIds, maps.grades).errors
             )
 
             // Checking that these grades also exists for the same organization or are system
@@ -526,7 +526,7 @@ export class UpdatePrograms extends UpdateMutation<
                     'Grade',
                     index,
                     organizationId,
-                    gradeMap
+                    maps.grades
                 )
             )
         }
@@ -534,7 +534,7 @@ export class UpdatePrograms extends UpdateMutation<
         if (subjectIds) {
             // Checking that the subjects already exist
             errors.push(
-                ...flagNonExistent(Subject, index, subjectIds, subjectMap)
+                ...flagNonExistent(Subject, index, subjectIds, maps.subjects)
                     .errors
             )
 
@@ -544,7 +544,7 @@ export class UpdatePrograms extends UpdateMutation<
                     'Subject',
                     index,
                     organizationId,
-                    subjectMap
+                    maps.subjects
                 )
             )
         }
@@ -583,7 +583,7 @@ export class UpdatePrograms extends UpdateMutation<
     }
 
     protected async buildOutput(outputProgram: Program): Promise<void> {
-        const programConnectionNode = await mapProgramToProgramConnectionNode(
+        const programConnectionNode = mapProgramToProgramConnectionNode(
             outputProgram
         )
 
