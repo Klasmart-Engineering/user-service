@@ -12,13 +12,18 @@ import { APIError } from '../types/errors/apiError'
 import {
     CreateProgramInput,
     ProgramsMutationOutput,
+    UpdateProgramInput,
 } from '../types/graphQL/program'
 import {
     ConflictingNameKey,
     CreateMutation,
     EntityMap,
     filterInvalidInputs,
+    ProcessedResult,
+    UpdateMutation,
+    validateAtLeastOne,
     validateNoDuplicate,
+    validateNoDuplicateAttribute,
     validateSubItemsLengthAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
@@ -33,12 +38,21 @@ import {
 } from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
 
+export type ProgramAndOrg = Program & { __organization__?: Organization }
 export type SystemEntityAndOrg = SystemEntities & {
     __organization__?: Organization
 }
 
 export interface CreateProgramsEntityMap extends EntityMap<Program> {
     organizations: Map<string, Organization>
+    ageRanges: Map<string, AgeRange>
+    grades: Map<string, Grade>
+    subjects: Map<string, Subject>
+    conflictingNames: ObjMap<ConflictingNameKey, Program>
+}
+
+export interface UpdateProgramsEntityMap extends EntityMap<Program> {
+    mainEntity: Map<string, Program>
     ageRanges: Map<string, AgeRange>
     grades: Map<string, Grade>
     subjects: Map<string, Subject>
@@ -325,6 +339,313 @@ export class CreatePrograms extends CreateMutation<
     }
 }
 
+export class UpdatePrograms extends UpdateMutation<
+    Program,
+    UpdateProgramInput,
+    ProgramsMutationOutput,
+    UpdateProgramsEntityMap
+> {
+    protected readonly EntityType = Program
+    protected inputTypeName = 'UpdateProgramInput'
+    protected mainEntityIds: string[] = []
+    protected output: ProgramsMutationOutput = { programs: [] }
+
+    constructor(
+        input: UpdateProgramInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        for (const val of input) {
+            this.mainEntityIds.push(val.id)
+        }
+    }
+
+    protected async generateEntityMaps(
+        input: UpdateProgramInput[]
+    ): Promise<UpdateProgramsEntityMap> {
+        const ids: string[] = []
+        const names: string[] = []
+        const ageRangeIds: string[] = []
+        const gradeIds: string[] = []
+        const subjectIds: string[] = []
+
+        input.forEach((i) => {
+            ids.push(i.id)
+            if (i.name) names.push(i.name)
+            if (i.ageRangeIds) ageRangeIds.push(...i.ageRangeIds)
+            if (i.gradeIds) gradeIds.push(...i.gradeIds)
+            if (i.subjectIds) subjectIds.push(...i.subjectIds)
+        })
+
+        const preloadedPrograms = getMap.program(ids, ['organization'])
+        const preloadedAgeRanges = getMap.ageRange(ageRangeIds, [
+            'organization',
+        ])
+        const preloadedGrades = getMap.grade(gradeIds, ['organization'])
+        const preloadedSubjects = getMap.subject(subjectIds, ['organization'])
+        const preloadedMatchingNames = await Program.find({
+            where: {
+                name: In(names),
+                status: Status.ACTIVE,
+            },
+            relations: ['organization'],
+        })
+
+        const conflictingNames = new ObjMap<ConflictingNameKey, Program>()
+
+        for (const p of preloadedMatchingNames) {
+            // eslint-disable-next-line no-await-in-loop
+            const organizationId = (await p.organization)?.organization_id
+            const programName = p.name!
+            conflictingNames.set({ organizationId, name: programName }, p)
+        }
+
+        return {
+            mainEntity: await preloadedPrograms,
+            ageRanges: await preloadedAgeRanges,
+            grades: await preloadedGrades,
+            subjects: await preloadedSubjects,
+            conflictingNames,
+        }
+    }
+
+    async authorize(
+        _input: UpdateProgramInput[],
+        maps: UpdateProgramsEntityMap
+    ): Promise<void> {
+        const organizationIds: string[] = []
+        const programs = [...maps.mainEntity.values()]
+
+        for (const p of programs) {
+            // eslint-disable-next-line no-await-in-loop
+            const organizationId = (await p.organization)?.organization_id
+            if (organizationId) organizationIds.push(organizationId)
+        }
+
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: organizationIds },
+            PermissionName.edit_program_20331
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: UpdateProgramInput[],
+        maps: UpdateProgramsEntityMap
+    ): {
+        validInputs: { index: number; input: UpdateProgramInput }[]
+        apiErrors: APIError[]
+    } {
+        // Checking that at least one of the optional params is sent
+        const failedAtLeastOne = validateAtLeastOne(inputs, 'Program', [
+            'name',
+            'ageRangeIds',
+            'gradeIds',
+            'subjectIds',
+        ])
+
+        // Checking that you are not editing the same program more than once
+        const failedDuplicates = validateNoDuplicate(
+            inputs.map((i) => i.id),
+            'program',
+            'id'
+        )
+
+        const values = []
+        for (const { id, name } of inputs) {
+            const program = maps.mainEntity.get(id) as ProgramAndOrg
+            let organizationId = undefined
+
+            if (program) {
+                organizationId = program.__organization__?.organization_id || ''
+            }
+
+            values.push({ entityId: organizationId, attributeValue: name })
+        }
+
+        // Checking that the names in the inputs are not duplicated for programs in the same organization
+        const failedDuplicateInOrg = validateNoDuplicateAttribute(
+            values,
+            'Program',
+            'name'
+        )
+
+        // Checking duplicates and length in ageRangeIds
+        const failedAgeRanges = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'ageRangeIds'
+        )
+
+        // Checking duplicates and length in gradeIds
+        const failedGrades = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'gradeIds'
+        )
+
+        // Checking duplicates and length in subjectIds
+        const failedSubjects = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'subjectIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            failedAtLeastOne,
+            failedDuplicates,
+            failedDuplicateInOrg,
+            ...failedAgeRanges,
+            ...failedGrades,
+            ...failedSubjects,
+        ])
+    }
+
+    validate(
+        index: number,
+        program: Program,
+        currentInput: UpdateProgramInput,
+        maps: UpdateProgramsEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { id, name, ageRangeIds, gradeIds, subjectIds } = currentInput
+        const programMap = maps.mainEntity
+        const ageRangeMap = maps.ageRanges
+        const gradeMap = maps.grades
+        const subjectMap = maps.subjects
+        const conflictNamesMap = maps.conflictingNames
+
+        // Checking that the program exist
+        const programExists = flagNonExistent(Program, index, [id], programMap)
+        errors.push(...programExists.errors)
+
+        if (!programExists.values.length) return errors
+
+        const organizationId = (program as ProgramAndOrg).__organization__
+            ?.organization_id
+
+        if (name) {
+            // Checking that there is not another program in the same organization with the given name
+            const conflictingNameProgramId = conflictNamesMap.get({
+                organizationId,
+                name,
+            })?.id
+
+            if (conflictingNameProgramId) {
+                errors.push(
+                    createExistentEntityAttributeAPIError(
+                        'Program',
+                        conflictingNameProgramId,
+                        'name',
+                        name,
+                        index
+                    )
+                )
+            }
+        }
+
+        if (ageRangeIds) {
+            // Checking that the age ranges already exist
+            errors.push(
+                ...validateSubItemsExistence(
+                    AgeRange,
+                    index,
+                    ageRangeIds,
+                    ageRangeMap
+                )
+            )
+
+            // Checking that these age ranges also exists for the same organization or are system
+            errors.push(
+                ...validateSubItemsInOrg(
+                    'AgeRange',
+                    index,
+                    organizationId,
+                    ageRangeMap
+                )
+            )
+        }
+
+        if (gradeIds) {
+            // Checking that the grades already exist
+            errors.push(
+                ...validateSubItemsExistence(Grade, index, gradeIds, gradeMap)
+            )
+
+            // Checking that these grades also exists for the same organization or are system
+            errors.push(
+                ...validateSubItemsInOrg(
+                    'Grade',
+                    index,
+                    organizationId,
+                    gradeMap
+                )
+            )
+        }
+
+        if (subjectIds) {
+            // Checking that the subjects already exist
+            errors.push(
+                ...validateSubItemsExistence(
+                    Subject,
+                    index,
+                    subjectIds,
+                    subjectMap
+                )
+            )
+
+            // Checking that these subjects also exists for the same organization or are system
+            errors.push(
+                ...validateSubItemsInOrg(
+                    'Subject',
+                    index,
+                    organizationId,
+                    subjectMap
+                )
+            )
+        }
+
+        return errors
+    }
+
+    protected process(
+        currentInput: UpdateProgramInput,
+        maps: UpdateProgramsEntityMap
+    ): ProcessedResult<Program, Program> {
+        const { id, name, ageRangeIds, gradeIds, subjectIds } = currentInput
+        const program = maps.mainEntity.get(id)!
+
+        program.name = name || program.name
+
+        if (ageRangeIds) {
+            program.age_ranges = Promise.resolve(
+                Array.from(ageRangeIds, (arid) => maps.ageRanges.get(arid)!)
+            )
+        }
+
+        if (gradeIds) {
+            program.grades = Promise.resolve(
+                Array.from(gradeIds, (gid) => maps.grades.get(gid)!)
+            )
+        }
+
+        if (subjectIds) {
+            program.subjects = Promise.resolve(
+                Array.from(subjectIds, (sid) => maps.subjects.get(sid)!)
+            )
+        }
+
+        return { outputEntity: program }
+    }
+
+    protected async buildOutput(outputProgram: Program): Promise<void> {
+        const programConnectionNode = await mapProgramToProgramConnectionNode(
+            outputProgram
+        )
+
+        this.output.programs.push(programConnectionNode)
+    }
+}
+
 function validateSubItemsExistence<Entity extends Entities>(
     entity: new () => Entities,
     index: number,
@@ -337,7 +658,7 @@ function validateSubItemsExistence<Entity extends Entities>(
 function validateSubItemsInOrg<Entity extends SystemEntities>(
     entityName: string,
     index: number,
-    organizationId: string,
+    organizationId: string | undefined,
     map: Map<string, Entity>
 ) {
     return Array.from(map.values())
