@@ -29,16 +29,12 @@ import { createProgram } from '../factories/program.factory'
 import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../utils/createTestClient'
 import { userToPayload } from '../utils/operations/userOps'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { PermissionName } from './../../src/permissions/permissionNames'
 import { v4 as uuid_v4 } from 'uuid'
 import { APIError } from '../../src/types/errors/apiError'
-import { compareErrors } from '../utils/apiError'
+import { compareErrors, compareMultipleErrors } from '../utils/apiError'
 import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,
@@ -51,12 +47,9 @@ use(chaiAsPromised)
 
 describe('subject', () => {
     let connection: TestConnection
-    let testClient: ApolloServerTestClient
 
     before(async () => {
         connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
     })
 
     after(async () => {
@@ -350,19 +343,38 @@ describe('subject', () => {
                 inputs = buildDefaultInput(3)
             })
 
-            const expectInputsValidation = (error: APIError) => {
+            const expectInputsValidation = (
+                input: CreateProgramInput[],
+                expectedErrors: APIError[]
+            ) => {
                 const {
                     validInputs,
                     apiErrors,
-                } = createPrograms.validationOverAllInputs(inputs)
+                } = createPrograms.validationOverAllInputs(input)
 
-                expect(validInputs.length).to.eq(2)
-                expect(validInputs[0].input.name).to.eq(inputs[0].name)
-                expect(validInputs[0].index).to.eq(0)
-                expect(validInputs[1].input.name).to.eq(inputs[2].name)
-                expect(validInputs[1].index).to.eq(2)
-                expect(apiErrors.length).to.eq(1)
-                compareErrors(apiErrors[0], error)
+                const failedInputIndexes = new Set(
+                    apiErrors.map((err) => err.index)
+                )
+
+                const inputsWithoutErrors = input
+                    .map((i, index) => {
+                        return {
+                            ...i,
+                            index,
+                        }
+                    })
+                    .filter((i) => !failedInputIndexes.has(i.index))
+
+                expect(validInputs).to.have.lengthOf(inputsWithoutErrors.length)
+
+                validInputs.forEach((vi, i) => {
+                    const relatedInput = inputsWithoutErrors[i]
+                    expect(vi.input.name).to.eq(relatedInput.name)
+                    expect(vi.index).to.eq(relatedInput.index)
+                })
+
+                expect(apiErrors.length).to.eq(expectedErrors.length)
+                compareMultipleErrors(apiErrors, expectedErrors)
             }
 
             it("checks if exist 'name' duplicates for the same 'organizationId'", async () => {
@@ -375,7 +387,7 @@ describe('subject', () => {
                     'program'
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if the length of 'ageRangeIds' is correct", async () => {
@@ -389,7 +401,7 @@ describe('subject', () => {
                     1
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if 'ageRangeIds' has duplicated ids", async () => {
@@ -405,7 +417,7 @@ describe('subject', () => {
                     'CreateProgramInput'
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if the length of 'gradeIds' is correct", async () => {
@@ -419,7 +431,7 @@ describe('subject', () => {
                     1
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if 'gradeIds' has duplicated ids", async () => {
@@ -434,7 +446,7 @@ describe('subject', () => {
                     'CreateProgramInput'
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if the length of 'subjectIds' is correct", async () => {
@@ -448,7 +460,7 @@ describe('subject', () => {
                     1
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if 'subjectIds' has duplicated ids", async () => {
@@ -464,7 +476,7 @@ describe('subject', () => {
                     'CreateProgramInput'
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
         })
 
