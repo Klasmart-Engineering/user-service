@@ -10,11 +10,13 @@ import { APIError } from '../types/errors/apiError'
 import {
     CreateSubjectInput,
     UpdateSubjectInput,
+    DeleteSubjectInput,
     SubjectsMutationOutput,
 } from '../types/graphQL/subject'
 import {
     CreateMutation,
     UpdateMutation,
+    DeleteMutation,
     EntityMap,
     filterInvalidInputs,
     validateNoDuplicate,
@@ -32,10 +34,7 @@ import { flagNonExistent } from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
 
 export type CatAndOrg = Category & { __organization__?: Organization }
-
-type SubjectAndOrg = Subject & {
-    __organization__?: Organization
-}
+type SubjectAndOrg = Subject & { __organization__?: Organization }
 
 export type ConflictingNameKey = {
     organizationId?: string
@@ -52,6 +51,10 @@ export interface UpdateSubjectsEntityMap extends EntityMap<Subject> {
     mainEntity: Map<string, Subject>
     categories: Map<string, Category>
     conflictingNames: ObjMap<ConflictingNameKey, Subject>
+}
+
+export interface DeleteSubjectsEntityMap extends EntityMap<Subject> {
+    mainEntity: Map<string, Subject>
 }
 
 export class CreateSubjects extends CreateMutation<
@@ -332,17 +335,16 @@ export class UpdateSubjects extends UpdateMutation<
         const organizationIds: string[] = []
         const subjects = [...maps.mainEntity.values()]
 
-        if (subjects.length) {
-            for (const s of subjects) {
-                const organizationId = (await s.organization)?.organization_id
-                if (organizationId) organizationIds.push(organizationId)
-            }
-
-            return this.permissions.rejectIfNotAllowed(
-                { organization_ids: organizationIds },
-                PermissionName.edit_subjects_20337
-            )
+        for (const s of subjects) {
+            // eslint-disable-next-line no-await-in-loop
+            const organizationId = (await s.organization)?.organization_id
+            if (organizationId) organizationIds.push(organizationId)
         }
+
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: organizationIds },
+            PermissionName.edit_subjects_20337
+        )
     }
 
     validationOverAllInputs(
@@ -508,5 +510,58 @@ export class UpdateSubjects extends UpdateMutation<
         )
 
         this.output.subjects.push(subjectConnectionNode)
+    }
+}
+
+export class DeleteSubjects extends DeleteMutation<
+    Subject,
+    DeleteSubjectInput,
+    SubjectsMutationOutput
+> {
+    protected readonly EntityType = Subject
+    protected readonly inputTypeName = 'DeleteSubjectInput'
+    protected readonly output: SubjectsMutationOutput = { subjects: [] }
+    protected readonly mainEntityIds: string[]
+
+    constructor(
+        input: DeleteSubjectInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.id)
+    }
+
+    async generateEntityMaps(
+        input: DeleteSubjectInput[]
+    ): Promise<DeleteSubjectsEntityMap> {
+        const subjects = getMap.subject(
+            input.map((i) => i.id),
+            ['organization']
+        )
+
+        return { mainEntity: await subjects }
+    }
+
+    async authorize(
+        _input: DeleteSubjectInput[],
+        maps: DeleteSubjectsEntityMap
+    ): Promise<void> {
+        const organizationIds: string[] = []
+        const subjects = [...maps.mainEntity.values()]
+
+        for (const s of subjects) {
+            // eslint-disable-next-line no-await-in-loop
+            const organizationId = (await s.organization)?.organization_id
+            if (organizationId) organizationIds.push(organizationId)
+        }
+
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: organizationIds },
+            PermissionName.delete_subjects_20447
+        )
+    }
+
+    async buildOutput(subject: Subject): Promise<void> {
+        this.output.subjects.push(mapSubjectToSubjectConnectionNode(subject))
     }
 }
