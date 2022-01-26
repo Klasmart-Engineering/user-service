@@ -1,8 +1,6 @@
-import { In } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Role } from '../entities/role'
-import { Status } from '../entities/status'
 import { User } from '../entities/user'
 import { Context } from '../main'
 import { mapOrganizationToOrganizationConnectionNode } from '../pagination/organizationsConnection'
@@ -13,7 +11,6 @@ import {
     OrganizationsMutationResult,
     RemoveUsersFromOrganizationInput,
 } from '../types/graphQL/organization'
-import { createEntityAPIError } from '../utils/resolvers/errors'
 import { config } from '../config/config'
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
 import {
@@ -24,17 +21,27 @@ import {
     validateActiveAndNoDuplicates,
     filterInvalidInputs,
 } from '../utils/mutations/commonStructure'
-import { getMembershipMapKey } from '../utils/resolvers/entityMaps'
+import { ObjMap } from '../utils/stringUtils'
+import { getMap } from '../utils/resolvers/entityMaps'
+import {
+    flagExistentOrganizationMembership,
+    flagNonExistent,
+    flagNonExistentOrganizationMembership,
+} from '../utils/resolvers/inputValidation'
 
-export interface AddUsersToOrganizationsEntityMap
+interface RemoveUsersFromOrganizationsEntityMap
     extends EntityMap<Organization> {
     mainEntity: Map<string, Organization>
     users: Map<string, User>
-    roles: Map<string, Role>
-    memberships: Map<string, OrganizationMembership>
+    memberships: ObjMap<
+        { organizationId: string; userId: string },
+        OrganizationMembership
+    >
 }
-
-type RemoveUsersFromOrganizationsEntityMap = AddUsersToOrganizationsEntityMap
+interface AddUsersToOrganizationsEntityMap
+    extends RemoveUsersFromOrganizationsEntityMap {
+    roles: Map<string, Role>
+}
 
 export class AddUsersToOrganizations extends AddMembershipMutation<
     Organization,
@@ -59,7 +66,7 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
     generateEntityMaps = (
         input: AddUsersToOrganizationInput[]
     ): Promise<AddUsersToOrganizationsEntityMap> =>
-        generateMaps(this.mainEntityIds, input)
+        generateAddRemoveOrgUsersMap(this.mainEntityIds, input)
 
     protected authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
@@ -89,61 +96,33 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
 
     protected validate(
         index: number,
-        currentEntity: Organization,
+        _currentEntity: Organization,
         currentInput: AddUsersToOrganizationInput,
         maps: AddUsersToOrganizationsEntityMap
     ): APIError[] {
-        // Retrieval
         const errors: APIError[] = []
         const { organizationId, organizationRoleIds, userIds } = currentInput
 
-        // Role validation
-        const missingRoleIds: string[] = organizationRoleIds.reduce(
-            (acc: string[], orgRoleId: string) => {
-                if (!maps.roles.has(orgRoleId)) acc.push(orgRoleId)
-                return acc
-            },
-            []
-        )
-        if (missingRoleIds.length) {
-            errors.push(
-                createEntityAPIError(
-                    'nonExistent',
-                    index,
-                    'Role',
-                    missingRoleIds.toString()
-                )
-            )
-        }
+        const users = flagNonExistent(User, index, userIds, maps.users)
+        errors.push(...users.errors)
 
-        for (const userId of userIds) {
-            // User validation
-            const user = maps.users.get(userId) as User
-            if (!user) {
-                errors.push(
-                    createEntityAPIError('nonExistent', index, 'User', userId)
-                )
-                continue
-            }
-            // Membership validation
-            if (
-                maps.memberships.has(
-                    getMembershipMapKey(organizationId, userId)
-                )
-            ) {
-                errors.push(
-                    createEntityAPIError(
-                        'existentChild',
-                        index,
-                        'User',
-                        user.user_name(),
-                        'Organization',
-                        currentEntity.organization_name,
-                        ['organization_id', 'user_id']
-                    )
-                )
-            }
-        }
+        const roles = flagNonExistent(
+            Role,
+            index,
+            organizationRoleIds,
+            maps.roles
+        )
+        errors.push(...roles.errors)
+
+        if (!users.values.length) return errors
+        const memberships = flagExistentOrganizationMembership(
+            index,
+            organizationId,
+            users.values.map((u) => u.user_id),
+            maps.memberships
+        )
+        errors.push(...memberships.errors)
+
         return errors
     }
 
@@ -217,7 +196,7 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
     generateEntityMaps = (
         input: RemoveUsersFromOrganizationInput[]
     ): Promise<RemoveUsersFromOrganizationsEntityMap> =>
-        generateMaps(this.mainEntityIds, input)
+        generateAddRemoveOrgUsersMap(this.mainEntityIds, input)
 
     protected authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
@@ -250,42 +229,25 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
 
     protected validate(
         index: number,
-        currentEntity: Organization,
+        _currentEntity: Organization,
         currentInput: RemoveUsersFromOrganizationInput,
         maps: RemoveUsersFromOrganizationsEntityMap
     ): APIError[] {
-        // Retrieval
         const errors: APIError[] = []
         const { organizationId, userIds } = currentInput
 
-        for (const userId of userIds) {
-            // User validation
-            const user = maps.users.get(userId) as User
-            if (!user) {
-                errors.push(
-                    createEntityAPIError('nonExistent', index, 'User', userId)
-                )
-                continue
-            }
-            // Membership validation
-            if (
-                !maps.memberships.has(
-                    getMembershipMapKey(organizationId, userId)
-                )
-            ) {
-                errors.push(
-                    createEntityAPIError(
-                        'nonExistentChild',
-                        index,
-                        'User',
-                        user.user_name() || user.user_id,
-                        'Organization',
-                        currentEntity.organization_name || organizationId,
-                        ['organization_id', 'user_id']
-                    )
-                )
-            }
-        }
+        const users = flagNonExistent(User, index, userIds, maps.users)
+        errors.push(...users.errors)
+
+        if (!users.values.length) return errors
+        const memberships = flagNonExistentOrganizationMembership(
+            index,
+            organizationId,
+            users.values.map((u) => u.user_id),
+            maps.memberships
+        )
+        errors.push(...memberships.errors)
+
         return errors
     }
 
@@ -298,9 +260,7 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
         const { organizationId, userIds } = currentInput
         const memberships: OrganizationMembership[] = []
         for (const userId of userIds) {
-            const membership = maps.memberships.get(
-                getMembershipMapKey(organizationId, userId)
-            ) as OrganizationMembership
+            const membership = maps.memberships.get({ organizationId, userId })!
             Object.assign(membership, this.partialEntity)
             memberships.push(membership)
         }
@@ -313,48 +273,31 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
     ): Promise<void> => addOrgToOutput(currentEntity, this.output)
 }
 
-async function generateMaps(
+async function generateAddRemoveOrgUsersMap(
     organizationIds: string[],
     input: {
         userIds: string[]
         organizationRoleIds?: string[]
     }[]
 ): Promise<AddUsersToOrganizationsEntityMap> {
-    const preloadedOrgArray = Organization.findByIds(organizationIds, {
-        where: { status: Status.ACTIVE },
-    })
-    const preloadedUserArray = User.findByIds(
-        input.map((i) => i.userIds).flat(),
-        { where: { status: Status.ACTIVE } }
+    const orgMap = getMap.organization(organizationIds)
+    const userMap = getMap.user(input.flatMap((i) => i.userIds))
+
+    const orgRoleIds = input
+        .flatMap((i) => i.organizationRoleIds)
+        .filter((rid): rid is string => rid !== undefined)
+    const roleMap = getMap.role(orgRoleIds)
+
+    const membershipMap = getMap.membership.organization(
+        organizationIds,
+        input.flatMap((i) => i.userIds)
     )
-    let preloadedRoleArray: Promise<Role[]> = Promise.resolve([])
-    // Check that we are dealing with AddUsersToOrganizationInput & not RemoveUsersFromOrganizationInput
-    if (input.some((i) => i.organizationRoleIds)) {
-        preloadedRoleArray = Role.findByIds(
-            input.flatMap((i) => i.organizationRoleIds),
-            { where: { status: Status.ACTIVE } }
-        )
-    }
-    const preloadedMembershipArray = OrganizationMembership.find({
-        where: {
-            user_id: In(input.map((i) => i.userIds).flat()),
-            organization_id: In(organizationIds),
-            status: Status.ACTIVE,
-        },
-    })
 
     return {
-        mainEntity: new Map(
-            (await preloadedOrgArray).map((i) => [i.organization_id, i])
-        ),
-        users: new Map((await preloadedUserArray).map((i) => [i.user_id, i])),
-        roles: new Map((await preloadedRoleArray).map((i) => [i.role_id, i])),
-        memberships: new Map(
-            (await preloadedMembershipArray).map((i) => [
-                getMembershipMapKey(i.organization_id, i.user_id),
-                i,
-            ])
-        ),
+        mainEntity: await orgMap,
+        users: await userMap,
+        roles: await roleMap,
+        memberships: await membershipMap,
     }
 }
 

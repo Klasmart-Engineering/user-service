@@ -2713,7 +2713,6 @@ describe('school', () => {
     describe('AddProgramsToSchools', () => {
         let adminUser: User
         let nonAdminUser: User
-        let organization: Organization
         let schools: School[]
         let programs: Program[]
         let input: AddProgramsToSchoolInput[]
@@ -2727,8 +2726,8 @@ describe('school', () => {
             for (const schoolInputs of input) {
                 const { schoolId, programIds } = schoolInputs
 
-                const school = await School.findOne(schoolId)
-                const dbPrograms = await school?.programs
+                const sch = await School.findOne(schoolId)
+                const dbPrograms = await sch?.programs
 
                 const dbProgramIds = new Set(dbPrograms?.map((val) => val.id))
                 const programIdsSet = new Set(programIds)
@@ -2745,12 +2744,12 @@ describe('school', () => {
                 await expect(
                     addPrograms(useAdminUser ? adminUser : nonAdminUser)
                 ).to.be.rejected
-                const insertedPrograms: Program[] = []
-                for (const school of schools) {
-                    const insertedPrograms = await school.programs
+                const insertedProgramList: Program[] = []
+                for (const s of schools) {
+                    const insertedPrograms = await s.programs
                     if (insertedPrograms) programs.push(...insertedPrograms)
                 }
-                expect(insertedPrograms).to.have.lengthOf(0)
+                expect(insertedProgramList).to.have.lengthOf(0)
             })
         }
 
@@ -2803,9 +2802,9 @@ describe('school', () => {
                             res,
                             {
                                 entity: 'Program',
-                                entityName: programs[0].name || '',
+                                entityName: programs[0].id,
                                 parentEntity: 'School',
-                                parentName: schools[0].school_name || '',
+                                parentName: schools[0].school_id,
                                 index: 0,
                             },
                             [''],
@@ -2951,7 +2950,6 @@ describe('school', () => {
     describe('RemoveProgramsFromSchools', () => {
         let adminUser: User
         let nonAdminUser: User
-        let organization: Organization
         let schools: School[]
         let programs: Program[]
         const programLengths: number[] = []
@@ -2969,8 +2967,8 @@ describe('school', () => {
             for (const schoolInputs of input) {
                 const { schoolId, programIds } = schoolInputs
                 const programIdsSet = new Set(programIds)
-                const school = await School.findOne(schoolId)
-                const dbPrograms = await school?.programs
+                const sch = await School.findOne(schoolId)
+                const dbPrograms = await sch?.programs
 
                 const dbProgramIds = new Set(dbPrograms?.map((val) => val.id))
                 expect(dbProgramIds.size).to.equal(
@@ -3057,9 +3055,9 @@ describe('school', () => {
                             res,
                             {
                                 entity: 'Program',
-                                entityName: programs[0].name || '',
+                                entityName: programs[0].id,
                                 parentEntity: 'School',
-                                parentName: schools[0].school_name || '',
+                                parentName: schools[0].school_id,
                                 index: 0,
                             },
                             [''],
