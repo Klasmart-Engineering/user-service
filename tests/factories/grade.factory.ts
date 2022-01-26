@@ -7,13 +7,17 @@ import { Organization } from '../../src/entities/organization'
 export function createGrade(
     org: Organization = createOrganization(),
     progressFromGrade?: Grade,
-    progressToGrade?: Grade
+    progressToGrade?: Grade,
+    system = false
 ) {
     const grade = new Grade()
 
     grade.name = faker.random.word()
-    grade.organization = Promise.resolve(org)
-    grade.system = false
+    if (!system) {
+        grade.organization = Promise.resolve(org)
+    }
+
+    grade.system = system
 
     if (progressFromGrade) {
         grade.progress_from_grade = Promise.resolve(progressFromGrade)
@@ -26,27 +30,13 @@ export function createGrade(
     return grade
 }
 
-function createSystemGrade(progressFromGrade?: Grade, progressToGrade?: Grade) {
-    const grade = new Grade()
-    grade.name = faker.random.word()
-    grade.system = true
-
-    if (progressFromGrade) {
-        grade.progress_from_grade = Promise.resolve(progressFromGrade)
-    }
-
-    if (progressToGrade) {
-        grade.progress_to_grade = Promise.resolve(progressToGrade)
-    }
-
-    return grade
-}
-
-export const createSystemGrades = (
+export const createGrades = (
     length: number,
+    org?: Organization,
     progressFromGrade?: Grade,
-    progressToGrade?: Grade
+    progressToGrade?: Grade,
+    system?: boolean
 ) =>
     Array(length)
         .fill(undefined)
-        .map(() => createSystemGrade(progressFromGrade, progressToGrade))
+        .map(() => createGrade(org, progressFromGrade, progressToGrade, system))

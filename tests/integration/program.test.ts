@@ -21,30 +21,20 @@ import {
 import { createServer } from '../../src/utils/createServer'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { ObjMap } from '../../src/utils/stringUtils'
-import {
-    createAgeRange,
-    createSystemAgeRanges,
-} from '../factories/ageRange.factory'
-import { createGrade, createSystemGrades } from '../factories/grade.factory'
+import { createAgeRange, createAgeRanges } from '../factories/ageRange.factory'
+import { createGrade, createGrades } from '../factories/grade.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createProgram } from '../factories/program.factory'
 import { createRole } from '../factories/role.factory'
-import {
-    createSubject,
-    createSystemSubjects,
-} from '../factories/subject.factory'
+import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../utils/createTestClient'
 import { userToPayload } from '../utils/operations/userOps'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { PermissionName } from './../../src/permissions/permissionNames'
 import { v4 as uuid_v4 } from 'uuid'
 import { APIError } from '../../src/types/errors/apiError'
-import { compareErrors } from '../utils/apiError'
+import { compareErrors, compareMultipleErrors } from '../utils/apiError'
 import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,
@@ -57,12 +47,9 @@ use(chaiAsPromised)
 
 describe('subject', () => {
     let connection: TestConnection
-    let testClient: ApolloServerTestClient
 
     before(async () => {
         connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
     })
 
     after(async () => {
@@ -88,9 +75,15 @@ describe('subject', () => {
     }
 
     const getAgeRanges = async () =>
-        await AgeRange.save(createSystemAgeRanges(3))
-    const getGrades = async () => await Grade.save(createSystemGrades(3))
-    const getSubjects = async () => await Subject.save(createSystemSubjects(3))
+        await AgeRange.save(
+            createAgeRanges(3, undefined, undefined, undefined, true)
+        )
+
+    const getGrades = async () =>
+        await Grade.save(createGrades(3, undefined, undefined, undefined, true))
+
+    const getSubjects = async () =>
+        await Subject.save(createSubjects(3, undefined, undefined, true))
 
     const compareProgramConnectionNodeWithInput = (
         subject: ProgramConnectionNode,
@@ -253,7 +246,15 @@ describe('subject', () => {
                 )
 
                 const input: CreateProgramInput[] = [
-                    ...expectedPairs,
+                    ...expectedPairs.map((ep) => {
+                        return {
+                            organizationId: ep.organizationId,
+                            name: ep.name,
+                            ageRangeIds: ageRanges.map((ar) => ar.id),
+                            gradeIds: grades.map((g) => g.id),
+                            subjectIds: subjects.map((s) => s.id),
+                        }
+                    }),
                     ...buildDefaultInput(1),
                 ]
 
@@ -277,6 +278,9 @@ describe('subject', () => {
                     return {
                         organizationId: orgId,
                         name: faker.random.word(),
+                        ageRangeIds: ageRanges.map((ar) => ar.id),
+                        gradeIds: grades.map((g) => g.id),
+                        subjectIds: subjects.map((s) => s.id),
                     }
                 })
 
@@ -339,19 +343,38 @@ describe('subject', () => {
                 inputs = buildDefaultInput(3)
             })
 
-            const expectInputsValidation = (error: APIError) => {
+            const expectInputsValidation = (
+                input: CreateProgramInput[],
+                expectedErrors: APIError[]
+            ) => {
                 const {
                     validInputs,
                     apiErrors,
-                } = createPrograms.validationOverAllInputs(inputs)
+                } = createPrograms.validationOverAllInputs(input)
 
-                expect(validInputs.length).to.eq(2)
-                expect(validInputs[0].input.name).to.eq(inputs[0].name)
-                expect(validInputs[0].index).to.eq(0)
-                expect(validInputs[1].input.name).to.eq(inputs[2].name)
-                expect(validInputs[1].index).to.eq(2)
-                expect(apiErrors.length).to.eq(1)
-                compareErrors(apiErrors[0], error)
+                const failedInputIndexes = new Set(
+                    apiErrors.map((err) => err.index)
+                )
+
+                const inputsWithoutErrors = input
+                    .map((i, index) => {
+                        return {
+                            ...i,
+                            index,
+                        }
+                    })
+                    .filter((i) => !failedInputIndexes.has(i.index))
+
+                expect(validInputs).to.have.lengthOf(inputsWithoutErrors.length)
+
+                validInputs.forEach((vi, i) => {
+                    const relatedInput = inputsWithoutErrors[i]
+                    expect(vi.input.name).to.eq(relatedInput.name)
+                    expect(vi.index).to.eq(relatedInput.index)
+                })
+
+                expect(apiErrors.length).to.eq(expectedErrors.length)
+                compareMultipleErrors(apiErrors, expectedErrors)
             }
 
             it("checks if exist 'name' duplicates for the same 'organizationId'", async () => {
@@ -364,7 +387,7 @@ describe('subject', () => {
                     'program'
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if the length of 'ageRangeIds' is correct", async () => {
@@ -378,7 +401,7 @@ describe('subject', () => {
                     1
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if 'ageRangeIds' has duplicated ids", async () => {
@@ -394,7 +417,7 @@ describe('subject', () => {
                     'CreateProgramInput'
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if the length of 'gradeIds' is correct", async () => {
@@ -408,7 +431,7 @@ describe('subject', () => {
                     1
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if 'gradeIds' has duplicated ids", async () => {
@@ -423,7 +446,7 @@ describe('subject', () => {
                     'CreateProgramInput'
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if the length of 'subjectIds' is correct", async () => {
@@ -437,7 +460,7 @@ describe('subject', () => {
                     1
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
 
             it("checks if 'subjectIds' has duplicated ids", async () => {
@@ -453,7 +476,7 @@ describe('subject', () => {
                     'CreateProgramInput'
                 )
 
-                expectInputsValidation(error)
+                expectInputsValidation(inputs, [error])
             })
         })
 
@@ -530,9 +553,9 @@ describe('subject', () => {
             const createSingleInput = (
                 organization: Organization,
                 name = faker.random.word(),
-                ageRangesToUse?: AgeRange[],
-                gradesToUse?: Grade[],
-                subjectsToUse?: Subject[]
+                ageRangesToUse: AgeRange[] = ageRanges,
+                gradesToUse: Grade[] = grades,
+                subjectsToUse: Subject[] = subjects
             ) => {
                 return {
                     organizationId: organization.organization_id,
@@ -556,7 +579,12 @@ describe('subject', () => {
                     inactiveOrg.organization_id
                 )
 
-                const entityManager = await buildEntityMap()
+                const entityManager = await buildEntityMap(
+                    undefined,
+                    ageRanges,
+                    grades,
+                    subjects
+                )
                 runTestCases([{ input, error }], entityManager)
             })
 
@@ -577,7 +605,12 @@ describe('subject', () => {
                     inactiveAgeRange.id
                 )
 
-                const entityMap = await buildEntityMap([program])
+                const entityMap = await buildEntityMap(
+                    [program],
+                    undefined,
+                    grades,
+                    subjects
+                )
                 runTestCases([{ input, error }], entityMap)
             })
 
@@ -603,7 +636,9 @@ describe('subject', () => {
 
                 const entityManager = await buildEntityMap(
                     [program],
-                    [...ageRanges, nonBelongingAgeRange]
+                    [...ageRanges, nonBelongingAgeRange],
+                    grades,
+                    subjects
                 )
 
                 runTestCases([{ input, error }], entityManager)
@@ -626,7 +661,12 @@ describe('subject', () => {
                     inactiveGrade.id
                 )
 
-                const entityMap = await buildEntityMap([program])
+                const entityMap = await buildEntityMap(
+                    [program],
+                    ageRanges,
+                    undefined,
+                    subjects
+                )
                 runTestCases([{ input, error }], entityMap)
             })
 
@@ -650,8 +690,9 @@ describe('subject', () => {
 
                 const entityManager = await buildEntityMap(
                     [program],
-                    undefined,
-                    [...grades, nonBelongingGrade]
+                    ageRanges,
+                    [...grades, nonBelongingGrade],
+                    subjects
                 )
 
                 runTestCases([{ input, error }], entityManager)
@@ -678,7 +719,11 @@ describe('subject', () => {
                     inactiveSubject.id
                 )
 
-                const entityMap = await buildEntityMap([program])
+                const entityMap = await buildEntityMap(
+                    [program],
+                    ageRanges,
+                    grades
+                )
                 runTestCases([{ input, error }], entityMap)
             })
 
@@ -706,8 +751,8 @@ describe('subject', () => {
 
                 const entityManager = await buildEntityMap(
                     [program],
-                    undefined,
-                    undefined,
+                    ageRanges,
+                    grades,
                     [...subjects, nonBelongingSubject]
                 )
 

@@ -29,10 +29,10 @@ import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
-import { createSystemAgeRanges } from './../factories/ageRange.factory'
-import { createSystemGrades } from './../factories/grade.factory'
-import { createSystemSubjects } from './../factories/subject.factory'
 import { createUser as createUserFactory } from './../factories/user.factory'
+import { createAgeRanges as createAgeRangesFactory } from './../factories/ageRange.factory'
+import { createGrades as createGradesFactory } from './../factories/grade.factory'
+import { createSubjects as createSubjectsFactory } from './../factories/subject.factory'
 import { Grade } from '../../src/entities/grade'
 import { Subject } from '../../src/entities/subject'
 import { UserPermissions } from '../../src/permissions/userPermissions'
@@ -410,13 +410,25 @@ describe('acceptance.program', () => {
     })
 
     const createAgeRangeIds = async () =>
-        (await AgeRange.save(createSystemAgeRanges(3))).map((ar) => ar.id)
+        (
+            await AgeRange.save(
+                createAgeRangesFactory(3, undefined, undefined, undefined, true)
+            )
+        ).map((ar) => ar.id)
 
     const createGradeIds = async () =>
-        (await Grade.save(createSystemGrades(3))).map((g) => g.id)
+        (
+            await Grade.save(
+                createGradesFactory(3, undefined, undefined, undefined, true)
+            )
+        ).map((g) => g.id)
 
     const createSubjectIds = async () =>
-        (await Subject.save(createSystemSubjects(3))).map((s) => s.id)
+        (
+            await Subject.save(
+                createSubjectsFactory(3, undefined, undefined, true)
+            )
+        ).map((s) => s.id)
 
     context('createPrograms', () => {
         let adminUser: User
@@ -466,16 +478,13 @@ describe('acceptance.program', () => {
             })
         })
 
-        it('has mandatory organizationId and name input fields', async () => {
-            const response = await makeCreateProgramsMutation(
-                [{ ageRangeIds, gradeIds, subjectIds }],
-                adminUser
-            )
+        it('all the fields are mandatory', async () => {
+            const response = await makeCreateProgramsMutation([{}], adminUser)
 
             const { data } = response.body
             expect(response.status).to.eq(400)
             expect(data).to.be.undefined
-            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors).to.be.length(5)
 
             expect(response.body.errors[0].message).to.contain(
                 'Field "name" of required type "String!" was not provided.'
@@ -483,6 +492,18 @@ describe('acceptance.program', () => {
 
             expect(response.body.errors[1].message).to.contain(
                 'Field "organizationId" of required type "ID!" was not provided.'
+            )
+
+            expect(response.body.errors[2].message).to.contain(
+                'Field "ageRangeIds" of required type "[ID!]!" was not provided.'
+            )
+
+            expect(response.body.errors[3].message).to.contain(
+                'Field "gradeIds" of required type "[ID!]!" was not provided.'
+            )
+
+            expect(response.body.errors[4].message).to.contain(
+                'Field "subjectIds" of required type "[ID!]!" was not provided.'
             )
         })
     })

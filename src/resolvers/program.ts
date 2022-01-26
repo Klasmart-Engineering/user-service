@@ -24,25 +24,15 @@ import {
     validateAtLeastOne,
     validateNoDuplicate,
     validateNoDuplicateAttribute,
+    validateSubItemsInOrg,
     validateSubItemsLengthAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
-import {
-    createEntityAPIError,
-    createExistentEntityAttributeAPIError,
-} from '../utils/resolvers/errors'
-import {
-    Entities,
-    flagNonExistent,
-    SystemEntities,
-} from '../utils/resolvers/inputValidation'
+import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
+import { flagNonExistent } from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
 
 export type ProgramAndOrg = Program & { __organization__?: Organization }
-export type SystemEntityAndOrg = SystemEntities & {
-    __organization__?: Organization
-}
-
 export interface CreateProgramsEntityMap extends EntityMap<Program> {
     organizations: Map<string, Organization>
     ageRanges: Map<string, AgeRange>
@@ -69,13 +59,6 @@ export class CreatePrograms extends CreateMutation<
     protected inputTypeName = 'CreateProgramInput'
     protected output: ProgramsMutationOutput = { programs: [] }
 
-    constructor(
-        input: CreateProgramInput[],
-        permissions: Context['permissions']
-    ) {
-        super(input, permissions)
-    }
-
     async generateEntityMaps(
         input: CreateProgramInput[]
     ): Promise<CreateProgramsEntityMap> {
@@ -88,9 +71,9 @@ export class CreatePrograms extends CreateMutation<
         input.forEach((i) => {
             organizationIds.push(i.organizationId)
             names.push(i.name)
-            if (i.ageRangeIds) allAgeRangeIds.push(...i.ageRangeIds)
-            if (i.gradeIds) allGradeIds.push(...i.gradeIds)
-            if (i.subjectIds) allSubjectIds.push(...i.subjectIds)
+            allAgeRangeIds.push(...i.ageRangeIds)
+            allGradeIds.push(...i.gradeIds)
+            allSubjectIds.push(...i.subjectIds)
         })
 
         const ageRangeIds = Array.from(new Set(allAgeRangeIds))
@@ -192,22 +175,16 @@ export class CreatePrograms extends CreateMutation<
             subjectIds,
         } = currentInput
 
-        const organizationMap = maps.organizations
-        const ageRangeMap = maps.ageRanges
-        const gradeMap = maps.grades
-        const subjectMap = maps.subjects
-        const conflictNamesMap = maps.conflictingNames
-
         const organization = flagNonExistent(
             Organization,
             index,
             [organizationId],
-            organizationMap
+            maps.organizations
         )
 
         errors.push(...organization.errors)
 
-        const conflictingNameProgramId = conflictNamesMap.get({
+        const conflictingNameProgramId = maps.conflictingNames.get({
             organizationId,
             name,
         })?.id
@@ -224,60 +201,45 @@ export class CreatePrograms extends CreateMutation<
             )
         }
 
-        if (ageRangeIds) {
-            errors.push(
-                ...validateSubItemsExistence(
-                    AgeRange,
-                    index,
-                    ageRangeIds,
-                    ageRangeMap
-                )
-            )
+        errors.push(
+            ...flagNonExistent(AgeRange, index, ageRangeIds, maps.ageRanges)
+                .errors
+        )
 
-            errors.push(
-                ...validateSubItemsInOrg(
-                    'AgeRange',
-                    index,
-                    organizationId,
-                    ageRangeMap
-                )
+        errors.push(
+            ...validateSubItemsInOrg(
+                'AgeRange',
+                index,
+                organizationId,
+                maps.ageRanges
             )
-        }
+        )
 
-        if (gradeIds) {
-            errors.push(
-                ...validateSubItemsExistence(Grade, index, gradeIds, gradeMap)
-            )
+        errors.push(
+            ...flagNonExistent(Grade, index, gradeIds, maps.grades).errors
+        )
 
-            errors.push(
-                ...validateSubItemsInOrg(
-                    'Grade',
-                    index,
-                    organizationId,
-                    gradeMap
-                )
+        errors.push(
+            ...validateSubItemsInOrg(
+                'Grade',
+                index,
+                organizationId,
+                maps.grades
             )
-        }
+        )
 
-        if (subjectIds) {
-            errors.push(
-                ...validateSubItemsExistence(
-                    Subject,
-                    index,
-                    subjectIds,
-                    subjectMap
-                )
-            )
+        errors.push(
+            ...flagNonExistent(Subject, index, subjectIds, maps.subjects).errors
+        )
 
-            errors.push(
-                ...validateSubItemsInOrg(
-                    'Subject',
-                    index,
-                    organizationId,
-                    subjectMap
-                )
+        errors.push(
+            ...validateSubItemsInOrg(
+                'Subject',
+                index,
+                organizationId,
+                maps.subjects
             )
-        }
+        )
 
         return errors
     }
@@ -300,38 +262,29 @@ export class CreatePrograms extends CreateMutation<
             maps.organizations.get(organizationId)!
         )
 
-        if (ageRangeIds) {
-            const programAgeRanges = Array.from(
-                ageRangeIds,
-                (ageRangeId) => maps.ageRanges.get(ageRangeId)!
-            )
+        const programAgeRanges = Array.from(
+            ageRangeIds,
+            (ageRangeId) => maps.ageRanges.get(ageRangeId)!
+        )
+        program.age_ranges = Promise.resolve(programAgeRanges)
 
-            program.age_ranges = Promise.resolve(programAgeRanges)
-        }
+        const programGrades = Array.from(
+            gradeIds,
+            (gradeId) => maps.grades.get(gradeId)!
+        )
+        program.grades = Promise.resolve(programGrades)
 
-        if (gradeIds) {
-            const programGrades = Array.from(
-                gradeIds,
-                (gradeId) => maps.grades.get(gradeId)!
-            )
-
-            program.grades = Promise.resolve(programGrades)
-        }
-
-        if (subjectIds) {
-            const programSubjects = Array.from(
-                subjectIds,
-                (subjectId) => maps.subjects.get(subjectId)!
-            )
-
-            program.subjects = Promise.resolve(programSubjects)
-        }
+        const programSubjects = Array.from(
+            subjectIds,
+            (subjectId) => maps.subjects.get(subjectId)!
+        )
+        program.subjects = Promise.resolve(programSubjects)
 
         return { outputEntity: program }
     }
 
     protected async buildOutput(outputProgram: Program): Promise<void> {
-        const programConnectionNode = await mapProgramToProgramConnectionNode(
+        const programConnectionNode = mapProgramToProgramConnectionNode(
             outputProgram
         )
 
@@ -546,12 +499,8 @@ export class UpdatePrograms extends UpdateMutation<
         if (ageRangeIds) {
             // Checking that the age ranges already exist
             errors.push(
-                ...validateSubItemsExistence(
-                    AgeRange,
-                    index,
-                    ageRangeIds,
-                    ageRangeMap
-                )
+                ...flagNonExistent(AgeRange, index, ageRangeIds, ageRangeMap)
+                    .errors
             )
 
             // Checking that these age ranges also exists for the same organization or are system
@@ -568,7 +517,7 @@ export class UpdatePrograms extends UpdateMutation<
         if (gradeIds) {
             // Checking that the grades already exist
             errors.push(
-                ...validateSubItemsExistence(Grade, index, gradeIds, gradeMap)
+                ...flagNonExistent(Grade, index, gradeIds, gradeMap).errors
             )
 
             // Checking that these grades also exists for the same organization or are system
@@ -585,12 +534,8 @@ export class UpdatePrograms extends UpdateMutation<
         if (subjectIds) {
             // Checking that the subjects already exist
             errors.push(
-                ...validateSubItemsExistence(
-                    Subject,
-                    index,
-                    subjectIds,
-                    subjectMap
-                )
+                ...flagNonExistent(Subject, index, subjectIds, subjectMap)
+                    .errors
             )
 
             // Checking that these subjects also exists for the same organization or are system
@@ -644,39 +589,4 @@ export class UpdatePrograms extends UpdateMutation<
 
         this.output.programs.push(programConnectionNode)
     }
-}
-
-function validateSubItemsExistence<Entity extends Entities>(
-    entity: new () => Entities,
-    index: number,
-    subItemIds: string[],
-    subItemMap: Map<string, Entity>
-) {
-    return flagNonExistent(entity, index, subItemIds, subItemMap).errors
-}
-
-function validateSubItemsInOrg<Entity extends SystemEntities>(
-    entityName: string,
-    index: number,
-    organizationId: string | undefined,
-    map: Map<string, Entity>
-) {
-    return Array.from(map.values())
-        .filter((si: SystemEntityAndOrg) => {
-            const isSystem = !!si.system
-            const isInOrg =
-                si.__organization__?.organization_id === organizationId
-
-            return !isSystem && !isInOrg
-        })
-        .map((si) =>
-            createEntityAPIError(
-                'nonExistentChild',
-                index,
-                entityName,
-                si.id,
-                'Organization',
-                organizationId
-            )
-        )
 }

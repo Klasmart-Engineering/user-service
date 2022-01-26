@@ -171,9 +171,9 @@ const typeDefs = gql`
     input CreateProgramInput {
         name: String!
         organizationId: ID!
-        ageRangeIds: [ID!]
-        gradeIds: [ID!]
-        subjectIds: [ID!]
+        ageRangeIds: [ID!]!
+        gradeIds: [ID!]!
+        subjectIds: [ID!]!
     }
 
     input UpdateProgramInput {

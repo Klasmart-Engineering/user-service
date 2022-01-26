@@ -28,7 +28,13 @@ export type Entities =
     | Subject
     | Grade
 
-export type SystemEntities = AgeRange | Grade | Subject
+export type SystemEntities =
+    | AgeRange
+    | Grade
+    | Subject
+    | Program
+    | Category
+    | Subcategory
 
 /**
  * Checks `ids` against an map and flags an existent/non_existent error.
