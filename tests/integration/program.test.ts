@@ -21,19 +21,13 @@ import {
 import { createServer } from '../../src/utils/createServer'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { ObjMap } from '../../src/utils/stringUtils'
-import {
-    createAgeRange,
-    createSystemAgeRanges,
-} from '../factories/ageRange.factory'
-import { createGrade, createSystemGrades } from '../factories/grade.factory'
+import { createAgeRange, createAgeRanges } from '../factories/ageRange.factory'
+import { createGrade, createGrades } from '../factories/grade.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createProgram } from '../factories/program.factory'
 import { createRole } from '../factories/role.factory'
-import {
-    createSubject,
-    createSystemSubjects,
-} from '../factories/subject.factory'
+import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
 import {
     ApolloServerTestClient,
@@ -88,9 +82,15 @@ describe('subject', () => {
     }
 
     const getAgeRanges = async () =>
-        await AgeRange.save(createSystemAgeRanges(3))
-    const getGrades = async () => await Grade.save(createSystemGrades(3))
-    const getSubjects = async () => await Subject.save(createSystemSubjects(3))
+        await AgeRange.save(
+            createAgeRanges(3, undefined, undefined, undefined, true)
+        )
+
+    const getGrades = async () =>
+        await Grade.save(createGrades(3, undefined, undefined, undefined, true))
+
+    const getSubjects = async () =>
+        await Subject.save(createSubjects(3, undefined, undefined, true))
 
     const compareProgramConnectionNodeWithInput = (
         subject: ProgramConnectionNode,

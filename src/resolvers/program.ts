@@ -1,3 +1,4 @@
+import { Context } from 'mocha'
 import { In } from 'typeorm'
 import { AgeRange } from '../entities/ageRange'
 import { Grade } from '../entities/grade'
@@ -5,7 +6,6 @@ import { Organization } from '../entities/organization'
 import { Program } from '../entities/program'
 import { Status } from '../entities/status'
 import { Subject } from '../entities/subject'
-import { Context } from '../main'
 import { mapProgramToProgramConnectionNode } from '../pagination/programsConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import { APIError } from '../types/errors/apiError'
@@ -27,7 +27,6 @@ import {
     createExistentEntityAttributeAPIError,
 } from '../utils/resolvers/errors'
 import {
-    Entities,
     flagNonExistent,
     SystemEntities,
 } from '../utils/resolvers/inputValidation'
@@ -178,22 +177,16 @@ export class CreatePrograms extends CreateMutation<
             subjectIds,
         } = currentInput
 
-        const organizationMap = maps.organizations
-        const ageRangeMap = maps.ageRanges
-        const gradeMap = maps.grades
-        const subjectMap = maps.subjects
-        const conflictNamesMap = maps.conflictingNames
-
         const organization = flagNonExistent(
             Organization,
             index,
             [organizationId],
-            organizationMap
+            maps.organizations
         )
 
         errors.push(...organization.errors)
 
-        const conflictingNameProgramId = conflictNamesMap.get({
+        const conflictingNameProgramId = maps.conflictingNames.get({
             organizationId,
             name,
         })?.id
@@ -211,12 +204,8 @@ export class CreatePrograms extends CreateMutation<
         }
 
         errors.push(
-            ...validateSubItemsExistence(
-                AgeRange,
-                index,
-                ageRangeIds,
-                ageRangeMap
-            )
+            ...flagNonExistent(AgeRange, index, ageRangeIds, maps.ageRanges)
+                .errors
         )
 
         errors.push(
@@ -224,20 +213,25 @@ export class CreatePrograms extends CreateMutation<
                 'AgeRange',
                 index,
                 organizationId,
-                ageRangeMap
+                maps.ageRanges
             )
         )
 
         errors.push(
-            ...validateSubItemsExistence(Grade, index, gradeIds, gradeMap)
+            ...flagNonExistent(Grade, index, gradeIds, maps.grades).errors
         )
 
         errors.push(
-            ...validateSubItemsInOrg('Grade', index, organizationId, gradeMap)
+            ...validateSubItemsInOrg(
+                'Grade',
+                index,
+                organizationId,
+                maps.grades
+            )
         )
 
         errors.push(
-            ...validateSubItemsExistence(Subject, index, subjectIds, subjectMap)
+            ...flagNonExistent(Subject, index, subjectIds, maps.subjects).errors
         )
 
         errors.push(
@@ -245,7 +239,7 @@ export class CreatePrograms extends CreateMutation<
                 'Subject',
                 index,
                 organizationId,
-                subjectMap
+                maps.subjects
             )
         )
 
@@ -292,7 +286,7 @@ export class CreatePrograms extends CreateMutation<
     }
 
     protected async buildOutput(outputProgram: Program): Promise<void> {
-        const programConnectionNode = await mapProgramToProgramConnectionNode(
+        const programConnectionNode = mapProgramToProgramConnectionNode(
             outputProgram
         )
 
@@ -300,24 +294,15 @@ export class CreatePrograms extends CreateMutation<
     }
 }
 
-function validateSubItemsExistence<Entity extends Entities>(
-    entity: new () => Entities,
-    index: number,
-    subItemIds: string[],
-    subItemMap: Map<string, Entity>
-) {
-    return flagNonExistent(entity, index, subItemIds, subItemMap).errors
-}
-
-function validateSubItemsInOrg<Entity extends SystemEntities>(
+function validateSubItemsInOrg<Entity extends SystemEntityAndOrg>(
     entityName: string,
     index: number,
     organizationId: string,
     map: Map<string, Entity>
 ) {
     return Array.from(map.values())
-        .filter((si: SystemEntityAndOrg) => {
-            const isSystem = !!si.system
+        .filter((si) => {
+            const isSystem = si.system
             const isInOrg =
                 si.__organization__?.organization_id === organizationId
 
