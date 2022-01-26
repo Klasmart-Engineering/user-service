@@ -19,9 +19,9 @@ export interface ProgramConnectionNode {
 export interface CreateProgramInput {
     name: string
     organizationId: string
-    ageRangeIds?: string[]
-    gradeIds?: string[]
-    subjectIds?: string[]
+    ageRangeIds: string[]
+    gradeIds: string[]
+    subjectIds: string[]
 }
 
 export interface ProgramsMutationOutput {

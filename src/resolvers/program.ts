@@ -74,9 +74,9 @@ export class CreatePrograms extends CreateMutation<
         input.forEach((i) => {
             organizationIds.push(i.organizationId)
             names.push(i.name)
-            if (i.ageRangeIds) allAgeRangeIds.push(...i.ageRangeIds)
-            if (i.gradeIds) allGradeIds.push(...i.gradeIds)
-            if (i.subjectIds) allSubjectIds.push(...i.subjectIds)
+            allAgeRangeIds.push(...i.ageRangeIds)
+            allGradeIds.push(...i.gradeIds)
+            allSubjectIds.push(...i.subjectIds)
         })
 
         const ageRangeIds = Array.from(new Set(allAgeRangeIds))
@@ -210,60 +210,44 @@ export class CreatePrograms extends CreateMutation<
             )
         }
 
-        if (ageRangeIds) {
-            errors.push(
-                ...validateSubItemsExistence(
-                    AgeRange,
-                    index,
-                    ageRangeIds,
-                    ageRangeMap
-                )
+        errors.push(
+            ...validateSubItemsExistence(
+                AgeRange,
+                index,
+                ageRangeIds,
+                ageRangeMap
             )
+        )
 
-            errors.push(
-                ...validateSubItemsInOrg(
-                    'AgeRange',
-                    index,
-                    organizationId,
-                    ageRangeMap
-                )
+        errors.push(
+            ...validateSubItemsInOrg(
+                'AgeRange',
+                index,
+                organizationId,
+                ageRangeMap
             )
-        }
+        )
 
-        if (gradeIds) {
-            errors.push(
-                ...validateSubItemsExistence(Grade, index, gradeIds, gradeMap)
-            )
+        errors.push(
+            ...validateSubItemsExistence(Grade, index, gradeIds, gradeMap)
+        )
 
-            errors.push(
-                ...validateSubItemsInOrg(
-                    'Grade',
-                    index,
-                    organizationId,
-                    gradeMap
-                )
-            )
-        }
+        errors.push(
+            ...validateSubItemsInOrg('Grade', index, organizationId, gradeMap)
+        )
 
-        if (subjectIds) {
-            errors.push(
-                ...validateSubItemsExistence(
-                    Subject,
-                    index,
-                    subjectIds,
-                    subjectMap
-                )
-            )
+        errors.push(
+            ...validateSubItemsExistence(Subject, index, subjectIds, subjectMap)
+        )
 
-            errors.push(
-                ...validateSubItemsInOrg(
-                    'Subject',
-                    index,
-                    organizationId,
-                    subjectMap
-                )
+        errors.push(
+            ...validateSubItemsInOrg(
+                'Subject',
+                index,
+                organizationId,
+                subjectMap
             )
-        }
+        )
 
         return errors
     }
@@ -286,32 +270,23 @@ export class CreatePrograms extends CreateMutation<
             maps.organizations.get(organizationId)!
         )
 
-        if (ageRangeIds) {
-            const programAgeRanges = Array.from(
-                ageRangeIds,
-                (ageRangeId) => maps.ageRanges.get(ageRangeId)!
-            )
+        const programAgeRanges = Array.from(
+            ageRangeIds,
+            (ageRangeId) => maps.ageRanges.get(ageRangeId)!
+        )
+        program.age_ranges = Promise.resolve(programAgeRanges)
 
-            program.age_ranges = Promise.resolve(programAgeRanges)
-        }
+        const programGrades = Array.from(
+            gradeIds,
+            (gradeId) => maps.grades.get(gradeId)!
+        )
+        program.grades = Promise.resolve(programGrades)
 
-        if (gradeIds) {
-            const programGrades = Array.from(
-                gradeIds,
-                (gradeId) => maps.grades.get(gradeId)!
-            )
-
-            program.grades = Promise.resolve(programGrades)
-        }
-
-        if (subjectIds) {
-            const programSubjects = Array.from(
-                subjectIds,
-                (subjectId) => maps.subjects.get(subjectId)!
-            )
-
-            program.subjects = Promise.resolve(programSubjects)
-        }
+        const programSubjects = Array.from(
+            subjectIds,
+            (subjectId) => maps.subjects.get(subjectId)!
+        )
+        program.subjects = Promise.resolve(programSubjects)
 
         return { outputEntity: program }
     }
