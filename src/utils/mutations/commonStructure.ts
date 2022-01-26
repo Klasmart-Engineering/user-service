@@ -323,10 +323,7 @@ abstract class Mutation<
     protected entityMaps?: EntityMapType
     protected processedEntities: ModifiedEntityType[] = []
 
-    protected constructor(
-        input: InputType[],
-        permissions: Context['permissions']
-    ) {
+    constructor(input: InputType[], permissions: Context['permissions']) {
         this.input = input
         this.permissions = permissions
     }

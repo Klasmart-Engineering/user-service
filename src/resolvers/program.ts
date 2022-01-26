@@ -1,4 +1,3 @@
-import { Context } from 'mocha'
 import { In } from 'typeorm'
 import { AgeRange } from '../entities/ageRange'
 import { Grade } from '../entities/grade'
@@ -53,13 +52,6 @@ export class CreatePrograms extends CreateMutation<
     protected readonly EntityType = Program
     protected inputTypeName = 'CreateProgramInput'
     protected output: ProgramsMutationOutput = { programs: [] }
-
-    constructor(
-        input: CreateProgramInput[],
-        permissions: Context['permissions']
-    ) {
-        super(input, permissions)
-    }
 
     async generateEntityMaps(
         input: CreateProgramInput[]
