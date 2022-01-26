@@ -253,7 +253,15 @@ describe('subject', () => {
                 )
 
                 const input: CreateProgramInput[] = [
-                    ...expectedPairs,
+                    ...expectedPairs.map((ep) => {
+                        return {
+                            organizationId: ep.organizationId,
+                            name: ep.name,
+                            ageRangeIds: ageRanges.map((ar) => ar.id),
+                            gradeIds: grades.map((g) => g.id),
+                            subjectIds: subjects.map((s) => s.id),
+                        }
+                    }),
                     ...buildDefaultInput(1),
                 ]
 
@@ -277,6 +285,9 @@ describe('subject', () => {
                     return {
                         organizationId: orgId,
                         name: faker.random.word(),
+                        ageRangeIds: ageRanges.map((ar) => ar.id),
+                        gradeIds: grades.map((g) => g.id),
+                        subjectIds: subjects.map((s) => s.id),
                     }
                 })
 
@@ -530,9 +541,9 @@ describe('subject', () => {
             const createSingleInput = (
                 organization: Organization,
                 name = faker.random.word(),
-                ageRangesToUse?: AgeRange[],
-                gradesToUse?: Grade[],
-                subjectsToUse?: Subject[]
+                ageRangesToUse: AgeRange[] = ageRanges,
+                gradesToUse: Grade[] = grades,
+                subjectsToUse: Subject[] = subjects
             ) => {
                 return {
                     organizationId: organization.organization_id,
@@ -556,7 +567,12 @@ describe('subject', () => {
                     inactiveOrg.organization_id
                 )
 
-                const entityManager = await buildEntityMap()
+                const entityManager = await buildEntityMap(
+                    undefined,
+                    ageRanges,
+                    grades,
+                    subjects
+                )
                 runTestCases([{ input, error }], entityManager)
             })
 
@@ -577,7 +593,12 @@ describe('subject', () => {
                     inactiveAgeRange.id
                 )
 
-                const entityMap = await buildEntityMap([program])
+                const entityMap = await buildEntityMap(
+                    [program],
+                    undefined,
+                    grades,
+                    subjects
+                )
                 runTestCases([{ input, error }], entityMap)
             })
 
@@ -603,7 +624,9 @@ describe('subject', () => {
 
                 const entityManager = await buildEntityMap(
                     [program],
-                    [...ageRanges, nonBelongingAgeRange]
+                    [...ageRanges, nonBelongingAgeRange],
+                    grades,
+                    subjects
                 )
 
                 runTestCases([{ input, error }], entityManager)
@@ -626,7 +649,12 @@ describe('subject', () => {
                     inactiveGrade.id
                 )
 
-                const entityMap = await buildEntityMap([program])
+                const entityMap = await buildEntityMap(
+                    [program],
+                    ageRanges,
+                    undefined,
+                    subjects
+                )
                 runTestCases([{ input, error }], entityMap)
             })
 
@@ -650,8 +678,9 @@ describe('subject', () => {
 
                 const entityManager = await buildEntityMap(
                     [program],
-                    undefined,
-                    [...grades, nonBelongingGrade]
+                    ageRanges,
+                    [...grades, nonBelongingGrade],
+                    subjects
                 )
 
                 runTestCases([{ input, error }], entityManager)
@@ -678,7 +707,11 @@ describe('subject', () => {
                     inactiveSubject.id
                 )
 
-                const entityMap = await buildEntityMap([program])
+                const entityMap = await buildEntityMap(
+                    [program],
+                    ageRanges,
+                    grades
+                )
                 runTestCases([{ input, error }], entityMap)
             })
 
@@ -706,8 +739,8 @@ describe('subject', () => {
 
                 const entityManager = await buildEntityMap(
                     [program],
-                    undefined,
-                    undefined,
+                    ageRanges,
+                    grades,
                     [...subjects, nonBelongingSubject]
                 )
 

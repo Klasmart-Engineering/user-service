@@ -17,16 +17,16 @@ export function createSubject(
     }
 
     subject.categories = Promise.resolve(categories)
-    subject.system = false
+    subject.system = system
 
     return subject
 }
 
 export function createSubjects(
     length: number,
-    org: Organization = createOrganization(),
-    categories: Category[] = [],
-    system = false
+    org?: Organization,
+    categories?: Category[],
+    system?: boolean
 ) {
     return Array(length)
         .fill(undefined)
