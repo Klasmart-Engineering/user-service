@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
-import endPointHomeRequest1 from "./scripts/endPointHomeRequest1";
+import endPointHomeRequest1 from "./scripts/meQueryBasic";
 
 /*
 

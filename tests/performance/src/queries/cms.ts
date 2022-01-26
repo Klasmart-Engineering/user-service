@@ -1,8 +1,8 @@
 // Query for meMemership 1 used in the Schedule section
-export const meMembershipForCMS =`
+export const meMembershipForCMS = (orgId: string) => (`
     query meMembership { 
         me {
-                membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
+            membership(organization_id: "${orgId}") {
                 create_content_page_201: checkAllowed(permission_name: "create_content_page_201")
                 create_lesson_material_220: checkAllowed(permission_name: "create_lesson_material_220")
                 create_lesson_plan_221: checkAllowed(permission_name: "create_lesson_plan_221")
@@ -27,13 +27,13 @@ export const meMembershipForCMS =`
             }
         }
     }
-`;
+`);
 
 // Query for meMemership 1 used in the Schedule section
-export const meMembershipForCMS2 =`
+export const meMembershipForCMS2 = (orgId: string) => (`
     query meMembership { 
         me {
-                membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
+                membership(organization_id: "${orgId}") {
                 published_content_page_204: checkAllowed(permission_name: "published_content_page_204")
                 pending_content_page_203: checkAllowed(permission_name: "pending_content_page_203")
                 unpublished_content_page_202: checkAllowed(permission_name: "unpublished_content_page_202")
@@ -42,4 +42,4 @@ export const meMembershipForCMS2 =`
             }
         }
     }
-`;
+`);

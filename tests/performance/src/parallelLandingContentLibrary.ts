@@ -3,13 +3,12 @@ import landingV2 from './scripts/landingV2';
 import loginSetup from './utils/loginSetup';
 import { sleep } from 'k6';
 import http from 'k6/http';
-import endPointHomeRequest1 from './scripts/endPointHomeRequest1';
+import endPointHomeRequest1 from './scripts/meQueryBasic';
 import contentLibraryUserSetting from './scripts/contentLibraryUserSetting'
 import contentLibraryOrgPropertys from './scripts/contentLibraryOrgPropertys'
-import getCmsMemerships from './scripts/getCmsMemerships'
-import getCmsMemerships2 from './scripts/getCmsMemerships2'
+import getCmsMemerships from './scripts/getCmsMemberships'
+import getCmsMemerships2 from './scripts/getCmsMemberships2'
 import endPointCmsRequest1Published from './scripts/endPointCmsRequest1Published'
-import endPointCmsRequest2Pending from './scripts/endPointCmsRequest2Pending'
 import generateStages from './utils/generateStages';
 
 // command to run the script
