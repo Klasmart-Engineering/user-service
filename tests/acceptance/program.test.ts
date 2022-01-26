@@ -24,7 +24,10 @@ import {
     IProgramDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { PROGRAMS_CONNECTION } from '../utils/operations/modelOps'
-import { CREATE_PROGRAMS } from '../utils/operations/programOps'
+import {
+    CREATE_PROGRAMS,
+    UPDATE_PROGRAMS,
+} from '../utils/operations/programOps'
 import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
@@ -504,6 +507,72 @@ describe('acceptance.program', () => {
 
             expect(response.body.errors[4].message).to.contain(
                 'Field "subjectIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('updatePrograms', () => {
+        let adminUser: User
+        let ageRangeIds: string[]
+        let gradeIds: string[]
+        let subjectIds: string[]
+        let programToEdit: Program
+
+        const makeUpdateProgramsMutation = async (input: any, caller: User) => {
+            return await makeRequest(
+                request,
+                print(UPDATE_PROGRAMS),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            const org = await createOrganization().save()
+            programToEdit = await createProgram(org).save()
+            ageRangeIds = await createAgeRangeIds()
+            gradeIds = await createGradeIds()
+            subjectIds = await createSubjectIds()
+            adminUser = await createUserFactory({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [
+                    {
+                        id: programToEdit.id,
+                        name: 'New Name',
+                        ageRangeIds,
+                        gradeIds,
+                        subjectIds,
+                    },
+                ]
+
+                const response = await makeUpdateProgramsMutation(
+                    input,
+                    adminUser
+                )
+
+                const { programs } = response.body.data.updatePrograms
+                expect(response.status).to.eq(200)
+                expect(programs).to.have.lengthOf(input.length)
+            })
+        })
+
+        it('has mandatory id field', async () => {
+            const response = await makeUpdateProgramsMutation(
+                [{ name: 'New Name', ageRangeIds, gradeIds, subjectIds }],
+                adminUser
+            )
+
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
             )
         })
     })
