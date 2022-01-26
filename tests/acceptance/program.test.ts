@@ -478,16 +478,13 @@ describe('acceptance.program', () => {
             })
         })
 
-        it('has mandatory organizationId and name input fields', async () => {
-            const response = await makeCreateProgramsMutation(
-                [{ ageRangeIds, gradeIds, subjectIds }],
-                adminUser
-            )
+        it('all the fields are mandatory', async () => {
+            const response = await makeCreateProgramsMutation([{}], adminUser)
 
             const { data } = response.body
             expect(response.status).to.eq(400)
             expect(data).to.be.undefined
-            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors).to.be.length(5)
 
             expect(response.body.errors[0].message).to.contain(
                 'Field "name" of required type "String!" was not provided.'
@@ -495,6 +492,18 @@ describe('acceptance.program', () => {
 
             expect(response.body.errors[1].message).to.contain(
                 'Field "organizationId" of required type "ID!" was not provided.'
+            )
+
+            expect(response.body.errors[2].message).to.contain(
+                'Field "ageRangeIds" of required type "[ID!]!" was not provided.'
+            )
+
+            expect(response.body.errors[3].message).to.contain(
+                'Field "gradeIds" of required type "[ID!]!" was not provided.'
+            )
+
+            expect(response.body.errors[4].message).to.contain(
+                'Field "subjectIds" of required type "[ID!]!" was not provided.'
             )
         })
     })
