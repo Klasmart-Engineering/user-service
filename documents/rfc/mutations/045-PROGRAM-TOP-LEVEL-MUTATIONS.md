@@ -141,9 +141,9 @@ input CreateProgramInput {
 input UpdateProgramInput {
     id: ID!
     name: String
-    ageRangeIds: [ID!]!
-    gradeIds: [ID!]!
-    subjectIds: [ID!]!
+    ageRangeIds: [ID!]
+    gradeIds: [ID!]
+    subjectIds: [ID!]
 }
 
 input DeleteProgramInput {
