@@ -382,10 +382,9 @@ async function generateMapsForAddingRemovingPrograms(
     input: AddProgramsToClassInput[]
 ): Promise<EntityMapAddRemovePrograms> {
     const classes = getMap.class(classIds, ['programs'])
-    const allProgramIds = input.map((val) => val.programIds).flat()
-    const programs = getMap.program(allProgramIds)
-    const classPrograms = new Map<string, Program[]>()
+    const programs = getMap.program(input.flatMap((i) => i.programIds))
 
+    const classPrograms = new Map<string, Program[]>()
     for (const class_ of (await classes).values()) {
         // eslint-disable-next-line no-await-in-loop
         classPrograms.set(class_.class_id, (await class_.programs) || [])

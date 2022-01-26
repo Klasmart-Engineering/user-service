@@ -7190,18 +7190,18 @@ describe('organization', () => {
                         }).save()
                     })
 
-                    it('returns a duplicate_child_entity error', async () => {
+                    it('returns an existent_child_entity error', async () => {
                         const res = await expect(addUsers()).to.be.rejected
                         expectAPIError.existent_child_entity(
                             res,
                             {
                                 entity: 'User',
-                                entityName: users[0].user_name() || '',
+                                entityName: users[0].user_id,
                                 parentEntity: 'Organization',
-                                parentName: orgs[0].organization_name || '',
+                                parentName: orgs[0].organization_id,
                                 index: 0,
                             },
-                            ['organization_id', 'user_id'],
+                            [''],
                             0,
                             1
                         )
@@ -7456,12 +7456,12 @@ describe('organization', () => {
                             res,
                             {
                                 entity: 'User',
-                                entityName: users[0].user_name() || '',
+                                entityName: users[0].user_id,
                                 parentEntity: 'Organization',
-                                parentName: orgs[0].organization_name || '',
+                                parentName: orgs[0].organization_id,
                                 index: 0,
                             },
-                            ['organization_id', 'user_id'],
+                            [''],
                             0,
                             1
                         )
