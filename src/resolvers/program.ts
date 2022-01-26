@@ -18,22 +18,13 @@ import {
     EntityMap,
     filterInvalidInputs,
     validateNoDuplicate,
+    validateSubItemsInOrg,
     validateSubItemsLengthAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
-import {
-    createEntityAPIError,
-    createExistentEntityAttributeAPIError,
-} from '../utils/resolvers/errors'
-import {
-    flagNonExistent,
-    SystemEntities,
-} from '../utils/resolvers/inputValidation'
+import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
+import { flagNonExistent } from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
-
-export type SystemEntityAndOrg = SystemEntities & {
-    __organization__?: Organization
-}
 
 export interface CreateProgramsEntityMap extends EntityMap<Program> {
     organizations: Map<string, Organization>
@@ -284,30 +275,4 @@ export class CreatePrograms extends CreateMutation<
 
         this.output.programs.push(programConnectionNode)
     }
-}
-
-function validateSubItemsInOrg<Entity extends SystemEntityAndOrg>(
-    entityName: string,
-    index: number,
-    organizationId: string,
-    map: Map<string, Entity>
-) {
-    return Array.from(map.values())
-        .filter((si) => {
-            const isSystem = si.system
-            const isInOrg =
-                si.__organization__?.organization_id === organizationId
-
-            return !isSystem && !isInOrg
-        })
-        .map((si) =>
-            createEntityAPIError(
-                'nonExistentChild',
-                index,
-                entityName,
-                si.id,
-                'Organization',
-                organizationId
-            )
-        )
 }
