@@ -1,5 +1,6 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
+import { v4 as uuid_v4 } from 'uuid'
 import { Connection } from 'typeorm'
 import { Organization } from '../../src/entities/organization'
 import { User } from '../../src/entities/user'
@@ -15,6 +16,7 @@ import { createBrandingImage } from '../factories/brandingImage.factory'
 import { createBranding } from '../factories/branding.factory'
 import {
     AddUsersToOrganizationInput,
+    CreateOrganizationInput,
     OrganizationConnectionNode,
     RemoveUsersFromOrganizationInput,
 } from '../../src/types/graphQL/organization'
@@ -25,6 +27,7 @@ import {
 } from '../factories/role.factory'
 import {
     ADD_USERS_TO_ORGANIZATIONS,
+    CREATE_ORGANIZATIONS,
     REMOVE_USERS_FROM_ORGANIZATIONS,
 } from '../utils/operations/organizationOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
@@ -38,6 +41,8 @@ import { createClass } from '../factories/class.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Role } from '../../src/entities/role'
+import faker from 'faker'
+import { generateShortCode } from '../../src/utils/shortcode'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -67,6 +72,60 @@ describe('acceptance.organization', () => {
         }).save()
         school = await createSchool(organization).save()
         class_ = await createClass([school], organization).save()
+    })
+
+    context('createOrganizations', () => {
+        let adminUser: User
+        let input: CreateOrganizationInput[]
+        const orgCount = 5
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const users = await User.save(createUsers(orgCount))
+            input = users.map((u) => {
+                return {
+                    userId: u.user_id,
+                    organizationName: uuid_v4(), // using uuid to avoid name clashes
+                    address1: faker.address.streetAddress(),
+                    address2: faker.address.zipCode(),
+                    phone: faker.phone.phoneNumber(),
+                    shortcode: generateShortCode(),
+                }
+            })
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                CREATE_ORGANIZATIONS,
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+
+            const resOrgs: OrganizationConnectionNode[] =
+                response.body.data.createOrganizations.organizations
+            expect(response.status).to.eq(200)
+            expect(resOrgs).to.have.length(orgCount)
+        })
+
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                CREATE_ORGANIZATIONS,
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "userId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "organizationName" of required type "String!" was not provided.'
+            )
+        })
     })
 
     context('addUsersToOrganizations', () => {

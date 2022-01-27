@@ -390,6 +390,9 @@ const typeDefs = gql`
             phone: String
             shortCode: String
         ): Organization
+            @deprecated(
+                reason: "Sunset Date: 01/05/22 Details: https://calmisland.atlassian.net/l/c/hKbcoRyx"
+            )
         merge(other_id: String): User
         addOrganization(organization_id: ID!): OrganizationMembership
             @deprecated(

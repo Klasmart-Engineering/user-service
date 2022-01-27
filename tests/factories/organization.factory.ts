@@ -12,5 +12,20 @@ export function createOrganization(user: User = createUser()) {
     return organization
 }
 
+export function createOrganizationPlus(args: Partial<Organization>) {
+    const organization = new Organization()
+
+    organization.organization_name =
+        args.organization_name ?? faker.name.findName()
+    organization.owner = args.owner
+    organization.address1 = args.address1
+    organization.address2 = args.address2
+    organization.phone = args.phone
+    organization.shortCode = args.shortCode
+    organization.memberships = args.memberships
+
+    return organization
+}
+
 export const createOrganizations = (length: number) =>
     Array(length).fill(undefined).map(createOrganization)

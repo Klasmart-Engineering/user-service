@@ -123,7 +123,6 @@ extend type Mutation {
 input CreateOrganizationInput {
   userId: ID!
   organizationName: String!
-  email: String
   address1: String
   address2: String
   phone: String

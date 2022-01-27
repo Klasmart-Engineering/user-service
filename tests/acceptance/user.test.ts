@@ -853,7 +853,6 @@ describe('acceptance.user', () => {
     context('addSchoolRolesToUsers', () => {
         let adminUser: User
         let input: AddSchoolRolesToUserInput[]
-        let users: User[]
 
         beforeEach(async () => {
             adminUser = await createUser({

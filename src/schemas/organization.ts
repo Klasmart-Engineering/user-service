@@ -8,6 +8,7 @@ import { Context } from '../main'
 import { Model } from '../model'
 import {
     AddUsersToOrganizations,
+    CreateOrganizations,
     RemoveUsersFromOrganizations,
 } from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
@@ -29,6 +30,13 @@ const typeDefs = gql`
     scalar Url
 
     extend type Mutation {
+        """
+        Creates a new organization, and makes the user its
+        owner as well as a member of the organization.
+        """
+        createOrganizations(
+            input: [CreateOrganizationInput!]!
+        ): OrganizationsMutationResult
         addUsersToOrganizations(
             input: [AddUsersToOrganizationInput!]!
         ): OrganizationsMutationResult
@@ -265,6 +273,19 @@ const typeDefs = gql`
     }
 
     # Mutation related definitions
+
+    input CreateOrganizationInput {
+        """
+        A user who will become the organization's owner.
+        Must not already own an organization.
+        """
+        userId: ID!
+        organizationName: String!
+        address1: String
+        address2: String
+        phone: String
+        shortcode: String
+    }
 
     input AddUsersToOrganizationInput {
         organizationId: ID!
@@ -535,6 +556,8 @@ export default function getDefault(
                 ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {
+                createOrganizations: (_parent, args, ctx, _info) =>
+                    mutate(CreateOrganizations, args, ctx.permissions),
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
                     mutate(AddUsersToOrganizations, args, ctx.permissions),
                 removeUsersFromOrganizations: (_parent, args, ctx, _info) =>

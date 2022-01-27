@@ -19,6 +19,8 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
     [key: string]:
         | Map<string, CustomBaseEntity | CustomBaseEntity[]>
         | ObjMap<{ [key: string]: string }, unknown>
+        | CustomBaseEntity
+        | CustomBaseEntity[]
         | string[]
         | undefined
 }
@@ -319,10 +321,7 @@ abstract class Mutation<
     protected entityMaps?: EntityMapType
     protected processedEntities: ModifiedEntityType[] = []
 
-    protected constructor(
-        input: InputType[],
-        permissions: Context['permissions']
-    ) {
+    constructor(input: InputType[], permissions: Context['permissions']) {
         this.input = input
         this.permissions = permissions
     }
@@ -501,17 +500,27 @@ export abstract class CreateMutation<
     EntityType extends CustomBaseEntity,
     InputType,
     OutputType,
-    EntityMapType extends EntityMap<EntityType>
-> extends Mutation<EntityType, InputType, OutputType, EntityMapType> {
+    EntityMapType extends EntityMap<EntityType>,
+    ModifiedEntityType extends CustomBaseEntity = EntityType
+> extends Mutation<
+    EntityType,
+    InputType,
+    OutputType,
+    EntityMapType,
+    ModifiedEntityType
+> {
     protected mainEntityIds: string[] = []
     protected abstract buildOutput(outputEntity: EntityType): Promise<void>
 
     async applyToDatabase(
-        results: Pick<ProcessedResult<EntityType, EntityType>, 'outputEntity'>[]
+        results: ProcessedResult<EntityType, ModifiedEntityType>[]
     ): Promise<void> {
         const allEntitiesToSave = []
         for (const result of results) {
             allEntitiesToSave.push(result.outputEntity)
+            if (result.modifiedEntity) {
+                allEntitiesToSave.push(...result.modifiedEntity)
+            }
         }
         await getManager().save(allEntitiesToSave)
     }

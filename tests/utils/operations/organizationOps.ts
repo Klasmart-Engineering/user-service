@@ -12,14 +12,13 @@ import { Subcategory } from '../../../src/entities/subcategory'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
 import { ApolloServerTestClient } from '../createTestClient'
-import { getAdminAuthToken, generateToken } from '../testConfig'
+import { getAdminAuthToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
 import { Program } from '../../../src/entities/program'
 import { gql } from 'apollo-server-express'
 import { EditMembershipArguments } from '../../../src/operations/organization'
 import { pickBy } from 'lodash'
-import { AddUsersToOrganizationInput } from '../../../src/types/graphQL/organization'
 
 export const CREATE_CLASS = `
     mutation myMutation(
@@ -448,6 +447,14 @@ const ORGANIZATIONS_MUTATION_RESULT = `organizations {
                     id
                 }
             }`
+
+export const CREATE_ORGANIZATIONS = `
+    mutation myMutation($input: [CreateOrganizationInput!]!) {
+        createOrganizations(input: $input) {
+            ${ORGANIZATIONS_MUTATION_RESULT}
+        }
+    }
+`
 
 export const ADD_USERS_TO_ORGANIZATIONS = `
     mutation myMutation($input: [AddUsersToOrganizationInput!]!) {
