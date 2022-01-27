@@ -821,7 +821,7 @@ describe('program', () => {
         })
     })
 
-    describe('updatePrograms', () => {
+    describe('UpdatePrograms', () => {
         let ctx: { permissions: UserPermissions }
         let org: Organization
         let programsToEdit: Program[]
