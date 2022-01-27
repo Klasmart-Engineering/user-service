@@ -49,7 +49,7 @@ import {
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
 
-describe('subject', () => {
+describe('program', () => {
     let connection: TestConnection
 
     before(async () => {
@@ -165,7 +165,7 @@ describe('subject', () => {
         return { permittedOrg, userCtx: { permissions } }
     }
 
-    describe('createPrograms', () => {
+    describe('CreatePrograms', () => {
         let ctx: { permissions: UserPermissions }
         let org: Organization
         let ageRanges: AgeRange[]

@@ -11,11 +11,7 @@ export function createSubject(
 ) {
     const subject = new Subject()
     subject.name = faker.random.word()
-
-    if (!system) {
-        subject.organization = Promise.resolve(org)
-    }
-
+    if (!system) subject.organization = Promise.resolve(org)
     subject.categories = Promise.resolve(categories)
     subject.system = system
 

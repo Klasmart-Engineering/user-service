@@ -32,6 +32,6 @@ export interface UpdateProgramInput {
     subjectIds?: string[]
 }
 
-export interface ProgramsMutationOutput {
+export interface ProgramsMutationResult {
     programs: ProgramConnectionNode[]
 }

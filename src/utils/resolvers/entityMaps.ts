@@ -17,14 +17,6 @@ import { Subject } from '../../entities/subject'
 import { Grade } from '../../entities/grade'
 
 /**
- * @deprecated made redundant by ObjMap
- */
-export const getMembershipMapKey = (
-    organizationOrSchoolId: string,
-    userId: string
-) => JSON.stringify([organizationOrSchoolId, userId])
-
-/**
  * Queries the db for a list of entities by ID, then converts that into a map (ID => Entity)
  */
 function idToEntityMap<T extends CustomBaseEntity>(

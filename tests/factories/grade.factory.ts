@@ -13,10 +13,7 @@ export function createGrade(
     const grade = new Grade()
 
     grade.name = faker.random.word()
-    if (!system) {
-        grade.organization = Promise.resolve(org)
-    }
-
+    if (!system) grade.organization = Promise.resolve(org)
     grade.system = system
 
     if (progressFromGrade) {

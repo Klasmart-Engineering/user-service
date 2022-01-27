@@ -36,6 +36,39 @@ export type SystemEntities =
     | Category
     | Subcategory
 
+export type SystemEntityAndOrg = SystemEntities & {
+    __organization__?: Organization
+}
+
+/**
+ * Checks if a determined sub item exists for an organization or is system
+ */
+export function validateSubItemsInOrg<T extends SystemEntityAndOrg>(
+    subItemClass: new () => T,
+    index: number,
+    organizationId: string | undefined,
+    map: Map<string, T>
+) {
+    return Array.from(map.values())
+        .filter((si) => {
+            const isSystem = si.system
+            const isInOrg =
+                si.__organization__?.organization_id === organizationId
+
+            return !isSystem && !isInOrg
+        })
+        .map((si) =>
+            createEntityAPIError(
+                'nonExistentChild',
+                index,
+                subItemClass.name,
+                si.id,
+                'Organization',
+                organizationId
+            )
+        )
+}
+
 /**
  * Checks `ids` against an map and flags an existent/non_existent error.
  */

@@ -31,10 +31,7 @@ export function createAgeRange(
         Object.values(AgeRangeUnit)
     )
 
-    if (!system) {
-        ageRange.organization = Promise.resolve(org)
-    }
-
+    if (!system) ageRange.organization = Promise.resolve(org)
     ageRange.system = system
 
     return ageRange
