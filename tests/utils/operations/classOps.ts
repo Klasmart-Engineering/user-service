@@ -281,6 +281,15 @@ export const ADD_PROGRAMS_TO_CLASSES = gql`
         }
     }
 `
+
+export const ADD_STUDENTS_TO_CLASSES = gql`
+    mutation myMutation($input: [AddStudentsToClassInput!]!) {
+        addStudentsToClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export const CREATE_CLASSES = `mutation($input: [CreateClassInput!]!) {
     createClasses(input: $input) {
         ${CLASSES_MUTATION_RESULT}

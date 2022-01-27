@@ -49,6 +49,8 @@ import {
     EntityMapCreateClass,
     UpdateClasses,
     UpdateClassEntityMap,
+    AddStudentsToClasses,
+    AddStudentsClassesEntityMap,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -77,9 +79,11 @@ import { createOrganization } from '../factories/organization.factory'
 import {
     createUser,
     createAdminUser as adminUserFactory,
+    createUsers,
 } from '../factories/user.factory'
 import {
     createClass as createClassFactory,
+    createClasses,
     createClasses as createClassesFactory,
 } from '../factories/class.factory'
 import { createRole as createRoleFactory } from '../factories/role.factory'
@@ -95,12 +99,15 @@ import {
     CreateClassInput,
     RemoveProgramsFromClassInput,
     UpdateClassInput,
+    AddStudentsToClassInput,
+    ClassesMutationResult,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
     checkNotFoundErrors,
     expectAPIError,
     expectAPIErrorCollection,
+    compareMultipleErrors,
 } from '../utils/apiError'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { mutate } from '../../src/utils/mutations/commonStructure'
@@ -112,12 +119,15 @@ import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,
     createDuplicateInputAttributeAPIError,
+    createInputLengthAPIError,
 } from '../../src/utils/resolvers/errors'
 import { NIL_UUID } from '../utils/database'
 import { generateShortCode, validateShortCode } from '../../src/utils/shortcode'
 import { customErrors } from '../../src/types/errors/customError'
 import { ObjMap } from '../../src/utils/stringUtils'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { mapClassToClassConnectionNode } from '../../src/pagination/classesConnection'
+import { config } from '../../src/config/config'
 
 type ClassSpecs = {
     class: Class
@@ -6398,6 +6408,434 @@ describe('class', () => {
                 const fourClassesDBCalls = connection.logger.count
 
                 expect(oneClassDBCalls).to.equal(fourClassesDBCalls)
+            })
+        })
+    })
+
+    describe('AddStudentsToClasses', () => {
+        let input: AddStudentsToClassInput[]
+        let org: Organization
+        let students: User[]
+        let classes: Class[]
+        let adminUser: User
+        let nonAdminUser: User
+
+        function getAddStudents(authUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new AddStudentsToClasses([], permissions)
+        }
+
+        beforeEach(async () => {
+            nonAdminUser = await createNonAdminUser(testClient)
+            adminUser = await createAdminUser(testClient)
+            org = await createOrganization().save()
+            students = createUsers(3)
+            classes = createClasses(3)
+            classes.forEach((c) => (c.organization = Promise.resolve(org)))
+            await connection.manager.save([...students, ...classes])
+
+            for (let x = 0; x < students.length; x++) {
+                await createOrganizationMembership({
+                    user: students[x],
+                    organization: org,
+                    roles: [],
+                }).save()
+            }
+            // Generate input
+            input = []
+            const inputStudentIndices = [
+                [0, 1],
+                [1, 2],
+                [0, 1, 2],
+            ]
+            for (let i = 0; i < 3; i++) {
+                input.push({
+                    classId: classes[i].class_id,
+                    studentIds: inputStudentIndices[i].map(
+                        (st) => students[st].user_id
+                    ),
+                })
+            }
+        })
+
+        context('.run', () => {
+            it('makes constant number of queries regardless of input length', async () => {
+                const mutation = getAddStudents()
+                connection.logger.reset()
+                await mutation.generateEntityMaps([input[0]])
+                const countForOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.generateEntityMaps(input.slice(0))
+                const countForThree = connection.logger.count
+                expect(countForThree).to.eq(countForOneInput)
+            })
+            it('returns the expected output', async () => {
+                input = [
+                    {
+                        classId: classes[0].class_id,
+                        studentIds: [students[0].user_id],
+                    },
+                ]
+
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutationResult = mutate(
+                    AddStudentsToClasses,
+                    { input },
+                    permissions
+                )
+
+                const {
+                    classes: classesNodes,
+                }: ClassesMutationResult = await expect(mutationResult).to.be
+                    .fulfilled
+                expect(classesNodes).to.have.length(1)
+                expect(classesNodes[0]).to.deep.eq(
+                    mapClassToClassConnectionNode(classes[0])
+                )
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            context('populates the maps correctly', () => {
+                let maps: AddStudentsClassesEntityMap
+
+                beforeEach(async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(adminUser)
+                    )
+
+                    const mutation = new AddStudentsToClasses(
+                        input,
+                        permissions
+                    )
+                    maps = await mutation.generateEntityMaps(input)
+                })
+
+                it('populates students correctly', () => {
+                    it('popualtes classesStudents correctly', () => {
+                        expect(
+                            Array.from(
+                                maps.classesStudents.entries()
+                            ).map(([classId, students]) => [
+                                classId,
+                                students.map((st) => st.user_id),
+                            ])
+                        ).to.deep.equalInAnyOrder([
+                            input.map((i) => [i.classId, [...i.studentIds]]),
+                        ])
+                    })
+                })
+
+                it('populates organizations correctly', () => {
+                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
+                        org.organization_id,
+                        org.organization_id,
+                        org.organization_id,
+                    ])
+                })
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getAddStudents(authUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.add_students_to_class_20225
+            context(
+                'when user has permissions to add students to all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: org,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to add students to all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(permission, nonAdminUser, [
+                                org,
+                            ])
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            context('when the same input is used three times', () => {
+                beforeEach(() => {
+                    input = [input[0], input[0], input[0]]
+                })
+
+                it('returns duplicate errors for the last two inputs', () => {
+                    const val = getAddStudents().validationOverAllInputs(input)
+
+                    const expectedErrors = [1, 2].map((inputIndex) =>
+                        createDuplicateAttributeAPIError(
+                            inputIndex,
+                            ['classId'],
+                            'AddStudentsToClassInput'
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getAddStudents().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context('when there are too many studentIds', () => {
+                beforeEach(async () => {
+                    const tooManyStudents = createUsers(
+                        config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                    )
+                    await User.save(tooManyStudents)
+                    input[0].studentIds = tooManyStudents.map(
+                        (student) => student.user_id
+                    )
+                    input[2].studentIds = tooManyStudents.map(
+                        (student) => student.user_id
+                    )
+                })
+
+                it('returns an error', async () => {
+                    const val = getAddStudents().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(1)
+                    expect(val.validInputs[0].input).to.deep.equal(input[1])
+                    const xErrors = [0, 2].map((i) =>
+                        createInputLengthAPIError(
+                            'AddStudentsToClassInput',
+                            'max',
+                            'studentIds',
+                            i
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, xErrors)
+                })
+            })
+
+            context(
+                'when there are duplicated studentIds in a single input elemnet',
+                () => {
+                    beforeEach(async () => {
+                        input[0].studentIds = [
+                            input[0].studentIds[0],
+                            input[0].studentIds[0],
+                        ]
+                        input[2].studentIds = [
+                            input[2].studentIds[0],
+                            input[2].studentIds[0],
+                        ]
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getAddStudents().validationOverAllInputs(
+                            input
+                        )
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['studentIds'],
+                                'AddStudentsToClassInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(
+                mutationInput: AddStudentsToClassInput,
+                index: number
+            ) {
+                const mutation = getAddStudents()
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return mutation.validate(0, classes[index], mutationInput, maps)
+            }
+
+            it('returns no errors when all inputs are valid', async () => {
+                const apiErrors = await validate(input[0], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            context(
+                'when one of the students is already part of the class',
+                async () => {
+                    beforeEach(async () => {
+                        classes[0].students = Promise.resolve([students[0]])
+                        await classes[0].save()
+                    })
+
+                    it('returns existent errors', async () => {
+                        const actualErrors = await validate(input[0], 0)
+                        const expectedError = createEntityAPIError(
+                            'existent',
+                            0,
+                            'User',
+                            input[0].studentIds[0]
+                        )
+
+                        expect(actualErrors.length).to.eq(1)
+                        compareErrors(actualErrors[0], expectedError)
+                    })
+                }
+            )
+
+            context('when one of the students is inactive', async () => {
+                beforeEach(() => students[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity and nonExistentChild errors', async () => {
+                    const errors = await validate(input[0], 0)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            students[1].user_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'User',
+                            students[1].user_id,
+                            'Organization',
+                            org.organization_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        classes[1].inactivate(getManager()),
+                        students[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate(input[1], 1)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            students[1].user_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'User',
+                            students[1].user_id,
+                            'Organization',
+                            org.organization_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+        })
+
+        context('.process', () => {
+            async function process(mutationInput: AddStudentsToClassInput) {
+                const permissions = new UserPermissions(adminUser)
+                const mutation = new AddStudentsToClasses(
+                    [mutationInput],
+                    permissions
+                )
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return {
+                    mutationResult: mutation.process(mutationInput, maps, 0),
+                    originalClass: maps.mainEntity.get(mutationInput.classId)!,
+                    originalStudents: maps.classesStudents.get(
+                        mutationInput.classId
+                    ),
+                }
+            }
+
+            it('includes existing students', async () => {
+                classes[0].students = Promise.resolve([students[0]])
+                await classes[0].save()
+                input[0].studentIds = []
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalStudents,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(originalStudents).to.deep.equalInAnyOrder(
+                    await originalClass.students
+                )
+            })
+
+            it('adds new students', async () => {
+                classes[0].students = Promise.resolve([students[0]])
+                await classes[0].save()
+                const newStudents = [students[1], students[2]]
+                input[0].studentIds = newStudents.map((s) => s.user_id)
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalStudents,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(
+                    [...originalStudents!, ...newStudents].map(
+                        (st) => st.user_id
+                    )
+                ).to.deep.equalInAnyOrder(
+                    (await originalClass.students!).map((st) => st.user_id)
+                )
             })
         })
     })

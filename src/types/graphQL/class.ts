@@ -52,3 +52,13 @@ export interface RemoveProgramsFromClassInput {
     classId: string
     programIds: string[]
 }
+
+export interface AddStudentsToClassInput {
+    classId: string
+    studentIds: string[]
+}
+
+export interface RemoveStudentsFromClassInput {
+    classId: string
+    studentIds: string[]
+}

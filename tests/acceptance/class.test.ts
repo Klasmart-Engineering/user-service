@@ -9,10 +9,10 @@ import { User } from '../../src/entities/user'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import {
     AddProgramsToClassInput,
+    AddStudentsToClassInput,
     ClassConnectionNode,
     CreateClassInput,
     DeleteClassInput,
-    RemoveProgramsFromClassInput,
     UpdateClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
@@ -40,6 +40,7 @@ import {
     REMOVE_PROGRAMS_FROM_CLASSES,
     CREATE_CLASSES,
     UPDATE_CLASSES,
+    ADD_STUDENTS_TO_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASSES_CONNECTION,
@@ -59,15 +60,20 @@ import ProgramsInitializer from '../../src/initializers/programs'
 import { makeRequest } from './utils'
 import { CoreSubjectConnectionNode } from '../../src/pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../../src/pagination/programsConnection'
-import { createUser } from '../factories/user.factory'
+import { createUser, createUsers } from '../factories/user.factory'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { createProgram } from '../factories/program.factory'
-import { createClass as createClassFactory } from '../factories/class.factory'
+import {
+    createClass as createClassFactory,
+    createClasses,
+} from '../factories/class.factory'
 import { NIL_UUID } from '../utils/database'
 import { generateShortCode } from '../../src/utils/shortcode'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Organization } from '../../src/entities/organization'
 import { createOrganization } from '../factories/organization.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { mapClassToClassConnectionNode } from '../../src/pagination/classesConnection'
 
 use(deepEqualInAnyOrder)
 
@@ -1406,6 +1412,67 @@ describe('acceptance.class', () => {
             )
             expect(response.body.errors[1].message).to.contain(
                 'Field "programIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('addStudentsToClasses', () => {
+        let adminUser: User
+        let input: AddStudentsToClassInput[]
+        let classes: Class[]
+        const classCount = 2
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const students = createUsers(2)
+            await connection.manager.save(students)
+            for (let x = 0; x < students.length; x++) {
+                // eslint-disable-next-line no-await-in-loop
+                await createOrganizationMembership({
+                    user: students[x],
+                    organization: org,
+                    roles: [],
+                }).save()
+            }
+            classes = createClasses(2, org)
+            await connection.manager.save(classes)
+            input = []
+            for (const class_ of classes) {
+                input.push({
+                    classId: class_.class_id,
+                    studentIds: students.map((st) => st.user_id),
+                })
+            }
+        })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_STUDENTS_TO_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.addStudentsToClasses.classes
+            expect(resClasses).to.have.length(classes.length)
+        })
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_STUDENTS_TO_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "studentIds" of required type "[ID!]!" was not provided.'
             )
         })
     })
