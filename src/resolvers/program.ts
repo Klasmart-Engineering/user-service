@@ -313,7 +313,7 @@ export class UpdatePrograms extends UpdateMutation<
         }
     }
 
-    protected async generateEntityMaps(
+    async generateEntityMaps(
         input: UpdateProgramInput[]
     ): Promise<UpdateProgramsEntityMap> {
         const ids: string[] = []

@@ -13,19 +13,21 @@ import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     CreatePrograms,
     CreateProgramsEntityMap,
+    UpdatePrograms,
+    UpdateProgramsEntityMap,
 } from '../../src/resolvers/program'
 import {
     CreateProgramInput,
     ProgramConnectionNode,
+    UpdateProgramInput,
 } from '../../src/types/graphQL/program'
-import { createServer } from '../../src/utils/createServer'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { ObjMap } from '../../src/utils/stringUtils'
 import { createAgeRange, createAgeRanges } from '../factories/ageRange.factory'
 import { createGrade, createGrades } from '../factories/grade.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { createProgram } from '../factories/program.factory'
+import { createProgram, createPrograms } from '../factories/program.factory'
 import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
@@ -37,9 +39,11 @@ import { APIError } from '../../src/types/errors/apiError'
 import { compareErrors, compareMultipleErrors } from '../utils/apiError'
 import {
     createDuplicateAttributeAPIError,
+    createDuplicateInputAttributeAPIError,
     createEntityAPIError,
     createExistentEntityAttributeAPIError,
     createInputLengthAPIError,
+    createInputRequiresAtLeastOne,
 } from '../../src/utils/resolvers/errors'
 
 use(deepEqualInAnyOrder)
@@ -85,9 +89,12 @@ describe('subject', () => {
     const getSubjects = async () =>
         await Subject.save(createSubjects(3, undefined, undefined, true))
 
+    const createProgramsToUse = async (org: Organization) =>
+        await Program.save(createPrograms(10, org))
+
     const compareProgramConnectionNodeWithInput = (
         subject: ProgramConnectionNode,
-        input: CreateProgramInput
+        input: CreateProgramInput | UpdateProgramInput
     ) => {
         expect(subject.name).to.eq(input.name)
         expect(subject.status).to.eq(Status.ACTIVE)
@@ -95,7 +102,7 @@ describe('subject', () => {
     }
 
     const compareDBProgramWithInput = async (
-        input: CreateProgramInput,
+        input: CreateProgramInput | UpdateProgramInput,
         dbProgram: Program,
         org: Organization
     ) => {
@@ -810,6 +817,709 @@ describe('subject', () => {
                 )
 
                 runTestCases(testCases, entityMap)
+            })
+        })
+    })
+
+    describe('updatePrograms', () => {
+        let ctx: { permissions: UserPermissions }
+        let org: Organization
+        let programsToEdit: Program[]
+        let ageRanges: AgeRange[]
+        let grades: Grade[]
+        let subjects: Subject[]
+        let updatePrograms: UpdatePrograms
+
+        beforeEach(async () => {
+            const data = await createInitialData([
+                PermissionName.edit_program_20331,
+            ])
+
+            org = data.organization
+            ctx = data.context
+            ageRanges = await getAgeRanges()
+            grades = await getGrades()
+            subjects = await getSubjects()
+            programsToEdit = await createProgramsToUse(org)
+            updatePrograms = new UpdatePrograms([], ctx.permissions)
+        })
+
+        const buildDefaultInput = (programs: Program[]): UpdateProgramInput[] =>
+            Array.from(programs, ({ id }) => {
+                return {
+                    id,
+                    name: faker.random.word(),
+                    ageRangeIds: ageRanges.map((ar) => ar.id),
+                    gradeIds: grades.map((g) => g.id),
+                    subjectIds: subjects.map((s) => s.id),
+                }
+            })
+
+        context('complete mutation calls', () => {
+            it('can update a program', async () => {
+                const input: UpdateProgramInput[] = buildDefaultInput([
+                    programsToEdit[0],
+                ])
+
+                const { programs } = await mutate(
+                    UpdatePrograms,
+                    { input },
+                    ctx.permissions
+                )
+
+                expect(programs).to.have.lengthOf(1)
+                expect(programs[0].id).to.eq(input[0].id)
+                compareProgramConnectionNodeWithInput(programs[0], input[0])
+
+                const dbPrograms = await Program.findByIds([input[0].id])
+                expect(dbPrograms).to.have.lengthOf(1)
+                await compareDBProgramWithInput(input[0], dbPrograms[0], org)
+            })
+
+            const getDbCallCount = async (input: UpdateProgramInput[]) => {
+                connection.logger.reset()
+                await mutate(UpdatePrograms, { input }, ctx.permissions)
+                return connection.logger.count
+            }
+
+            it('db connections increase in one with number of input elements', async () => {
+                const singleProgramExpectedCalls = 12
+                await getDbCallCount(buildDefaultInput(programsToEdit)) // warm up permissions cache)
+
+                const singleProgramCount = await getDbCallCount(
+                    buildDefaultInput([programsToEdit[0]])
+                )
+
+                const twoProgramsCount = await getDbCallCount(
+                    buildDefaultInput(programsToEdit.slice(0, 2))
+                )
+
+                expect(singleProgramCount).to.be.eq(
+                    singleProgramExpectedCalls,
+                    '2 for authorization; 3 for generate maps; 1 for check existence in DB (1 per input element); 2 for save changes'
+                )
+                expect(twoProgramsCount).to.be.eq(
+                    singleProgramExpectedCalls + 1,
+                    '2 for authorization; 3 for generate maps; 2 for check existence in DB (1 per input element); 2 for save changes'
+                )
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('returns existing conflicting program names', async () => {
+                const existingPrograms = await generateExistingPrograms(org)
+                const expectedPairs = await Promise.all(
+                    existingPrograms
+                        .filter((ep) => ep.status === Status.ACTIVE)
+                        .map(async (ep) => {
+                            return {
+                                id: ep.id,
+                                organizationId: (await ep.organization)
+                                    ?.organization_id,
+                                name: ep.name!,
+                            }
+                        })
+                )
+
+                const input: UpdateProgramInput[] = [
+                    ...expectedPairs.map((ep) => {
+                        return {
+                            id: ep.id,
+                            name: ep.name,
+                        }
+                    }),
+                    {
+                        id: programsToEdit[0].id,
+                        name: faker.random.word(),
+                    },
+                ]
+
+                const entityMaps = await updatePrograms.generateEntityMaps(
+                    input
+                )
+
+                expect(
+                    Array.from(entityMaps.conflictingNames.keys())
+                ).to.deep.equalInAnyOrder(
+                    expectedPairs.map((ep) => {
+                        return {
+                            organizationId: ep.organizationId,
+                            name: ep.name,
+                        }
+                    })
+                )
+            })
+        })
+
+        context('authorize', () => {
+            const callAuthorize = async (
+                userCtx: { permissions: UserPermissions },
+                programIds: string[]
+            ) => {
+                const mutation = new UpdatePrograms([], userCtx.permissions)
+                const input = programIds.map((programId) => {
+                    return {
+                        id: programId,
+                        name: faker.random.word(),
+                    }
+                })
+
+                const maps = await updatePrograms.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const expectPermissionError = async (
+                userCtx: { permissions: UserPermissions },
+                programs: Program[]
+            ) => {
+                await expect(
+                    callAuthorize(
+                        userCtx,
+                        programs.map((p) => p.id)
+                    )
+                ).to.be.eventually.rejectedWith(
+                    /User\(.*\) does not have Permission\(edit_program_20331\) in Organizations\(.*\)/
+                )
+            }
+
+            it('checks the correct permission', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.edit_program_20331
+                )
+
+                const permittedProgram = await createProgram(
+                    permittedOrg
+                ).save()
+
+                await expect(callAuthorize(userCtx, [permittedProgram.id])).to
+                    .be.eventually.fulfilled
+            })
+
+            it('rejects when user is not authorized', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.create_program_20221
+                )
+
+                const permittedProgram = await createProgram(
+                    permittedOrg
+                ).save()
+
+                await expectPermissionError(userCtx, [permittedProgram])
+            })
+
+            it('checks all organizations', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.edit_program_20331
+                )
+
+                const permittedProgram = await createProgram(
+                    permittedOrg
+                ).save()
+
+                const {
+                    permittedOrg: notPermittedOrg,
+                } = await makeUserWithPermission(
+                    PermissionName.create_program_20221
+                )
+
+                const notPermittedProgram = await createProgram(
+                    notPermittedOrg
+                ).save()
+
+                await expectPermissionError(userCtx, [
+                    permittedProgram,
+                    notPermittedProgram,
+                ])
+            })
+        })
+
+        const buildEntityMap = async (
+            programsToUse: Program[] = [],
+            ageRangesToUse: AgeRange[] = [],
+            gradesToUse: Grade[] = [],
+            subjectsToUse: Subject[] = []
+        ) => {
+            const entityMap: UpdateProgramsEntityMap = {
+                mainEntity: new Map([]),
+                ageRanges: new Map([]),
+                grades: new Map([]),
+                subjects: new Map([]),
+                conflictingNames: new ObjMap([]),
+            }
+
+            for (const program of programsToUse) {
+                if (program.id === undefined) {
+                    program.id = uuid_v4()
+                }
+
+                entityMap.mainEntity.set(program.id, program)
+
+                // eslint-disable-next-line no-await-in-loop
+                const programOrg = (await program.organization)!
+                entityMap.conflictingNames.set(
+                    {
+                        organizationId: programOrg.organization_id,
+                        name: program.name!,
+                    },
+                    program
+                )
+            }
+
+            for (const ageRange of ageRangesToUse) {
+                entityMap.ageRanges.set(ageRange.id, ageRange)
+            }
+
+            for (const grade of gradesToUse) {
+                entityMap.grades.set(grade.id, grade)
+            }
+
+            for (const subject of subjectsToUse) {
+                entityMap.subjects.set(subject.id, subject)
+            }
+
+            return entityMap
+        }
+
+        context('validationOverAllInputs', () => {
+            let inputs: UpdateProgramInput[]
+            const expectInputsValidation = async (
+                input: UpdateProgramInput[],
+                expectedErrors: APIError[]
+            ) => {
+                const maps = await buildEntityMap(
+                    programsToEdit.slice(0, 3),
+                    ageRanges,
+                    grades,
+                    subjects
+                )
+
+                const {
+                    validInputs,
+                    apiErrors,
+                } = updatePrograms.validationOverAllInputs(input, maps)
+
+                const failedInputIndexes = new Set(
+                    apiErrors.map((err) => err.index)
+                )
+
+                const inputsWithoutErrors = input
+                    .map((i, index) => {
+                        return {
+                            ...i,
+                            index,
+                        }
+                    })
+                    .filter((i) => !failedInputIndexes.has(i.index))
+
+                expect(validInputs).to.have.lengthOf(inputsWithoutErrors.length)
+
+                validInputs.forEach((vi, i) => {
+                    const relatedInput = inputsWithoutErrors[i]
+                    expect(vi.input.name).to.eq(relatedInput.name)
+                    expect(vi.index).to.eq(relatedInput.index)
+                })
+
+                expect(apiErrors.length).to.eq(expectedErrors.length)
+                compareMultipleErrors(apiErrors, expectedErrors)
+            }
+
+            beforeEach(() => {
+                inputs = buildDefaultInput(programsToEdit.slice(0, 3))
+            })
+
+            it('checks that at least one of the optional fields is sent', async () => {
+                const incompleteInput = inputs[1]
+                incompleteInput.name = undefined
+                incompleteInput.ageRangeIds = undefined
+                incompleteInput.gradeIds = undefined
+                incompleteInput.subjectIds = undefined
+
+                const error = createInputRequiresAtLeastOne(1, 'Program', [
+                    'name',
+                    'ageRangeIds',
+                    'gradeIds',
+                    'subjectIds',
+                ])
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it("checks if there are duplicates in 'id' input field", async () => {
+                const duplicateInput = inputs[1]
+                duplicateInput.id = inputs[0].id
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['id'],
+                    'program'
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it("checks if there are duplicates in 'name' field for programs in the same organization", async () => {
+                const duplicateInput = inputs[1]
+                duplicateInput.name = inputs[0].name
+                const error = createDuplicateInputAttributeAPIError(
+                    1,
+                    'Program',
+                    org.organization_id,
+                    'name',
+                    duplicateInput.name!
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it("checks if the length of 'ageRangeIds' is correct", async () => {
+                const wrongAgeRangeIdsLengthInput = inputs[1]
+                wrongAgeRangeIdsLengthInput.ageRangeIds = []
+
+                const error = createInputLengthAPIError(
+                    'UpdateProgramInput',
+                    'min',
+                    'ageRangeIds',
+                    1
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it("checks if 'ageRangeIds' has duplicated ids", async () => {
+                const ageRangeIdsDuplicatesInput = inputs[1]
+                ageRangeIdsDuplicatesInput.ageRangeIds = [
+                    ageRanges[0],
+                    ageRanges[0],
+                ].map((ar) => ar.id)
+
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['ageRangeIds'],
+                    'UpdateProgramInput'
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it("checks if the length of 'gradeIds' is correct", async () => {
+                const wrongGradeIdsLengthInput = inputs[1]
+                wrongGradeIdsLengthInput.gradeIds = []
+
+                const error = createInputLengthAPIError(
+                    'UpdateProgramInput',
+                    'min',
+                    'gradeIds',
+                    1
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it("checks if 'gradeIds' has duplicated ids", async () => {
+                const gradeIdsDuplicatesInput = inputs[1]
+                gradeIdsDuplicatesInput.gradeIds = [grades[0], grades[0]].map(
+                    (g) => g.id
+                )
+
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['gradeIds'],
+                    'UpdateProgramInput'
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it("checks if the length of 'subjectIds' is correct", async () => {
+                const wrongSubjectIdsLengthInput = inputs[1]
+                wrongSubjectIdsLengthInput.subjectIds = []
+
+                const error = createInputLengthAPIError(
+                    'UpdateProgramInput',
+                    'min',
+                    'subjectIds',
+                    1
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it("checks if 'subjectIds' has duplicated ids", async () => {
+                const subjectIdsDuplicatesInput = inputs[1]
+                subjectIdsDuplicatesInput.subjectIds = [
+                    subjects[0],
+                    subjects[0],
+                ].map((c) => c.id)
+
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['subjectIds'],
+                    'UpdateProgramInput'
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+        })
+
+        context('validate', () => {
+            const runTestCases = (
+                testCases: { input: UpdateProgramInput; error?: APIError }[],
+                entityMap: UpdateProgramsEntityMap
+            ) => {
+                for (const { input, error } of testCases) {
+                    const program = entityMap.mainEntity.get(input.id)!
+                    const errors = updatePrograms.validate(
+                        0,
+                        program,
+                        input,
+                        entityMap
+                    )
+
+                    if (error !== undefined) {
+                        expect(errors.length).to.eq(1)
+                        compareErrors(errors[0], error)
+                    }
+                }
+            }
+
+            const createSingleInput = (
+                program: Program,
+                name = faker.random.word(),
+                ageRangesToUse?: AgeRange[],
+                gradesToUse?: Grade[],
+                subjectsToUse?: Subject[]
+            ) => {
+                return {
+                    id: program.id,
+                    name,
+                    ageRangeIds: ageRangesToUse?.map((ar) => ar.id),
+                    gradeIds: gradesToUse?.map((g) => g.id),
+                    subjectIds: subjectsToUse?.map((s) => s.id),
+                }
+            }
+
+            it("checks if a program with the given 'id' exists", async () => {
+                const inactiveProgram = createProgram(org)
+                inactiveProgram.status = Status.INACTIVE
+                await inactiveProgram.save()
+
+                const input = createSingleInput(inactiveProgram)
+                const error = createEntityAPIError(
+                    'nonExistent',
+                    0,
+                    'Program',
+                    inactiveProgram.id
+                )
+
+                const entityMap = await buildEntityMap()
+                runTestCases([{ input, error }], entityMap)
+            })
+
+            it("checks if a program with the given 'name' already exist in the same organization as the given program", async () => {
+                const programInSameOrg = createProgram(org)
+                programInSameOrg.id = uuid_v4()
+
+                const inactiveProgramInSameOrg = createProgram(org)
+                inactiveProgramInSameOrg.id = uuid_v4()
+                inactiveProgramInSameOrg.status = Status.INACTIVE
+
+                const differentOrg = await createOrganization().save()
+                const programInDifferentOrg = createProgram(differentOrg)
+                const testCases: {
+                    input: UpdateProgramInput
+                    error?: APIError
+                }[] = await Promise.all(
+                    [programInSameOrg, inactiveProgramInSameOrg].map(
+                        async (s) => {
+                            return {
+                                input: {
+                                    id: s.id,
+                                    name: s.name!,
+                                },
+                                error: createExistentEntityAttributeAPIError(
+                                    'Program',
+                                    s.id,
+                                    'name',
+                                    s.name!,
+                                    0
+                                ),
+                            }
+                        }
+                    )
+                )
+
+                testCases.push({
+                    input: createSingleInput(
+                        programInDifferentOrg,
+                        programInDifferentOrg.name!
+                    ),
+                })
+
+                const entityMap = await buildEntityMap([
+                    programInSameOrg,
+                    inactiveProgramInSameOrg,
+                    programInDifferentOrg,
+                ])
+
+                runTestCases(testCases, entityMap)
+            })
+
+            it("checks if the age range in the given 'ageRangeIds' array exists", async () => {
+                const program = programsToEdit[0]
+                const inactiveAgeRange = createAgeRange()
+                inactiveAgeRange.status = Status.INACTIVE
+                await inactiveAgeRange.save()
+
+                const input = createSingleInput(program, undefined, [
+                    inactiveAgeRange,
+                ])
+
+                const error = createEntityAPIError(
+                    'nonExistent',
+                    0,
+                    'AgeRange',
+                    inactiveAgeRange.id
+                )
+
+                const entityMap = await buildEntityMap([program])
+                runTestCases([{ input, error }], entityMap)
+            })
+
+            it("checks if the age range in the given 'ageRangeIds' array exists in the same organization as the given program", async () => {
+                const program = programsToEdit[0]
+                const otherOrg = await createOrganization().save()
+                const nonBelongingAgeRange = await createAgeRange(
+                    otherOrg
+                ).save()
+
+                const input = createSingleInput(program, undefined, [
+                    nonBelongingAgeRange,
+                ])
+
+                const error = createEntityAPIError(
+                    'nonExistentChild',
+                    0,
+                    'AgeRange',
+                    nonBelongingAgeRange.id,
+                    'Organization',
+                    org.organization_id
+                )
+
+                const entityManager = await buildEntityMap(
+                    [program],
+                    [...ageRanges, nonBelongingAgeRange]
+                )
+
+                runTestCases([{ input, error }], entityManager)
+            })
+
+            it("checks if the grade in the given 'gradeIds' array exists", async () => {
+                const program = programsToEdit[0]
+                const inactiveGrade = createGrade()
+                inactiveGrade.status = Status.INACTIVE
+                await inactiveGrade.save()
+
+                const input = createSingleInput(program, undefined, undefined, [
+                    inactiveGrade,
+                ])
+
+                const error = createEntityAPIError(
+                    'nonExistent',
+                    0,
+                    'Grade',
+                    inactiveGrade.id
+                )
+
+                const entityMap = await buildEntityMap(
+                    [program],
+                    ageRanges,
+                    undefined,
+                    subjects
+                )
+                runTestCases([{ input, error }], entityMap)
+            })
+
+            it("checks if the grade in the given 'gradeIds' array exists in the same organization as the given program", async () => {
+                const program = programsToEdit[0]
+                const otherOrg = await createOrganization().save()
+                const nonBelongingGrade = await createGrade(otherOrg).save()
+
+                const input = createSingleInput(program, undefined, undefined, [
+                    nonBelongingGrade,
+                ])
+
+                const error = createEntityAPIError(
+                    'nonExistentChild',
+                    0,
+                    'Grade',
+                    nonBelongingGrade.id,
+                    'Organization',
+                    org.organization_id
+                )
+
+                const entityManager = await buildEntityMap(
+                    [program],
+                    undefined,
+                    [...grades, nonBelongingGrade]
+                )
+
+                runTestCases([{ input, error }], entityManager)
+            })
+
+            it("checks if the subject in the given 'subjectIds' array exists", async () => {
+                const program = programsToEdit[0]
+                const inactiveSubject = createSubject()
+                inactiveSubject.status = Status.INACTIVE
+                await inactiveSubject.save()
+
+                const input = createSingleInput(
+                    program,
+                    undefined,
+                    undefined,
+                    undefined,
+                    [inactiveSubject]
+                )
+
+                const error = createEntityAPIError(
+                    'nonExistent',
+                    0,
+                    'Subject',
+                    inactiveSubject.id
+                )
+
+                const entityMap = await buildEntityMap([program])
+                runTestCases([{ input, error }], entityMap)
+            })
+
+            it("checks if the subject in the given 'subjectIds' array exists in the same organization as the given program", async () => {
+                const program = programsToEdit[0]
+                const otherOrg = await createOrganization().save()
+                const nonBelongingSubject = await createSubject(otherOrg).save()
+
+                const input = createSingleInput(
+                    program,
+                    undefined,
+                    undefined,
+                    undefined,
+                    [nonBelongingSubject]
+                )
+
+                const error = createEntityAPIError(
+                    'nonExistentChild',
+                    0,
+                    'Subject',
+                    nonBelongingSubject.id,
+                    'Organization',
+                    org.organization_id
+                )
+
+                const entityManager = await buildEntityMap(
+                    [program],
+                    undefined,
+                    undefined,
+                    [...subjects, nonBelongingSubject]
+                )
+
+                runTestCases([{ input, error }], entityManager)
             })
         })
     })
