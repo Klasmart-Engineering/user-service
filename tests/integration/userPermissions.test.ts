@@ -25,7 +25,11 @@ import {
     addSchoolToUser,
     userToPayload,
 } from '../utils/operations/userOps'
-import { getNonAdminAuthToken, getAdminAuthToken } from '../utils/testConfig'
+import {
+    getNonAdminAuthToken,
+    getAdminAuthToken,
+    generateToken,
+} from '../utils/testConfig'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
@@ -286,7 +290,7 @@ describe('userPermissions', () => {
         beforeEach(async () => {
             // Create Users
             const orgOwner = await createAdminUser(testClient)
-            user = await createNonAdminUser(testClient)
+            user = await createUser().save()
             // Create Organizations
             org1 = await createOrganizationAndValidate(
                 testClient,
@@ -362,7 +366,7 @@ describe('userPermissions', () => {
 
         context('when user is not a super admin', () => {
             beforeEach(async () => {
-                const encodedToken = getNonAdminAuthToken()
+                const encodedToken = generateToken(userToPayload(user))
                 req.headers = { authorization: encodedToken }
                 token = await checkToken(req)
                 userPermissions = new UserPermissions(token)
@@ -398,6 +402,14 @@ describe('userPermissions', () => {
                 })
 
                 it('should throw an error when nothing is provided', async () => {
+                    await expect(
+                        userPermissions.rejectIfNotAllowed({}, perm)
+                    ).to.be.rejectedWith(permError(user))
+                })
+
+                it("should throw an error even if user has a super admin's email", async () => {
+                    user.email = 'sandy@calmid.com'
+                    await user.save()
                     await expect(
                         userPermissions.rejectIfNotAllowed({}, perm)
                     ).to.be.rejectedWith(permError(user))
