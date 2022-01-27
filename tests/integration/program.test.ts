@@ -894,13 +894,9 @@ describe('program', () => {
                     buildDefaultInput(programsToEdit.slice(0, 2))
                 )
 
-                expect(singleProgramCount).to.be.eq(
-                    singleProgramExpectedCalls,
-                    '2 for authorization; 3 for generate maps; 1 for check existence in DB (1 per input element); 2 for save changes'
-                )
+                expect(singleProgramCount).to.be.eq(singleProgramExpectedCalls)
                 expect(twoProgramsCount).to.be.eq(
-                    singleProgramExpectedCalls + 1,
-                    '2 for authorization; 3 for generate maps; 2 for check existence in DB (1 per input element); 2 for save changes'
+                    singleProgramExpectedCalls + 1
                 )
             })
         })
