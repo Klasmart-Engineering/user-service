@@ -16,6 +16,11 @@ import { ObjMap } from '../stringUtils'
 import { Subject } from '../../entities/subject'
 import { Grade } from '../../entities/grade'
 
+export type ConflictingNameKey = {
+    organizationId?: string
+    name: string
+}
+
 /**
  * Queries the db for a list of entities by ID, then converts that into a map (ID => Entity)
  */

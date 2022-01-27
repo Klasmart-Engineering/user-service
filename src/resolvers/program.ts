@@ -13,14 +13,13 @@ import {
     ProgramsMutationResult,
 } from '../types/graphQL/program'
 import {
-    ConflictingNameKey,
     CreateMutation,
     EntityMap,
     filterInvalidInputs,
     validateNoDuplicate,
     validateSubItemsLengthAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
-import { getMap } from '../utils/resolvers/entityMaps'
+import { ConflictingNameKey, getMap } from '../utils/resolvers/entityMaps'
 import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
 import {
     flagNonExistent,

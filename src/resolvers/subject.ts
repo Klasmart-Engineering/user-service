@@ -14,7 +14,6 @@ import {
     SubjectsMutationOutput,
 } from '../types/graphQL/subject'
 import {
-    ConflictingNameKey,
     CreateMutation,
     UpdateMutation,
     DeleteMutation,
@@ -26,7 +25,7 @@ import {
     validateSubItemsArrayLength,
     validateSubItemsArrayNoDuplicates,
 } from '../utils/mutations/commonStructure'
-import { getMap } from '../utils/resolvers/entityMaps'
+import { ConflictingNameKey, getMap } from '../utils/resolvers/entityMaps'
 import {
     createEntityAPIError,
     createExistentEntityAttributeAPIError,
