@@ -24,6 +24,6 @@ export interface CreateProgramInput {
     subjectIds: string[]
 }
 
-export interface ProgramsMutationOutput {
+export interface ProgramsMutationResult {
     programs: ProgramConnectionNode[]
 }

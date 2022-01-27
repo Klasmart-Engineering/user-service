@@ -18,7 +18,7 @@ const typeDefs = gql`
         program(id: ID!): Program @isAdmin(entity: "program")
         uploadProgramsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
-        createPrograms(input: [CreateProgramInput!]!): ProgramsMutationOutput
+        createPrograms(input: [CreateProgramInput!]!): ProgramsMutationResult
     }
 
     # pagination extension types start here
@@ -175,7 +175,7 @@ const typeDefs = gql`
         subjectIds: [ID!]!
     }
 
-    type ProgramsMutationOutput {
+    type ProgramsMutationResult {
         programs: [ProgramConnectionNode!]!
     }
 `

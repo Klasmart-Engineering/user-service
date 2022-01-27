@@ -125,9 +125,9 @@ GraphQL definitions:
 
 ```graphql
 extend type Mutation {
-    createPrograms(input: [CreateProgramInput!]!): ProgramsMutationOutput
-    updatePrograms(input: [UpdateProgramInput!]!): ProgramsMutationOutput
-    deletePrograms(input: [DeleteProgramInput!]!): ProgramsMutationOutput
+    createPrograms(input: [CreateProgramInput!]!): ProgramsMutationResult
+    updatePrograms(input: [UpdateProgramInput!]!): ProgramsMutationResult
+    deletePrograms(input: [DeleteProgramInput!]!): ProgramsMutationResult
 }
 
 input CreateProgramInput {
@@ -150,7 +150,7 @@ input DeleteProgramInput {
     id: ID!
 }
 
-type ProgramsMutationOutput {
+type ProgramsMutationResult {
     programs: [ProgramConnectionNode!]!
 }
 

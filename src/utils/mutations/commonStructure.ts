@@ -1,7 +1,6 @@
 import { getManager } from 'typeorm'
 import { config } from '../../config/config'
 import { CustomBaseEntity } from '../../entities/customBaseEntity'
-import { Organization } from '../../entities/organization'
 import { Status } from '../../entities/status'
 import { Context } from '../../main'
 import { APIError, APIErrorCollection } from '../../types/errors/apiError'
@@ -13,12 +12,7 @@ import {
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
 } from '../resolvers/errors'
-import { SystemEntities } from '../resolvers/inputValidation'
 import { objectToKey, ObjMap } from '../stringUtils'
-
-export type SystemEntityAndOrg = SystemEntities & {
-    __organization__?: Organization
-}
 
 export type ConflictingNameKey = {
     organizationId?: string
@@ -301,33 +295,6 @@ export function filterInvalidInputs<T>(
         .filter((_, index) => !errorMaps.some((em) => em.has(index)))
     const apiErrors = errorMaps.flatMap((em) => [...em.values()])
     return { validInputs, apiErrors }
-}
-
-// Checks if a determined sub item exists for an organization or is system
-export function validateSubItemsInOrg<Entity extends SystemEntityAndOrg>(
-    entityName: string,
-    index: number,
-    organizationId: string,
-    map: Map<string, Entity>
-) {
-    return Array.from(map.values())
-        .filter((si) => {
-            const isSystem = si.system
-            const isInOrg =
-                si.__organization__?.organization_id === organizationId
-
-            return !isSystem && !isInOrg
-        })
-        .map((si) =>
-            createEntityAPIError(
-                'nonExistentChild',
-                index,
-                entityName,
-                si.id,
-                'Organization',
-                organizationId
-            )
-        )
 }
 
 export type ProcessedResult<

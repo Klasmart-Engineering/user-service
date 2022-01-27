@@ -10,7 +10,7 @@ import { PermissionName } from '../permissions/permissionNames'
 import { APIError } from '../types/errors/apiError'
 import {
     CreateProgramInput,
-    ProgramsMutationOutput,
+    ProgramsMutationResult,
 } from '../types/graphQL/program'
 import {
     ConflictingNameKey,
@@ -18,12 +18,14 @@ import {
     EntityMap,
     filterInvalidInputs,
     validateNoDuplicate,
-    validateSubItemsInOrg,
     validateSubItemsLengthAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
 import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
-import { flagNonExistent } from '../utils/resolvers/inputValidation'
+import {
+    flagNonExistent,
+    validateSubItemsInOrg,
+} from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
 
 export interface CreateProgramsEntityMap extends EntityMap<Program> {
@@ -37,12 +39,12 @@ export interface CreateProgramsEntityMap extends EntityMap<Program> {
 export class CreatePrograms extends CreateMutation<
     Program,
     CreateProgramInput,
-    ProgramsMutationOutput,
+    ProgramsMutationResult,
     CreateProgramsEntityMap
 > {
     protected readonly EntityType = Program
     protected inputTypeName = 'CreateProgramInput'
-    protected output: ProgramsMutationOutput = { programs: [] }
+    protected output: ProgramsMutationResult = { programs: [] }
 
     async generateEntityMaps(
         input: CreateProgramInput[]
@@ -65,7 +67,6 @@ export class CreatePrograms extends CreateMutation<
         const gradeIds = Array.from(new Set(allGradeIds))
         const subjectIds = Array.from(new Set(allSubjectIds))
 
-        const conflictingNames = new ObjMap<ConflictingNameKey, Program>()
         const organizations = await getMap.organization(organizationIds)
         const ageRanges = await getMap.ageRange(ageRangeIds, ['organization'])
         const grades = await getMap.grade(gradeIds, ['organization'])
@@ -80,6 +81,7 @@ export class CreatePrograms extends CreateMutation<
             relations: ['organization'],
         })
 
+        const conflictingNames = new ObjMap<ConflictingNameKey, Program>()
         for (const p of matchingPreloadedProgramArray) {
             // eslint-disable-next-line no-await-in-loop
             const organizationId = (await p.organization)!.organization_id
@@ -193,7 +195,7 @@ export class CreatePrograms extends CreateMutation<
 
         errors.push(
             ...validateSubItemsInOrg(
-                'AgeRange',
+                AgeRange,
                 index,
                 organizationId,
                 maps.ageRanges
@@ -205,12 +207,7 @@ export class CreatePrograms extends CreateMutation<
         )
 
         errors.push(
-            ...validateSubItemsInOrg(
-                'Grade',
-                index,
-                organizationId,
-                maps.grades
-            )
+            ...validateSubItemsInOrg(Grade, index, organizationId, maps.grades)
         )
 
         errors.push(
@@ -219,7 +216,7 @@ export class CreatePrograms extends CreateMutation<
 
         errors.push(
             ...validateSubItemsInOrg(
-                'Subject',
+                Subject,
                 index,
                 organizationId,
                 maps.subjects
