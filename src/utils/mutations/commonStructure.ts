@@ -30,6 +30,7 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
     [key: string]:
         | Map<string, CustomBaseEntity | CustomBaseEntity[]>
         | ObjMap<{ [key: string]: string }, unknown>
+        | string[]
         | undefined
 }
 
