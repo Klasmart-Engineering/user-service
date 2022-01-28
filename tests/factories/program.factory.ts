@@ -11,21 +11,32 @@ export function createProgram(
     org: Organization = createOrganization(),
     age_ranges: AgeRange[] = [],
     grades: Grade[] = [],
-    subjects: Subject[] = []
+    subjects: Subject[] = [],
+    system = false
 ) {
     const program = new Program()
 
     program.name = faker.random.word()
-    program.organization = Promise.resolve(org)
+    if (!system) {
+        program.organization = Promise.resolve(org)
+    }
+
     program.age_ranges = Promise.resolve(age_ranges)
     program.grades = Promise.resolve(grades)
     program.subjects = Promise.resolve(subjects)
-    program.system = false
+    program.system = system
 
     return program
 }
 
-export const createPrograms = (length: number, org?: Organization) =>
+export const createPrograms = (
+    length: number,
+    org?: Organization,
+    age_ranges?: AgeRange[],
+    grades?: Grade[],
+    subjects?: Subject[],
+    system?: boolean
+) =>
     Array(length)
         .fill(undefined)
-        .map(() => createProgram(org))
+        .map(() => createProgram(org, age_ranges, grades, subjects, system))

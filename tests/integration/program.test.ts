@@ -902,6 +902,33 @@ describe('program', () => {
         })
 
         context('generateEntityMaps', () => {
+            it('returns organization ids', async () => {
+                const systemPrograms = await Program.save(createPrograms(5))
+                const otherOrg = await createOrganization().save()
+                const otherPrograms = await Program.save(
+                    createPrograms(5, otherOrg)
+                )
+
+                const expectedIds = [
+                    org.organization_id,
+                    otherOrg.organization_id,
+                ]
+
+                const input = buildDefaultInput([
+                    ...programsToEdit,
+                    ...otherPrograms,
+                    ...systemPrograms,
+                ])
+
+                const entityMaps = await updatePrograms.generateEntityMaps(
+                    input
+                )
+
+                expect(entityMaps.organizationIds).to.deep.equalInAnyOrder(
+                    expectedIds
+                )
+            })
+
             it('returns existing conflicting program names', async () => {
                 const existingPrograms = await generateExistingPrograms(org)
                 const expectedPairs = await Promise.all(
@@ -1041,8 +1068,10 @@ describe('program', () => {
                 grades: new Map([]),
                 subjects: new Map([]),
                 conflictingNames: new ObjMap([]),
+                organizationIds: [],
             }
 
+            const allOrgIds = new Set<string>()
             for (const program of programsToUse) {
                 if (program.id === undefined) {
                     program.id = uuid_v4()
@@ -1052,6 +1081,7 @@ describe('program', () => {
 
                 // eslint-disable-next-line no-await-in-loop
                 const programOrg = (await program.organization)!
+                allOrgIds.add(programOrg.organization_id)
                 entityMap.conflictingNames.set(
                     {
                         organizationId: programOrg.organization_id,
@@ -1061,6 +1091,7 @@ describe('program', () => {
                 )
             }
 
+            entityMap.organizationIds = Array.from(allOrgIds)
             for (const ageRange of ageRangesToUse) {
                 entityMap.ageRanges.set(ageRange.id, ageRange)
             }
