@@ -1177,7 +1177,7 @@ export interface RemoveStudentsClassesEntityMap extends EntityMap<Class> {
     schoolIds: string[]
 }
 
-export class RemoveStudentsFromClasses extends AddMutation<
+export class RemoveStudentsFromClasses extends RemoveMutation<
     Class,
     RemoveStudentsFromClassInput,
     ClassesMutationResult,
