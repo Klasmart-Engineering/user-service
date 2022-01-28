@@ -48,6 +48,7 @@ export interface UpdateProgramsEntityMap extends EntityMap<Program> {
     grades: Map<string, Grade>
     subjects: Map<string, Subject>
     conflictingNames: ObjMap<ConflictingNameKey, Program>
+    organizationIds: string[]
 }
 
 export class CreatePrograms extends CreateMutation<
@@ -340,8 +341,17 @@ export class UpdatePrograms extends UpdateMutation<
             relations: ['organization'],
         })
 
-        const conflictingNames = new ObjMap<ConflictingNameKey, Program>()
+        const mainEntity = await preloadedPrograms
+        const allOrgIds = (
+            await Promise.all(
+                Array.from(mainEntity.values()).map(
+                    async (p) => (await p.organization)?.organization_id
+                )
+            )
+        ).filter((id) => id) as string[]
 
+        const organizationIds = Array.from(new Set(allOrgIds))
+        const conflictingNames = new ObjMap<ConflictingNameKey, Program>()
         for (const p of preloadedMatchingNames) {
             // eslint-disable-next-line no-await-in-loop
             const organizationId = (await p.organization)?.organization_id
@@ -350,11 +360,12 @@ export class UpdatePrograms extends UpdateMutation<
         }
 
         return {
-            mainEntity: await preloadedPrograms,
+            mainEntity,
             ageRanges: await preloadedAgeRanges,
             grades: await preloadedGrades,
             subjects: await preloadedSubjects,
             conflictingNames,
+            organizationIds,
         }
     }
 
@@ -362,17 +373,8 @@ export class UpdatePrograms extends UpdateMutation<
         _input: UpdateProgramInput[],
         maps: UpdateProgramsEntityMap
     ): Promise<void> {
-        const organizationIds: string[] = []
-        const programs = [...maps.mainEntity.values()]
-
-        for (const p of programs) {
-            // eslint-disable-next-line no-await-in-loop
-            const organizationId = (await p.organization)?.organization_id
-            if (organizationId) organizationIds.push(organizationId)
-        }
-
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: organizationIds },
+            { organization_ids: maps.organizationIds },
             PermissionName.edit_program_20331
         )
     }
