@@ -212,8 +212,8 @@ export class CreatePrograms extends CreateMutation<
             ...validateSubItemsInOrg(
                 AgeRange,
                 index,
-                organizationId,
-                maps.ageRanges
+                maps.ageRanges,
+                organizationId
             )
         )
 
@@ -222,7 +222,7 @@ export class CreatePrograms extends CreateMutation<
         )
 
         errors.push(
-            ...validateSubItemsInOrg(Grade, index, organizationId, maps.grades)
+            ...validateSubItemsInOrg(Grade, index, maps.grades, organizationId)
         )
 
         errors.push(
@@ -233,8 +233,8 @@ export class CreatePrograms extends CreateMutation<
             ...validateSubItemsInOrg(
                 Subject,
                 index,
-                organizationId,
-                maps.subjects
+                maps.subjects,
+                organizationId
             )
         )
 
@@ -506,8 +506,8 @@ export class UpdatePrograms extends UpdateMutation<
                 ...validateSubItemsInOrg(
                     AgeRange,
                     index,
-                    organizationId,
-                    maps.ageRanges
+                    maps.ageRanges,
+                    organizationId
                 )
             )
         }
@@ -523,8 +523,8 @@ export class UpdatePrograms extends UpdateMutation<
                 ...validateSubItemsInOrg(
                     Grade,
                     index,
-                    organizationId,
-                    maps.grades
+                    maps.grades,
+                    organizationId
                 )
             )
         }
@@ -541,8 +541,8 @@ export class UpdatePrograms extends UpdateMutation<
                 ...validateSubItemsInOrg(
                     Subject,
                     index,
-                    organizationId,
-                    maps.subjects
+                    maps.subjects,
+                    organizationId
                 )
             )
         }
