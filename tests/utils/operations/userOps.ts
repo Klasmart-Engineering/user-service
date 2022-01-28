@@ -265,6 +265,7 @@ const USERS_MUTATION_RESULT_CORE = `users {
     }
     status
     dateOfBirth
+    username
     gender
 }
 `
@@ -304,6 +305,7 @@ const USERS_MUTATION_RESULT = `users {
                 }
                 status
                 dateOfBirth
+                username
                 gender
             }`
 

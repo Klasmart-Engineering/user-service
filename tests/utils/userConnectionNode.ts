@@ -13,6 +13,7 @@ export const expectUserConnectionNode = (
         familyName: user.family_name,
         avatar: user.avatar,
         status: user.status,
+        username: user.username,
         dateOfBirth: user.date_of_birth,
         gender: user.gender,
         contactInfo: {

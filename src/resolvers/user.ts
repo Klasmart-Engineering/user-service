@@ -67,6 +67,21 @@ export interface AddSchoolRolesToUsersEntityMap
     orgRoles: Map<string, Role[]>
 }
 
+function getUserIdentifier(
+    username?: string | null,
+    email?: string | null,
+    phone?: string | null
+): string {
+    return username ? username : email ? email : phone || ''
+}
+
+function getUserIdentifyingFieldName(
+    username?: string | null,
+    email?: string | null
+): string {
+    return username ? 'username' : email ? 'email' : 'phone'
+}
+
 export class AddSchoolRolesToUsers extends AddMutation<
     User,
     AddSchoolRolesToUserInput,
@@ -609,19 +624,21 @@ export class RemoveSchoolRolesFromUsers extends RemoveMutation<
 
 // Uses the same "clean.xxxx()" calls as the csv functions do
 function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
-    const ci: UserContactInfo = {
-        email: clean.email(cui.contactInfo.email),
-        // don't throw errors as they will of already been
-        // found by validation but this code runs before we return them
-        phone: clean.phone(cui.contactInfo.phone, false),
-    }
+    const ci: UserContactInfo | undefined = cui.contactInfo
+        ? {
+              email: clean.email(cui.contactInfo.email),
+              // don't throw errors as they will of already been
+              // found by validation but this code runs before we return them
+              phone: clean.phone(cui.contactInfo.phone, false),
+          }
+        : undefined
     const cleanCui: CreateUserInput = {
         givenName: cui.givenName,
         familyName: cui.familyName,
         contactInfo: ci,
         gender: cui.gender,
-        username: cui.username,
         dateOfBirth: clean.dateOfBirth(cui.dateOfBirth),
+        username: cui.username,
         alternateEmail: clean.email(cui.alternateEmail),
         // don't throw errors as they will of already been
         // found by validation but this code runs before we return them
@@ -650,8 +667,9 @@ async function checkForExistingUsers(
             i,
             cui.givenName,
             cui.familyName,
-            cui.contactInfo.email,
-            cui.contactInfo.phone
+            cui.contactInfo?.email,
+            cui.contactInfo?.phone,
+            cui.username
         )
     }
     const existingUsers = await scope.getMany()
@@ -675,7 +693,11 @@ function getIndicesOfExistingUsers(
             makeLookupKey(
                 v.givenName,
                 v.familyName,
-                v.contactInfo.email ? v.contactInfo.email : v.contactInfo.phone
+                getUserIdentifier(
+                    v.username,
+                    v.contactInfo?.email,
+                    v.contactInfo?.phone
+                )
             ),
             i,
         ])
@@ -686,7 +708,7 @@ function getIndicesOfExistingUsers(
         const userKey = makeLookupKey(
             user.given_name,
             user.family_name,
-            user.email ? user.email : user.phone
+            getUserIdentifier(user.username, user.email, user.phone)
         )
         const index = inputMap.get(userKey)
         if (index != undefined) {
@@ -715,9 +737,11 @@ function buildListOfExistingUserErrors(
         const key = makeLookupKey(
             input.givenName,
             input.familyName,
-            input.contactInfo.email
-                ? input.contactInfo.email
-                : input.contactInfo.phone
+            getUserIdentifier(
+                input.username,
+                input.contactInfo?.email,
+                input.contactInfo?.phone
+            )
         )
         errs.push(
             new APIError({
@@ -726,7 +750,10 @@ function buildListOfExistingUserErrors(
                 variables: [
                     'givenName',
                     'familyName',
-                    `${input.contactInfo.email ? 'email' : 'phone'}`,
+                    `${getUserIdentifyingFieldName(
+                        input.username,
+                        input.contactInfo?.email
+                    )}`,
                 ],
                 entity: 'User',
                 attribute: '',
@@ -781,9 +808,11 @@ function checkCreateUserInput(inputs: CreateUserInput[]): APIError[] {
         const key = makeLookupKey(
             createUserInput.givenName,
             createUserInput.familyName,
-            createUserInput.contactInfo.email
-                ? createUserInput.contactInfo.email
-                : createUserInput.contactInfo.phone
+            getUserIdentifier(
+                createUserInput.username,
+                createUserInput.contactInfo?.email,
+                createUserInput.contactInfo?.phone
+            )
         )
         if (inputMap.has(key)) {
             errs.push(
@@ -793,11 +822,10 @@ function checkCreateUserInput(inputs: CreateUserInput[]): APIError[] {
                     variables: [
                         'givenName',
                         'familyName',
-                        `${
-                            createUserInput.contactInfo.email
-                                ? 'email'
-                                : 'phone'
-                        }`,
+                        `${getUserIdentifyingFieldName(
+                            createUserInput.username,
+                            createUserInput.contactInfo?.email
+                        )}`,
                     ],
                     entity: 'User',
                     attribute: 'ID',
@@ -821,14 +849,14 @@ function buildListOfNewUsers(inputs: CreateUserInput[]): User[] {
         newUser.user_id = uuid_v4()
         newUser.given_name = cui.givenName
         newUser.family_name = cui.familyName
-        newUser.email = cui.contactInfo.email
+        newUser.email = cui.contactInfo?.email
             ? cui.contactInfo.email
             : undefined
-        newUser.phone = cui.contactInfo.phone
+        newUser.phone = cui.contactInfo?.phone
             ? cui.contactInfo.phone
             : undefined
         newUser.gender = cui.gender
-        newUser.username = cui.username
+        newUser.username = cui.username ? cui.username : undefined
         newUser.alternate_email = cui.alternateEmail
             ? cui.alternateEmail
             : undefined
@@ -971,13 +999,17 @@ function buildUserPersonalInfoScope(
     given?: string,
     family?: string,
     email?: string | null,
-    phone?: string | null
+    phone?: string | null,
+    username?: string | null
 ): WhereExpression {
     const searchParameters: Record<string, string | undefined | null> = {}
     searchParameters[`given_name${i}`] = given
     searchParameters[`family_name${i}`] = family
     let whereStr: string
-    if (email) {
+    if (username) {
+        searchParameters[`username${i}`] = username
+        whereStr = `User.username = :username${i} AND User.given_name = :given_name${i} AND User.family_name = :family_name${i}`
+    } else if (email) {
         searchParameters[`email${i}`] = email
         whereStr = `User.email = :email${i} AND User.given_name = :given_name${i} AND User.family_name = :family_name${i}`
     } else {
@@ -1011,17 +1043,26 @@ async function checkForGivenNameFamilyNameContactInfoCollisions(
                 const family = uui.familyName ?? existingUser?.family_name
                 const email = uui.email ?? existingUser?.email
                 const phone = uui.phone ?? existingUser?.phone
-
+                const username = uui.username ?? existingUser?.username
                 checkingInputs.push({
                     id: id,
                     givenName: given,
                     familyName: family,
                     email: email,
                     phone: phone,
+                    username: username,
                 })
                 ids.push(id)
 
-                buildUserPersonalInfoScope(oqb, i, given, family, email, phone)
+                buildUserPersonalInfoScope(
+                    oqb,
+                    i,
+                    given,
+                    family,
+                    email,
+                    phone,
+                    username
+                )
             }
         })
     )
@@ -1081,9 +1122,11 @@ function checkUpdateUserInputs(inputs: UpdateUserInput[]): APIError[] {
         const key = makeLookupKey(
             updateUserInput.givenName,
             updateUserInput.familyName,
-            updateUserInput.email
-                ? updateUserInput.email
-                : updateUserInput.phone
+            getUserIdentifier(
+                updateUserInput.username,
+                updateUserInput.email,
+                updateUserInput.phone
+            )
         )
         if (inputPersonalInfoMap.has(key)) {
             if (!idErr) {
@@ -1094,7 +1137,10 @@ function checkUpdateUserInputs(inputs: UpdateUserInput[]): APIError[] {
                         variables: [
                             'givenName',
                             'familyName',
-                            `${updateUserInput.email ? 'email' : 'phone'}`,
+                            `${getUserIdentifyingFieldName(
+                                updateUserInput.username,
+                                updateUserInput.email
+                            )}`,
                         ],
                         entity: 'User',
                         attribute: 'ID',
@@ -1129,7 +1175,7 @@ function buildConflictsErrors(conflictcheck: ConflictCheck): APIError[] {
             makeLookupKey(
                 v.givenName,
                 v.familyName,
-                v.email ? v.email : v.phone
+                getUserIdentifier(v.username, v.email, v.phone)
             ),
             i,
         ])
@@ -1138,15 +1184,15 @@ function buildConflictsErrors(conflictcheck: ConflictCheck): APIError[] {
         const ukey = makeLookupKey(
             u.given_name,
             u.family_name,
-            u.email ? u.email : u.phone
+            getUserIdentifier(u.username, u.email, u.phone)
         )
         if (conflictsMap.has(ukey)) {
             const index = conflictsMap.get(ukey)
             if (index != undefined) {
-                const contactInfo =
-                    conflictcheck.checklist[index].email != undefined
-                        ? 'email'
-                        : 'phone'
+                const contactInfo = getUserIdentifyingFieldName(
+                    conflictcheck.checklist[index].username,
+                    conflictcheck.checklist[index].email
+                )
                 const e = new APIError({
                     code: customErrors.existent_entity.code,
                     message: customErrors.existent_entity.message,

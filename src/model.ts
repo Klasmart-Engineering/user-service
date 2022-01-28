@@ -181,9 +181,11 @@ export class Model {
 
         const email = token.email
         const phone = token.phone
+        const username = token.user_name
 
         const user = await this.userRepository.findOne({
             where: [
+                { username, user_id },
                 { email, user_id },
                 { phone, user_id },
             ],
@@ -305,8 +307,8 @@ export class Model {
     }
 
     public async myUsers(token: TokenPayload) {
-        const userEmail = token.email
-        const userPhone = token.phone
+        const email = token.email
+        const phone = token.phone
         const username = token.user_name
         let users: User[] = []
 
@@ -323,7 +325,7 @@ export class Model {
         if (username) {
             users = await scope
                 .andWhere('User.username = :username', {
-                    username,
+                    username: username,
                 })
                 .getMany()
             // we expect usernames to be globally unique
@@ -332,16 +334,16 @@ export class Model {
             if (users.length > 1) {
                 throw new Error('Username is not unique')
             }
-        } else if (userEmail) {
+        } else if (email) {
             users = await scope
                 .andWhere('User.email = :email', {
-                    email: userEmail,
+                    email: email,
                 })
                 .getMany()
-        } else if (userPhone) {
+        } else if (phone) {
             users = await scope
                 .andWhere('User.phone = :phone', {
-                    phone: userPhone,
+                    phone: phone,
                 })
                 .getMany()
         }
@@ -1063,6 +1065,7 @@ export class Model {
                 )
 
                 // Upload image to cloud
+                // The warning here is validand the code could be refactored
                 const remoteUrl = await CloudStorageUploader.call(
                     file.createReadStream(),
                     remoteFilePath

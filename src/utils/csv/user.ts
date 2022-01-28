@@ -302,6 +302,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 ...personalInfo,
             },
             { phone: row.user_phone, ...personalInfo },
+            { username: row.user_username, ...personalInfo },
         ],
     })
     let isNewUser = false
@@ -317,6 +318,10 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     if (isNewUser && row.user_phone) {
         user.phone = row.user_phone
+    }
+
+    if (isNewUser && row.user_username) {
+        user.username = row.user_username
     }
 
     if (isNewUser && row.user_given_name) {

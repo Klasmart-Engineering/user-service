@@ -362,6 +362,7 @@ const USER_NODE_FIELDS = gql`
         }
         status
         dateOfBirth
+        username
         gender
     }
 `
