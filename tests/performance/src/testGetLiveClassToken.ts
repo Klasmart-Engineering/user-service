@@ -35,6 +35,10 @@ export function setup() {
     const payload = JSON.stringify(generateClassPayload());
     const classData = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, payload, params);
 
+    // console.log('res === ', payload);
+   
+    console.log('class data: ', JSON.stringify(classData));
+
     data = {
         ...data,
         classId: JSON.parse(classData.body as string).data?.id,
