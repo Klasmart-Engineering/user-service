@@ -46,6 +46,7 @@ import { studentRole } from '../../src/permissions/student'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
 import { buildPermissionError } from '../utils/errors'
+
 chai.use(chaiAsPromised)
 
 describe('userPermissions', () => {
@@ -101,6 +102,31 @@ describe('userPermissions', () => {
             it('returns true', async () => {
                 expect(userPermissions.isAdmin).to.be.true
             })
+        })
+    })
+
+    describe('getUsername', () => {
+        let user: User
+
+        beforeEach(async () => {
+            user = await createUser().save()
+        })
+
+        it('returns username when supplied from the token', async () => {
+            const token = userToPayload(user, true)
+            const userPermissions = new UserPermissions(token)
+            expect(userPermissions.getUsername()).to.eq(user.username)
+        })
+        it('does not return username if not supplied from the token', async () => {
+            const token = userToPayload(user, false)
+            const userPermissions = new UserPermissions(token)
+            expect(userPermissions.getUsername()).to.be.undefined
+        })
+        it('does not return username if token supplied username as an empty string', async () => {
+            user.username = ''
+            const token = userToPayload(user, false)
+            const userPermissions = new UserPermissions(token)
+            expect(userPermissions.getUsername()).to.be.undefined
         })
     })
 

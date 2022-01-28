@@ -307,7 +307,7 @@ export class Model {
     public async myUsers(token: TokenPayload) {
         const userEmail = token.email
         const userPhone = token.phone
-        const username = token.username
+        const username = token.user_name
         let users: User[] = []
 
         const scope = getRepository(User)

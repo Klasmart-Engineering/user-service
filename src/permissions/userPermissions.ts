@@ -7,6 +7,7 @@ import { PermissionName } from './permissionNames'
 import { superAdminRole } from './superAdmin'
 import { uniqueAndTruthy } from '../utils/clean'
 import { Organization } from '../entities/organization'
+import { TokenPayload } from '../token'
 
 export interface PermissionContext {
     school_ids?: string[]
@@ -39,6 +40,7 @@ export class UserPermissions {
     private readonly user_id?: string
     private readonly email?: string
     private readonly phone?: string
+    private readonly username?: string
     private user?: User
     public readonly isAdmin: boolean = false
     private _userResolver?: Promise<User | undefined>
@@ -48,7 +50,7 @@ export class UserPermissions {
     public readonly authViaAPIKey: boolean = false
 
     public constructor(
-        token?: { id?: string; email?: string; phone?: string },
+        token?: Pick<TokenPayload, 'id' | 'user_name' | 'email' | 'phone'>,
         apiKeyAuth = false
     ) {
         this.user_id = token?.id
@@ -65,6 +67,12 @@ export class UserPermissions {
 
         if (this.authViaAPIKey || this.isAdminEmail(this.email!)) {
             this.isAdmin = true
+        }
+        if (
+            typeof token?.user_name == 'string' &&
+            token?.user_name?.length > 0
+        ) {
+            this.username = token?.user_name
         }
     }
 
@@ -100,6 +108,10 @@ export class UserPermissions {
 
     public getPhone(): string | undefined {
         return this.phone
+    }
+
+    public getUsername(): string | undefined {
+        return this.username
     }
 
     public rejectIfNotAdmin(): void {

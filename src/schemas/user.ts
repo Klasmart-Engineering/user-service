@@ -179,6 +179,7 @@ const typeDefs = gql`
         familyName: StringFilter
         email: StringFilter
         phone: StringFilter
+        username: StringFilter
 
         AND: [EligibleMembersFilter!]
         OR: [EligibleMembersFilter!]
@@ -193,6 +194,7 @@ const typeDefs = gql`
         avatar: StringFilter
         email: StringFilter
         phone: StringFilter
+        username: StringFilter
 
         # joined columns
         organizationId: UUIDFilter

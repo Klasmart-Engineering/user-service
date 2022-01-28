@@ -326,6 +326,7 @@ const typeDefs = gql`
         # joined columns
         ownerUserId: UUIDFilter
         ownerUserEmail: StringFilter
+        ownerUsername: StringFilter
         userId: UUIDFilter
 
         AND: [OrganizationFilter!]

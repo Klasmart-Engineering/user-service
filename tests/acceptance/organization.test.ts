@@ -7,7 +7,7 @@ import { User } from '../../src/entities/user'
 import { createUser, createUsers } from '../factories/user.factory'
 import { ORGANIZATION_NODE } from '../utils/operations/modelOps'
 import { userToPayload } from '../utils/operations/userOps'
-import { generateToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Branding } from '../../src/entities/branding'
@@ -329,6 +329,48 @@ describe('acceptance.organization', () => {
     })
 
     context('organizationsConnection', () => {
+        it('supports filtering on expected fields', async () => {
+            const query = `
+                query organizationsConnection($filter: OrganizationFilter) {
+                    organizationsConnection(direction: FORWARD, filter: $filter){
+                        totalCount
+                    }
+                }`
+
+            const uuidFilter = {
+                operator: 'eq',
+                value: uuid_v4(),
+            }
+            const stringFilter = {
+                operator: 'eq',
+                value: 'doesnt matter',
+            }
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    filter: {
+                        id: uuidFilter,
+                        name: stringFilter,
+                        phone: stringFilter,
+                        shortCode: stringFilter,
+                        status: {
+                            operator: 'eq',
+                            value: 'active',
+                        },
+                        ownerUserId: uuidFilter,
+                        ownerUserEmail: stringFilter,
+                        ownerUsername: stringFilter,
+                        userId: uuidFilter,
+                    },
+                },
+                getAdminAuthToken()
+            )
+            expect(response.statusCode).to.eq(200)
+            expect(response.body.errors).to.be.undefined
+        })
+
         it('has rolesConnection as a child', async () => {
             const query = `
                 query organizationsConnection($direction: ConnectionDirection!) {

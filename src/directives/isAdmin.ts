@@ -329,15 +329,25 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
             qb.orWhere('User.user_id = :user_id', {
                 user_id,
             })
-            if (email) {
-                qb.orWhere('User.email = :email', {
-                    email: email,
-                })
-            }
-            if (phone) {
-                qb.orWhere('User.phone = :phone', {
-                    phone: phone,
-                })
+            // assuming no extra permissions, you should only be able to see
+            // users whose profiles you can sign in as
+            // meaning those that are returned by the profiles resolver
+            // profiles does not return users with matching emails or phone numbers if username is set
+            // do the same here
+            // we don't match on username, because username is supposed to be globally unique
+            // which makes it the same as matching on user_id
+            if (permissions.getUsername() === undefined) {
+                if (email) {
+                    qb.orWhere('User.email = :email', {
+                        email,
+                    })
+                }
+                // todo: make this an else if, to match myUsers resolver
+                if (phone) {
+                    qb.orWhere('User.phone = :phone', {
+                        phone,
+                    })
+                }
             }
             visibleUserQueries.forEach((userQuery) => {
                 qb.orWhere((_) => {

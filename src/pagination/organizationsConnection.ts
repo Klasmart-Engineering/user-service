@@ -81,7 +81,8 @@ export async function organizationsConnectionQuery(
     if (filter) {
         if (
             filterHasProperty('ownerUserId', filter) ||
-            filterHasProperty('ownerUserEmail', filter)
+            filterHasProperty('ownerUserEmail', filter) ||
+            filterHasProperty('ownerUsername', filter)
         ) {
             scope.innerJoin('Organization.owner', 'Owner')
         }
@@ -103,11 +104,13 @@ export async function organizationsConnectionQuery(
                 name: 'Organization.organization_name',
                 shortCode: 'Organization.shortCode',
                 status: 'Organization.status',
+                phone: 'Organization.phone',
 
                 // connections
                 userId: 'OrganizationMembership.userUserId',
                 ownerUserId: 'Owner.user_id',
                 ownerUserEmail: 'Owner.email',
+                ownerUsername: 'Owner.username',
             })
         )
     }

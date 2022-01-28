@@ -62,7 +62,6 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export interface TokenPayload {
-    [k: string]: string | undefined | number | string[] | boolean
     // id is not set until client has selected
     // a particular user profile
     id?: string
@@ -70,7 +69,7 @@ export interface TokenPayload {
     phone?: string
     iss: string
 
-    username?: string
+    user_name?: string
 }
 
 async function checkTokenAMS(req: Request): Promise<TokenPayload | undefined> {

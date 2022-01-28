@@ -127,6 +127,7 @@ export async function usersConnectionQuery(
                 userId: 'User.user_id',
                 phone: 'User.phone',
                 email: 'User.email',
+                username: 'User.username',
                 schoolId: 'SchoolMembership.school_id',
                 classId: {
                     operator: 'OR',
@@ -203,4 +204,5 @@ export const coreUserConnectionNodeFields = ([
     'alternate_phone',
     'date_of_birth',
     'gender',
+    'username',
 ] as (keyof User)[]).map((field) => `User.${field}`)

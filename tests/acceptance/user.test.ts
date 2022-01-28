@@ -63,6 +63,7 @@ import { config } from '../../src/config/config'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { NIL_UUID } from '../utils/database'
+import { v4 } from 'uuid'
 
 use(chaiAsPromised)
 
@@ -294,31 +295,53 @@ describe('acceptance.user', () => {
             expect(usersConnection.totalCount).to.equal(usersCount + 1)
         })
 
-        it('queries paginated users filtered by classId', async () => {
-            const classId = classIds[0]
-            const response = await request
-                .post('/user')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
-                })
-                .send({
-                    query: USERS_CONNECTION,
-                    variables: {
-                        direction: 'FORWARD',
-                        filterArgs: {
-                            classId: {
-                                operator: 'eq',
-                                value: classId,
-                            },
+        it('supports filtering on expected fields', async () => {
+            const query = `
+                query usersConnection($filter: UserFilter) {
+                    usersConnection(direction: FORWARD, filter: $filter){
+                        totalCount
+                    }
+                }`
+
+            const uuidFilter = {
+                operator: 'eq',
+                value: v4(),
+            }
+            const stringFilter = {
+                operator: 'eq',
+                value: 'doesnt matter',
+            }
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    filter: {
+                        userId: uuidFilter,
+                        userStatus: {
+                            operator: 'eq',
+                            value: 'active',
                         },
+                        givenName: stringFilter,
+                        familyName: stringFilter,
+                        avatar: stringFilter,
+                        email: stringFilter,
+                        phone: stringFilter,
+                        username: stringFilter,
+                        organizationId: uuidFilter,
+                        roleId: uuidFilter,
+                        schoolId: uuidFilter,
+                        organizationUserStatus: {
+                            operator: 'eq',
+                            value: 'active',
+                        },
+                        classId: uuidFilter,
                     },
-                })
-
-            const usersConnection = response.body.data.usersConnection
-
-            expect(response.status).to.eq(200)
-            expect(usersConnection.totalCount).to.equal(3)
+                },
+                getAdminAuthToken()
+            )
+            expect(response.statusCode).to.eq(200)
+            expect(response.body.errors).to.be.undefined
         })
 
         it('responds with an error if the filter is wrong', async () => {
@@ -992,6 +1015,42 @@ describe('acceptance.user', () => {
     })
 
     context('eligibleStudentsConnection', () => {
+        it('supports filtering on expected fields', async () => {
+            const query = `query(
+                $classId: ID!,
+                $filter: EligibleMembersFilter){
+                eligibleStudentsConnection(
+                    classId: $classId,
+                    direction: FORWARD,
+                    filter: $filter){
+                    totalCount
+                }
+            }`
+
+            const stringFilter = {
+                operator: 'eq',
+                value: 'doesnt matter',
+            }
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    classId: v4(),
+                    filter: {
+                        givenName: stringFilter,
+                        familyName: stringFilter,
+                        email: stringFilter,
+                        phone: stringFilter,
+                        username: stringFilter,
+                    },
+                },
+                getAdminAuthToken()
+            )
+            expect(response.statusCode).to.eq(200)
+            expect(response.body.errors).to.be.undefined
+        })
+
         context('When a user has permission', () => {
             it('should find some eligibleStudents', async () => {
                 const response = await makeRequest(

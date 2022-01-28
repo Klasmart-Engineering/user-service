@@ -736,15 +736,17 @@ export function userToSuperPayload(user: User): any {
     }
 }
 
-export function userToPayload(user: User): any {
+export function userToPayload(user: User, username = false): any {
     const payload = {
         email: user.email,
         phone: user.phone,
         given_name: user.given_name,
         family_name: user.family_name,
-        name: user.user_name,
         iss: 'calmid-debug',
     } as any
+    if (username) {
+        payload.user_name = user.username
+    }
     if (user.user_id) {
         payload.id = user.user_id
     }
