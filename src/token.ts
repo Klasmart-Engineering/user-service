@@ -139,7 +139,7 @@ export function isAPIKey(auth: string) {
     return auth.startsWith('Bearer ')
 }
 
-export async function checkAPIKey(auth: string) {
+export function checkAPIKey(auth: string) {
     if (!isAPIKey(auth)) {
         return false
     }
@@ -161,7 +161,7 @@ export async function validateToken(
     const auth = req.headers.authorization
     if (auth !== undefined && isAPIKey(auth)) {
         try {
-            res.locals.hasApiKey = await checkAPIKey(auth)
+            res.locals.hasApiKey = checkAPIKey(auth)
         } catch (e) {
             const { code, message } = customErrors.invalid_api_key
 

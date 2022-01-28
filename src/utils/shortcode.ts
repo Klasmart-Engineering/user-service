@@ -78,7 +78,7 @@ export function validateShortCode(
     maxlen = SHORTCODE_DEFAULT_MAXLEN
 ): boolean {
     // the entity value here doesn't matter as we don't surface the error message
-    return newValidateShortCode('Class', code, maxlen).length === 0
+    return newValidateShortCode('Class', code, undefined, maxlen).length === 0
 }
 
 export function formatShortCode(

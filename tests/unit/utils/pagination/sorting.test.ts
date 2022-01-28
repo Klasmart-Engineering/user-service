@@ -127,7 +127,7 @@ describe('paginated sorting', () => {
                 },
             })
 
-            const sql = scope.getSql()
+            const sql = orgScope.getSql()
             expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
                 'ORDER BY "owner"."email" ASC NULLS LAST, "Organization"."organization_id" ASC NULLS LAST'
             )

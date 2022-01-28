@@ -149,7 +149,7 @@ describe('inputValidation', () => {
                         )
                     )
                     compareMultipleErrors(errors, xErrors)
-                    compareMultipleEntities(values, existentUsers)
+                    compareMultipleEntities(values, [])
                 })
             })
         })

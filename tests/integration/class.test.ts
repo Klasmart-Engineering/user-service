@@ -6786,7 +6786,9 @@ describe('class', () => {
 
         context('.process', () => {
             async function process(mutationInput: AddStudentsToClassInput) {
-                const permissions = new UserPermissions(adminUser)
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
                 const mutation = new AddStudentsToClasses(
                     [mutationInput],
                     permissions

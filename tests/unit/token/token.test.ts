@@ -30,7 +30,8 @@ describe('Check Token', () => {
     })
 
     context('throw errors when validation fails when', () => {
-        it('no token passed in', async () => {
+        // This test is temporarily disabled. See https://calmisland.atlassian.net/browse/AD-1810
+        xit('no token passed in', async () => {
             req.headers = { authorization: undefined }
             await expect(checkToken(req)).to.be.rejectedWith(
                 'No authentication token'
@@ -78,10 +79,20 @@ describe('Check Token', () => {
         })
     })
 
-    it('with valid token', async () => {
-        const token = generateToken(payload)
-        req.headers = { authorization: token }
-        await expect(checkToken(req)).to.eventually.have.deep.include(payload)
+    context('succeeds', () => {
+        it('with valid token', async () => {
+            const token = generateToken(payload)
+            req.headers = { authorization: token }
+            await expect(checkToken(req)).to.eventually.have.deep.include(
+                payload
+            )
+        })
+
+        // This test is temporarily included, see https://calmisland.atlassian.net/browse/AD-1810
+        it('with missing token', async () => {
+            req.headers = { authorization: undefined }
+            await expect(checkToken(req)).to.eventually.eq(undefined)
+        })
     })
 
     context('when API key is used for authentication', () => {
@@ -91,17 +102,20 @@ describe('Check Token', () => {
             }
         })
 
-        it('with valid and matching API Key', async () => {
+        it('with valid and matching API Key', () => {
             req.headers = { authorization: 'Bearer test-api-token' }
             expect(checkAPIKey(req.headers.authorization!)).to.be.true
         })
 
-        it('with non-matching API Key', async () => {
+        it('with non-matching API Key', () => {
             req.headers = { authorization: 'Bearer different-test-api-token' }
-            expect(checkAPIKey(req.headers.authorization!)).to.be.false
+            const checkAPIKeyFunc = function () {
+                checkAPIKey(req.headers.authorization!)
+            }
+            expect(checkAPIKeyFunc).to.throw(Error, 'Invalid API Key')
         })
 
-        it('with invalid API Key', async () => {
+        it('with invalid format (i.e. no bearer prefix) API Key', () => {
             req.headers = { authorization: 'invalid-test-api-token' }
             expect(checkAPIKey(req.headers.authorization!)).to.be.false
         })

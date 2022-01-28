@@ -79,7 +79,7 @@ context('loaders.genericNode', () => {
 
             expect(
                 data.map((u) => (u as CoreUserConnectionNode).id)
-            ).to.deep.equal(keys)
+            ).to.deep.equal(keys.map((k) => k.id))
         })
 
         it('returns an Entity object for an existing key', async () => {
