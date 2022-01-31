@@ -14,6 +14,12 @@ import { Program } from '../../entities/program'
 import { AgeRange } from '../../entities/ageRange'
 import { ObjMap } from '../stringUtils'
 import { Subject } from '../../entities/subject'
+import { Grade } from '../../entities/grade'
+
+export type ConflictingNameKey = {
+    organizationId?: string
+    name: string
+}
 
 /**
  * Queries the db for a list of entities by ID, then converts that into a map (ID => Entity)
@@ -121,5 +127,6 @@ export const getMap = {
     program: idToEntityMap<Program>(Program),
     ageRange: idToEntityMap<AgeRange>(AgeRange),
     subject: idToEntityMap<Subject>(Subject),
+    grade: idToEntityMap<Grade>(Grade),
     membership,
 }

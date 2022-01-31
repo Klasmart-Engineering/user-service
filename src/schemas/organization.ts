@@ -209,6 +209,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 11/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
             )
         createOrUpdatePrograms(programs: [ProgramDetail]!): [Program]
+            @deprecated(
+                reason: "Sunset Date: 24/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         delete(_: Int): Boolean
     }
     type OrganizationMembership {

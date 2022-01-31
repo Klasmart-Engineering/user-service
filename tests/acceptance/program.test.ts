@@ -1,14 +1,17 @@
 import { expect } from 'chai'
+import { print } from 'graphql'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { Organization } from '../../src/entities/organization'
 import { Program } from '../../src/entities/program'
+import { User } from '../../src/entities/user'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import { ProgramConnectionNode } from '../../src/types/graphQL/program'
 import { createGrade } from '../factories/grade.factory'
+import { createOrganization } from '../factories/organization.factory'
 import { createProgram } from '../factories/program.factory'
 import { loadFixtures } from '../utils/fixtures'
 import {
@@ -21,10 +24,18 @@ import {
     IProgramDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { PROGRAMS_CONNECTION } from '../utils/operations/modelOps'
-import { CREATE_OR_UPDATE_GRADES } from '../utils/operations/organizationOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { CREATE_PROGRAMS } from '../utils/operations/programOps'
+import { userToPayload } from '../utils/operations/userOps'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
+import { createUser as createUserFactory } from './../factories/user.factory'
+import { createAgeRanges as createAgeRangesFactory } from './../factories/ageRange.factory'
+import { createGrades as createGradesFactory } from './../factories/grade.factory'
+import { createSubjects as createSubjectsFactory } from './../factories/subject.factory'
+import { Grade } from '../../src/entities/grade'
+import { Subject } from '../../src/entities/subject'
+import { UserPermissions } from '../../src/permissions/userPermissions'
 
 interface IProgramEdge {
     node: ProgramConnectionNode
@@ -395,6 +406,105 @@ describe('acceptance.program', () => {
                 programsConnection.edges[0].node.gradesConnection.edges[0].node
                     .id
             ).to.eq(programGrade.id)
+        })
+    })
+
+    const createAgeRangeIds = async () =>
+        (
+            await AgeRange.save(
+                createAgeRangesFactory(3, undefined, undefined, undefined, true)
+            )
+        ).map((ar) => ar.id)
+
+    const createGradeIds = async () =>
+        (
+            await Grade.save(
+                createGradesFactory(3, undefined, undefined, undefined, true)
+            )
+        ).map((g) => g.id)
+
+    const createSubjectIds = async () =>
+        (
+            await Subject.save(
+                createSubjectsFactory(3, undefined, undefined, true)
+            )
+        ).map((s) => s.id)
+
+    context('createPrograms', () => {
+        let adminUser: User
+        let organization: Organization
+        let ageRangeIds: string[]
+        let gradeIds: string[]
+        let subjectIds: string[]
+
+        const makeCreateProgramsMutation = async (input: any, caller: User) => {
+            return await makeRequest(
+                request,
+                print(CREATE_PROGRAMS),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            organization = await createOrganization().save()
+            ageRangeIds = await createAgeRangeIds()
+            gradeIds = await createGradeIds()
+            subjectIds = await createSubjectIds()
+            adminUser = await createUserFactory({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [
+                    {
+                        organizationId: organization.organization_id,
+                        name: 'New Program',
+                        ageRangeIds,
+                        gradeIds,
+                        subjectIds,
+                    },
+                ]
+                const response = await makeCreateProgramsMutation(
+                    input,
+                    adminUser
+                )
+
+                const { programs } = response.body.data.createPrograms
+                expect(response.status).to.eq(200)
+                expect(programs).to.have.lengthOf(input.length)
+            })
+        })
+
+        it('all the fields are mandatory', async () => {
+            const response = await makeCreateProgramsMutation([{}], adminUser)
+
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(5)
+
+            expect(response.body.errors[0].message).to.contain(
+                'Field "name" of required type "String!" was not provided.'
+            )
+
+            expect(response.body.errors[1].message).to.contain(
+                'Field "organizationId" of required type "ID!" was not provided.'
+            )
+
+            expect(response.body.errors[2].message).to.contain(
+                'Field "ageRangeIds" of required type "[ID!]!" was not provided.'
+            )
+
+            expect(response.body.errors[3].message).to.contain(
+                'Field "gradeIds" of required type "[ID!]!" was not provided.'
+            )
+
+            expect(response.body.errors[4].message).to.contain(
+                'Field "subjectIds" of required type "[ID!]!" was not provided.'
+            )
         })
     })
 })

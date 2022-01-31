@@ -25,7 +25,7 @@ import {
     validateSubItemsArrayLength,
     validateSubItemsArrayNoDuplicates,
 } from '../utils/mutations/commonStructure'
-import { getMap } from '../utils/resolvers/entityMaps'
+import { ConflictingNameKey, getMap } from '../utils/resolvers/entityMaps'
 import {
     createEntityAPIError,
     createExistentEntityAttributeAPIError,
@@ -35,11 +35,6 @@ import { ObjMap } from '../utils/stringUtils'
 
 export type CatAndOrg = Category & { __organization__?: Organization }
 type SubjectAndOrg = Subject & { __organization__?: Organization }
-
-export type ConflictingNameKey = {
-    organizationId?: string
-    name: string
-}
 
 export interface CreateSubjectsEntityMap extends EntityMap<Subject> {
     organizations: Map<string, Organization>

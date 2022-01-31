@@ -15,3 +15,15 @@ export interface ProgramConnectionNode {
 
     subjectsConnection?: IPaginatedResponse<CoreSubjectConnectionNode>
 }
+
+export interface CreateProgramInput {
+    name: string
+    organizationId: string
+    ageRangeIds: string[]
+    gradeIds: string[]
+    subjectIds: string[]
+}
+
+export interface ProgramsMutationResult {
+    programs: ProgramConnectionNode[]
+}

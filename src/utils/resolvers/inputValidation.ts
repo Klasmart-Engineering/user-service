@@ -13,8 +13,9 @@ import { Program } from '../../entities/program'
 import { AgeRange } from '../../entities/ageRange'
 import { Subject } from '../../entities/subject'
 import { SchoolMembership } from '../../entities/schoolMembership'
+import { Grade } from '../../entities/grade'
 
-type Entities =
+export type Entities =
     | User
     | School
     | Organization
@@ -25,6 +26,48 @@ type Entities =
     | Program
     | AgeRange
     | Subject
+    | Grade
+
+export type SystemEntities =
+    | AgeRange
+    | Grade
+    | Subject
+    | Program
+    | Category
+    | Subcategory
+
+export type SystemEntityAndOrg = SystemEntities & {
+    __organization__?: Organization
+}
+
+/**
+ * Checks if a determined sub item exists for an organization or is system
+ */
+export function validateSubItemsInOrg<T extends SystemEntityAndOrg>(
+    subItemClass: new () => T,
+    index: number,
+    organizationId: string,
+    map: Map<string, T>
+) {
+    return Array.from(map.values())
+        .filter((si) => {
+            const isSystem = si.system
+            const isInOrg =
+                si.__organization__?.organization_id === organizationId
+
+            return !isSystem && !isInOrg
+        })
+        .map((si) =>
+            createEntityAPIError(
+                'nonExistentChild',
+                index,
+                subItemClass.name,
+                si.id,
+                'Organization',
+                organizationId
+            )
+        )
+}
 
 /**
  * Checks `ids` against an map and flags an existent/non_existent error.

@@ -6,24 +6,25 @@ import { Subject } from '../../src/entities/subject'
 
 export function createSubject(
     org: Organization = createOrganization(),
-    categories: Category[] = []
+    categories: Category[] = [],
+    system = false
 ) {
     const subject = new Subject()
-
     subject.name = faker.random.word()
-    subject.organization = Promise.resolve(org)
+    if (!system) subject.organization = Promise.resolve(org)
     subject.categories = Promise.resolve(categories)
-    subject.system = false
+    subject.system = system
 
     return subject
 }
 
 export function createSubjects(
     length: number,
-    org: Organization = createOrganization(),
-    categories: Category[] = []
+    org?: Organization,
+    categories?: Category[],
+    system?: boolean
 ) {
     return Array(length)
         .fill(undefined)
-        .map(() => createSubject(org, categories))
+        .map(() => createSubject(org, categories, system))
 }

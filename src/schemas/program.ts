@@ -10,13 +10,15 @@ import { GraphQLSchemaModule } from '../types/schemaModule'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { Subject } from '../entities/subject'
+import { mutate } from '../utils/mutations/commonStructure'
+import { CreatePrograms } from '../resolvers/program'
 
 const typeDefs = gql`
     extend type Mutation {
         program(id: ID!): Program @isAdmin(entity: "program")
-
         uploadProgramsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        createPrograms(input: [CreateProgramInput!]!): ProgramsMutationResult
     }
 
     # pagination extension types start here
@@ -163,6 +165,19 @@ const typeDefs = gql`
         subjects: [ID!]
         status: Status
     }
+
+    # mutation types
+    input CreateProgramInput {
+        name: String!
+        organizationId: ID!
+        ageRangeIds: [ID!]!
+        gradeIds: [ID!]!
+        subjectIds: [ID!]!
+    }
+
+    type ProgramsMutationResult {
+        programs: [ProgramConnectionNode!]!
+    }
 `
 
 export async function subjectsChildConnectionResolver(
@@ -239,6 +254,8 @@ export default function getDefault(
                     model.getProgram(args, ctx),
                 uploadProgramsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadProgramsFromCSV(args, ctx, info),
+                createPrograms: (_parent, args, ctx) =>
+                    mutate(CreatePrograms, args, ctx.permissions),
             },
             Query: {
                 program: (_parent, args, ctx, _info) =>
