@@ -15,7 +15,13 @@ export default function () {
         variables: {
             organization_id: process.env.ORG_ID,
             class_name: `test-${randomNumber(999999999)}`,
-            school_ids: [ process.env.SCHOOL_ID_1 ]
+            school_ids: [ 
+                process.env.SCHOOL_ID_1, 
+                process.env.SCHOOL_ID_2, 
+                process.env.SCHOOL_ID_3, 
+                process.env.SCHOOL_ID_4,
+                process.env.SCHOOL_ID_5, 
+            ]
         },
         query: CREATE_CLASS,
     });

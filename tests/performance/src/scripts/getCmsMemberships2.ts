@@ -14,7 +14,7 @@ export default function () {
     const userPayload = JSON.stringify({
         variables: {},
         
-        query: meMembershipForCMS2,
+        query: meMembershipForCMS2(process.env.ORG_ID as string),
     });
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);

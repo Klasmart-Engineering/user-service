@@ -11,8 +11,8 @@ module.exports = env => ({
     context: path.join(__dirname, `src`),
     entry: {
         parallelLogin: `./parallelLogin.ts`,
-        createUserBasic: `./createUserBasic`,
-        createUsersAllRoles: `./createUsersAllRoles`,
+        createUserBasic: `./createUserBasic.ts`,
+        createUsersAllRoles: `./createUsersAllRoles.ts`,
         create1kUsers: `./create1kUsers`,
         createUsersParallel: `./createUsersParallel`,
         parallelLanding: `./parallelLanding.ts`,
@@ -61,6 +61,9 @@ module.exports = env => ({
         postCreateLessonPlan: `./postCreateLessonPlan.ts`,
         createClass: `./createClass.ts`,
         createClassParallel: `./createClassParallel.ts`,
+        createLessonPlan: `./createLessonPlan.ts`,
+        webSocketInit: `./webSocketInit.ts`,
+        testGetLiveClassToken: `./testGetLiveClassToken.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),

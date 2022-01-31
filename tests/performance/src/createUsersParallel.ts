@@ -1,8 +1,7 @@
 import createUsersParallel from './scripts/createUsersParallel';
 import { Options } from 'k6/options';
-import { sleep } from 'k6';
-import switchUser from './scripts/switchUser';
-import testLogin from './scripts/testLogin';
+import loginSetup from './utils/loginSetup';
+import http from 'k6/http';
 
 export const options: Options = {
     scenarios: {
@@ -27,23 +26,64 @@ export const options: Options = {
     }
 }
 
-export function createUsersAdmin1() {
-    testLogin();
-    sleep(0.5);
-    switchUser();
-    sleep(0.5);
-    createUsersParallel(0, 9);
-}
+export function setup() {
+    let data = {};
+    const orgAdminLoginPayload = {
+        deviceId: "webpage",
+        deviceName: "k6",
+        email: process.env.EMAIL_ORG_ADMIN_1 as string,
+        pw: process.env.PW as string,
+    };
+    
+    const orgAdminLoginData = loginSetup(orgAdminLoginPayload);
+    data = { 
+        ...data, 
+        [`orgAdmin`]: orgAdminLoginData,
+    };
 
-export function createUsersAdmin2() {
-    testLogin({
+    const orgAdminLoginPayload2 = {
         deviceId: "webpage",
         deviceName: "k6",
         email: process.env.EMAIL_ORG_ADMIN_2 as string,
         pw: process.env.PW as string,
+    };
+    
+    const orgAdminLoginData2 = loginSetup(orgAdminLoginPayload2);
+
+    data = { 
+        ...data, 
+        [`orgAdmin2`]: orgAdminLoginData2,
+    };
+
+
+    return data;
+}
+
+export function createUsersAdmin1(data: { [key: string]: { res: any, userId: string }}) {
+    const jar = http.cookieJar();
+    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
     });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    createUsersParallel(0, 9);
+}
+
+export function createUsersAdmin2(data: { [key: string]: { res: any, userId: string }}) {
+    const jar = http.cookieJar();
+    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin2.res.cookies?.access[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin2.res.cookies?.refresh[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+<<<<<<< HEAD
     sleep(0.5);
     switchUser();
     sleep(0.5);
     createUsersParallel(30, 35);
+=======
+    createUsersParallel(10, 19);
+>>>>>>> b65d38c42b81266168a11139d4a51439dbc31995
 }

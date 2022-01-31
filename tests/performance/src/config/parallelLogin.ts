@@ -15,14 +15,14 @@ export const config = (stages: number): Options => ({
     scenarios: {
         teacher: {
             executor: 'ramping-vus',
-            exec: 'teacher',
+            exec: 'userTeacherLogin',
             startTime: '0s',
             gracefulStop: '5s',
             stages: generateStages(stages),
         },
         student: {
             executor: 'ramping-vus',
-            exec: 'student',
+            exec: 'userStudentLogin',
             startTime: '0s',
             gracefulStop: '5s',
             stages:  generateStages(stages),

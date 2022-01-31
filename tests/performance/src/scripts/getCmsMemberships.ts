@@ -1,8 +1,6 @@
 import { check } from 'k6';
 import http from 'k6/http';
 import { meMembershipForCMS } from '../queries/cms';
-import { getOrganizationRolesPermissions } from '../queries/roles';
-
 
 const params = {
     headers: {
@@ -14,8 +12,7 @@ export default function () {
 
     const userPayload = JSON.stringify({
         variables: {},
-        
-        query: meMembershipForCMS,
+        query: meMembershipForCMS(process.env.ORG_ID as string),
     });
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);

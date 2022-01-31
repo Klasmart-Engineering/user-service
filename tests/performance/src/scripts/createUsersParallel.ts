@@ -31,7 +31,7 @@ export default function(start: number, end: number) {
             alternate_email: "",
             alternate_phone: "",
             date_of_birth: "01-1990",
-            email: `${process.env.EMAIL_USER_NAME_1K}+user_test_parallel-_${prefix}@${process.env.EMAIL_DOMAIN}`,
+            email: `${process.env.EMAIL_USER_NAME_1K}+k8+user_test_parallel-_${prefix}@${process.env.EMAIL_DOMAIN}`,
             phone: "",
             family_name: `K6-Parallel-${prefix}`,
             gender: 'male',
