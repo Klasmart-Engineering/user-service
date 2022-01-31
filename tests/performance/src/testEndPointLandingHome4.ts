@@ -10,6 +10,10 @@ https://kl2.loadtest.kidsloop.live/v1/schedules_time_view?end_at_le=1640746740&o
 
 */
 
+// command: k6 run -e VUS=1 -e DURATION=1m testEndPointLandingHome4.js
+// For increase the VUS -> change the value of the variable: VUS
+// For increase the duration -> change the value of the variable: DURATION
+
 export const options: Options = {
     vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
     duration: __ENV.DURATION ?? '1m',
@@ -43,5 +47,5 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    endPointHomeRequest4('Org admin');
+    endPointHomeRequest4();
 }

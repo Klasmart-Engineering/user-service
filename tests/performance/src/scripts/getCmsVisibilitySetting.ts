@@ -13,7 +13,7 @@ export default function (roleType?: string) {
     
     check(res, {
         'GET CMS Visibility Setting on Content Library - status is 200': () => res.status === 200,
-        '"GET CMS Visibility Setting" query returns data': (r) => JSON.parse(r.body as string).id !== undefined,
+        '"GET CMS Visibility Setting" query returns data': (r) => JSON.parse(r.body as string)[0]?.id !== undefined,
     }, {
         userRoleType: roleType
     });

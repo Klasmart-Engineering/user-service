@@ -3,6 +3,9 @@ import { Options } from 'k6/options';
 import loginSetup from './utils/loginSetup';
 import endPointHomeRequest5 from './scripts/endPointHomeRequest5';
 
+// command: k6 run -e VUS=1 -e DURATION=1m testEndPointLandingHome5.js
+// For increase the VUS -> change the value of the variable: VUS
+// For increase the duration -> change the value of the variable: DURATION
 
 /*
 
@@ -53,5 +56,5 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    endPointHomeRequest5('Org admin');
+    endPointHomeRequest5();
 }

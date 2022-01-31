@@ -20,7 +20,7 @@ module.exports = env => ({
         getPaginatedUsers: `./getPaginatedUsers.ts`,
         getPaginatedUsersCursor: `./getPaginatedUsersCursor.ts`,
         getPaginatedUsersFilter: `./getPaginatedUsersFilters.ts`,
-        getPaginatedUsersMixed: `./getPaginatedUsersMixed.ts`,
+        getPaginatedUsersMixedNewConfig: `./getPaginatedUsersMixedNewConfig.ts`,
         scenario9ASchoolAdmin: `./Scenarios/Scenario 9/scenario9ASchoolAdmin.ts`,
         liveClassPopulate: `./liveClassPopulate.ts`,
         parallelScheduleSearch: `./parallelScheduleSearch.ts`,

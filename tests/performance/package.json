@@ -16,6 +16,7 @@
       "get:users:cursor": "k6 run ./dist/getPaginatedUsersCursor.js",
       "get:users:filters": "k6 run ./dist/getPaginatedUsersFilter.js",
       "get:users:mixed": "k6 run ./dist/getPaginatedUsersMixed.js",
+      "get:users:mixedNewConfig": "k6 run ./dist/getPaginatedUsersMixedNewConfig.js",
       "get:scenario9-a": "k6 run ./dist/Scenario9ASchoolAdmin.js",
       "test:endpoint:landinghome1": "k6 run ./dist/testEndPointLandingHome1.js",
       "test:endpoint:landinghome2": "k6 run ./dist/testEndPointLandingHome2.js",

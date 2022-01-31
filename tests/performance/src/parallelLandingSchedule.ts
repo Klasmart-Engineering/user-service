@@ -7,7 +7,7 @@ import http from 'k6/http';
 import { config } from './config/parallelLanding';
 import loginSetup from './utils/uniqueUserCookies';
 
-const stageQty: number = !isNaN(parseInt(__ENV.STAGE_QTY, 10)) ? parseInt(__ENV.STAGE_QTY) : 2;
+const stageQty: number = !isNaN(parseInt(__ENV.STAGE_QTY, 10)) ? parseInt(__ENV.STAGE_QTY) : 1;
 export const options: Options = config(stageQty);
 
 export function setup() {
