@@ -179,6 +179,7 @@ const typeDefs = gql`
         familyName: StringFilter
         email: StringFilter
         phone: StringFilter
+        username: StringFilter
 
         AND: [EligibleMembersFilter!]
         OR: [EligibleMembersFilter!]
@@ -193,6 +194,7 @@ const typeDefs = gql`
         avatar: StringFilter
         email: StringFilter
         phone: StringFilter
+        username: StringFilter
 
         # joined columns
         organizationId: UUIDFilter
@@ -390,6 +392,9 @@ const typeDefs = gql`
             phone: String
             shortCode: String
         ): Organization
+            @deprecated(
+                reason: "Sunset Date: 01/05/22 Details: https://calmisland.atlassian.net/l/c/hKbcoRyx"
+            )
         merge(other_id: String): User
         addOrganization(organization_id: ID!): OrganizationMembership
             @deprecated(

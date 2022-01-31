@@ -137,6 +137,21 @@ export function createUnauthorizedAPIError(
     })
 }
 
+export function createUserAlreadyOwnsOrgAPIError(
+    userId: string,
+    orgId: string,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.user_already_owns_an_organization.code,
+        message: customErrors.user_already_owns_an_organization.message,
+        variables: [''],
+        entityName: userId,
+        parentName: orgId,
+        index: index,
+    })
+}
+
 export function createExistentEntityAttributeAPIError(
     entity: string,
     entityName: string,

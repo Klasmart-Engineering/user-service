@@ -128,6 +128,7 @@ export async function eligibleMemberConnectionQuery(
                 familyName: 'User.family_name',
                 phone: 'User.phone',
                 email: 'User.email',
+                username: 'User.username',
             })
         )
     }

@@ -3,6 +3,7 @@ import {
     Brackets,
     Connection,
     createQueryBuilder,
+    getRepository,
     SelectQueryBuilder,
 } from 'typeorm'
 import {
@@ -61,6 +62,7 @@ import {
     createEntityScope,
     nonAdminOrganizationScope,
     nonAdminSchoolScope,
+    nonAdminUserScope,
 } from '../../../src/directives/isAdmin'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Subcategory } from '../../../src/entities/subcategory'
@@ -80,6 +82,7 @@ import { SubjectConnectionNode } from '../../../src/types/graphQL/subject'
 import { Context } from '../../../src/main'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
+import { TokenPayload } from '../../../src/token'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -332,6 +335,66 @@ describe('isAdmin', () => {
             })
         })
         context('non admin', () => {
+            context('nonAdminUserScope', () => {
+                let scope: SelectQueryBuilder<User>
+                let token: TokenPayload
+                let user: User
+
+                beforeEach(async () => {
+                    scope = getRepository(User).createQueryBuilder()
+                    user = await createUser().save()
+                    token = userToPayload(user, true)
+                })
+
+                context('when username is set', () => {
+                    let userPermissions: UserPermissions
+
+                    beforeEach(() => {
+                        userPermissions = new UserPermissions(token)
+                    })
+
+                    context(
+                        'when there is more then one user with the same username',
+                        () => {
+                            beforeEach(async () => {
+                                const userWithSameName = await createUser()
+                                userWithSameName.username = user.username
+                                await userWithSameName.save()
+                            })
+
+                            it('returns only the user with matching user_id', async () => {
+                                await nonAdminUserScope(scope, userPermissions)
+                                const users = await scope.getMany()
+                                expect(users).to.have.length(1)
+                                expect(users[0].user_id).to.eq(user.user_id)
+                            })
+                        }
+                    )
+
+                    it('does not return users with the same email or phone', async () => {
+                        await createUser({
+                            email: user.email,
+                            phone: user.phone,
+                        }).save()
+                        await nonAdminUserScope(scope, userPermissions)
+                        const users = await scope.getMany()
+                        expect(users).to.have.length(1)
+                        expect(users[0].user_id).to.eq(user.user_id)
+                    })
+                })
+
+                it('errors if no user_id is set', async () => {
+                    token.id = undefined
+                    const userPermissions = new UserPermissions(token)
+
+                    await expect(
+                        nonAdminUserScope(scope, userPermissions)
+                    ).to.eventually.rejectedWith(
+                        'User is required for authorization'
+                    )
+                })
+            })
+
             it('no permission needed to view my users', async () => {
                 const user = await createNonAdminUser(testClient)
                 const user2 = createUser()

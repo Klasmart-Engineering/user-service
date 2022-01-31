@@ -62,7 +62,6 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export interface TokenPayload {
-    [k: string]: string | undefined | number | string[] | boolean
     // id is not set until client has selected
     // a particular user profile
     id?: string
@@ -70,7 +69,7 @@ export interface TokenPayload {
     phone?: string
     iss: string
 
-    username?: string
+    user_name?: string
 }
 
 async function checkTokenAMS(req: Request): Promise<TokenPayload | undefined> {
@@ -140,7 +139,7 @@ export function isAPIKey(auth: string) {
     return auth.startsWith('Bearer ')
 }
 
-export async function checkAPIKey(auth: string) {
+export function checkAPIKey(auth: string) {
     if (!isAPIKey(auth)) {
         return false
     }
@@ -162,7 +161,7 @@ export async function validateToken(
     const auth = req.headers.authorization
     if (auth !== undefined && isAPIKey(auth)) {
         try {
-            res.locals.hasApiKey = await checkAPIKey(auth)
+            res.locals.hasApiKey = checkAPIKey(auth)
         } catch (e) {
             const { code, message } = customErrors.invalid_api_key
 

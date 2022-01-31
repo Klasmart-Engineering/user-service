@@ -17,6 +17,8 @@ import {
     RemoveProgramsFromClasses,
     CreateClasses,
     UpdateClasses,
+    AddStudentsToClasses,
+    RemoveStudentsFromClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -38,6 +40,12 @@ const typeDefs = gql`
         ): ClassesMutationResult
         removeProgramsFromClasses(
             input: [RemoveProgramsFromClassInput!]!
+        ): ClassesMutationResult
+        addStudentsToClasses(
+            input: [AddStudentsToClassInput!]!
+        ): ClassesMutationResult
+        removeStudentsFromClasses(
+            input: [RemoveStudentsFromClassInput!]!
         ): ClassesMutationResult
     }
 
@@ -228,6 +236,9 @@ const typeDefs = gql`
         editTeachers(teacher_ids: [ID!]): [User]
         removeTeacher(user_id: ID!): Boolean
         addStudent(user_id: ID!): User
+            @deprecated(
+                reason: "Sunset Date: 24/04/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
+            )
         editStudents(student_ids: [ID!]): [User]
         removeStudent(user_id: ID!): Boolean
         editSchools(school_ids: [ID!]): [School]
@@ -280,6 +291,16 @@ const typeDefs = gql`
     input RemoveProgramsFromClassInput {
         classId: ID!
         programIds: [ID!]!
+    }
+
+    input AddStudentsToClassInput {
+        classId: ID!
+        studentIds: [ID!]!
+    }
+
+    input RemoveStudentsFromClassInput {
+        classId: ID!
+        studentIds: [ID!]!
     }
 `
 
@@ -520,6 +541,10 @@ export default function getDefault(
                     mutate(AddProgramsToClasses, args, ctx.permissions),
                 removeProgramsFromClasses: (_parent, args, ctx) =>
                     mutate(RemoveProgramsFromClasses, args, ctx.permissions),
+                addStudentsToClasses: (_parent, args, ctx) =>
+                    mutate(AddStudentsToClasses, args, ctx.permissions),
+                removeStudentsFromClasses: (_parent, args, ctx) =>
+                    mutate(RemoveStudentsFromClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),

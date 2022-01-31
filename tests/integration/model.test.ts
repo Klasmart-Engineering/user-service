@@ -144,7 +144,7 @@ describe('model', () => {
         })
         it('matches users by username', async () => {
             const users = await model.myUsers({
-                username: clientUser.username,
+                user_name: clientUser.username,
                 iss: 'calmid-debug',
             })
             expect(users).to.have.length(numUsernameProfiles)
@@ -152,7 +152,7 @@ describe('model', () => {
 
         it('matches users in username>email>phone precedence', async () => {
             let users = await model.myUsers({
-                username: clientUser.username,
+                user_name: clientUser.username,
                 email: clientUser.email,
                 phone: clientUser.phone,
                 iss: 'calmid-debug',
@@ -178,7 +178,7 @@ describe('model', () => {
 
             await expect(
                 model.myUsers({
-                    username: clientUser.username,
+                    user_name: clientUser.username,
                     iss: 'calmid-debug',
                 })
             ).to.be.rejectedWith(Error, 'Username is not unique')

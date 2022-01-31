@@ -1,5 +1,6 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
+import { v4 as uuid_v4 } from 'uuid'
 import { createQueryBuilder, getManager, getRepository, In } from 'typeorm'
 import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
 import { Model } from '../../src/model'
@@ -70,6 +71,7 @@ import { createCategory } from '../factories/category.factory'
 import { createSubcategory } from '../factories/subcategory.factory'
 import {
     createOrganization,
+    createOrganizationPlus,
     createOrganizations,
 } from '../factories/organization.factory'
 import {
@@ -88,30 +90,48 @@ import {
 import chaiAsPromised from 'chai-as-promised'
 import { Program } from '../../src/entities/program'
 import { createProgram } from '../factories/program.factory'
-import { SHORTCODE_DEFAULT_MAXLEN } from '../../src/utils/shortcode'
+import {
+    generateShortCode,
+    SHORTCODE_DEFAULT_MAXLEN,
+} from '../../src/utils/shortcode'
 import { Class } from '../../src/entities/class'
 import { addSchoolToClass } from '../utils/operations/classOps'
-import _, { pick } from 'lodash'
+import { pick } from 'lodash'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import {
     EditMembershipArguments,
     InviteUserArguments,
 } from '../../src/operations/organization'
 import { Headers } from 'node-mocks-http'
-import { expectAPIError, expectToBeAPIErrorCollection } from '../utils/apiError'
+import {
+    compareMultipleErrors,
+    expectAPIError,
+    expectToBeAPIErrorCollection,
+} from '../utils/apiError'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import {
     AddUsersToOrganizationInput,
+    CreateOrganizationInput,
     OrganizationsMutationResult,
     RemoveUsersFromOrganizationInput,
 } from '../../src/types/graphQL/organization'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     AddUsersToOrganizations,
+    CreateOrganizations,
     RemoveUsersFromOrganizations,
 } from '../../src/resolvers/organization'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { buildPermissionError } from '../utils/errors'
+import {
+    createDuplicateAttributeAPIError,
+    createEntityAPIError,
+    createExistentEntityAttributeAPIError,
+    createUserAlreadyOwnsOrgAPIError,
+} from '../../src/utils/resolvers/errors'
+import { APIError } from '../../src/types/errors/apiError'
+import { customErrors } from '../../src/types/errors/customError'
+import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -7070,6 +7090,430 @@ describe('organization', () => {
                 const systemRoles: Role[] = res.filter((r) => r.system_role)
                 expect(systemRoles).to.have.length(5)
                 systemRoles.forEach((sr) => expect(sr).to.be.instanceOf(Role))
+            })
+        })
+    })
+
+    describe('CreateOrganizations', () => {
+        let input: CreateOrganizationInput[]
+
+        function getCreateOrganizations(
+            mutationInput: CreateOrganizationInput[] = [],
+            authUser = adminUser
+        ) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new CreateOrganizations(mutationInput, permissions)
+        }
+
+        function generateInput(
+            userId: string,
+            organizationName?: string,
+            shortcode?: string
+        ): CreateOrganizationInput {
+            return {
+                userId: userId,
+                organizationName: organizationName ?? uuid_v4(), // using uuid to avoid name clashes
+                address1: faker.address.streetAddress(),
+                address2: faker.address.zipCode(),
+                phone: faker.phone.phoneNumber(),
+                shortcode: shortcode ?? generateShortCode(),
+            }
+        }
+
+        beforeEach(async () => {
+            adminUser = await adminUserFactory().save()
+            nonAdminUser = await userFactory().save()
+            users = await User.save(createUsers(5))
+            input = users.map((u) => generateInput(u.user_id))
+        })
+
+        context('.run', () => {
+            it('creates an organization', async () => {
+                await expect(getCreateOrganizations(input).run()).to.be
+                    .fulfilled
+
+                const orgMap = await Organization.find({
+                    where: {
+                        organization_name: In(
+                            input.map((i) => i.organizationName)
+                        ),
+                    },
+                    relations: [
+                        'owner',
+                        'primary_contact',
+                        'memberships',
+                        'memberships.roles',
+                    ],
+                }).then(
+                    (val) => new Map(val.map((o) => [o.organization_name!, o]))
+                )
+
+                const ownershipMap = await OrganizationOwnership.find({
+                    where: { user_id: In(input.flatMap((i) => i.userId)) },
+                }).then((val) => new Map(val.map((o) => [o.user_id, o])))
+
+                for (const i of input) {
+                    const {
+                        userId,
+                        organizationName,
+                        address1,
+                        address2,
+                        phone,
+                        shortcode,
+                    } = i
+                    const org = orgMap.get(organizationName)
+                    if (!org) expect.fail('org should not be undefined')
+
+                    // Check Organization
+                    expect(org.address1).to.equal(address1)
+                    expect(org.address2).to.equal(address2)
+                    expect(org.phone).to.equal(phone)
+                    expect(org.shortCode).to.equal(shortcode)
+                    // eslint-disable-next-line no-await-in-loop
+                    expect((await org.primary_contact)?.user_id).to.equal(
+                        userId
+                    )
+
+                    // Check OrganizationMembership
+                    // eslint-disable-next-line no-await-in-loop
+                    const memberships = await org.memberships
+                    expect(memberships).to.not.be.undefined
+                    expect(memberships).to.have.length(1)
+                    expect(memberships![0].user_id).to.equal(userId)
+
+                    // Check Roles in OrganizationMembership
+                    // eslint-disable-next-line no-await-in-loop
+                    const membershipRoles = await memberships![0].roles
+                    expect(membershipRoles).to.not.be.undefined
+                    expect(membershipRoles).to.have.length(1)
+                    expect(membershipRoles![0].role_name).to.equal(
+                        'Organization Admin'
+                    )
+                    expect(membershipRoles![0].system_role).to.be.true
+
+                    // Check OrganizationOwnership
+                    const orgOwnership = ownershipMap.get(userId)
+                    expect(orgOwnership).to.not.be.undefined
+                }
+            })
+
+            it('returns the expected output', async () => {
+                const res: OrganizationsMutationResult = await expect(
+                    getCreateOrganizations(input).run()
+                ).to.be.fulfilled
+
+                expect(res.organizations).to.have.length(input.length)
+                for (const [i, org] of res.organizations.entries()) {
+                    expect(org.id).to.not.be.undefined
+                    expect(org.name).to.equal(input[i].organizationName)
+                    expect(org.contactInfo.address1).to.equal(input[i].address1)
+                    expect(org.contactInfo.address2).to.equal(input[i].address2)
+                    expect(org.contactInfo.phone).to.equal(input[i].phone)
+                    expect(org.shortCode).to.equal(input[i].shortcode)
+                    expect(org.status).to.equal(Status.ACTIVE)
+                }
+            })
+
+            it('makes the same number of db connections regardless of input size', async () => {
+                const user = await createUser().save()
+                connection.logger.reset()
+                await getCreateOrganizations([
+                    generateInput(user.user_id),
+                ]).run()
+                const dbCountForOne = connection.logger.count
+
+                input = users.map((u) => generateInput(u.user_id))
+                connection.logger.reset()
+                await getCreateOrganizations(input).run()
+                expect(connection.logger.count).to.equal(dbCountForOne)
+            })
+        })
+
+        context('.normalize', () => {
+            it('preserves input element positions and length', () => {
+                const normalizedEmpty = getCreateOrganizations().normalize([])
+                expect(normalizedEmpty).to.be.empty
+                const normalized = getCreateOrganizations().normalize(input)
+                expect(normalized).to.deep.equal(input)
+            })
+
+            context('shortcodes', () => {
+                it('generates shortcodes when not supplied by the caller', () => {
+                    input.map((i) => (i.shortcode = undefined))
+                    const normalized = getCreateOrganizations().normalize(input)
+                    normalized.forEach(
+                        (n) => expect(n.shortcode).to.not.be.undefined
+                    )
+                })
+
+                it('normalizes shortcodes to uppercase', () => {
+                    input.map((i, idx) => (i.shortcode = 'BASKETball' + idx))
+                    const normalized = getCreateOrganizations().normalize(input)
+                    normalized.forEach((n, idx) =>
+                        expect(n.shortcode).to.equal('BASKETBALL' + idx)
+                    )
+                })
+
+                it('preserves invalid shortcodes', () => {
+                    input.map((i, idx) => (i.shortcode = '!!!!' + idx))
+                    const normalized = getCreateOrganizations().normalize(input)
+                    normalized.forEach((n, idx) =>
+                        expect(n.shortcode).to.equal('!!!!' + idx)
+                    )
+                })
+
+                it('preserves valid shortcodes', () => {
+                    const validShortcodes = input.map((_) =>
+                        generateShortCode()
+                    )
+                    input.map((i, idx) => (i.shortcode = validShortcodes[idx]))
+                    const normalized = getCreateOrganizations().normalize(input)
+                    normalized.forEach((n, idx) =>
+                        expect(n.shortcode).to.equal(validShortcodes[idx])
+                    )
+                })
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            it('returns the organization IDs which have conflicting names', async () => {
+                const conflictName = input[2].organizationName
+                const conflictOrg = await createOrganizationPlus({
+                    organization_name: conflictName,
+                }).save()
+
+                const maps = await getCreateOrganizations().generateEntityMaps(
+                    input
+                )
+
+                expect(maps.conflictingShortcodeOrgIds.size).to.equal(0)
+                expect(maps.conflictingNameOrgIds.size).to.equal(1)
+                expect(maps.userOwnedOrg.size).to.equal(0)
+                expect(
+                    maps.conflictingNameOrgIds.get({ name: conflictName })
+                ).to.equal(conflictOrg.organization_id)
+            })
+
+            it('returns the organization IDs which have conflicting shortcodes', async () => {
+                const conflictShortcode = input[2].shortcode!
+                const conflictOrg = await createOrganizationPlus({
+                    shortCode: conflictShortcode,
+                }).save()
+
+                const maps = await getCreateOrganizations().generateEntityMaps(
+                    input
+                )
+
+                expect(maps.conflictingShortcodeOrgIds.size).to.equal(1)
+                expect(maps.conflictingNameOrgIds.size).to.equal(0)
+                expect(maps.userOwnedOrg.size).to.equal(0)
+                expect(
+                    maps.conflictingShortcodeOrgIds.get({
+                        shortcode: conflictShortcode,
+                    })
+                ).to.equal(conflictOrg.organization_id)
+            })
+
+            it('returns the organization IDs which are owned by users', async () => {
+                const conflictUser = users[2]
+                const conflictOrg = await createOrganization().save()
+                await createOrganizationOwnership({
+                    user: conflictUser,
+                    organization: conflictOrg,
+                }).save()
+
+                const maps = await getCreateOrganizations().generateEntityMaps(
+                    input
+                )
+
+                expect(maps.conflictingShortcodeOrgIds.size).to.equal(0)
+                expect(maps.conflictingNameOrgIds.size).to.equal(0)
+                expect(maps.userOwnedOrg.size).to.equal(1)
+                expect(
+                    maps.userOwnedOrg.get({
+                        userId: conflictUser.user_id,
+                    })
+                ).to.equal(conflictOrg.organization_id)
+            })
+        })
+
+        context('.authorize', () => {
+            it('rejects non admin users with an error', async () => {
+                await expect(
+                    getCreateOrganizations([], nonAdminUser).authorize()
+                ).to.be.rejectedWith(
+                    `User(${nonAdminUser.user_id}) does not have Admin permissions`
+                )
+            })
+
+            it('accepts admin users', async () => {
+                await expect(getCreateOrganizations([], adminUser).authorize())
+                    .to.be.fulfilled
+            })
+        })
+
+        context('.validationOverAllInputs', () => {
+            it('catches duplicate users, names, and shortcodes', () => {
+                const initialLength = input.length
+                const duplicateId = users[0].user_id
+                input.push(generateInput(duplicateId))
+
+                const duplicateName = input[1].organizationName
+                input.push(generateInput(uuid_v4(), duplicateName))
+
+                const duplicateShortcode = input[2].shortcode
+                input.push(
+                    generateInput(uuid_v4(), uuid_v4(), duplicateShortcode)
+                )
+
+                const res = getCreateOrganizations().validationOverAllInputs(
+                    input
+                )
+
+                expect(res.validInputs).to.have.length(initialLength)
+                res.validInputs.forEach((vi) =>
+                    expect(vi.input).to.deep.equal(input[vi.index])
+                )
+
+                const xErrors = [
+                    'userId',
+                    'organizationName',
+                    'shortcode',
+                ].map((attribute, index) =>
+                    createDuplicateAttributeAPIError(
+                        initialLength + index,
+                        [attribute],
+                        'CreateOrganizationInput'
+                    )
+                )
+
+                compareMultipleErrors(res.apiErrors, xErrors)
+            })
+        })
+
+        context('.validate', () => {
+            async function validate(mutationInput: CreateOrganizationInput[]) {
+                const mutation = getCreateOrganizations()
+                const maps = await mutation.generateEntityMaps(mutationInput)
+                return mutationInput.flatMap((i, index) =>
+                    mutation.validate(index, undefined, i, maps)
+                )
+            }
+
+            it('errors for inactive or missing users', async () => {
+                const inactiveUser = users[1]
+                await inactiveUser.inactivate(getManager())
+                const fakeId = uuid_v4()
+                input.push(generateInput(fakeId))
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createEntityAPIError(
+                        'nonExistent',
+                        1,
+                        'User',
+                        inactiveUser.user_id
+                    ),
+                    createEntityAPIError('nonExistent', 5, 'User', fakeId),
+                ]
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors for conflicting names', async () => {
+                const conflictName = input[4].organizationName
+                const conflictOrg = await createOrganizationPlus({
+                    organization_name: conflictName,
+                }).save()
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createExistentEntityAttributeAPIError(
+                        'Organization',
+                        conflictOrg.organization_id,
+                        'name',
+                        conflictName,
+                        4
+                    ),
+                ]
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors for conflicting shortcodes', async () => {
+                const conflictShortcode = input[2].shortcode!
+                const conflictOrg = await createOrganizationPlus({
+                    shortCode: conflictShortcode,
+                }).save()
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createExistentEntityAttributeAPIError(
+                        'Organization',
+                        conflictOrg.organization_id,
+                        'shortcode',
+                        conflictShortcode,
+                        2
+                    ),
+                ]
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors for invalid shortcodes', async () => {
+                const invalidShortcode = '!!!!'
+                input[3].shortcode = invalidShortcode
+
+                const errors = await validate(input)
+                const xErrors = [
+                    new APIError({
+                        code: customErrors.invalid_alphanumeric.code,
+                        message: customErrors.invalid_alphanumeric.message,
+                        variables: [],
+                        entity: 'Organization',
+                        attribute: 'shortcode',
+                        index: 3,
+                    }),
+                ]
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors when a user is already an org owner', async () => {
+                const conflictUser = users[0]
+                const conflictOrg = await createOrganization().save()
+                await createOrganizationOwnership({
+                    user: conflictUser,
+                    organization: conflictOrg,
+                }).save()
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createUserAlreadyOwnsOrgAPIError(
+                        conflictUser.user_id,
+                        conflictOrg.organization_id,
+                        0
+                    ),
+                ]
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors for multiple reasons', async () => {
+                const fakeId = uuid_v4()
+                input.push(generateInput(fakeId))
+                const conflictUser = users[4]
+                const conflictOrg = await createOrganization().save()
+                await createOrganizationOwnership({
+                    user: conflictUser,
+                    organization: conflictOrg,
+                }).save()
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createUserAlreadyOwnsOrgAPIError(
+                        conflictUser.user_id,
+                        conflictOrg.organization_id,
+                        4
+                    ),
+                    createEntityAPIError('nonExistent', 5, 'User', fakeId),
+                ]
+                compareMultipleErrors(errors, xErrors)
             })
         })
     })

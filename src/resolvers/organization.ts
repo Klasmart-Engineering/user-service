@@ -8,11 +8,21 @@ import { PermissionName } from '../permissions/permissionNames'
 import { APIError } from '../types/errors/apiError'
 import {
     AddUsersToOrganizationInput,
+    CreateOrganizationInput,
     OrganizationsMutationResult,
     RemoveUsersFromOrganizationInput,
 } from '../types/graphQL/organization'
+import {
+    createExistentEntityAttributeAPIError,
+    createUserAlreadyOwnsOrgAPIError,
+} from '../utils/resolvers/errors'
 import { config } from '../config/config'
-import { formatShortCode, generateShortCode } from '../utils/shortcode'
+import {
+    formatShortCode,
+    generateShortCode,
+    newValidateShortCode,
+    validateShortCode,
+} from '../utils/shortcode'
 import {
     RemoveMembershipMutation,
     EntityMap,
@@ -20,14 +30,259 @@ import {
     ProcessedResult,
     validateActiveAndNoDuplicates,
     filterInvalidInputs,
+    CreateMutation,
+    validateNoDuplicate,
 } from '../utils/mutations/commonStructure'
-import { ObjMap } from '../utils/stringUtils'
 import { getMap } from '../utils/resolvers/entityMaps'
 import {
     flagExistentOrganizationMembership,
     flagNonExistent,
     flagNonExistentOrganizationMembership,
 } from '../utils/resolvers/inputValidation'
+import clean from '../utils/clean'
+import { ObjMap } from '../utils/stringUtils'
+import { OrganizationOwnership } from '../entities/organizationOwnership'
+import { v4 as uuid_v4 } from 'uuid'
+import { In } from 'typeorm'
+import { Status } from '../entities/status'
+
+export interface EntityMapCreateOrganization extends EntityMap<Organization> {
+    users: Map<string, User>
+    conflictingNameOrgIds: ObjMap<{ name: string }, string>
+    conflictingShortcodeOrgIds: ObjMap<{ shortcode: string }, string>
+    userOwnedOrg: ObjMap<{ userId: string }, string>
+    adminRole: Role
+}
+
+export class CreateOrganizations extends CreateMutation<
+    Organization,
+    CreateOrganizationInput,
+    OrganizationsMutationResult,
+    EntityMapCreateOrganization,
+    OrganizationOwnership | OrganizationMembership
+> {
+    protected readonly EntityType = Organization
+    protected inputTypeName = 'CreateOrganizationInput'
+    protected output: OrganizationsMutationResult = { organizations: [] }
+
+    normalize(input: CreateOrganizationInput[]) {
+        for (const inputElement of input) {
+            if (inputElement.shortcode === undefined) {
+                inputElement.shortcode = generateShortCode()
+            } else {
+                inputElement.shortcode = clean.shortcode(inputElement.shortcode)
+            }
+        }
+        return input
+    }
+
+    async generateEntityMaps(
+        input: CreateOrganizationInput[]
+    ): Promise<EntityMapCreateOrganization> {
+        const usersMap = getMap.user(
+            input.map((i) => i.userId),
+            ['organization_ownerships']
+        )
+
+        const names = input.map(({ organizationName }) => organizationName)
+        const conflictingNameOrgIdsMap = Organization.find({
+            select: ['organization_id', 'organization_name'],
+            where: { organization_name: In(names) },
+        }).then(
+            (res) =>
+                new ObjMap(
+                    res.map((r) => {
+                        return {
+                            key: { name: r.organization_name! },
+                            value: r.organization_id,
+                        }
+                    })
+                )
+        )
+
+        const validShortcodes = input
+            .map(({ shortcode }) => shortcode)
+            .filter((shortcode) => validateShortCode(shortcode))
+        const conflictingShortcodeOrgIdsMap = Organization.find({
+            select: ['organization_id', 'shortCode'],
+            where: { shortCode: In(validShortcodes) },
+        }).then(
+            (res) =>
+                new ObjMap(
+                    res.map((r) => {
+                        return {
+                            key: { shortcode: r.shortCode! },
+                            value: r.organization_id,
+                        }
+                    })
+                )
+        )
+
+        const adminRole = Role.findOneOrFail({
+            where: {
+                role_name: 'Organization Admin',
+                system_role: true,
+                organization: { organization_id: null },
+                status: Status.ACTIVE,
+            },
+        })
+
+        const userOwnedOrgMap = new ObjMap<{ userId: string }, string>()
+        for (const [userId, user] of (await usersMap).entries()) {
+            // eslint-disable-next-line no-await-in-loop
+            const ownerships = await user.organization_ownerships
+            for (const { organization_id } of ownerships || []) {
+                userOwnedOrgMap.set({ userId }, organization_id)
+            }
+        }
+
+        return {
+            users: await usersMap,
+            conflictingNameOrgIds: await conflictingNameOrgIdsMap,
+            conflictingShortcodeOrgIds: await conflictingShortcodeOrgIdsMap,
+            userOwnedOrg: userOwnedOrgMap,
+            adminRole: await adminRole,
+        }
+    }
+
+    async authorize(): Promise<void> {
+        this.permissions.rejectIfNotAdmin()
+    }
+
+    validationOverAllInputs(inputs: CreateOrganizationInput[]) {
+        const duplicateUserErrors = validateNoDuplicate(
+            inputs.map((i) => i.userId),
+            'CreateOrganizationInput',
+            'userId'
+        ) // user can only be the owner of one organization
+        const duplicateNameErrors = validateNoDuplicate(
+            inputs.map((i) => i.organizationName),
+            'CreateOrganizationInput',
+            'organizationName'
+        )
+        const duplicateShortcodeErrors = validateNoDuplicate(
+            inputs.map((i) => i.shortcode!),
+            'CreateOrganizationInput',
+            'shortcode'
+        )
+        return filterInvalidInputs(inputs, [
+            duplicateUserErrors,
+            duplicateNameErrors,
+            duplicateShortcodeErrors,
+        ])
+    }
+
+    validate(
+        index: number,
+        _: undefined,
+        currentInput: CreateOrganizationInput,
+        maps: EntityMapCreateOrganization
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { userId, organizationName, shortcode } = currentInput
+
+        const users = flagNonExistent(User, index, [userId], maps.users)
+        errors.push(...users.errors)
+
+        const conflictingNameOrgId = maps.conflictingNameOrgIds?.get({
+            name: organizationName,
+        })
+        if (conflictingNameOrgId) {
+            errors.push(
+                createExistentEntityAttributeAPIError(
+                    'Organization',
+                    conflictingNameOrgId,
+                    'name',
+                    organizationName,
+                    index
+                )
+            )
+        }
+
+        if (shortcode) {
+            const conflictingShortcodeOrgId = maps.conflictingShortcodeOrgIds?.get(
+                { shortcode: shortcode }
+            )
+            if (conflictingShortcodeOrgId) {
+                errors.push(
+                    createExistentEntityAttributeAPIError(
+                        'Organization',
+                        conflictingShortcodeOrgId,
+                        'shortcode',
+                        shortcode,
+                        index
+                    )
+                )
+            }
+        }
+
+        const shortCodeErrors = newValidateShortCode(
+            'Organization',
+            shortcode,
+            index
+        )
+        errors.push(...shortCodeErrors)
+
+        const conflictingUserOrgId = maps.userOwnedOrg.get({ userId })
+        if (conflictingUserOrgId) {
+            errors.push(
+                createUserAlreadyOwnsOrgAPIError(
+                    userId,
+                    conflictingUserOrgId,
+                    index
+                )
+            )
+        }
+
+        return errors
+    }
+
+    process(
+        currentInput: CreateOrganizationInput,
+        maps: EntityMapCreateOrganization
+    ): {
+        outputEntity: Organization
+        modifiedEntity: (OrganizationMembership | OrganizationOwnership)[]
+    } {
+        const {
+            userId,
+            organizationName,
+            address1,
+            address2,
+            phone,
+            shortcode,
+        } = currentInput
+        const userPromise = Promise.resolve(maps.users.get(userId)!)
+        const outputEntity = new Organization()
+        outputEntity.organization_id = uuid_v4()
+        outputEntity.organization_name = organizationName
+        outputEntity.address1 = address1
+        outputEntity.address2 = address2
+        outputEntity.phone = phone
+        outputEntity.shortCode = shortcode
+        outputEntity.primary_contact = userPromise
+
+        const orgMembership = new OrganizationMembership()
+        orgMembership.user = userPromise
+        orgMembership.user_id = userId
+        orgMembership.organization = Promise.resolve(outputEntity)
+        orgMembership.organization_id = outputEntity.organization_id
+        orgMembership.roles = Promise.resolve([maps.adminRole])
+        outputEntity.memberships = Promise.resolve([orgMembership])
+
+        const orgOwnership = new OrganizationOwnership()
+        orgOwnership.user_id = userId
+        orgOwnership.organization_id = outputEntity.organization_id
+
+        return { outputEntity, modifiedEntity: [orgMembership, orgOwnership] }
+    }
+
+    async buildOutput(outputEntity: Organization): Promise<void> {
+        this.output.organizations.push(
+            mapOrganizationToOrganizationConnectionNode(outputEntity)
+        )
+    }
+}
 
 interface RemoveUsersFromOrganizationsEntityMap
     extends EntityMap<Organization> {

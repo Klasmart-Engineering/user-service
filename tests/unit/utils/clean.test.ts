@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import { valid } from 'joi'
 import clean from '../../../src/utils/clean'
+import { isPhone } from '../../../src/utils/validations'
 
 describe('email', () => {
     it('normalises "" to null', () => {
@@ -32,7 +33,13 @@ describe('phone', () => {
 
     it('if invalid is unchanged', () => {
         const input = 'not-a-phone-number'
-        expect(clean.phone(input)).to.equal(input)
+        const cleanPhoneFunc = function () {
+            clean.phone(input)
+        }
+        expect(cleanPhoneFunc).to.throw(
+            Error,
+            "The phone number doesn't appear to have a international format"
+        )
     })
 
     it('preserves null', () => {
@@ -103,7 +110,8 @@ describe('phone', () => {
 
         for (const num of invalidPhoneNumbers) {
             it(`cannot clean ${num} into a valid E164 number`, () => {
-                expect(clean.phone.bind(num)).to.be.undefined
+                // clean.phone() before it may pass some invalid phone numbers back, so isPhone catches them
+                expect(isPhone(num)).to.be.false
             })
         }
 

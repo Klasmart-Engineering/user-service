@@ -25,7 +25,11 @@ import {
     addSchoolToUser,
     userToPayload,
 } from '../utils/operations/userOps'
-import { getNonAdminAuthToken, getAdminAuthToken } from '../utils/testConfig'
+import {
+    getNonAdminAuthToken,
+    getAdminAuthToken,
+    generateToken,
+} from '../utils/testConfig'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
@@ -46,6 +50,7 @@ import { studentRole } from '../../src/permissions/student'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
 import { buildPermissionError } from '../utils/errors'
+
 chai.use(chaiAsPromised)
 
 describe('userPermissions', () => {
@@ -101,6 +106,31 @@ describe('userPermissions', () => {
             it('returns true', async () => {
                 expect(userPermissions.isAdmin).to.be.true
             })
+        })
+    })
+
+    describe('getUsername', () => {
+        let user: User
+
+        beforeEach(async () => {
+            user = await createUser().save()
+        })
+
+        it('returns username when supplied from the token', async () => {
+            const token = userToPayload(user, true)
+            const userPermissions = new UserPermissions(token)
+            expect(userPermissions.getUsername()).to.eq(user.username)
+        })
+        it('does not return username if not supplied from the token', async () => {
+            const token = userToPayload(user, false)
+            const userPermissions = new UserPermissions(token)
+            expect(userPermissions.getUsername()).to.be.undefined
+        })
+        it('does not return username if token supplied username as an empty string', async () => {
+            user.username = ''
+            const token = userToPayload(user, false)
+            const userPermissions = new UserPermissions(token)
+            expect(userPermissions.getUsername()).to.be.undefined
         })
     })
 
@@ -260,7 +290,7 @@ describe('userPermissions', () => {
         beforeEach(async () => {
             // Create Users
             const orgOwner = await createAdminUser(testClient)
-            user = await createNonAdminUser(testClient)
+            user = await createUser().save()
             // Create Organizations
             org1 = await createOrganizationAndValidate(
                 testClient,
@@ -336,7 +366,7 @@ describe('userPermissions', () => {
 
         context('when user is not a super admin', () => {
             beforeEach(async () => {
-                const encodedToken = getNonAdminAuthToken()
+                const encodedToken = generateToken(userToPayload(user))
                 req.headers = { authorization: encodedToken }
                 token = await checkToken(req)
                 userPermissions = new UserPermissions(token)
@@ -372,6 +402,14 @@ describe('userPermissions', () => {
                 })
 
                 it('should throw an error when nothing is provided', async () => {
+                    await expect(
+                        userPermissions.rejectIfNotAllowed({}, perm)
+                    ).to.be.rejectedWith(permError(user))
+                })
+
+                it("should throw an error even if user has a super admin's email", async () => {
+                    user.email = 'sandy@calmid.com'
+                    await user.save()
                     await expect(
                         userPermissions.rejectIfNotAllowed({}, perm)
                     ).to.be.rejectedWith(permError(user))

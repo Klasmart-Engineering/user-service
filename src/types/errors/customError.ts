@@ -103,7 +103,7 @@ export const customErrors = {
     duplicate_attribute_values: {
         code: 'ERR_DUPLICATE_ATTRIBUTE_VALUES',
         message: '{entity} {attribute} must contain unique values.',
-    },
+    }, // TODO: is made redundant by duplicate_input_value & duplicate_input_attribute_value
     nonexistent_entity: {
         code: 'ERR_NON_EXISTENT_ENTITY',
         message: "{entity} {entityName} doesn't exist.",
@@ -187,6 +187,11 @@ export const customErrors = {
         code: 'ERR_REQUIRES_AT_LEAST_ONE',
         message:
             '{entity} {attribute} requires at least one of the following fields: ({fields}).',
+    },
+    user_already_owns_an_organization: {
+        code: 'ERR_USER_CAN_ONLY_OWN_ONE_ORGANIZATION',
+        message:
+            'User {entityName} already owns an Organization (${parentName}).',
     },
 
     // auth

@@ -7,6 +7,7 @@ import { PermissionName } from './permissionNames'
 import { superAdminRole } from './superAdmin'
 import { uniqueAndTruthy } from '../utils/clean'
 import { Organization } from '../entities/organization'
+import { TokenPayload } from '../token'
 
 export interface PermissionContext {
     school_ids?: string[]
@@ -39,6 +40,7 @@ export class UserPermissions {
     private readonly user_id?: string
     private readonly email?: string
     private readonly phone?: string
+    private readonly username?: string
     private user?: User
     public readonly isAdmin: boolean = false
     private _userResolver?: Promise<User | undefined>
@@ -48,7 +50,7 @@ export class UserPermissions {
     public readonly authViaAPIKey: boolean = false
 
     public constructor(
-        token?: { id?: string; email?: string; phone?: string },
+        token?: Pick<TokenPayload, 'id' | 'user_name' | 'email' | 'phone'>,
         apiKeyAuth = false
     ) {
         this.user_id = token?.id
@@ -65,6 +67,12 @@ export class UserPermissions {
 
         if (this.authViaAPIKey || this.isAdminEmail(this.email!)) {
             this.isAdmin = true
+        }
+        if (
+            typeof token?.user_name == 'string' &&
+            token?.user_name?.length > 0
+        ) {
+            this.username = token?.user_name
         }
     }
 
@@ -102,6 +110,10 @@ export class UserPermissions {
         return this.phone
     }
 
+    public getUsername(): string | undefined {
+        return this.username
+    }
+
     public rejectIfNotAdmin(): void {
         if (!this.isAdmin) {
             throw new Error(
@@ -118,16 +130,9 @@ export class UserPermissions {
         }
     }
 
-    private hasAdminAccess(
-        user: User | undefined,
-        permission_name: PermissionName
-    ): boolean {
+    private hasAdminAccess(permission_name: PermissionName): boolean {
         if (superAdminRole.permissions.includes(permission_name)) {
-            if (this.isAdminEmail(user?.email || '')) {
-                return true
-            }
-
-            if (this.authViaAPIKey && this.isAdmin) {
+            if (this.authViaAPIKey || this.isAdmin) {
                 return true
             }
         }
@@ -174,28 +179,23 @@ export class UserPermissions {
         permission_name: PermissionName
     ): Promise<PermissionCheckOutput> {
         if (this.authViaAPIKey) {
-            if (this.hasAdminAccess(undefined, permission_name)) {
+            if (this.hasAdminAccess(permission_name)) {
                 return { passed: true }
             } else {
                 return { passed: false }
             }
         }
-
         // Clean & fetch data
         const cpc = cleanPermissionContext(permission_context)
         const userId = cpc.user_id
         const orgIds = cpc.organization_ids
         let schoolIds = cpc.school_ids
         const user = await this.getUser(userId)
-
         // Perform initial checks
         if (!this.isUserActive(user)) {
             return { passed: false, userId: user.user_id, isInactive: true }
         }
-
-        // The user object allows us to check the email attached to the user
-        // rather than just the email passed in the token
-        if (this.hasAdminAccess(user, permission_name)) return { passed: true }
+        if (this.hasAdminAccess(permission_name)) return { passed: true }
         if (!orgIds?.length && !schoolIds?.length)
             return { passed: false, userId: user.user_id }
 
