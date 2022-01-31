@@ -7236,7 +7236,9 @@ describe('class', () => {
             async function process(
                 mutationInput: RemoveStudentsFromClassInput
             ) {
-                const permissions = new UserPermissions(adminUser)
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
                 const mutation = new RemoveStudentsFromClasses(
                     [mutationInput],
                     permissions
