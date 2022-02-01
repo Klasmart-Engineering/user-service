@@ -843,12 +843,12 @@ describe('acceptance.school', () => {
         let classes: Class[] = []
 
         const makeRemoveClassesFromSchoolsMutation = async (
-            theInput: RemoveClassesFromSchoolInput[]
+            classesToBeRemoved: RemoveClassesFromSchoolInput[]
         ) => {
             return await makeRequest(
                 request,
                 print(REMOVE_CLASSES_FROM_SCHOOLS),
-                { input: theInput },
+                { input: classesToBeRemoved },
                 generateToken(userToPayload(adminUser))
             )
         }
