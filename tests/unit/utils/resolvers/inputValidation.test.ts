@@ -35,8 +35,6 @@ import {
     TestConnection,
 } from '../../../utils/testConnection'
 import { AgeRange } from '../../../../src/entities/ageRange'
-import { createServer } from '../../../../src/utils/createServer'
-import { Model } from '../../../../src/model'
 import { createAgeRanges } from '../../../factories/ageRange.factory'
 
 describe('inputValidation', () => {
