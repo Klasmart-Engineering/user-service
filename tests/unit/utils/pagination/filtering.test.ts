@@ -4,6 +4,7 @@ import {
     filterHasProperty,
     processComposedValue,
     setOperatorInComposedValue,
+    parseValueForSQLOperator,
 } from '../../../../src/utils/pagination/filtering'
 import { Connection, createQueryBuilder } from 'typeorm'
 import { createTestConnection } from '../../../utils/testConnection'
@@ -698,5 +699,15 @@ describe('setOperatorInComposedValue', () => {
         const result = setOperatorInComposedValue(operator, alias)
 
         expect(result).to.equal(operator)
+    })
+})
+
+describe('parseValueForSQLOperator', () => {
+    it('correctly escapes "%" and "_" characters for a LIKE operator.', () => {
+        const value = 'test_email%test@test.com'
+        const escaped = '%test\\_email\\%test@test.com%'
+        const result = parseValueForSQLOperator('LIKE', value)
+
+        expect(result).to.equal(escaped)
     })
 })

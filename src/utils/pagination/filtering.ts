@@ -1,5 +1,6 @@
 import { Brackets } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
+import { logger } from '../../logging'
 
 export interface IEntityFilter {
     [key: string]: IFilter | IEntityFilter[] | undefined
@@ -298,10 +299,19 @@ function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
 }
 
 // parses the value given for use in SQL
-function parseValueForSQLOperator(operator: string, value?: CommonValue) {
+export function parseValueForSQLOperator(
+    operator: string,
+    value?: CommonValue
+) {
     switch (operator) {
-        case 'LIKE':
-            return `%${value}%`
+        case 'LIKE': {
+            if (typeof value === 'string') {
+                return `%${value.replace(/[_%]/gi, `\\$&`)}%`
+            } else {
+                logger.warn('Value in "LIKE" is not a string!')
+                return `%${value}%`
+            }
+        }
         default:
             return value
     }
