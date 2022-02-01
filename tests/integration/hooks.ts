@@ -5,6 +5,7 @@ import { createTestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { truncateTables } from '../utils/database'
+import fs from 'fs'
 
 let connection: Connection
 let originalAdmins: string[]
@@ -17,6 +18,7 @@ before(async () => {
     await truncateTables(connection)
     originalAdmins = UserPermissions.ADMIN_EMAILS
     UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
+    fs.unlinkSync('integration_tests_setup.txt')
 })
 
 after(async () => {
@@ -24,11 +26,19 @@ after(async () => {
     await connection?.close()
 })
 
+let start: [number, number]
+
 beforeEach(async () => {
+    start = process.hrtime()
     faker.seed(123)
     await RoleInitializer.run()
 })
 
 afterEach(async () => {
     await truncateTables(connection)
+    const end = process.hrtime(start)
+    fs.appendFileSync(
+        'integration_tests_setup.txt',
+        Math.floor(end[0] * 1000 + end[1] / (1000 * 1000)).toString() + '\n'
+    )
 })
