@@ -1022,14 +1022,14 @@ describe('model.csv', () => {
                 const expectedCSVError = buildCsvError(
                     customErrors.missing_required_either.code,
                     1,
-                    'user_email',
+                    'user_username',
                     customErrors.missing_required_either.message,
                     {
                         entity: 'User',
-                        attribute: 'Email',
-                        otherAttribute: 'Phone',
-                        key: 'user_email',
-                        label: 'user_email',
+                        attribute: 'Username',
+                        otherAttribute: 'Phone or Email',
+                        key: 'user_username',
+                        label: 'user_username',
                     }
                 )
 

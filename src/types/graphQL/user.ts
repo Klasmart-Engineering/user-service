@@ -20,6 +20,7 @@ export interface UserConnectionNode {
     schools: SchoolSummaryNode[]
     status: Status
     dateOfBirth?: string
+    username?: string
     gender?: string
 
     organizationMembershipsConnection?: IPaginatedResponse<OrganizationMembershipConnectionNode>
@@ -58,9 +59,9 @@ export interface UsersMutationResult {
 export interface CreateUserInput {
     givenName: string
     familyName: string
-    contactInfo: UserContactInfo
+    contactInfo?: UserContactInfo
     dateOfBirth?: string
-    username?: string
+    username?: string | null
     gender: string
     alternateEmail?: string | null
     alternatePhone?: string | null

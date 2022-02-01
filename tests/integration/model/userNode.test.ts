@@ -72,7 +72,6 @@ describe('userNode', () => {
                 { authorization: getAdminAuthToken() },
                 aUser.user_id
             )
-
             expectUserConnectionNode(userNodeResponse, aUser)
         })
 

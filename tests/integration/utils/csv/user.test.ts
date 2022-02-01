@@ -549,6 +549,65 @@ describe('processUserFromCSVRow', async () => {
         })
     })
 
+    context('username', () => {
+        let rowErrors: CSVError[]
+        let err: CSVError
+        afterEach(() => {
+            if (err) {
+                expect(err.column).to.eq('user_username')
+                expect(err.entity).to.eq('User')
+                expect(err.attribute).to.eq('Username')
+                for (const v of getCustomErrorMessageVariables(err.message)) {
+                    expect(err[v]).to.exist
+                }
+            }
+        })
+        it('is not required if phone is provided', async () => {
+            ;(row as any).user_username = null
+            ;(row as any).user_email = null
+            row.user_phone = '+4400000000000'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors).to.be.empty
+        })
+        it('is not required if email is provided', async () => {
+            ;(row as any).user_username = null
+            ;(row as any).user_phone = null
+            row.user_email = 'something@somewhere.com'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors).to.be.empty
+        })
+        it('errors when username, email and phone are missing', async () => {
+            ;(row as any).user_username = null
+            ;(row as any).user_phone = null
+            ;(row as any).user_email = null
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            err = rowErrors[0]
+            expect(rowErrors.length).to.eq(1)
+            expect(err.code).to.eq(customErrors.missing_required_either.code)
+        })
+    })
+
     context('user gender', () => {
         let err: CSVError
         let rowErrors: CSVError[]
@@ -638,6 +697,7 @@ describe('processUserFromCSVRow', async () => {
     context('email', () => {
         let rowErrors: CSVError[]
         let err: CSVError
+
         afterEach(() => {
             if (err) {
                 expect(err.column).to.eq('user_email')
@@ -648,22 +708,7 @@ describe('processUserFromCSVRow', async () => {
                 }
             }
         })
-        it('is required if phone is not provided', async () => {
-            ;(row as any).user_email = null
-            ;(row as any).user_phone = null
-            rowErrors = await processUserFromCSVRow(
-                connection.manager,
-                row,
-                1,
-                [],
-                adminPermissions,
-                queryResultCache
-            )
-            err = rowErrors[0]
-            expect(rowErrors.length).to.eq(1)
-            expect(err.code).to.eq(customErrors.missing_required_either.code)
-            expect(err.otherAttribute).to.eq('Phone')
-        })
+
         it('is not required if phone is provided', async () => {
             ;(row as any).user_email = null
             row.user_phone = '+4400000000000'

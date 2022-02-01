@@ -9,11 +9,19 @@ export const createUserSchema: APISchema<CreateUserInput> = {
     contactInfo: Joi.object({
         email: userValidations.email,
         phone: userValidations.phone,
-    }).required(),
+    }).optional(),
     givenName: userValidations.given_name,
     familyName: userValidations.family_name,
     dateOfBirth: userValidations.date_of_birth,
-    username: userValidations.username,
+    username: userValidations.username.empty().when('contactInfo', {
+        is: Joi.object().exist(),
+        then: Joi.optional().allow('', null),
+        otherwise: Joi.required().messages({
+            'string.base': 'username/contactInfo is required',
+            'any.required': 'username/contactInfo is required',
+            'string.empty': 'username/contactInfo is required',
+        }),
+    }),
     gender: userValidations.gender,
     alternateEmail: userValidations.alternate_email,
     alternatePhone: userValidations.alternate_phone,
