@@ -530,7 +530,6 @@ describe('inputValidation', () => {
 
         before(async () => {
             connection = await createTestConnection()
-            await createServer(new Model(connection))
         })
 
         after(async () => {
