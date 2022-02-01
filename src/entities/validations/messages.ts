@@ -28,6 +28,24 @@ export function getCustomConstraintDetails(
                 },
             }
         }
+        case 'username/contactInfo is required': {
+            return {
+                code: customErrors.missing_required_either.code,
+                message: customErrors.missing_required_either.message,
+                params: {
+                    otherAttribute: 'contactInfo',
+                },
+            }
+        }
+        case 'username/phone/email is required': {
+            return {
+                code: customErrors.missing_required_either.code,
+                message: customErrors.missing_required_either.message,
+                params: {
+                    otherAttribute: 'Phone or Email',
+                },
+            }
+        }
         default: {
             break
         }

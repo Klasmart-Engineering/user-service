@@ -31,6 +31,7 @@ export type CoreUserConnectionNode = Pick<
     | 'contactInfo'
     | 'alternateContactInfo'
     | 'dateOfBirth'
+    | 'username'
     | 'gender'
 >
 
@@ -157,6 +158,7 @@ export function mapUserToUserConnectionNode(
         avatar: user.avatar,
         status: user.status,
         dateOfBirth: user.date_of_birth,
+        username: user.username,
         gender: user.gender,
         contactInfo: {
             email: user.email,
@@ -180,6 +182,7 @@ export function extractCoreUserConnectionNode(
         avatar: user.avatar,
         status: user.status,
         dateOfBirth: user.dateOfBirth,
+        username: user.username,
         gender: user.gender,
         contactInfo: {
             email: user.contactInfo.email,
@@ -200,6 +203,7 @@ export const coreUserConnectionNodeFields = ([
     'status',
     'email',
     'phone',
+    'username',
     'alternate_email',
     'alternate_phone',
     'date_of_birth',

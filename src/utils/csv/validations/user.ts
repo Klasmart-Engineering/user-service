@@ -37,19 +37,33 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
     user_email: {
         entity: 'User',
         attribute: 'Email',
-        validation: userValidations.email.when('user_phone', {
-            is: Joi.exist(),
-            then: Joi.optional().allow(null, ''),
-            otherwise: Joi.required().messages({
-                'any.required': 'email/phone is required',
-            }),
-        }),
+        validation: sharedValidations.email
+            .optional()
+            .allow(null, '')
+            .empty(''),
     },
     user_phone: {
         entity: 'User',
         attribute: 'Phone',
-        validation: userValidations.phone,
+        validation: userValidations.phone.optional().allow(null, '').empty(''),
     },
+
+    user_username: {
+        entity: 'User',
+        attribute: 'Username',
+        validation: userValidations.username.empty(null).when('user_phone', {
+            is: Joi.string(),
+            then: Joi.optional().allow(null, ''),
+            otherwise: Joi.when('user_email', {
+                is: Joi.string(),
+                then: Joi.optional().allow(null, ''),
+                otherwise: Joi.required().messages({
+                    'any.required': 'username/phone/email is required',
+                }),
+            }),
+        }),
+    },
+
     user_date_of_birth: {
         entity: 'User',
         attribute: 'date of birth',

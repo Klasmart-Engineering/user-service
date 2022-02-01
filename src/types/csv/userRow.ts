@@ -7,6 +7,7 @@ export interface UserRow {
     user_shortcode?: string
     user_email?: string
     user_phone?: string
+    user_username?: string
     user_date_of_birth?: string
     user_gender: string
     user_alternate_email?: string
@@ -24,6 +25,7 @@ export const UserRowUniqueColumns = new Set<keyof UserRow>([
     'user_email',
     'user_phone',
     'user_date_of_birth',
+    'user_username',
     'user_gender',
     'organization_role_name',
     'school_name',
@@ -39,7 +41,7 @@ export const UserRowRequiredColumns = new Set<keyof UserRow>([
 ])
 
 export const UserRowEitherRequiredColumns = [
-    new Set<keyof UserRow>(['user_email', 'user_phone']),
+    new Set<keyof UserRow>(['user_email', 'user_phone', 'user_username']),
 ]
 
 export const UserRowRequirements = new HeaderValidation(

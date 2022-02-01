@@ -141,7 +141,7 @@ const typeDefs = gql`
     input CreateUserInput {
         givenName: String!
         familyName: String!
-        contactInfo: ContactInfoInput!
+        contactInfo: ContactInfoInput
         dateOfBirth: String
         username: String
         gender: String!
@@ -212,10 +212,11 @@ const typeDefs = gql`
         givenName: String
         familyName: String
         avatar: String
-        contactInfo: ContactInfo!
+        contactInfo: ContactInfo
         alternateContactInfo: ContactInfo
         status: Status!
         dateOfBirth: String
+        username: String
         gender: String
 
         organizationMembershipsConnection(
@@ -267,6 +268,7 @@ const typeDefs = gql`
     type ContactInfo {
         email: String
         phone: String
+        username: String
     }
 
     type OrganizationSummaryNode {

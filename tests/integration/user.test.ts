@@ -1580,6 +1580,140 @@ describe('user', () => {
                 )
             })
         })
+        context(
+            'when an input array member has no contact info and no username',
+            () => {
+                beforeEach(async () => {
+                    createUserInputs[25].contactInfo = undefined
+                    createUserInputs[25].username = undefined
+                })
+                it('it fails to create users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    try {
+                        await createUsersResolver(createUserInputs, adminUser)
+                        expect.fail(
+                            null,
+                            null,
+                            'createUsers did not reject with an error'
+                        )
+                    } catch (e) {
+                        expect(e).to.be.an('Array')
+                        expect(e).to.have.length(1)
+                        expect(e[0]).to.be.an('error')
+                        expect(e[0].message).to.equal(
+                            'User username/contactInfo is required.'
+                        )
+                    }
+
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers).to.equal(previousUsers)
+                })
+            }
+        )
+        context(
+            'when an input array member has an empty contact info and no username',
+            () => {
+                beforeEach(async () => {
+                    createUserInputs[25].contactInfo = {}
+                    createUserInputs[25].username = undefined
+                })
+                it('it fails to create users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    await expect(
+                        createUsersResolver(createUserInputs, adminUser)
+                    ).to.be.rejected
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers).to.equal(previousUsers)
+                })
+            }
+        )
+        context(
+            'when an input array member has an empty contact info but has a username',
+            () => {
+                beforeEach(async () => {
+                    createUserInputs[25].contactInfo = {}
+                    createUserInputs[25].username = faker.name.firstName()
+                })
+                it('it fails to create users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    await expect(
+                        createUsersResolver(createUserInputs, adminUser)
+                    ).to.be.rejected
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers).to.equal(previousUsers)
+                })
+            }
+        )
+        context(
+            'when an input array member has no contact info but has a username',
+            () => {
+                beforeEach(async () => {
+                    createUserInputs[25].contactInfo = undefined
+                    createUserInputs[25].username = faker.name.firstName()
+                })
+                it('creates users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    const createUsersResult = await createUsersResolver(
+                        createUserInputs,
+                        adminUser
+                    )
+                    const userConNodes = createUsersResult.users
+                    expect(userConNodes.length).to.equal(
+                        createUserInputs.length
+                    )
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers - previousUsers).to.equal(
+                        createUserInputs.length
+                    )
+                })
+            }
+        )
+        context(
+            'when an input array member has contact info but has no username',
+            () => {
+                beforeEach(async () => {
+                    createUserInputs[25].contactInfo = {
+                        email: faker.internet.email(),
+                    }
+                    createUserInputs[25].username = undefined
+                })
+                it('creates users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    const createUsersResult = await createUsersResolver(
+                        createUserInputs,
+                        adminUser
+                    )
+                    const userConNodes = createUsersResult.users
+                    expect(userConNodes.length).to.equal(
+                        createUserInputs.length
+                    )
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers - previousUsers).to.equal(
+                        createUserInputs.length
+                    )
+                })
+            }
+        )
         context('when there are too many input array members', () => {
             beforeEach(async () => {
                 createUserInputs.push(userToCreateUserInput(createUser()))
@@ -1598,7 +1732,7 @@ describe('user', () => {
         })
         context('when there is a validation failure', () => {
             beforeEach(async () => {
-                createUserInputs[2].contactInfo.email = 'somethinghorrid'
+                createUserInputs[2].contactInfo = { email: 'somethinghorrid' }
             })
             it('it fails to create users', async () => {
                 const previousUsers = await connection
@@ -3579,6 +3713,7 @@ describe('user', () => {
                 beforeEach(async () => {
                     updateUserInputs[3].email = updateUserInputs[2].email
                     updateUserInputs[3].phone = updateUserInputs[2].phone
+                    updateUserInputs[3].username = updateUserInputs[2].username
                     updateUserInputs[3].givenName =
                         updateUserInputs[2].givenName
                     updateUserInputs[3].familyName =
@@ -3610,6 +3745,7 @@ describe('user', () => {
                         clean.email(updateUserInputs[5].email) || undefined
                     u1.phone =
                         clean.phone(updateUserInputs[5].phone) || undefined
+                    u1.username = updateUserInputs[5].username || undefined
                     u1.given_name = updateUserInputs[5].givenName
                     u1.family_name = updateUserInputs[5].familyName
                     await u1.save()
@@ -3618,6 +3754,7 @@ describe('user', () => {
                         clean.email(updateUserInputs[15].email) || undefined
                     u2.phone =
                         clean.phone(updateUserInputs[15].phone) || undefined
+                    u2.username = updateUserInputs[15].username || undefined
                     u2.given_name = updateUserInputs[15].givenName
                     u2.family_name = updateUserInputs[15].familyName
                     await u2.save()
