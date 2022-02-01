@@ -1129,16 +1129,18 @@ export class AddStudentsToClasses extends AddMutation<
         )
         errors.push(...alreadyAdded.errors)
 
-        const classOrgId = (currentEntity as ClassAndOrg).__organization__
-            ?.organization_id as string
+        if (currentEntity) {
+            const classOrgId = (currentEntity as ClassAndOrg).__organization__
+                ?.organization_id as string
 
-        const dbMemberships = flagNonExistentOrganizationMembership(
-            index,
-            classOrgId,
-            studentIds,
-            maps.studentsMemberships
-        )
-        if (dbMemberships.errors) errors.push(...dbMemberships.errors)
+            const dbMemberships = flagNonExistentOrganizationMembership(
+                index,
+                classOrgId,
+                studentIds,
+                maps.studentsMemberships
+            )
+            if (dbMemberships.errors) errors.push(...dbMemberships.errors)
+        }
 
         return errors
     }
