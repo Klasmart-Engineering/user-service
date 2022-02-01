@@ -325,7 +325,7 @@ export class Model {
         if (username) {
             users = await scope
                 .andWhere('User.username = :username', {
-                    username: username,
+                    username,
                 })
                 .getMany()
             // we expect usernames to be globally unique
@@ -337,13 +337,13 @@ export class Model {
         } else if (email) {
             users = await scope
                 .andWhere('User.email = :email', {
-                    email: email,
+                    email,
                 })
                 .getMany()
         } else if (phone) {
             users = await scope
                 .andWhere('User.phone = :phone', {
-                    phone: phone,
+                    phone,
                 })
                 .getMany()
         }
