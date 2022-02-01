@@ -179,18 +179,9 @@ export class Model {
             return undefined
         }
 
-        const email = token.email
-        const phone = token.phone
-        const username = token.user_name
-
         const user = await this.userRepository.findOne({
-            where: [
-                { username, user_id },
-                { email, user_id },
-                { phone, user_id },
-            ],
+            where: { user_id },
         })
-
         return user
     }
 
