@@ -1483,7 +1483,6 @@ describe('acceptance.class', () => {
         let adminUser: User
         let input: RemoveStudentsFromClassInput[]
         let classes: Class[]
-        const classCount = 2
 
         beforeEach(async () => {
             adminUser = await createUser({
