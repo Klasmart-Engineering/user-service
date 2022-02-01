@@ -10,6 +10,7 @@ import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import {
     AddProgramsToClassInput,
     AddStudentsToClassInput,
+    AddTeachersToClassInput,
     ClassConnectionNode,
     CreateClassInput,
     DeleteClassInput,
@@ -43,6 +44,7 @@ import {
     UPDATE_CLASSES,
     ADD_STUDENTS_TO_CLASSES,
     REMOVE_STUDENTS_FROM_CLASSES,
+    ADD_TEACHERS_TO_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASSES_CONNECTION,
@@ -72,10 +74,9 @@ import {
 import { NIL_UUID } from '../utils/database'
 import { generateShortCode } from '../../src/utils/shortcode'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { Organization } from '../../src/entities/organization'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { mapClassToClassConnectionNode } from '../../src/pagination/classesConnection'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
 
 use(deepEqualInAnyOrder)
 
@@ -1539,6 +1540,67 @@ describe('acceptance.class', () => {
             )
             expect(response.body.errors[1].message).to.contain(
                 'Field "studentIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('addTeachersToClasses', () => {
+        let adminUser: User
+        let input: AddTeachersToClassInput[]
+        let classes: Class[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const teachers = createUsers(2)
+            await connection.manager.save(teachers)
+            await OrganizationMembership.save(
+                Array.from(teachers, (teacher) =>
+                    createOrganizationMembership({
+                        user: teacher,
+                        organization: org,
+                        roles: [],
+                    })
+                )
+            )
+            classes = createClasses(2, org)
+            await connection.manager.save(classes)
+            input = []
+            for (const class_ of classes) {
+                input.push({
+                    classId: class_.class_id,
+                    teacherIds: teachers.map((st) => st.user_id),
+                })
+            }
+        })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_TEACHERS_TO_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.addTeachersToClasses.classes
+            expect(resClasses).to.have.length(classes.length)
+        })
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_TEACHERS_TO_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "teacherIds" of required type "[ID!]!" was not provided.'
             )
         })
     })

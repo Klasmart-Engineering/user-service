@@ -52,6 +52,8 @@ import {
     AddStudentsToClasses,
     AddStudentsClassesEntityMap,
     RemoveStudentsFromClasses,
+    AddTeachersToClasses,
+    AddTeachersClassesEntityMap,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -103,6 +105,7 @@ import {
     AddStudentsToClassInput,
     ClassesMutationResult,
     RemoveStudentsFromClassInput,
+    AddTeachersToClassInput,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
@@ -7279,6 +7282,428 @@ describe('class', () => {
                 } = await process(input[0])
                 expect(await outputEntity.students).to.deep.equalInAnyOrder(
                     await originalClass.students
+                )
+            })
+        })
+    })
+
+    describe('AddTeachersToClasses', () => {
+        let input: AddTeachersToClassInput[]
+        let org: Organization
+        let teachers: User[]
+        let classes: Class[]
+        let adminUser: User
+        let nonAdminUser: User
+
+        function getAddTeachers(authUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new AddTeachersToClasses([], permissions)
+        }
+
+        beforeEach(async () => {
+            nonAdminUser = await createNonAdminUser(testClient)
+            adminUser = await createAdminUser(testClient)
+            org = await createOrganization().save()
+            teachers = await User.save(createUsers(3))
+            classes = await Class.save(createClasses(3, org))
+
+            await OrganizationMembership.save(
+                Array.from(teachers, (teacher) =>
+                    createOrganizationMembership({
+                        user: teacher,
+                        organization: org,
+                        roles: [],
+                    })
+                )
+            )
+            // Generate input
+            input = []
+            const inputTeacherIndices = [
+                [0, 1],
+                [1, 2],
+                [0, 1, 2],
+            ]
+            for (let i = 0; i < 3; i++) {
+                input.push({
+                    classId: classes[i].class_id,
+                    teacherIds: inputTeacherIndices[i].map(
+                        (st) => teachers[st].user_id
+                    ),
+                })
+            }
+        })
+
+        context('.run', () => {
+            it('makes constant number of queries regardless of input length', async () => {
+                const mutation = getAddTeachers()
+                connection.logger.reset()
+                await mutation.generateEntityMaps([input[0]])
+                const countForOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.generateEntityMaps(input.slice(0))
+                const countForThree = connection.logger.count
+                expect(countForThree).to.eq(countForOneInput)
+            })
+            it('returns the expected output', async () => {
+                input = [
+                    {
+                        classId: classes[0].class_id,
+                        teacherIds: [teachers[0].user_id],
+                    },
+                ]
+
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutationResult = mutate(
+                    AddTeachersToClasses,
+                    { input },
+                    permissions
+                )
+
+                const {
+                    classes: classesNodes,
+                }: ClassesMutationResult = await expect(mutationResult).to.be
+                    .fulfilled
+                expect(classesNodes).to.have.length(1)
+                expect(classesNodes[0]).to.deep.eq(
+                    mapClassToClassConnectionNode(classes[0])
+                )
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            context('populates the maps correctly', () => {
+                let maps: AddTeachersClassesEntityMap
+
+                beforeEach(async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(adminUser)
+                    )
+
+                    const mutation = new AddTeachersToClasses(
+                        input,
+                        permissions
+                    )
+                    maps = await mutation.generateEntityMaps(input)
+                })
+
+                it('populates teachers correctly', () => {
+                    it('populates classesTeachers correctly', () => {
+                        expect(
+                            Array.from(
+                                maps.classesTeachers.entries()
+                            ).map(([classId, teachers]) => [
+                                classId,
+                                teachers.map((st) => st.user_id),
+                            ])
+                        ).to.deep.equalInAnyOrder([
+                            input.map((i) => [i.classId, [...i.teacherIds]]),
+                        ])
+                    })
+                })
+
+                it('populates organizations correctly', () => {
+                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
+                        org.organization_id,
+                        org.organization_id,
+                        org.organization_id,
+                    ])
+                })
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getAddTeachers(authUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.add_teachers_to_class_20226
+            context(
+                'when user has permissions to add teachers to all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: org,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to add teachers to all classes',
+                () => {
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(permission, nonAdminUser, [
+                                org,
+                            ])
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            context('when the same input is used three times', () => {
+                beforeEach(() => {
+                    input = [input[0], input[0], input[0]]
+                })
+
+                it('returns duplicate errors for the last two inputs', () => {
+                    const val = getAddTeachers().validationOverAllInputs(input)
+
+                    const expectedErrors = [1, 2].map((inputIndex) =>
+                        createDuplicateAttributeAPIError(
+                            inputIndex,
+                            ['classId'],
+                            'AddTeachersToClassInput'
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getAddTeachers().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context('when there are too many teacherIds', () => {
+                beforeEach(async () => {
+                    const tooManyTeachers = createUsers(
+                        config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                    )
+                    await User.save(tooManyTeachers)
+                    input[0].teacherIds = tooManyTeachers.map(
+                        (teacher) => teacher.user_id
+                    )
+                    input[2].teacherIds = tooManyTeachers.map(
+                        (teacher) => teacher.user_id
+                    )
+                })
+
+                it('returns an error', async () => {
+                    const val = getAddTeachers().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(1)
+                    expect(val.validInputs[0].input).to.deep.equal(input[1])
+                    const xErrors = [0, 2].map((i) =>
+                        createInputLengthAPIError(
+                            'AddTeachersToClassInput',
+                            'max',
+                            'teacherIds',
+                            i
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, xErrors)
+                })
+            })
+
+            context(
+                'when there are duplicated teacherIds in a single input element',
+                () => {
+                    beforeEach(async () => {
+                        input[0].teacherIds = [
+                            input[0].teacherIds[0],
+                            input[0].teacherIds[0],
+                        ]
+                        input[2].teacherIds = [
+                            input[2].teacherIds[0],
+                            input[2].teacherIds[0],
+                        ]
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getAddTeachers().validationOverAllInputs(
+                            input
+                        )
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['teacherIds'],
+                                'AddTeachersToClassInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(
+                mutationInput: AddTeachersToClassInput,
+                index: number
+            ) {
+                const mutation = getAddTeachers()
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return mutation.validate(0, classes[index], mutationInput, maps)
+            }
+
+            it('returns no errors when all inputs are valid', async () => {
+                const apiErrors = await validate(input[0], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            context(
+                'when one of the teachers is already part of the class',
+                async () => {
+                    beforeEach(async () => {
+                        classes[0].teachers = Promise.resolve([teachers[0]])
+                        await classes[0].save()
+                    })
+
+                    it('returns existent errors', async () => {
+                        const actualErrors = await validate(input[0], 0)
+                        const expectedError = createEntityAPIError(
+                            'existent',
+                            0,
+                            'User',
+                            input[0].teacherIds[0]
+                        )
+
+                        expect(actualErrors.length).to.eq(1)
+                        compareErrors(actualErrors[0], expectedError)
+                    })
+                }
+            )
+
+            context('when one of the teachers is inactive', async () => {
+                beforeEach(() => teachers[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity and nonExistentChild errors', async () => {
+                    const errors = await validate(input[0], 0)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            teachers[1].user_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'User',
+                            teachers[1].user_id,
+                            'Organization',
+                            org.organization_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        classes[1].inactivate(getManager()),
+                        teachers[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate(input[1], 1)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            teachers[1].user_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'User',
+                            teachers[1].user_id,
+                            'Organization',
+                            org.organization_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+        })
+
+        context('.process', () => {
+            async function process(mutationInput: AddTeachersToClassInput) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new AddTeachersToClasses(
+                    [mutationInput],
+                    permissions
+                )
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return {
+                    mutationResult: mutation.process(mutationInput, maps, 0),
+                    originalClass: maps.mainEntity.get(mutationInput.classId)!,
+                    originalTeachers: maps.classesTeachers.get(
+                        mutationInput.classId
+                    ),
+                }
+            }
+
+            it('includes existing teachers', async () => {
+                classes[0].teachers = Promise.resolve([teachers[0]])
+                await classes[0].save()
+                input[0].teacherIds = []
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalTeachers,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(originalTeachers).to.deep.equalInAnyOrder(
+                    await originalClass.teachers
+                )
+            })
+
+            it('adds new teachers', async () => {
+                classes[0].teachers = Promise.resolve([teachers[0]])
+                await classes[0].save()
+                const newTeachers = [teachers[1], teachers[2]]
+                input[0].teacherIds = newTeachers.map((s) => s.user_id)
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalTeachers,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(
+                    [...originalTeachers!, ...newTeachers].map(
+                        (st) => st.user_id
+                    )
+                ).to.deep.equalInAnyOrder(
+                    (await originalClass.teachers!).map((st) => st.user_id)
                 )
             })
         })

@@ -62,3 +62,8 @@ export interface RemoveStudentsFromClassInput {
     classId: string
     studentIds: string[]
 }
+
+export interface AddTeachersToClassInput {
+    classId: string
+    teacherIds: string[]
+}
