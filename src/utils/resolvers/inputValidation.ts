@@ -46,8 +46,8 @@ export type SystemEntityAndOrg = SystemEntities & {
 export function validateSubItemsInOrg<T extends SystemEntityAndOrg>(
     subItemClass: new () => T,
     index: number,
-    organizationId: string,
-    map: Map<string, T>
+    map: Map<string, T>,
+    organizationId?: string
 ) {
     return Array.from(map.values())
         .filter((si) => {

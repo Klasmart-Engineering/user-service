@@ -560,8 +560,8 @@ describe('inputValidation', () => {
                 const errors = validateSubItemsInOrg(
                     AgeRange,
                     index,
-                    organization.organization_id,
-                    subItemsMap
+                    subItemsMap,
+                    organization.organization_id
                 )
 
                 expect(errors).to.have.lengthOf(0)
@@ -587,8 +587,8 @@ describe('inputValidation', () => {
                         const errors = validateSubItemsInOrg(
                             AgeRange,
                             index,
-                            organization.organization_id,
-                            subItemsMap
+                            subItemsMap,
+                            organization.organization_id
                         )
 
                         expect(errors).to.have.lengthOf(0)
@@ -615,8 +615,8 @@ describe('inputValidation', () => {
                         const errors = validateSubItemsInOrg(
                             AgeRange,
                             index,
-                            organization.organization_id,
-                            subItemsMap
+                            subItemsMap,
+                            organization.organization_id
                         )
 
                         const expectedErrors = Array.from(

@@ -24,6 +24,14 @@ export interface CreateProgramInput {
     subjectIds: string[]
 }
 
+export interface UpdateProgramInput {
+    id: string
+    name?: string
+    ageRangeIds?: string[]
+    gradeIds?: string[]
+    subjectIds?: string[]
+}
+
 export interface ProgramsMutationResult {
     programs: ProgramConnectionNode[]
 }

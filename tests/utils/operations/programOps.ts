@@ -66,6 +66,14 @@ export const CREATE_PROGRAMS = gql`
     }
 `
 
+export const UPDATE_PROGRAMS = gql`
+    mutation UpdatePrograms($input: [UpdateProgramInput!]!) {
+        updatePrograms(input: $input) {
+            ${PROGRAMS_MUTATION_OUTPUT}
+        }
+    }
+`
+
 export async function deleteProgram(
     testClient: ApolloServerTestClient,
     id: string,
