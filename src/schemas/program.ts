@@ -11,7 +11,11 @@ import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { Subject } from '../entities/subject'
 import { mutate } from '../utils/mutations/commonStructure'
-import { CreatePrograms, UpdatePrograms } from '../resolvers/program'
+import {
+    CreatePrograms,
+    UpdatePrograms,
+    DeletePrograms,
+} from '../resolvers/program'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -20,6 +24,7 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         createPrograms(input: [CreateProgramInput!]!): ProgramsMutationResult
         updatePrograms(input: [UpdateProgramInput!]!): ProgramsMutationResult
+        deletePrograms(input: [DeleteProgramInput!]!): ProgramsMutationResult
     }
 
     # pagination extension types start here
@@ -156,6 +161,9 @@ const typeDefs = gql`
         editSubjects(subject_ids: [ID!]): [Subject]
 
         delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 28/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
     }
     input ProgramDetail {
         id: ID
@@ -182,6 +190,10 @@ const typeDefs = gql`
         ageRangeIds: [ID!]
         gradeIds: [ID!]
         subjectIds: [ID!]
+    }
+
+    input DeleteProgramInput {
+        id: ID!
     }
 
     type ProgramsMutationResult {
@@ -267,6 +279,8 @@ export default function getDefault(
                     mutate(CreatePrograms, args, ctx.permissions),
                 updatePrograms: (_parent, args, ctx) =>
                     mutate(UpdatePrograms, args, ctx.permissions),
+                deletePrograms: (_parent, args, ctx) =>
+                    mutate(DeletePrograms, args, ctx.permissions),
             },
             Query: {
                 program: (_parent, args, ctx, _info) =>

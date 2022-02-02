@@ -8,16 +8,17 @@ import { Organization } from '../../src/entities/organization'
 import { Program } from '../../src/entities/program'
 import { Status } from '../../src/entities/status'
 import { Subject } from '../../src/entities/subject'
-import { Model } from '../../src/model'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     CreatePrograms,
     CreateProgramsEntityMap,
     UpdatePrograms,
     UpdateProgramsEntityMap,
+    DeletePrograms,
 } from '../../src/resolvers/program'
 import {
     CreateProgramInput,
+    DeleteProgramInput,
     ProgramConnectionNode,
     UpdateProgramInput,
 } from '../../src/types/graphQL/program'
@@ -1547,6 +1548,172 @@ describe('program', () => {
                 )
 
                 runTestCases([{ input, error }], entityManager)
+            })
+        })
+    })
+
+    describe('DeletePrograms', () => {
+        let ctx: { permissions: UserPermissions }
+        let org: Organization
+        let programsToDelete: Program[]
+        let deletePrograms: DeletePrograms
+
+        beforeEach(async () => {
+            const data = await createInitialData([
+                PermissionName.delete_program_20441,
+            ])
+
+            org = data.organization
+            ctx = data.context
+            programsToDelete = await createProgramsToUse(org)
+            deletePrograms = new DeletePrograms([], ctx.permissions)
+        })
+
+        const buildDefaultInput = (programs: Program[]): DeleteProgramInput[] =>
+            Array.from(programs, ({ id }) => {
+                return { id }
+            })
+
+        context('complete mutation calls', () => {
+            it('can delete a program', async () => {
+                const input = buildDefaultInput([programsToDelete[0]])
+                const { programs } = await mutate(
+                    DeletePrograms,
+                    { input },
+                    ctx.permissions
+                )
+
+                expect(programs).to.have.lengthOf(1)
+                expect(programs[0].id).to.eq(input[0].id)
+                expect(programs[0].status).to.eq(Status.INACTIVE)
+
+                const dbPrograms = await Program.findByIds([input[0].id])
+                expect(dbPrograms).to.have.lengthOf(1)
+                expect(dbPrograms[0].status).to.eq(Status.INACTIVE)
+            })
+
+            const getDbCallCount = async (input: DeleteProgramInput[]) => {
+                connection.logger.reset()
+                await mutate(DeletePrograms, { input }, ctx.permissions)
+                return connection.logger.count
+            }
+
+            it('makes the same number of db connections regardless of input length', async () => {
+                await getDbCallCount(buildDefaultInput([programsToDelete[0]])) // warm up permissions cache)
+
+                const singleProgramCount = await getDbCallCount(
+                    buildDefaultInput([programsToDelete[1]])
+                )
+
+                const twoProgramsCount = await getDbCallCount(
+                    buildDefaultInput(programsToDelete.slice(2, 4))
+                )
+
+                expect(twoProgramsCount).to.be.eq(singleProgramCount)
+                expect(twoProgramsCount).to.be.equal(2)
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('returns organization ids', async () => {
+                const systemPrograms = await Program.save(createPrograms(5))
+                const otherOrg = await createOrganization().save()
+                const otherPrograms = await Program.save(
+                    createPrograms(5, otherOrg)
+                )
+
+                const expectedIds = [
+                    org.organization_id,
+                    otherOrg.organization_id,
+                ]
+
+                const input = buildDefaultInput([
+                    ...programsToDelete,
+                    ...otherPrograms,
+                    ...systemPrograms,
+                ])
+
+                const entityMaps = await deletePrograms.generateEntityMaps(
+                    input
+                )
+
+                expect(entityMaps.organizationIds).to.deep.equalInAnyOrder(
+                    expectedIds
+                )
+            })
+        })
+
+        context('authorize', () => {
+            const callAuthorize = async (
+                userCtx: { permissions: UserPermissions },
+                programs: Program[]
+            ) => {
+                const mutation = new DeletePrograms([], userCtx.permissions)
+                const input = buildDefaultInput(programs)
+                const maps = await deletePrograms.generateEntityMaps(input)
+
+                return mutation.authorize(input, maps)
+            }
+
+            const expectPermissionError = async (
+                userCtx: { permissions: UserPermissions },
+                programs: Program[]
+            ) => {
+                await expect(
+                    callAuthorize(userCtx, programs)
+                ).to.be.eventually.rejectedWith(
+                    /User\(.*\) does not have Permission\(delete_program_20441\) in Organizations\(.*\)/
+                )
+            }
+
+            it('checks the correct permission', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.delete_program_20441
+                )
+
+                const permittedProgram = await createProgram(
+                    permittedOrg
+                ).save()
+
+                await expect(callAuthorize(userCtx, [permittedProgram])).to.be
+                    .eventually.fulfilled
+            })
+
+            it('rejects when user is not authorized', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.create_program_20221
+                )
+
+                const permittedProgram = await createProgram(
+                    permittedOrg
+                ).save()
+
+                await expectPermissionError(userCtx, [permittedProgram])
+            })
+
+            it('checks all organizations', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.delete_program_20441
+                )
+
+                const permittedProgram = await createProgram(
+                    permittedOrg
+                ).save()
+
+                const {
+                    permittedOrg: notPermittedOrg,
+                } = await makeUserWithPermission(
+                    PermissionName.create_program_20221
+                )
+
+                const notPermittedProgram = await createProgram(
+                    notPermittedOrg
+                ).save()
+
+                await expectPermissionError(userCtx, [
+                    permittedProgram,
+                    notPermittedProgram,
+                ])
             })
         })
     })

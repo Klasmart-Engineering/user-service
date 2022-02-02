@@ -27,6 +27,7 @@ import { PROGRAMS_CONNECTION } from '../utils/operations/modelOps'
 import {
     CREATE_PROGRAMS,
     UPDATE_PROGRAMS,
+    DELETE_PROGRAMS,
 } from '../utils/operations/programOps'
 import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
@@ -568,6 +569,54 @@ describe('acceptance.program', () => {
             )
 
             const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
+            )
+        })
+    })
+
+    context('deletePrograms', () => {
+        let adminUser: User
+        let programToDelete: Program
+
+        const makeDeleteProgramsMutation = async (input: any, caller: User) => {
+            return await makeRequest(
+                request,
+                print(DELETE_PROGRAMS),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            const org = await createOrganization().save()
+            programToDelete = await createProgram(org).save()
+            adminUser = await createUserFactory({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [{ id: programToDelete.id }]
+                const response = await makeDeleteProgramsMutation(
+                    input,
+                    adminUser
+                )
+
+                const { programs } = response.body.data.deletePrograms
+                expect(response.status).to.eq(200)
+                expect(programs).to.have.lengthOf(input.length)
+            })
+        })
+
+        it('has mandatory id field', async () => {
+            const response = await makeDeleteProgramsMutation([{}], adminUser)
+            const { data } = response.body
+
             expect(response.status).to.eq(400)
             expect(data).to.be.undefined
             expect(response.body.errors).to.be.length(1)

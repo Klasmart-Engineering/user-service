@@ -13,9 +13,11 @@ import {
     CreateProgramInput,
     UpdateProgramInput,
     ProgramsMutationResult,
+    DeleteProgramInput,
 } from '../types/graphQL/program'
 import {
     CreateMutation,
+    DeleteMutation,
     EntityMap,
     filterInvalidInputs,
     ProcessedResult,
@@ -48,6 +50,11 @@ export interface UpdateProgramsEntityMap extends EntityMap<Program> {
     grades: Map<string, Grade>
     subjects: Map<string, Subject>
     conflictingNames: ObjMap<ConflictingNameKey, Program>
+    organizationIds: string[]
+}
+
+export interface DeleteProgramsEntityMap extends EntityMap<Program> {
+    mainEntity: Map<string, Program>
     organizationIds: string[]
 }
 
@@ -586,5 +593,58 @@ export class UpdatePrograms extends UpdateMutation<
         )
 
         this.output.programs.push(programConnectionNode)
+    }
+}
+
+export class DeletePrograms extends DeleteMutation<
+    Program,
+    DeleteProgramInput,
+    ProgramsMutationResult
+> {
+    protected readonly EntityType = Program
+    protected readonly inputTypeName = 'DeleteProgramInput'
+    protected readonly output: ProgramsMutationResult = { programs: [] }
+    protected readonly mainEntityIds: string[]
+
+    constructor(
+        input: DeleteProgramInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.id)
+    }
+
+    async generateEntityMaps(
+        input: DeleteProgramInput[]
+    ): Promise<DeleteProgramsEntityMap> {
+        const programs = await getMap.program(
+            input.map((i) => i.id),
+            ['organization']
+        )
+
+        const allOrgIds = (
+            await Promise.all(
+                Array.from(programs.values()).map(
+                    async (p) => (await p.organization)?.organization_id
+                )
+            )
+        ).filter((id) => id) as string[]
+        const organizationIds = Array.from(new Set(allOrgIds))
+
+        return { mainEntity: programs, organizationIds }
+    }
+
+    async authorize(
+        _input: DeleteProgramInput[],
+        maps: DeleteProgramsEntityMap
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.organizationIds },
+            PermissionName.delete_program_20441
+        )
+    }
+
+    protected async buildOutput(program: Program): Promise<void> {
+        this.output.programs.push(mapProgramToProgramConnectionNode(program))
     }
 }
