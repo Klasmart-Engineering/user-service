@@ -306,6 +306,14 @@ export const ADD_TEACHERS_TO_CLASSES = gql`
     }
 `
 
+export const REMOVE_TEACHERS_FROM_CLASSES = gql`
+    mutation myMutation($input: [RemoveTeachersFromClassInput!]!) {
+        removeTeachersFromClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export const CREATE_CLASSES = `mutation($input: [CreateClassInput!]!) {
     createClasses(input: $input) {
         ${CLASSES_MUTATION_RESULT}

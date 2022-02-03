@@ -54,6 +54,9 @@ import {
     RemoveStudentsFromClasses,
     AddTeachersToClasses,
     AddTeachersClassesEntityMap,
+    RemoveTeachersFromClasses,
+    RemoveStudentsClassesEntityMap,
+    RemoveTeachersClassesEntityMap,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -106,6 +109,7 @@ import {
     ClassesMutationResult,
     RemoveStudentsFromClassInput,
     AddTeachersToClassInput,
+    RemoveTeachersFromClassInput,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
@@ -6942,14 +6946,14 @@ describe('class', () => {
 
         context('.generateEntityMaps', () => {
             context('populates the maps correctly', () => {
-                let maps: AddStudentsClassesEntityMap
+                let maps: RemoveStudentsClassesEntityMap
 
                 beforeEach(async () => {
                     const permissions = new UserPermissions(
                         userToPayload(adminUser)
                     )
 
-                    const mutation = new AddStudentsToClasses(
+                    const mutation = new RemoveStudentsFromClasses(
                         input,
                         permissions
                     )
@@ -7239,9 +7243,9 @@ describe('class', () => {
             async function process(
                 mutationInput: RemoveStudentsFromClassInput
             ) {
-                const permissions = new UserPermissions({
-                    email: adminUser.email,
-                })
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
                 const mutation = new RemoveStudentsFromClasses(
                     [mutationInput],
                     permissions
@@ -7704,6 +7708,436 @@ describe('class', () => {
                     )
                 ).to.deep.equalInAnyOrder(
                     (await originalClass.teachers!).map((st) => st.user_id)
+                )
+            })
+        })
+    })
+
+    describe('RemoveTeachersFromClasses', () => {
+        let input: RemoveTeachersFromClassInput[]
+        let org: Organization
+        let teachers: User[]
+        let classes: Class[]
+        let adminUser: User
+        let nonAdminUser: User
+
+        function getRemoveTeachers(authUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new RemoveTeachersFromClasses([], permissions)
+        }
+
+        beforeEach(async () => {
+            nonAdminUser = await createNonAdminUser(testClient)
+            adminUser = await createAdminUser(testClient)
+            org = await createOrganization().save()
+            teachers = await User.save(createUsers(3))
+            classes = await Class.save(createClasses(3, org))
+            classes[0].teachers = Promise.resolve([teachers[0], teachers[1]])
+            classes[1].teachers = Promise.resolve([teachers[1], teachers[2]])
+            classes[2].teachers = Promise.resolve([
+                teachers[0],
+                teachers[1],
+                teachers[2],
+            ])
+            await connection.manager.save(classes)
+            await OrganizationMembership.save(
+                Array.from(teachers, (teacher) =>
+                    createOrganizationMembership({
+                        user: teacher,
+                        organization: org,
+                        roles: [],
+                    })
+                )
+            )
+            // Generate input
+            input = []
+            const inputTeacherIndices = [
+                [0, 1],
+                [1, 2],
+                [0, 1, 2],
+            ]
+            for (let i = 0; i < 3; i++) {
+                input.push({
+                    classId: classes[i].class_id,
+                    teacherIds: inputTeacherIndices[i].map(
+                        (st) => teachers[st].user_id
+                    ),
+                })
+            }
+        })
+
+        context('.run', () => {
+            it('makes constant number of queries regardless of input length', async () => {
+                const mutation = getRemoveTeachers()
+                connection.logger.reset()
+                await mutation.generateEntityMaps([input[0]])
+                const countForOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.generateEntityMaps(input.slice(0))
+                const countForThree = connection.logger.count
+                expect(countForThree).to.eq(countForOneInput)
+            })
+            it('returns the expected output', async () => {
+                input = [
+                    {
+                        classId: classes[0].class_id,
+                        teacherIds: [teachers[0].user_id],
+                    },
+                ]
+
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutationResult = mutate(
+                    RemoveTeachersFromClasses,
+                    { input },
+                    permissions
+                )
+
+                const {
+                    classes: classesNodes,
+                }: ClassesMutationResult = await expect(mutationResult).to.be
+                    .fulfilled
+                expect(classesNodes).to.have.length(1)
+                expect(classesNodes[0]).to.deep.eq(
+                    mapClassToClassConnectionNode(classes[0])
+                )
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            context('populates the maps correctly', () => {
+                let maps: RemoveTeachersClassesEntityMap
+
+                beforeEach(async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(adminUser)
+                    )
+
+                    const mutation = new RemoveTeachersFromClasses(
+                        input,
+                        permissions
+                    )
+                    maps = await mutation.generateEntityMaps(input)
+                })
+
+                it('populates classesTeachers correctly', () => {
+                    it('populates classesTeachers correctly', () => {
+                        expect(
+                            Array.from(
+                                maps.classesTeachers.entries()
+                            ).map(([classId, teachers]) => [
+                                classId,
+                                teachers.map((st) => st.user_id),
+                            ])
+                        ).to.deep.equalInAnyOrder([
+                            input.map((i) => [i.classId, [...i.teacherIds]]),
+                        ])
+                    })
+                })
+
+                it('populates organizations correctly', () => {
+                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
+                        org.organization_id,
+                        org.organization_id,
+                        org.organization_id,
+                    ])
+                })
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getRemoveTeachers(authUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.delete_teacher_from_class_20446
+            context(
+                'when user has permissions to remove teachers from all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: org,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to remove teachers from all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(permission, nonAdminUser, [
+                                org,
+                            ])
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            context('when the same input is used three times', () => {
+                beforeEach(() => {
+                    input = [input[0], input[0], input[0]]
+                })
+
+                it('returns duplicate errors for the last two inputs', () => {
+                    const val = getRemoveTeachers().validationOverAllInputs(
+                        input
+                    )
+
+                    const expectedErrors = [1, 2].map((inputIndex) =>
+                        createDuplicateAttributeAPIError(
+                            inputIndex,
+                            ['classId'],
+                            'RemoveTeachersFromClassInput'
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getRemoveTeachers().validationOverAllInputs(
+                        input
+                    )
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context('when there are too many teacherIds', () => {
+                beforeEach(async () => {
+                    const tooManyTeachers = createUsers(
+                        config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                    )
+                    await User.save(tooManyTeachers)
+                    input[0].teacherIds = tooManyTeachers.map(
+                        (teacher) => teacher.user_id
+                    )
+                    input[2].teacherIds = tooManyTeachers.map(
+                        (teacher) => teacher.user_id
+                    )
+                })
+
+                it('returns an error', async () => {
+                    const val = getRemoveTeachers().validationOverAllInputs(
+                        input
+                    )
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(1)
+                    expect(val.validInputs[0].input).to.deep.equal(input[1])
+                    const xErrors = [0, 2].map((i) =>
+                        createInputLengthAPIError(
+                            'RemoveTeachersFromClassInput',
+                            'max',
+                            'teacherIds',
+                            i
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, xErrors)
+                })
+            })
+
+            context(
+                'when there are duplicated teacherIds in a single input elemnet',
+                () => {
+                    beforeEach(async () => {
+                        input[0].teacherIds = [
+                            input[0].teacherIds[0],
+                            input[0].teacherIds[0],
+                        ]
+                        input[2].teacherIds = [
+                            input[2].teacherIds[0],
+                            input[2].teacherIds[0],
+                        ]
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getRemoveTeachers().validationOverAllInputs(
+                            input
+                        )
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['teacherIds'],
+                                'RemoveTeachersFromClassInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(
+                mutationInput: RemoveTeachersFromClassInput,
+                index: number
+            ) {
+                const mutation = getRemoveTeachers()
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return mutation.validate(0, classes[index], mutationInput, maps)
+            }
+
+            it('returns no errors when all inputs are valid', async () => {
+                const apiErrors = await validate(input[0], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            context(
+                'when one of the teachers is not part of the class',
+                async () => {
+                    beforeEach(async () => {
+                        input[0].teacherIds.push(teachers[2].user_id)
+                    })
+
+                    it('returns existent errors', async () => {
+                        const actualErrors = await validate(input[0], 0)
+                        const expectedError = createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'User',
+                            teachers[2].user_id,
+                            'Class',
+                            classes[0].class_id
+                        )
+
+                        expect(actualErrors.length).to.eq(1)
+                        compareErrors(actualErrors[0], expectedError)
+                    })
+                }
+            )
+
+            context('when one of the teachers is inactive', async () => {
+                beforeEach(() => teachers[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity and nonExistentChild errors', async () => {
+                    const errors = await validate(input[0], 0)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            teachers[1].user_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        classes[1].inactivate(getManager()),
+                        teachers[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate(input[1], 1)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'User',
+                            teachers[1].user_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'User',
+                            teachers[2].user_id,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+        })
+
+        context('.process', () => {
+            async function process(
+                mutationInput: RemoveTeachersFromClassInput
+            ) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new RemoveTeachersFromClasses(
+                    [mutationInput],
+                    permissions
+                )
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return {
+                    mutationResult: mutation.process(mutationInput, maps, 0),
+                    originalClass: maps.mainEntity.get(mutationInput.classId)!,
+                    originalTeachers: maps.classesTeachers.get(
+                        mutationInput.classId
+                    ),
+                }
+            }
+
+            it('keeps the not removed teachers', async () => {
+                classes[0].teachers = Promise.resolve([teachers[0]])
+                await classes[0].save()
+                input[0].teacherIds = []
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalTeachers,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(originalTeachers).to.deep.equalInAnyOrder(
+                    await originalClass.teachers
+                )
+            })
+
+            it('removes the teachers', async () => {
+                const teachersToRemove = [teachers[1]]
+                input[0].teacherIds = teachersToRemove.map((s) => s.user_id)
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                } = await process(input[0])
+                expect(await outputEntity.teachers).to.deep.equalInAnyOrder(
+                    await originalClass.teachers
                 )
             })
         })
