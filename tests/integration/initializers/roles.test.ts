@@ -1,5 +1,5 @@
 import { Connection } from 'typeorm'
-import { expect } from 'chai'
+import { expect, use } from 'chai'
 
 import {
     ApolloServerTestClient,
@@ -12,6 +12,10 @@ import { createAdminUser } from '../../utils/testEntities'
 import { Model } from '../../../src/model'
 import { Organization } from '../../../src/entities/organization'
 import RoleInitializer from '../../../src/initializers/roles'
+import { Role } from '../../../src/entities/role'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+
+use(deepEqualInAnyOrder)
 
 describe('RolesInitializer', () => {
     let connection: Connection
@@ -82,6 +86,23 @@ describe('RolesInitializer', () => {
                 }
 
                 expect(dbPermissions).to.deep.members(resetPermissions)
+            })
+        })
+
+        context('when system roles already exist', () => {
+            beforeEach(async () => {
+                await RoleInitializer.run()
+            })
+
+            it('should not create them again', async () => {
+                const rolesBefore = await Role.find()
+
+                // Second initialization, new roles would't be created
+                await RoleInitializer.run()
+                const rolesAfter = await Role.find()
+
+                expect(rolesAfter).to.have.lengthOf(rolesBefore.length)
+                expect(rolesAfter).to.deep.equalInAnyOrder(rolesBefore)
             })
         })
     })
