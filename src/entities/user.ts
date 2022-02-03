@@ -31,6 +31,7 @@ import { CustomBaseEntity } from './customBaseEntity'
 import { isDOB, isEmail, isPhone } from '../utils/validations'
 import clean from '../utils/clean'
 import logger from '../logging'
+import { getEnv } from '../config/config'
 
 @Entity()
 export class User extends CustomBaseEntity {
@@ -593,7 +594,7 @@ export class User extends CustomBaseEntity {
             await queryRunner.release()
         }
         if (success) {
-            logger.info('success')
+            logger.debug('success')
             return this
         }
         if (dberr !== undefined) {
@@ -749,10 +750,7 @@ export class User extends CustomBaseEntity {
     }
 }
 
-if (!process.env.DOMAIN) {
-    logger.warn('DOMAIN env variable not set, defaulting to kidsloop.net')
-}
-const domain = process.env.DOMAIN || 'kidsloop.net'
+const domain = getEnv({name: 'DOMAIN',orDefault: 'kidsloop.net'})
 const accountNamespace = v5(domain, v5.DNS)
 
 export function accountUUID(email?: string) {

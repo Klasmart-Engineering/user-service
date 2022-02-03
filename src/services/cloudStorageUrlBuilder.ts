@@ -1,7 +1,5 @@
 import logger from '../logging'
-import { createCloudClient } from '../utils/storage'
-
-const PROVIDER = process.env.STORAGE_PROVIDER ?? ''
+import { createCloudClient, STORAGE } from '../utils/storage'
 
 export class CloudStorageUrlBuilder {
     /**
@@ -16,31 +14,31 @@ export class CloudStorageUrlBuilder {
             throw new Error('fileName is empty')
         }
 
-        const client = createCloudClient(PROVIDER)
+        const client = createCloudClient(STORAGE.PROVIDER)
 
         client.getFile(
-            process.env.STORAGE_BUCKET || 'kl-user-service',
+            STORAGE.BUCKET || 'kl-user-service',
             filePath,
             (err, file) => {
                 if (err) {
                     throw new Error(`failed to get file with error ${err}`)
                 }
                 let paths: Array<string> = []
-                switch (PROVIDER) {
+                switch (STORAGE.PROVIDER) {
                     case 'amazon':
                         paths = [
-                            `https://${file.container}.s3.${process.env.STORAGE_REGION}.amazonaws.com`,
+                            `https://${file.container}.s3.${STORAGE.REGION}.amazonaws.com`,
                             file.name,
                         ]
                         break
 
                     case 'google':
-                        logger.info(file)
+                        logger.debug(file)
                         break
 
                     case 'vngcloud':
                         paths = [
-                            `${process.env.STORAGE_ENDPOINT}/v1/AUTH_${process.env.STORAGE_PROJECT_ID}`,
+                            `${STORAGE.ENDPOINT}/v1/AUTH_${STORAGE.PROJECT_ID}`,
                             file.container,
                             file.name,
                         ]

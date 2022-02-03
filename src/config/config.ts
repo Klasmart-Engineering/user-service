@@ -1,3 +1,5 @@
+import logger from '../logging'
+
 export const config = {
     limits: {
         MUTATION_MIN_INPUT_ARRAY_SIZE: 1,
@@ -22,3 +24,23 @@ export const config = {
         CSV_MAX_FILESIZE: 50 * 1024,
     },
 } as const
+
+export const getEnv = ({
+    name,
+    orDefault,
+}: {
+    name: string
+    orDefault?: string
+}): string => {
+    const val = process.env[name]
+    const defaultVal = orDefault || ''
+
+    if (val) {
+        return val
+    } else {
+        logger.warn(
+            `Env Variable not set: "${name}" - defaulting to "${defaultVal}"`
+        )
+        return defaultVal
+    }
+}

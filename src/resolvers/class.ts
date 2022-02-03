@@ -904,7 +904,7 @@ export class UpdateClasses extends UpdateMutation<
                     )
                 } else {
                     // For duplicate names of classes without an org
-                    logger.info(
+                    logger.debug(
                         `During UpdateClasses input className validation, class ${currentInput.classId} without an org was passed in`
                     )
                     errors.push(
@@ -952,7 +952,7 @@ export class UpdateClasses extends UpdateMutation<
                     )
                 } else {
                     // For duplicate shortcodes of classes without an org
-                    logger.info(
+                    logger.debug(
                         `During UpdateClasses input shortcode validation, class ${currentInput.classId} without an org was passed in`
                     )
                     errors.push(

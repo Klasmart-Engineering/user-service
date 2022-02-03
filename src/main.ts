@@ -7,8 +7,9 @@ import express from 'express'
 import { IDataLoaders } from './loaders/setup'
 import logger from './logging'
 import { TokenPayload } from './token'
+import { getEnv } from './config/config'
 
-const port = process.env.PORT || 8080
+const port = getEnv({ name: 'PORT', orDefault: '8080' })
 
 export interface Context {
     token: TokenPayload | undefined
@@ -22,8 +23,8 @@ export interface Context {
 Sentry.init({
     dsn:
         'https://b78d8510ecce48dea32a0f6a6f345614@o412774.ingest.sentry.io/5388815',
-    environment: process.env.NODE_ENV || 'not-specified',
-    release: 'kidsloop-users-gql@' + process.env.npm_package_version,
+    environment: getEnv({ name: 'NODE_ENV', orDefault: 'not-specified' }),
+    release: 'kidsloop-users-gql@' + getEnv({name: 'npm_package_version'}),
 })
 
 initApp()

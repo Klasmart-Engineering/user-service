@@ -13,12 +13,13 @@ import appPackage from '../package.json'
 import { Model } from './model'
 import { validateToken } from './token'
 import { createServer } from './utils/createServer'
+import { getEnv } from './config/config'
 
 interface AppOptions {
     routePrefix?: string
 }
 
-export const DOMAIN = process.env.DOMAIN || 'kidsloop.net'
+export const DOMAIN = getEnv({name: 'DOMAIN', orDefault: 'kidsloop.net'})
 if (!DOMAIN) {
     throw Error(`The DOMAIN environment variable was not set`)
 }
@@ -26,7 +27,7 @@ const domainRegex = new RegExp(
     `^https://(.*\\.)?${escapeStringRegexp(DOMAIN)}(:\\d{1,5})?$`
 )
 
-export const ROUTE_PREFIX = process.env.ROUTE_PREFIX ?? ''
+export const ROUTE_PREFIX = getEnv({name: 'ROUTE_PREFIX'})
 
 const corsOptions: CorsOptions = {
     allowedHeaders: [
@@ -120,7 +121,7 @@ export function docsAreEnabled(
     next: express.NextFunction
 ) {
     if (
-        process.env.ENABLE_PAGE_DOCS === '1' ||
+        getEnv({name: 'ENABLE_PAGE_DOCS'}) === '1' ||
         process.env.NODE_ENV === 'development'
     ) {
         next()

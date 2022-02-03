@@ -1,19 +1,18 @@
 import { ReadStream } from 'fs'
-import { createCloudClient } from '../utils/storage'
+import { createCloudClient, STORAGE } from '../utils/storage'
+import { getEnv } from '../config/config'
 
 export class CloudStorageUploader {
     public static async call(
         imageStream: ReadStream,
         filePath: string
     ): Promise<string | undefined> {
-        const provider = process.env.STORAGE_PROVIDER || 'amazon'
+        const provider = STORAGE.PROVIDER || 'amazon'
         const client = createCloudClient(provider)
         let remoteUrl = undefined
 
         const writeStream = await client.upload({
-            container:
-                process.env.STORAGE_BUCKET ||
-                'kidsloop-alpha-account-asset-objects',
+            container: STORAGE.BUCKET || 'kidsloop-alpha-account-asset-objects',
             remote: filePath,
         })
 
@@ -41,8 +40,8 @@ export class CloudStorageUploader {
 
 function buildVNGCloudUrl(filePath: string) {
     return [
-        `${process.env.STORAGE_ENDPOINT}/v1/AUTH_${process.env.STORAGE_PROJECT_ID}`,
-        process.env.STORAGE_BUCKET,
+        `${STORAGE.ENDPOINT}/v1/AUTH_${STORAGE.PROJECT_ID}`,
+        STORAGE.BUCKET,
         filePath,
     ].join('/')
 }

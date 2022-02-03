@@ -1,5 +1,6 @@
 import { Connection, createConnection, QueryRunner } from 'typeorm'
 import { TypeORMLogger } from '../../src/logging'
+import { getEnv } from '../../src/config/config'
 
 class QueryMetricsLogger extends TypeORMLogger {
     private counter = 0
@@ -38,6 +39,15 @@ export const createTestConnection = async ({
     synchronize = false,
     name = 'default',
 } = {}): Promise<TestConnection> => {
+    const RO_DATABASE_URL = getEnv({ name: 'RO_DATABASE_URL' })
+    const slavesURLList = RO_DATABASE_URL
+                ? [
+                      {
+                          url: RO_DATABASE_URL,
+                      },
+                  ]
+                : []
+
     return createConnection({
         name: name,
         type: 'postgres',
@@ -47,17 +57,12 @@ export const createTestConnection = async ({
         logger: new QueryMetricsLogger(),
         replication: {
             master: {
-                url:
-                    process.env.DATABASE_URL ||
-                    'postgres://postgres:kidsloop@localhost/testdb',
+                url: getEnv({
+                    name: 'DATABASE_URL',
+                    orDefault: 'postgres://postgres:kidsloop@localhost/testdb',
+                }),
             },
-            slaves: process.env.RO_DATABASE_URL
-                ? [
-                      {
-                          url: process.env.RO_DATABASE_URL,
-                      },
-                  ]
-                : [],
+            slaves: slavesURLList,
         },
     }) as Promise<TestConnection>
 }
@@ -70,9 +75,10 @@ export const createMigrationsTestConnection = async (
     return createConnection({
         name: name,
         type: 'postgres',
-        url:
-            process.env.DATABASE_URL ||
-            'postgres://postgres:kidsloop@localhost/testdb',
+        url: getEnv({
+            name: 'DATABASE_URL',
+            orDefault: 'postgres://postgres:kidsloop@localhost/testdb',
+        }),
         synchronize,
         dropSchema: drop,
         migrations: ['migrations/*{.ts,.js}'],
