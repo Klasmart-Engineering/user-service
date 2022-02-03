@@ -212,7 +212,7 @@ export class Model {
                 date_of_birth = undefined
             }
         }
-        if (!(email ?? phone)) {
+        if (!(email || phone || username)) {
             return null
         }
         newUser.user_id = uuid_v4()
