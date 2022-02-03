@@ -248,7 +248,7 @@ export async function readCSVFile(
 
             if (canFinish(i, rowCallbacks, csvStream)) {
                 if (fileErrors.length) {
-                    logger.error(
+                    logger.warn(
                         'These errors were found in the file: %o',
                         fileErrors
                     )

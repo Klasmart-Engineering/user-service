@@ -35,9 +35,9 @@ export async function createEntityFromCsvWithRollBack(
         }
     } catch (errors) {
         if (isDryRun) {
-            logger.error('Errors found when previewing CSV file: %o', errors)
+            logger.warn('Errors found when previewing CSV file: %o', errors)
         } else {
-            logger.error('Error uploading from CSV file: %o', errors)
+            logger.warn('Error uploading from CSV file: %o', errors)
         }
         await queryRunner.rollbackTransaction()
         if (

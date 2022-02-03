@@ -31,6 +31,7 @@ import { CustomBaseEntity } from './customBaseEntity'
 import { isDOB, isEmail, isPhone } from '../utils/validations'
 import clean from '../utils/clean'
 import logger from '../logging'
+import { reportError } from '../utils/resolvers/errors'
 
 @Entity()
 export class User extends CustomBaseEntity {
@@ -94,7 +95,7 @@ export class User extends CustomBaseEntity {
             })
             return membership
         } catch (e) {
-            logger.error(e)
+            logger.warn(e)
         }
     }
 
@@ -116,7 +117,7 @@ export class User extends CustomBaseEntity {
             ).findOneOrFail({ where: { user_id: this.user_id, school_id } })
             return membership
         } catch (e) {
-            logger.error(e)
+            logger.warn(e)
         }
     }
 
@@ -160,7 +161,7 @@ export class User extends CustomBaseEntity {
                 })
                 .getMany()
         } catch (e) {
-            logger.error(e)
+            reportError(e)
         }
     }
 
@@ -228,7 +229,7 @@ export class User extends CustomBaseEntity {
                 })
             )
         } catch (e) {
-            logger.error(e)
+            reportError(e)
         }
     }
 
@@ -309,7 +310,7 @@ export class User extends CustomBaseEntity {
             await this.save()
             return this
         } catch (e) {
-            logger.error(e)
+            reportError(e)
         }
     }
 
@@ -357,7 +358,7 @@ export class User extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            logger.error(e)
+            reportError(e)
             return false
         }
     }
@@ -474,7 +475,7 @@ export class User extends CustomBaseEntity {
             await getManager().save(membership)
             return membership
         } catch (e) {
-            logger.error(e)
+            logger.warn(e)
         }
     }
 
@@ -497,7 +498,7 @@ export class User extends CustomBaseEntity {
             await getManager().save(membership)
             return membership
         } catch (e) {
-            logger.error(e)
+            logger.warn(e)
         }
     }
 
@@ -586,7 +587,7 @@ export class User extends CustomBaseEntity {
             await queryRunner.commitTransaction()
         } catch (err) {
             success = false
-            logger.error(err)
+            reportError(err)
             dberr = err
             await queryRunner.rollbackTransaction()
         } finally {

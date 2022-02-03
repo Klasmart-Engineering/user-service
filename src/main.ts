@@ -7,6 +7,7 @@ import express from 'express'
 import { IDataLoaders } from './loaders/setup'
 import logger from './logging'
 import { TokenPayload } from './token'
+import { reportError } from './utils/resolvers/errors'
 
 const port = process.env.PORT || 8080
 
@@ -38,6 +39,6 @@ initApp()
     })
     .catch((e) => {
         Sentry.captureException(e)
-        logger.error(e)
+        reportError(e)
         process.exit(-1)
     })
