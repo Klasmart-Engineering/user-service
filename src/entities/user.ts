@@ -594,7 +594,6 @@ export class User extends CustomBaseEntity {
             await queryRunner.release()
         }
         if (success) {
-            logger.debug('success')
             return this
         }
         if (dberr !== undefined) {
