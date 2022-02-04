@@ -4,7 +4,7 @@ import { Options } from "k6/options";
 import createSingleUser from "./scripts/createSingleUser";
 import getOrganizationUsers from "./scripts/getOrganizationUsers";
 import optionsScript from "./scripts/optionsScript";
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 
 export const options:Options = {
     vus: 1,

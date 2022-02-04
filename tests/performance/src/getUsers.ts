@@ -1,11 +1,11 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import getUsers from './scripts/getOrganizationUsers';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 } from './utils/loginSetupV2';
 
 export const options: Options = {
     vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
-    duration: __ENV.DURATION ?? '1m',
+    duration: __ENV.DURATION ?? '10s',
 };
 
 export function setup() {
@@ -15,9 +15,10 @@ export function setup() {
         deviceName: "k6",
         email: process.env.EMAIL_ORG_ADMIN_1 as string,
         pw: process.env.PW as string,
-    };
-    
-    const orgAdminLoginData = loginSetup(orgAdminLoginPayload);
+    };    
+
+    const orgAdminLoginData = loginSetupV2(orgAdminLoginPayload);
+
     data = { 
         ...data, 
         [`orgAdmin`]: orgAdminLoginData,

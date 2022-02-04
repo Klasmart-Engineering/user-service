@@ -1,5 +1,5 @@
 import { Options } from "k6/options";
-import loginSetup from "./utils/loginSetup";
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import getUsers from "./scripts/getOrganizationUsers";
 import { sleep } from "k6";
 

@@ -1,6 +1,6 @@
 
 import landingV2 from './scripts/landingV2';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import { sleep } from 'k6';
 import http from 'k6/http';
 import endPointHomeRequest1 from './scripts/meQueryBasic';

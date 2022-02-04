@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import contentsFolder from './scripts/contentsFolder';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 
 export const options: Options = {
     vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,

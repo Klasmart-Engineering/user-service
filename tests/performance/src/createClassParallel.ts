@@ -3,8 +3,8 @@ import { Options } from 'k6/options';
 import createClass from './scripts/createClass';
 import { config } from './config/parallelLanding';
 import { sleep } from 'k6';
-import loginSetup from './utils/loginSetup';
 import generateStages from './utils/generateStages';
+import { loginSetupV2 } from './utils/loginSetupV2';
 
 export function setup() {
     let data = {};
@@ -15,7 +15,7 @@ export function setup() {
         pw: process.env.PW as string,
     };
     
-    const orgAdminLoginData = loginSetup(orgAdminLoginPayload);
+    const orgAdminLoginData = loginSetupV2(orgAdminLoginPayload);
     data = { 
         ...data, 
         [`orgAdmin`]: orgAdminLoginData,

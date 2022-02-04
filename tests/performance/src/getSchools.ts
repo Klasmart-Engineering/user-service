@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import getSchools from './scripts/getSchools';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 } from './utils/loginSetupV2';
 
 export const options: Options = {
     vus: __ENV.VUS ? parseInt(__ENV.VUS, 10) : 1,
@@ -17,7 +17,7 @@ export function setup() {
         pw: process.env.PW as string,
     };
     
-    const orgAdminLoginData = loginSetup(orgAdminLoginPayload);
+    const orgAdminLoginData = loginSetupV2(orgAdminLoginPayload);
     data = { 
         ...data, 
         [`orgAdmin`]: orgAdminLoginData,

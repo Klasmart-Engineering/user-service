@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import generateClassPayload from './utils/generateClassPayload';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import getLiveClassToken from './scripts/getLiveClassToken';
 
 const params = {

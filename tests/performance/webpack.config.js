@@ -63,6 +63,7 @@ module.exports = env => ({
         createLessonPlan: `./createLessonPlan.ts`,
         webSocketInit: `./webSocketInit.ts`,
         testGetLiveClassToken: `./testGetLiveClassToken.ts`,
+        loginV2: `./loginV2.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),
