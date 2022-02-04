@@ -12,6 +12,7 @@ import {
     JoinTable,
     ManyToOne,
     EntityManager,
+    RelationId,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './user'
@@ -27,7 +28,6 @@ import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 import { CustomBaseEntity } from './customBaseEntity'
 import logger from '../logging'
 import { reportError } from '../utils/resolvers/errors'
-
 @Entity()
 @Check(`"school_name" <> ''`)
 export class School extends CustomBaseEntity {
@@ -66,6 +66,9 @@ export class School extends CustomBaseEntity {
     @ManyToMany(() => Class, (class_) => class_.schools)
     @JoinTable()
     public classes?: Promise<Class[]>
+
+    @RelationId((school: School) => school.organization)
+    public organizationId!: string
 
     @ManyToMany(() => Program, (program) => program.schools)
     @JoinTable()

@@ -56,6 +56,7 @@ import {
     flagNonExistent,
     flagNonExistentChild,
 } from '../utils/resolvers/inputValidation'
+import { customErrors } from '../types/errors/customError'
 
 export interface CreateSchoolEntityMap extends EntityMap<School> {
     mainEntity: Map<string, School>
@@ -780,7 +781,7 @@ export class AddClassesToSchools extends AddMutation<
         generateMapsForAddingOrRemovingClasses(this.mainEntityIds, input)
 
     protected async authorize(
-        input: RemoveClassesFromSchoolInput[],
+        input: AddClassesToSchoolInput[],
         maps: AddRemoveClassesToFromSchoolsEntityMap
     ): Promise<void> {
         const orgIdPromises = input
@@ -835,6 +836,7 @@ export class AddClassesToSchools extends AddMutation<
         const schoolClasses = new Set(
             maps.schoolsClasses.get(itemId)?.map((p) => p.class_id)
         )
+        const schoolOrganizationId = maps.mainEntity.get(itemId)?.organizationId
 
         for (const subitemId of subitemIds) {
             const subitem = maps.classes.get(subitemId)
@@ -849,7 +851,20 @@ export class AddClassesToSchools extends AddMutation<
                 )
             }
             if (!subitem) continue
-
+            if (subitem.organizationId != schoolOrganizationId) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: subEntityName,
+                        entityName: subEntityName,
+                        attribute: 'ID',
+                        otherAttribute: subitemId,
+                        index,
+                    })
+                )
+            }
             const itemHasSubitem = schoolClasses.has(subitemId)
             if (itemHasSubitem) {
                 errors.push(
