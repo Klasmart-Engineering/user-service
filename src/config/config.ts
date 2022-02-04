@@ -17,7 +17,7 @@ export const config = {
         SCHOOL_SHORTCODE_MAX_LENGTH: 10,
         GENDER_MIN_LENGTH: 3,
         GENDER_MAX_LENGTH: 16,
-        USERNAME_MAX_LEN: 35,
+        USERNAME_MAX_LENGTH: 50,
         AVATAR_MAX_LEN: 8192,
         CSV_MAX_FILESIZE: 50 * 1024,
     },

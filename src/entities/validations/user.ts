@@ -33,7 +33,7 @@ export const userValidations = {
     username: sharedValidations.alphanum_with_special_characters
         .allow('', null)
         .optional()
-        .max(config.limits.USERNAME_MAX_LEN),
+        .max(config.limits.USERNAME_MAX_LENGTH),
 
     gender: sharedValidations.alphanum_with_special_characters
         .required()
