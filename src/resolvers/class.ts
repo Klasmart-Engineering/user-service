@@ -11,6 +11,7 @@ import {
     AddStudentsToClassInput,
     RemoveStudentsFromClassInput,
     AddTeachersToClassInput,
+    RemoveTeachersFromClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -1296,24 +1297,26 @@ export class RemoveStudentsFromClasses extends RemoveMutation<
         const students = flagNonExistent(User, index, studentIds, maps.students)
         errors.push(...students.errors)
 
-        const currentClassStudents = new Map(
-            maps.classesStudents.get(classId)?.map((u) => [u.user_id, u])
-        )
+        if (currentEntity) {
+            const currentClassStudents = new Map(
+                maps.classesStudents.get(classId)?.map((u) => [u.user_id, u])
+            )
 
-        const studentInClassErrors = flagNonExistentChild(
-            Class,
-            User,
-            index,
-            classId,
-            studentIds,
-            new Set(
-                Array.from(currentClassStudents.values()).map(
-                    (student) => student.user_id
+            const studentInClassErrors = flagNonExistentChild(
+                Class,
+                User,
+                index,
+                classId,
+                studentIds,
+                new Set(
+                    Array.from(currentClassStudents.values()).map(
+                        (student) => student.user_id
+                    )
                 )
             )
-        )
 
-        errors.push(...studentInClassErrors)
+            errors.push(...studentInClassErrors)
+        }
 
         return errors
     }
@@ -1516,6 +1519,176 @@ export class AddTeachersToClasses extends AddMutation<
     }
 
     protected async buildOutput(currentEntity: Class): Promise<void> {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
+    }
+}
+
+export interface RemoveTeachersClassesEntityMap extends EntityMap<Class> {
+    mainEntity: Map<string, Class>
+    teachers: Map<string, User>
+    classesTeachers: Map<string, User[]>
+    organizationIds: string[]
+    schoolIds: string[]
+}
+
+export class RemoveTeachersFromClasses extends RemoveMutation<
+    Class,
+    RemoveTeachersFromClassInput,
+    ClassesMutationResult,
+    RemoveTeachersClassesEntityMap
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'RemoveTeachersFromClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: RemoveTeachersFromClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    generateEntityMaps = async (
+        input: RemoveTeachersFromClassInput[]
+    ): Promise<RemoveTeachersClassesEntityMap> => {
+        const classIds = input.map((i) => i.classId)
+        const classMap = getMap.class(classIds, [
+            'organization',
+            'teachers',
+            'schools',
+        ])
+        const organizationIds = await Promise.all(
+            Array.from((await classMap).values()).map(
+                async (c) => (await c.organization!).organization_id
+            )
+        )
+        const teacherIds = input.flatMap((i) => i.teacherIds)
+        const teacherMap = getMap.user(teacherIds, ['memberships'])
+        const classesTeachers = new Map<string, User[]>()
+        const schoolIds: Set<string> = new Set()
+        for (const class_ of (await classMap).values()) {
+            // eslint-disable-next-line no-await-in-loop
+            const teachers = (await class_.teachers) || []
+            classesTeachers.set(class_.class_id, teachers)
+            const schools = await class_.schools
+            if (schools) {
+                for (const school of schools) {
+                    schoolIds.add(school.school_id)
+                }
+            }
+        }
+
+        return {
+            mainEntity: await classMap,
+            teachers: await teacherMap,
+            classesTeachers,
+            organizationIds,
+            schoolIds: Array.from(schoolIds),
+        }
+    }
+
+    async authorize(
+        input: RemoveTeachersFromClassInput[],
+        maps: RemoveTeachersClassesEntityMap
+    ): Promise<void> {
+        const permissionContext = {
+            organization_ids: maps.organizationIds,
+            school_ids: maps.schoolIds,
+        }
+        return this.permissions.rejectIfNotAllowed(
+            permissionContext,
+            PermissionName.delete_teacher_from_class_20446
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: RemoveTeachersFromClassInput[]
+    ): {
+        validInputs: { index: number; input: RemoveTeachersFromClassInput }[]
+        apiErrors: APIError[]
+    } {
+        const classIdErrorMap = validateNoDuplicate(
+            inputs.map((cls) => cls.classId),
+            this.inputTypeName,
+            'classId'
+        )
+
+        const teacherIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'teacherIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            classIdErrorMap,
+            ...teacherIdsErrorMap,
+        ])
+    }
+
+    validate = (
+        index: number,
+        currentEntity: Class,
+        currentInput: RemoveTeachersFromClassInput,
+        maps: RemoveTeachersClassesEntityMap
+    ): APIError[] => {
+        const errors: APIError[] = []
+        const { classId, teacherIds } = currentInput
+
+        const classes = flagNonExistent(
+            Class,
+            index,
+            [classId],
+            maps.mainEntity
+        )
+        errors.push(...classes.errors)
+
+        const teachers = flagNonExistent(User, index, teacherIds, maps.teachers)
+        errors.push(...teachers.errors)
+
+        if (currentEntity) {
+            const currentClassTeachers = new Map(
+                maps.classesTeachers.get(classId)?.map((u) => [u.user_id, u])
+            )
+            const existingTeacherIds = teachers.values.map((t) => t.user_id)
+            const teacherInClassErrors = flagNonExistentChild(
+                Class,
+                User,
+                index,
+                classId,
+                existingTeacherIds,
+                new Set(
+                    Array.from(currentClassTeachers.values()).map(
+                        (teacher) => teacher.user_id
+                    )
+                )
+            )
+
+            errors.push(...teacherInClassErrors)
+        }
+
+        return errors
+    }
+
+    process(
+        currentInput: RemoveTeachersFromClassInput,
+        maps: RemoveTeachersClassesEntityMap,
+        index: number
+    ) {
+        const { classId, teacherIds } = currentInput
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+        const teacherIdsSet = new Set(teacherIds)
+        const preExistentTeachers = maps.classesTeachers.get(classId)!
+
+        const keptTeachers = preExistentTeachers.filter(
+            (teacher) => !teacherIdsSet.has(teacher.user_id)
+        )
+        currentEntity.teachers = Promise.resolve(keptTeachers)
+        return { outputEntity: currentEntity }
+    }
+
+    protected buildOutput = async (currentEntity: Class): Promise<void> => {
         this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
     }
 }

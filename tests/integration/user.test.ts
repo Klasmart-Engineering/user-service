@@ -138,10 +138,12 @@ describe('user', () => {
     let nonAdminUser: User
     let organization1: Organization
     let role1: Role
+    let model: Model
 
     before(async () => {
         connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
+        model = new Model(connection)
+        const server = await createServer(model)
         testClient = await createTestClient(server)
     })
 
@@ -3809,6 +3811,35 @@ describe('user', () => {
                         }
                     )
                 ).to.be.rejected
+            })
+        })
+    })
+    describe('newUser', () => {
+        let ourUser: User
+        beforeEach(async () => {
+            ourUser = createUser()
+        })
+        context('when everything is provided', () => {
+            it('creates a user', async () => {
+                const user = await model.newUser(ourUser)
+                expect(user).to.not.equal(null)
+                const dbUser = await User.findOne({
+                    where: { user_id: user?.user_id },
+                })
+                expect(dbUser).to.not.equal(undefined)
+                expect(user?.user_id).to.equal(dbUser?.user_id)
+            })
+        })
+
+        context('when email phone and username are not provided', () => {
+            beforeEach(async () => {
+                ourUser.email = undefined
+                ourUser.phone = undefined
+                ourUser.username = undefined
+            })
+            it('fails to create a user', async () => {
+                const user = await model.newUser(ourUser)
+                expect(user).to.equal(null)
             })
         })
     })

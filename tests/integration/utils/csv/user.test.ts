@@ -1,5 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, EntityManager } from 'typeorm'
+import { Connection } from 'typeorm'
 import { expect, use } from 'chai'
 
 import {
@@ -605,6 +605,24 @@ describe('processUserFromCSVRow', async () => {
             err = rowErrors[0]
             expect(rowErrors.length).to.eq(1)
             expect(err.code).to.eq(customErrors.missing_required_either.code)
+        })
+        it('errors when too long', async () => {
+            ;(row as any).user_username = 'a'.repeat(
+                config.limits.USERNAME_MAX_LENGTH + 1
+            )
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            err = rowErrors[0]
+
+            expect(err.code).to.eq(customErrors.invalid_max_length.code)
+            expect(err.max).to.eq(config.limits.USERNAME_MAX_LENGTH)
+            expect(queryResultCache.validatedOrgs.size).to.equal(0)
         })
     })
 

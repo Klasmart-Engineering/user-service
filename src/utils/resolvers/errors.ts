@@ -1,6 +1,13 @@
 import { APIError, IAPIError } from '../../types/errors/apiError'
 import { customErrors } from '../../types/errors/customError'
 import { config } from '../../config/config'
+import logger from '../../logging'
+import newrelic from 'newrelic'
+
+export function reportError(e: Error) {
+    logger.error(e)
+    newrelic.noticeError(e)
+}
 
 type entityErrorType =
     | 'nonExistent'

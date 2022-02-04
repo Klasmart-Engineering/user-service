@@ -15,6 +15,8 @@ import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
+import { REGEX } from '../../entities/validations/regex'
+import { customErrors } from '../../types/errors/customError'
 
 export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
     manager: EntityManager,
@@ -69,6 +71,20 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
                 entity: 'class',
                 attribute: 'name',
                 max: config.limits.CLASS_NAME_MAX_LENGTH,
+            }
+        )
+    }
+
+    if (!class_name.match(REGEX.alphanum_with_special_characters)) {
+        addCsvError(
+            rowErrors,
+            customErrors.invalid_alphanumeric_special.code,
+            rowNumber,
+            'class_name',
+            customErrors.invalid_alphanumeric_special.message,
+            {
+                entity: 'class',
+                attribute: 'name',
             }
         )
     }

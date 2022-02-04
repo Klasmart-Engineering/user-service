@@ -15,6 +15,7 @@ import {
     CreateClassInput,
     DeleteClassInput,
     RemoveStudentsFromClassInput,
+    RemoveTeachersFromClassInput,
     UpdateClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
@@ -45,6 +46,7 @@ import {
     ADD_STUDENTS_TO_CLASSES,
     REMOVE_STUDENTS_FROM_CLASSES,
     ADD_TEACHERS_TO_CLASSES,
+    REMOVE_TEACHERS_FROM_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASSES_CONNECTION,
@@ -1591,6 +1593,69 @@ describe('acceptance.class', () => {
             const response = await makeRequest(
                 request,
                 print(ADD_TEACHERS_TO_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "teacherIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('removeTeachersFromClasses', () => {
+        let adminUser: User
+        let input: RemoveTeachersFromClassInput[]
+        let classes: Class[]
+        const classCount = 2
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const teachers = await User.save(createUsers(3))
+            await OrganizationMembership.save(
+                Array.from(teachers, (teacher) =>
+                    createOrganizationMembership({
+                        user: teacher,
+                        organization: org,
+                        roles: [],
+                    })
+                )
+            )
+            classes = await Class.save(createClasses(2, org))
+            classes[0].teachers = Promise.resolve(teachers)
+            classes[1].teachers = Promise.resolve(teachers)
+            await connection.manager.save(classes)
+            input = []
+            for (const class_ of classes) {
+                input.push({
+                    classId: class_.class_id,
+                    teacherIds: teachers.map((st) => st.user_id),
+                })
+            }
+        })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_TEACHERS_FROM_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.removeTeachersFromClasses.classes
+            expect(resClasses).to.have.length(classes.length)
+        })
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_TEACHERS_FROM_CLASSES),
                 { input: [{}] },
                 generateToken(userToPayload(adminUser))
             )

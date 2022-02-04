@@ -20,6 +20,7 @@ import {
     AddStudentsToClasses,
     RemoveStudentsFromClasses,
     AddTeachersToClasses,
+    RemoveTeachersFromClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -50,6 +51,9 @@ const typeDefs = gql`
         ): ClassesMutationResult
         addTeachersToClasses(
             input: [AddTeachersToClassInput!]!
+        ): ClassesMutationResult
+        removeTeachersFromClasses(
+            input: [RemoveTeachersFromClassInput!]!
         ): ClassesMutationResult
     }
 
@@ -311,6 +315,11 @@ const typeDefs = gql`
         classId: ID!
         teacherIds: [ID!]!
     }
+
+    input RemoveTeachersFromClassInput {
+        classId: ID!
+        teacherIds: [ID!]!
+    }
 `
 
 export async function subjectsChildConnectionResolver(
@@ -556,6 +565,8 @@ export default function getDefault(
                     mutate(RemoveStudentsFromClasses, args, ctx.permissions),
                 addTeachersToClasses: (_parent, args, ctx) =>
                     mutate(AddTeachersToClasses, args, ctx.permissions),
+                removeTeachersFromClasses: (_parent, args, ctx) =>
+                    mutate(RemoveTeachersFromClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
