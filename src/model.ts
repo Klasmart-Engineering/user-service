@@ -90,11 +90,11 @@ import {
     eligibleMembersConnectionResolver,
     EligibleMembersPaginationArgs,
 } from './pagination/eligibleMembersConnection'
-import { getEnv } from './config/config'
+import { getEnvVar } from './config/config'
 
 export class Model {
     public static async create() {
-        const RO_DATABASE_URL = getEnv({ name: 'RO_DATABASE_URL' })
+        const RO_DATABASE_URL = getEnvVar('RO_DATABASE_URL', '')!
         const RO_DATABASE = RO_DATABASE_URL
             ? [
                   {
@@ -109,17 +109,14 @@ export class Model {
                 type: 'postgres',
                 synchronize: false,
                 logger:
-                    getEnv({ name: 'DATABASE_LOGGING' }) === 'true'
+                    getEnvVar('DATABASE_LOGGING' ) === 'true'
                         ? new TypeORMLogger()
                         : undefined,
                 entities: ['src/entities/*{.ts,.js}'],
                 migrations: ['migrations/*{.ts,.js}'],
                 replication: {
                     master: {
-                        url: getEnv({
-                            name: 'DATABASE_URL',
-                            orDefault: 'postgres://postgres:kidsloop@localhost',
-                        }),
+                        url: getEnvVar('DATABASE_URL', 'postgres://postgres:kidsloop@localhost'),
                     },
                     slaves: RO_DATABASE,
                 },
@@ -140,10 +137,7 @@ export class Model {
         }
     }
 
-    public static readonly SIMILARITY_THRESHOLD = getEnv({
-        name: 'POSTGRES_TRGM_LIMIT',
-        orDefault: '0.1',
-    })
+    public static readonly SIMILARITY_THRESHOLD = getEnvVar('POSTGRES_TRGM_LIMIT', '0.1')
 
     private connection: Connection
     private manager: EntityManager

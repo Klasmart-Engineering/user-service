@@ -5,10 +5,10 @@ import getAuthenticatedUser from './services/azureAdB2C'
 import { customErrors } from './types/errors/customError'
 import clean from './utils/clean'
 import { stringInject } from './utils/stringUtils'
-import { getEnv } from './config/config'
+import { getEnvVar } from './config/config'
 
 const IS_AZURE_B2C_ENABLED =
-    getEnv({ name: 'AZURE_B2C_ENABLED', orDefault: 'false' }) === 'true'
+    getEnvVar('AZURE_B2C_ENABLED', 'false' ) === 'true'
 const issuers = new Map<
     string,
     {
@@ -146,7 +146,7 @@ export function checkAPIKey(auth: string) {
         return false
     }
     const clientApiKey = auth.substr(7)
-    const serverApiKey = getEnv({ name: 'USER_SERVICE_API_KEY' })
+    const serverApiKey = getEnvVar('USER_SERVICE_API_KEY')
     if (clientApiKey === serverApiKey) {
         return true
     }

@@ -1,6 +1,5 @@
 import { ReadStream } from 'fs'
 import { createCloudClient, STORAGE } from '../utils/storage'
-import { getEnv } from '../config/config'
 
 export class CloudStorageUploader {
     public static async call(

@@ -1,28 +1,26 @@
 import pkgcloud from 'pkgcloud'
-import { getEnv } from '../config/config'
+import { getEnvVar } from '../config/config'
 
 export const STORAGE = (function () {
     const storage = {
-        FORCE_LOCAL_STORAGE: getEnv({ name: 'FORCE_LOCAL_STORAGE' }),
-        PROVIDER: getEnv({ name: 'STORAGE_PROVIDER' }),
-        BUCKET: getEnv({ name: 'STORAGE_BUCKET' }),
-        REGION: getEnv({ name: 'STORAGE_REGION' }),
-        ENDPOINT: getEnv({ name: 'STORAGE_ENDPOINT' }),
-        ACCESS_KEY_ID: getEnv({ name: 'STORAGE_ACCESS_KEY_ID' }),
-        SECRET_ACCESS_KEY: getEnv({ name: 'STORAGE_SECRET_ACCESS_KEY' }),
-        SESSION_TOKEN: getEnv({ name: 'STORAGE_SESSION_TOKEN' }),
+        FORCE_LOCAL_STORAGE: getEnvVar('FORCE_LOCAL_STORAGE', '')!,
+        PROVIDER: getEnvVar('STORAGE_PROVIDER', '')!,
+        BUCKET: getEnvVar('STORAGE_BUCKET', '')!,
+        REGION: getEnvVar('STORAGE_REGION', '')!,
+        ENDPOINT: getEnvVar('STORAGE_ENDPOINT', '')!,
+        ACCESS_KEY_ID: getEnvVar('STORAGE_ACCESS_KEY_ID', '')!,
+        SECRET_ACCESS_KEY: getEnvVar('STORAGE_SECRET_ACCESS_KEY', '')!,
+        SESSION_TOKEN: getEnvVar('STORAGE_SESSION_TOKEN', '')!,
         PROJECT_ID: '',
         GOOGLE_KEY_FILE_NAME: '',
     }
 
     if (storage.PROVIDER == 'google' || storage.PROVIDER == 'vngcloud') {
-        storage.PROJECT_ID = getEnv({ name: 'STORAGE_PROJECT_ID' })
+        storage.PROJECT_ID = getEnvVar('STORAGE_PROJECT_ID', '')!
     }
 
     if (storage.PROVIDER == 'google') {
-        storage.GOOGLE_KEY_FILE_NAME = getEnv({
-            name: 'STORAGE_GOOGLE_KEY_FILE_NAME',
-        })
+        storage.GOOGLE_KEY_FILE_NAME = getEnvVar('STORAGE_GOOGLE_KEY_FILE_NAME', '')!
     }
 
     return storage

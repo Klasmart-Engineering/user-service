@@ -25,22 +25,15 @@ export const config = {
     },
 } as const
 
-export const getEnv = ({
-    name,
-    orDefault,
-}: {
-    name: string
-    orDefault?: string
-}): string => {
+export const getEnvVar = (name: string, defaultValue?: string): string | undefined => {
     const val = process.env[name]
-    const defaultVal = orDefault || ''
 
     if (val) {
         return val
     } else {
         logger.warn(
-            `Env Variable not set: "${name}" - defaulting to "${defaultVal}"`
+            `Env Variable not set: "${name}" - defaulting to "${defaultValue}"`
         )
-        return defaultVal
+        return defaultValue
     }
 }

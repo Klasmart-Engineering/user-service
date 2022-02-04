@@ -1,6 +1,6 @@
 import { Connection, createConnection, QueryRunner } from 'typeorm'
 import { TypeORMLogger } from '../../src/logging'
-import { getEnv } from '../../src/config/config'
+import { getEnvVar } from '../../src/config/config'
 
 class QueryMetricsLogger extends TypeORMLogger {
     private counter = 0
@@ -39,7 +39,7 @@ export const createTestConnection = async ({
     synchronize = false,
     name = 'default',
 } = {}): Promise<TestConnection> => {
-    const RO_DATABASE_URL = getEnv({ name: 'RO_DATABASE_URL' })
+    const RO_DATABASE_URL = getEnvVar('RO_DATABASE_URL', '')!
     const slavesURLList = RO_DATABASE_URL
                 ? [
                       {
@@ -57,10 +57,7 @@ export const createTestConnection = async ({
         logger: new QueryMetricsLogger(),
         replication: {
             master: {
-                url: getEnv({
-                    name: 'DATABASE_URL',
-                    orDefault: 'postgres://postgres:kidsloop@localhost/testdb',
-                }),
+                url: getEnvVar('DATABASE_URL', 'postgres://postgres:kidsloop@localhost/testdb'),
             },
             slaves: slavesURLList,
         },
@@ -75,10 +72,7 @@ export const createMigrationsTestConnection = async (
     return createConnection({
         name: name,
         type: 'postgres',
-        url: getEnv({
-            name: 'DATABASE_URL',
-            orDefault: 'postgres://postgres:kidsloop@localhost/testdb',
-        }),
+        url: getEnvVar('DATABASE_URL', 'postgres://postgres:kidsloop@localhost/testdb'),
         synchronize,
         dropSchema: drop,
         migrations: ['migrations/*{.ts,.js}'],

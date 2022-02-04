@@ -31,7 +31,7 @@ import { CustomBaseEntity } from './customBaseEntity'
 import { isDOB, isEmail, isPhone } from '../utils/validations'
 import clean from '../utils/clean'
 import logger from '../logging'
-import { getEnv } from '../config/config'
+import { getEnvVar } from '../config/config'
 
 @Entity()
 export class User extends CustomBaseEntity {
@@ -750,7 +750,7 @@ export class User extends CustomBaseEntity {
     }
 }
 
-const domain = getEnv({name: 'DOMAIN',orDefault: 'kidsloop.net'})
+const domain = getEnvVar('DOMAIN', 'kidsloop.net')!
 const accountNamespace = v5(domain, v5.DNS)
 
 export function accountUUID(email?: string) {
