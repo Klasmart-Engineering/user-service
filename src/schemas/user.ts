@@ -145,7 +145,6 @@ const typeDefs = gql`
         dateOfBirth: String
         username: String
         gender: String!
-        shortcode: String
         alternateEmail: String
         alternatePhone: String
     }
