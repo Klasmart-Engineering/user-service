@@ -13,6 +13,7 @@ import {
     createSchool,
     createRole,
     createClassAndValidate,
+    createClass,
 } from '../utils/operations/organizationOps'
 import {
     addUserToSchool,
@@ -84,7 +85,10 @@ import { createOrganization } from '../factories/organization.factory'
 import { formatShortCode, generateShortCode } from '../../src/utils/shortcode'
 import faker from 'faker'
 import { createSchools } from '../factories/school.factory'
-import { createClasses } from '../factories/class.factory'
+import {
+    createClasses,
+    createClass as createFactoryClass,
+} from '../factories/class.factory'
 import {
     createRole as roleFactory,
     createRoles,
@@ -100,7 +104,7 @@ import {
     compareMultipleErrors,
     expectAPIError,
 } from '../utils/apiError'
-import { APIErrorCollection } from '../../src/types/errors/apiError'
+import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateAttributeAPIError,
     createDuplicateInputAttributeAPIError,
@@ -1841,7 +1845,7 @@ describe('school', () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
-            schools = createSchools(3)
+            schools = createSchools(3, organization)
             classes = createClasses(3, organization)
             await connection.manager.save([...schools, ...classes])
             input = [
@@ -1926,9 +1930,41 @@ describe('school', () => {
                         },
                     ])
                 })
-
-                await checkNoChangesMade()
             })
+
+            context(
+                'and one of the classes is belongs to the wrong organization',
+                async () => {
+                    let otherClass: Class
+                    beforeEach(async () => {
+                        const otherOrganization = await createOrganization().save()
+                        otherClass = await createFactoryClass(
+                            undefined,
+                            otherOrganization
+                        ).save()
+                        input[0].classIds.push(otherClass.class_id)
+                    })
+
+                    it('returns a unauthorized error', async () => {
+                        await expectAPIErrorCollection(
+                            addClasses(),
+                            new APIErrorCollection([
+                                new APIError({
+                                    code: 'UNAUTHORIZED',
+                                    message:
+                                        'You are unauthorized to perform this action.',
+                                    variables: ['id'],
+                                    entity: 'Class',
+                                    entityName: 'Class',
+                                    attribute: 'ID',
+                                    otherAttribute: otherClass.class_id,
+                                    index: 0,
+                                }),
+                            ])
+                        )
+                    })
+                }
+            )
 
             context('and one of each attribute is inactive', async () => {
                 beforeEach(async () => {
@@ -1997,7 +2033,7 @@ describe('school', () => {
                     await createOrganizationMembership({
                         user: nonAdminUser,
                         organization: organization,
-                        roles: [nonAdminRole],
+                        roles: [],
                     }).save()
                     await createSchoolMembership({
                         user: nonAdminUser,
@@ -2011,7 +2047,7 @@ describe('school', () => {
                     const errorMessage = buildPermissionError(
                         PermissionName.edit_school_20330,
                         nonAdminUser,
-                        undefined,
+                        [organization],
                         sc
                     )
                     await expect(addClasses(nonAdminUser)).to.be.rejectedWith(
