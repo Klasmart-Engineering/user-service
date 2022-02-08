@@ -2,6 +2,7 @@ import {
     BaseEntity,
     Column,
     CreateDateColumn,
+    DeleteDateColumn,
     EntityManager,
     UpdateDateColumn,
 } from 'typeorm'
@@ -24,7 +25,7 @@ export abstract class CustomBaseEntity extends BaseEntity {
     })
     public updated_at!: Date
 
-    @Column({ type: 'timestamp', nullable: true, precision: 3 })
+    @DeleteDateColumn({ type: 'timestamp', nullable: true, precision: 3 })
     public deleted_at?: Date
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
