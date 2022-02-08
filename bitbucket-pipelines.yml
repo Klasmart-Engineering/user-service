@@ -12,6 +12,10 @@ definitions:
         POSTGRES_DB: testdb
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
+        PGDATA: /pgtmpfs
+      tmpfs:
+          - /run
+          - /var/cache
   steps:
       - step: &dependencies
           name: "Install NPM dependencies"
