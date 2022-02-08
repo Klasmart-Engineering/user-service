@@ -1,5 +1,5 @@
 import { Options } from 'k6/options';
-import schedulesTimeView from './scripts/schedulesTimeView';
+import schedulesTimeView from './scripts/schedulesTimeViewMonth';
 import randomCookieSetup from './utils/randomCookieSetup';
 import loginSetup from './utils/uniqueUserCookies';
 

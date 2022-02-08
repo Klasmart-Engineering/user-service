@@ -42,8 +42,7 @@ export const meMembershipForCMS2 = (orgId: string) => (`
             }
         }
     }
-<<<<<<< HEAD
-`;
+`);
 
 // Query for meMemership 1 used in the Schedule section
 export const getProgramsAndSubjects =`{
@@ -111,6 +110,3 @@ export const meMembershipForPlan =`
         }
     }
 `;
-=======
-`);
->>>>>>> b65d38c42b81266168a11139d4a51439dbc31995

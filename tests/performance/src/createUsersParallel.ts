@@ -78,12 +78,5 @@ export function createUsersAdmin2(data: { [key: string]: { res: any, userId: str
     jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin2.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-<<<<<<< HEAD
-    sleep(0.5);
-    switchUser();
-    sleep(0.5);
-    createUsersParallel(30, 35);
-=======
     createUsersParallel(10, 19);
->>>>>>> b65d38c42b81266168a11139d4a51439dbc31995
 }

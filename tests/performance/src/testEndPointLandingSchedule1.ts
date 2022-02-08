@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import schedulesTimeView from './scripts/schedulesTimeView';
+import schedulesTimeView from './scripts/schedulesTimeViewMonth';
 import loginSetup from './utils/loginSetup';
 
 /*

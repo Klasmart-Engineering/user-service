@@ -19,7 +19,7 @@ export const options: Options = {
         http_req_duration: [{ threshold: 'p(95)<5000', abortOnFail: true }],
     },
     scenarios: {
-        teacher00: {
+        /* teacher00: {
             executor: 'ramping-vus',
             exec: 'teacher00',
             startTime: '0s',
@@ -39,7 +39,7 @@ export const options: Options = {
             startTime: '0s',
             gracefulStop: '5s',
             stages: generateStages(stages),
-        },
+        }, */
         student00: {
             executor: 'ramping-vus',
             exec: 'student00',
@@ -97,7 +97,7 @@ export const options: Options = {
 export function setup() {
     return loginSetup();
 }
-
+/* 
 export function teacher00(data: { [key: string]: { res: any, userId: string }}) { 
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data.teacher00.res.cookies?.access[0].Value, {
@@ -134,7 +134,9 @@ export function teacher02(data: { [key: string]: { res: any, userId: string }}) 
 
     landingV2(data.teacher02);
     sleep(5);
-}
+} 
+*/
+
 /*
 export function teacher03(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -244,7 +246,7 @@ export function student01(data: { [key: string]: { res: any, userId: string }}) 
     
     landingV2(data.student01);
     sleep(5);
-}
+}/* 
 export function student02(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data.student02.res.cookies?.access[0].Value, {
@@ -268,7 +270,8 @@ export function student03(data: { [key: string]: { res: any, userId: string }}) 
     
     landingV2(data.student03);
     sleep(5);
-}
+} */
+
 export function student04(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data.student04.res.cookies?.access[0].Value, {
@@ -280,7 +283,19 @@ export function student04(data: { [key: string]: { res: any, userId: string }}) 
     
     landingV2(data.student04);
     sleep(5);
-}
+/* 
+export function student04(data: { [key: string]: { res: any, userId: string }}) {
+    const jar = http.cookieJar();
+    jar.set(process.env.COOKIE_URL as string, 'access', data.student04.res.cookies?.access[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.student04.res.cookies?.refresh[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    
+    landingV2(data.student04);
+    sleep(5);
+ */}
 /*
 export function student05(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();

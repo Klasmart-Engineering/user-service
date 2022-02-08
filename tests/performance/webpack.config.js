@@ -64,6 +64,13 @@ module.exports = env => ({
         createLessonPlan: `./createLessonPlan.ts`,
         webSocketInit: `./webSocketInit.ts`,
         testGetLiveClassToken: `./testGetLiveClassToken.ts`,
+        studyClassPopulate: `./studyClassPopulateBasic.ts`,
+        studyClassPopulateParallel: `./studyClassPopulateParallel.ts`,
+        parallelAttendStudyClass: `./parallelAttendStudyClass.ts`,
+        parallelLandingHomeStudents:  `./parallelLandingHomeStudents.ts`,
+        parallelLandingScheduleStudents:  `./parallelLandingScheduleStudents.ts`,
+        
+
     },
     output: {
         path: path.join(__dirname, `dist`),

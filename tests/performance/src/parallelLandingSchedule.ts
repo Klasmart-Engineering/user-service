@@ -7,6 +7,10 @@ import http from 'k6/http';
 import { config } from './config/parallelLanding';
 import loginSetup from './utils/uniqueUserCookies';
 
+// command to run the script
+// k6 run -e STAGE_QTY=1 ./dist/parallelLandingSchedule.js
+// k6 run -e STAGE_QTY=1 parallelLandingSchedule.js  > located in the dist folder
+
 const stageQty: number = !isNaN(parseInt(__ENV.STAGE_QTY, 10)) ? parseInt(__ENV.STAGE_QTY) : 1;
 export const options: Options = config(stageQty);
 
