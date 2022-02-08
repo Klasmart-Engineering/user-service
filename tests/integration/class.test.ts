@@ -81,7 +81,10 @@ import chaiAsPromised from 'chai-as-promised'
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
 import { addUserToSchool } from '../utils/operations/schoolOps'
 import { createUserAndValidate } from '../utils/operations/modelOps'
-import { createOrganization } from '../factories/organization.factory'
+import {
+    createOrganization,
+    createOrganizations,
+} from '../factories/organization.factory'
 import {
     createUser,
     createAdminUser as adminUserFactory,
@@ -4997,70 +5000,35 @@ describe('class', () => {
         })
     })
 
-    describe('.updateClasses', () => {
-        let ctx: { permissions: UserPermissions }
-        let org1: Organization
-        let org2: Organization
-        let org1Membership: OrganizationMembership
-        let org2Membership: OrganizationMembership
-        let role1: Role
-        let role2: Role
-        let updateClasses: UpdateClasses
-        let clientUser: User
-        let class1: Class
-        let class2: Class
+    describe('UpdateClasses', () => {
+        let adminUser: User
+        let orgs: Organization[]
+        let classes: Class[]
         let inputs: UpdateClassInput[]
-        let entityMaps: UpdateClassEntityMap
-        let class1UpdatedName: string
-        let class2UpdatedName: string
-        let class1UpdatedShortcode: string
-        let class2UpdatedShortcode: string
+
+        const updateClasses = (
+            input: UpdateClassInput[] = [],
+            authUser = adminUser
+        ) =>
+            new UpdateClasses(
+                input,
+                new UserPermissions(userToPayload(authUser))
+            )
 
         beforeEach(async () => {
-            clientUser = await createUser().save()
-            org1 = await createOrganization().save()
-            org2 = await createOrganization().save()
-            role1 = await createRoleFactory(undefined, org1, {
-                permissions: [PermissionName.edit_class_20334],
-            }).save()
-            role2 = await createRoleFactory(undefined, org2, {
-                permissions: [PermissionName.edit_class_20334],
-            }).save()
-            org1Membership = await createOrganizationMembership({
-                user: clientUser,
-                organization: org1,
-                roles: [role1],
-            }).save()
-            org2Membership = await createOrganizationMembership({
-                user: clientUser,
-                organization: org2,
-                roles: [role2],
-            }).save()
-            const permissions = new UserPermissions(userToPayload(clientUser))
-            ctx = { permissions }
+            adminUser = await adminUserFactory().save()
+            orgs = await Organization.save(createOrganizations(5))
+            classes = await Class.save(
+                orgs.map((o) => createClassFactory(undefined, o))
+            )
 
-            class1 = await createClassFactory(undefined, org1).save()
-            class2 = await createClassFactory(undefined, org2).save()
-
-            class1UpdatedName = 'Updated Class 1 Name'
-            class2UpdatedName = 'Updated Class 2 Name'
-            class1UpdatedShortcode = 'UPDATEDSC1'
-            class2UpdatedShortcode = 'UPDATEDSC2'
-
-            inputs = [
-                {
-                    classId: class1.class_id,
-                    className: class1UpdatedName,
-                    shortcode: class1UpdatedShortcode,
-                },
-                {
-                    classId: class2.class_id,
-                    className: class2UpdatedName,
-                    shortcode: class2UpdatedShortcode,
-                },
-            ]
-
-            updateClasses = new UpdateClasses(inputs, ctx.permissions)
+            inputs = classes.map((cls, idx) => {
+                return {
+                    classId: cls.class_id,
+                    className: `Updated Class ${idx}`,
+                    shortcode: `UPDCLS${idx}`,
+                }
+            })
         })
 
         context('normalize', () => {
@@ -5076,7 +5044,7 @@ describe('class', () => {
                         }
                     })
 
-                    const normalized = updateClasses.normalize(input)
+                    const normalized = updateClasses().normalize(input)
                     expect(normalized.length).to.eq(input.length)
                     expect(normalized.map((n) => n.classId)).to.deep.equal(
                         input.map((i) => i.classId)
@@ -5102,7 +5070,7 @@ describe('class', () => {
                         },
                     ]
 
-                    const normalized = updateClasses.normalize(input)
+                    const normalized = updateClasses().normalize(input)
                     expect(normalized.length).to.eq(input.length)
                     return normalized[0].shortcode
                 }
@@ -5140,39 +5108,42 @@ describe('class', () => {
 
         context('generateEntityMaps', () => {
             it('creates maps from input classIds to active classes', async () => {
-                class2.status = Status.INACTIVE
-                await class2.save()
+                classes[1].status = Status.INACTIVE
+                await classes[1].save()
 
-                const actualEntityMap = await updateClasses.generateEntityMaps(
-                    inputs
+                const actualEntityMap = await updateClasses().generateEntityMaps(
+                    inputs.slice(0, 2)
                 )
 
                 expect(
                     Array.from(actualEntityMap.mainEntity.keys())
-                ).to.deep.equal([class1.class_id])
+                ).to.deep.equal([classes[0].class_id])
                 expect(
-                    actualEntityMap.mainEntity.get(class1.class_id)!.class_id
-                ).to.eq(class1.class_id)
+                    actualEntityMap.mainEntity.get(classes[0].class_id)!
+                        .class_id
+                ).to.eq(classes[0].class_id)
                 expect(
-                    actualEntityMap.mainEntity.get(class1.class_id)!.class_name
-                ).to.eq(class1.class_name)
+                    actualEntityMap.mainEntity.get(classes[0].class_id)!
+                        .class_name
+                ).to.eq(classes[0].class_name)
                 expect(
-                    actualEntityMap.mainEntity.get(class1.class_id)!.shortcode
-                ).to.eq(class1.shortcode)
+                    actualEntityMap.mainEntity.get(classes[0].class_id)!
+                        .shortcode
+                ).to.eq(classes[0].shortcode)
                 expect(
-                    actualEntityMap.mainEntity.get(class1.class_id)!.status
+                    actualEntityMap.mainEntity.get(classes[0].class_id)!.status
                 ).to.eq(Status.ACTIVE)
             })
 
             it('creates maps from input classIds to any existing classes with matching names', async () => {
                 const classWithMatchingName = createClassFactory(
                     undefined,
-                    org1
+                    orgs[0]
                 )
-                classWithMatchingName.class_name = class2UpdatedName // Already exists in DB
+                classWithMatchingName.class_name = inputs[1].className // Already exists in DB
                 await classWithMatchingName.save()
 
-                const actualEntityMap = await updateClasses.generateEntityMaps(
+                const actualEntityMap = await updateClasses().generateEntityMaps(
                     inputs
                 )
 
@@ -5183,7 +5154,7 @@ describe('class', () => {
                 ).to.deep.equal([
                     {
                         className: classWithMatchingName.class_name,
-                        orgId: org1.organization_id,
+                        orgId: orgs[0].organization_id,
                     },
                 ])
             })
@@ -5191,12 +5162,12 @@ describe('class', () => {
             it('creates maps from input classIds to any existing classes with matching shortcodes', async () => {
                 const classWithMatchingShortcode = createClassFactory(
                     undefined,
-                    org1
+                    orgs[0]
                 )
-                classWithMatchingShortcode.shortcode = class2UpdatedShortcode
+                classWithMatchingShortcode.shortcode = inputs[1].shortcode
                 await classWithMatchingShortcode.save()
 
-                const actualEntityMap = await updateClasses.generateEntityMaps(
+                const actualEntityMap = await updateClasses().generateEntityMaps(
                     inputs
                 )
 
@@ -5207,26 +5178,50 @@ describe('class', () => {
                 ).to.deep.equal([
                     {
                         classShortcode: classWithMatchingShortcode.shortcode,
-                        orgId: org1.organization_id,
+                        orgId: orgs[0].organization_id,
                     },
                 ])
             })
         })
 
         context('authorize', () => {
+            let nonAdminUser: User
+            let memberships: OrganizationMembership[]
+
+            const authorize = async (input: UpdateClassInput[]) => {
+                const mutationClass = updateClasses([], nonAdminUser)
+                const maps = await mutationClass.generateEntityMaps(input)
+                return mutationClass.authorize(input, maps)
+            }
+
+            beforeEach(async () => {
+                nonAdminUser = await createUser().save()
+
+                const roles = await Role.save(
+                    orgs.map((o) =>
+                        createRoleFactory(undefined, o, {
+                            permissions: [PermissionName.edit_class_20334],
+                        })
+                    )
+                )
+
+                memberships = await OrganizationMembership.save(
+                    orgs.map((o, idx) =>
+                        createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: o,
+                            roles: [roles[idx]],
+                        })
+                    )
+                )
+            })
+
             context(
                 'when user has correct permission for all orgs of inputted classes',
                 () => {
-                    beforeEach(async () => {
-                        entityMaps = await updateClasses.generateEntityMaps(
-                            inputs
-                        )
-                    })
-
                     it('fulfills its promise', async () => {
-                        await expect(
-                            updateClasses.authorize(inputs, entityMaps)
-                        ).to.be.eventually.fulfilled
+                        await expect(authorize(inputs)).to.be.eventually
+                            .fulfilled
                     })
                 }
             )
@@ -5235,16 +5230,13 @@ describe('class', () => {
                 'when user has insufficient permissions for some orgs of inputted classes',
                 () => {
                     beforeEach(async () => {
-                        entityMaps = await updateClasses.generateEntityMaps(
-                            inputs
-                        )
-                        org2Membership.roles = Promise.resolve([])
-                        await org2Membership.save()
+                        memberships[1].roles = Promise.resolve([])
+                        await memberships[1].save()
                     })
 
                     it('rejects its promise with the correct message', async () => {
                         await expect(
-                            updateClasses.authorize(inputs, entityMaps)
+                            authorize(inputs)
                         ).to.be.eventually.rejectedWith(
                             /User\(.*\) does not have Permission\(edit_class_20334\) in Organizations\(.*\)/
                         )
@@ -5254,16 +5246,19 @@ describe('class', () => {
         })
 
         context('validationOverAllInputs', () => {
-            it('generates duplicate-code APIErrors if there are duplicate IDs in input', async () => {
-                inputs[1].classId = class1.class_id // Means two update operations are inputted for the same class. Ut oh!
-                updateClasses = new UpdateClasses(inputs, ctx.permissions)
-                entityMaps = await updateClasses.generateEntityMaps(inputs)
+            const validateAllInputs = async (input: UpdateClassInput[]) => {
+                const mutationClass = updateClasses([], adminUser)
+                const maps = await mutationClass.generateEntityMaps(input)
+                return mutationClass.validationOverAllInputs(input, maps)
+            }
 
-                const {
-                    validInputs,
-                    apiErrors,
-                } = updateClasses.validationOverAllInputs(inputs, entityMaps)
-                expect(validInputs.length).to.eq(1)
+            it('generates duplicate-code APIErrors if there are duplicate IDs in input', async () => {
+                inputs[1].classId = classes[0].class_id // Means two update operations are inputted for the same class. Ut oh!
+
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(4)
 
                 const expectedError = createDuplicateAttributeAPIError(
                     1,
@@ -5275,22 +5270,19 @@ describe('class', () => {
             })
 
             it('generates duplicate-attribute-code APIErrors if there are duplicate (org,className) pairs derived from input', async () => {
-                class2.organization = class1.organization
-                await class2.save()
+                classes[1].organization = classes[0].organization
+                await classes[1].save()
                 inputs[1].className = inputs[0].className
-                updateClasses = new UpdateClasses(inputs, ctx.permissions)
-                entityMaps = await updateClasses.generateEntityMaps(inputs)
 
-                const {
-                    validInputs,
-                    apiErrors,
-                } = updateClasses.validationOverAllInputs(inputs, entityMaps)
-                expect(validInputs.length).to.eq(1)
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(4)
 
                 const expectedError = createDuplicateInputAttributeAPIError(
                     1,
                     'Class',
-                    (await class2.organization)!.organization_id,
+                    (await classes[1].organization)!.organization_id,
                     'className',
                     inputs[1].className!
                 )
@@ -5299,22 +5291,19 @@ describe('class', () => {
             })
 
             it('generates duplicate-attribute-code APIErrors if there are duplicate (org,shortcode) pairs derived from input', async () => {
-                class2.organization = class1.organization
-                await class2.save()
+                classes[1].organization = classes[0].organization
+                await classes[1].save()
                 inputs[1].shortcode = inputs[0].shortcode
-                updateClasses = new UpdateClasses(inputs, ctx.permissions)
-                entityMaps = await updateClasses.generateEntityMaps(inputs)
 
-                const {
-                    validInputs,
-                    apiErrors,
-                } = updateClasses.validationOverAllInputs(inputs, entityMaps)
-                expect(validInputs.length).to.eq(1)
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(4)
 
                 const expectedError = createDuplicateInputAttributeAPIError(
                     1,
                     'Class',
-                    (await class2.organization)!.organization_id,
+                    (await classes[1].organization)!.organization_id,
                     'shortcode',
                     inputs[1].shortcode!
                 )
@@ -5324,29 +5313,29 @@ describe('class', () => {
         })
 
         context('validate', () => {
+            const validate = async (input: UpdateClassInput[]) => {
+                const mutationClass = updateClasses([], adminUser)
+                const maps = await mutationClass.generateEntityMaps(input)
+                return input.flatMap((i, idx) =>
+                    mutationClass.validate(idx, undefined, i, maps)
+                )
+            }
             context(
                 'input contains a class ID which does not exist in the database',
                 () => {
                     beforeEach(async () => {
-                        entityMaps.mainEntity.delete(class2.class_id)
-                        await class2.remove()
+                        await classes[1].inactivate(getManager())
                     })
 
-                    it('records a non-existent-code error', () => {
-                        const actualErrors = updateClasses.validate(
-                            1,
-                            undefined,
-                            inputs[1],
-                            entityMaps
-                        )
+                    it('records a non-existent-code error', async () => {
+                        const actualErrors = await validate(inputs)
                         const expectedError = createEntityAPIError(
                             'nonExistent',
                             1,
                             'Class',
                             inputs[1].classId
                         )
-                        expect(actualErrors.length).to.eq(1)
-                        compareErrors(actualErrors[0], expectedError)
+                        compareMultipleErrors(actualErrors, [expectedError])
                     })
                 }
             )
@@ -5354,38 +5343,27 @@ describe('class', () => {
             context(
                 'input is trying to update a class name which is already shared by another existing class in the same org',
                 () => {
-                    let class3: Class
-
                     beforeEach(async () => {
-                        class3 = createClassFactory(undefined, org2)
-                        class3.class_name = class2UpdatedName // Existent class 3 in the same Org2 already has this name
-                        await class3.save()
-                        entityMaps = await updateClasses.generateEntityMaps(
-                            // Make sure to update entityMaps to pull in class3 information
-                            inputs
+                        const nameClashClass = createClassFactory(
+                            undefined,
+                            orgs[1]
                         )
+                        nameClashClass.class_name = inputs[1].className
+                        await nameClashClass.save()
                     })
 
-                    it('records a duplicateChild-code error', () => {
-                        const actualErrors = updateClasses.validate(
-                            1,
-                            undefined,
-                            inputs[1],
-                            entityMaps
-                        )
-
+                    it('records a duplicateChild-code error', async () => {
+                        const actualErrors = await validate(inputs)
                         const expectedError = createEntityAPIError(
                             'existentChild',
                             1,
                             'Class',
                             inputs[1].className,
                             'Organization',
-                            org2.organization_id,
+                            orgs[1].organization_id,
                             ['organizationId', 'className']
                         )
-
-                        expect(actualErrors.length).to.eq(1)
-                        compareErrors(actualErrors[0], expectedError)
+                        compareMultipleErrors(actualErrors, [expectedError])
                     })
                 }
             )
@@ -5393,53 +5371,34 @@ describe('class', () => {
             context(
                 'input is trying to update a class shortcode which is already shared by another existing class in the same org',
                 () => {
-                    let class3: Class
-
                     beforeEach(async () => {
-                        class3 = createClassFactory(undefined, org2)
-                        class3.shortcode = class2UpdatedShortcode // Existent class 3 in the same Org2 already has this shortcode
-                        await class3.save()
-                        entityMaps = await updateClasses.generateEntityMaps(
-                            // Make sure to update entityMaps to pull in class3 information
-                            inputs
+                        const shortcodeClashClass = createClassFactory(
+                            undefined,
+                            orgs[1]
                         )
+                        shortcodeClashClass.shortcode = inputs[1].shortcode
+                        await shortcodeClashClass.save()
                     })
 
-                    it('records a duplicateChild-code error', () => {
-                        const actualErrors = updateClasses.validate(
-                            1,
-                            undefined,
-                            inputs[1],
-                            entityMaps
-                        )
-
+                    it('records a duplicateChild-code error', async () => {
+                        const actualErrors = await validate(inputs)
                         const expectedError = createEntityAPIError(
                             'existentChild',
                             1,
                             'Class',
                             inputs[1].shortcode,
                             'Organization',
-                            org2.organization_id,
+                            orgs[1].organization_id,
                             ['organizationId', 'shortcode']
                         )
-
-                        expect(actualErrors.length).to.eq(1)
-                        compareErrors(actualErrors[0], expectedError)
+                        compareMultipleErrors(actualErrors, [expectedError])
                     })
                 }
             )
 
             it('records alphanumeric-code invalid shortcodes (preserved from the normalize step)', async () => {
                 inputs[1].shortcode = '!@£$%^&'
-                updateClasses = new UpdateClasses(inputs, ctx.permissions)
-                entityMaps = await updateClasses.generateEntityMaps(inputs)
-
-                const actualErrors = updateClasses.validate(
-                    1,
-                    undefined,
-                    inputs[1],
-                    entityMaps
-                )
+                const actualErrors = await validate(inputs)
                 const expectedError = new APIError({
                     code: customErrors.invalid_alphanumeric.code,
                     message: customErrors.invalid_alphanumeric.message,
@@ -5448,21 +5407,12 @@ describe('class', () => {
                     entity: 'Class',
                     index: 1,
                 })
-                expect(actualErrors.length).to.eq(1)
-                compareErrors(actualErrors[0], expectedError)
+                compareMultipleErrors(actualErrors, [expectedError])
             })
 
             it('records max-length-code invalid shortcodes (preserved from the normalize step)', async () => {
                 inputs[1].shortcode = 'SHORTCODEWHICHAINTSHORT'
-                updateClasses = new UpdateClasses(inputs, ctx.permissions)
-                entityMaps = await updateClasses.generateEntityMaps(inputs)
-
-                const actualErrors = updateClasses.validate(
-                    1,
-                    undefined,
-                    inputs[1],
-                    entityMaps
-                )
+                const actualErrors = await validate(inputs)
                 const expectedError = new APIError({
                     code: customErrors.invalid_max_length.code,
                     message: customErrors.invalid_max_length.message,
@@ -5470,21 +5420,15 @@ describe('class', () => {
                     entity: 'Class',
                     index: 1,
                 })
-                expect(actualErrors.length).to.eq(1)
-                compareErrors(actualErrors[0], expectedError)
+                compareMultipleErrors(actualErrors, [expectedError])
             })
         })
 
         context('process', () => {
-            beforeEach(async () => {
-                entityMaps = await updateClasses.generateEntityMaps(inputs)
-            })
-
             it('updates the entity with the correct attributes', async () => {
-                const actualOutput = updateClasses.process(
-                    inputs[0],
-                    entityMaps
-                )
+                const mutationClass = updateClasses()
+                const maps = await mutationClass.generateEntityMaps(inputs)
+                const actualOutput = mutationClass.process(inputs[0], maps)
 
                 expect(actualOutput.outputEntity.class_id).to.eq(
                     inputs[0].classId
@@ -5499,76 +5443,38 @@ describe('class', () => {
         })
 
         context('complete mutation calls given valid input', () => {
-            let class1InDB: Class
-            let class2InDB: Class
-
             it('provides the correct MutationResult and updates the database', async () => {
-                // Before update, record classes' attributes as they are in DB
-                class1InDB = (
-                    await Class.find({
-                        where: [{ class_id: In([class1.class_id]) }],
-                    })
-                )[0]
-                class2InDB = (
-                    await Class.find({
-                        where: [{ class_id: In([class2.class_id]) }],
-                    })
-                )[0]
-                expect(inputs[0].className).to.not.eq(class1InDB.class_name)
-                expect(inputs[0].shortcode).to.not.eq(class1InDB.shortcode)
-                expect(inputs[1].className).to.not.eq(class2InDB.class_name)
-                expect(inputs[1].shortcode).to.not.eq(class2InDB.shortcode)
-
-                // Perform the mutation
-                const result = await mutate(
-                    UpdateClasses,
-                    { input: inputs },
-                    ctx.permissions
+                const result = await updateClasses(inputs).run()
+                const dbClasses = await Class.findByIds(
+                    inputs.map((i) => i.classId)
                 )
 
-                // Check result output
-                expect(result.classes.length).to.eq(2)
-                expect(result.classes[0].id).to.eq(inputs[0].classId)
-                expect(result.classes[0].name).to.eq(inputs[0].className)
-                expect(result.classes[0].shortCode).to.eq(inputs[0].shortcode)
-                expect(result.classes[1].id).to.eq(inputs[1].classId)
-                expect(result.classes[1].name).to.eq(inputs[1].className)
-                expect(result.classes[1].shortCode).to.eq(inputs[1].shortcode)
+                expect(result.classes.length).to.eq(inputs.length)
+                for (const [idx, i] of inputs.entries()) {
+                    expect(result.classes[idx].id).to.eq(i.classId)
+                    expect(result.classes[idx].name).to.eq(i.className)
+                    expect(result.classes[idx].shortCode).to.eq(i.shortcode)
 
-                // Also check the class entities in the DB are actually updated
-                class1InDB = (
-                    await Class.find({
-                        where: [{ class_id: In([class1.class_id]) }],
-                    })
-                )[0]
-                class2InDB = (
-                    await Class.find({
-                        where: [{ class_id: In([class2.class_id]) }],
-                    })
-                )[0]
-                expect(inputs[0].className).to.eq(class1InDB.class_name)
-                expect(inputs[0].shortcode).to.eq(class1InDB.shortcode)
-                expect(inputs[1].className).to.eq(class2InDB.class_name)
-                expect(inputs[1].shortcode).to.eq(class2InDB.shortcode)
+                    expect(dbClasses[idx].class_id).to.eq(i.classId)
+                    expect(dbClasses[idx].class_name).to.eq(i.className)
+                    expect(dbClasses[idx].shortcode).to.eq(i.shortcode)
+                }
             })
 
-            it('does not make more DB calls than necessary', () => {
-                const getDbCallCount = async (input: UpdateClassInput[]) => {
-                    connection.logger.reset()
-                    await mutate(UpdateClasses, { input }, ctx.permissions)
-                    return connection.logger.count
-                }
+            const getDbCallCount = async (input: UpdateClassInput[]) => {
+                connection.logger.reset()
+                await updateClasses(input).run()
+                return connection.logger.count
+            }
 
-                it('db connections do not increase with number of input elements', async () => {
-                    await getDbCallCount([inputs[0]]) // warm up permissions cache
-                    const singleClassCount = await getDbCallCount([inputs[0]])
-                    const twoClassCount = await getDbCallCount([
-                        inputs[0],
-                        inputs[1],
-                    ])
-                    expect(twoClassCount).to.be.eq(singleClassCount)
-                    expect(twoClassCount).to.be.equal(5)
-                })
+            it('makes 1 db connection per extra input element', async () => {
+                const countForOneClass = await getDbCallCount([inputs[0]])
+                expect(countForOneClass).to.be.equal(8)
+
+                const countForFourClasses = await getDbCallCount(
+                    inputs.slice(1)
+                )
+                expect(countForFourClasses).to.be.equal(countForOneClass + 3)
             })
         })
     })
