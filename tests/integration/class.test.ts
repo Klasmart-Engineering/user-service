@@ -133,6 +133,7 @@ import { ObjMap } from '../../src/utils/stringUtils'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { mapClassToClassConnectionNode } from '../../src/pagination/classesConnection'
 import { config } from '../../src/config/config'
+import { runInTransaction } from 'typeorm-test-transactions'
 
 type ClassSpecs = {
     class: Class
@@ -148,7 +149,7 @@ interface OrgsData {
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
-describe('class', () => {
+describe('class', runInTransaction(async () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
 

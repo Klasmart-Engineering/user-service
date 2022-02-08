@@ -21,7 +21,7 @@
     "populate-database-extra-memory": "DATABASE_URL=\"postgres://postgres:kidsloop@localhost/postgres1\" node --max-old-space-size=8096 -- node_modules/.bin/ts-node -P tsconfig.json \"tests/populateDatabase.ts\"",
     "populate-database": "DATABASE_URL=\"postgres://postgres:kidsloop@localhost/postgres1\" ts-node \"tests/populateDatabase.ts\"",
     "test:unit": "NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register --file tests/unit/hooks.ts \"tests/unit/**/*.test.ts\" --timeout 8000",
-    "test:integration": "NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register --file tests/integration/hooks.ts \"tests/integration/**/*.test.ts\" --timeout 8000",
+    "test:integration": "NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register  \"tests/integration/**/*.test.ts\" --timeout 8000",
     "test:acceptance": "DATABASE_URL=postgres://postgres:kidsloop@localhost/postgres1 LOG_LEVEL=info mocha --require ts-node/register --file tests/acceptance/hooks.ts \"tests/acceptance/**/*.test.ts\" --timeout 8000",
     "test:migrations": "NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register \"tests/migrations/**/*.test.ts\" --timeout 8000",
     "test": "npm run test:unit && npm run test:integration && npm run test:migrations",
@@ -139,10 +139,12 @@
     "pg": "8.7.1",
     "pkgcloud": "2.2.0",
     "pug": "^3.0.2",
+    "reflect-metadata": "^0.1.13",
     "rereadable-stream": "1.4.12",
     "stream": "0.0.2",
     "type-graphql": "1.1.1",
-    "typeorm": "0.2.31",
+    "typeorm": "^0.2.31",
+    "typeorm-test-transactions": "^3.6.1",
     "typescript-retry-decorator": "2.0.3",
     "uuid": "8.3.2"
   }

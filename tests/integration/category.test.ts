@@ -44,7 +44,7 @@ import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
 import { createAdminUser, createUser } from '../factories/user.factory'
-import { NIL_UUID } from '../utils/database'
+import { NIL_UUID, truncateTables } from '../utils/database'
 import {
     buildRemoveSubcategoriesFromCategoryInputArray,
     buildSingleRemoveSubcategoriesFromCategoryInput,
@@ -63,6 +63,14 @@ import { buildDeleteCategoryInputArray } from '../utils/operations/categoryOps'
 import { compareErrors } from '../utils/apiError'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { permErrorMeta } from '../utils/errors'
+import RoleInitializer from '../../src/initializers/roles'
+import {
+    initialiseTestTransactions,
+    runInTransaction
+} from 'typeorm-test-transactions'
+
+
+initialiseTestTransactions();
 
 interface CategoryAndSubcategories {
     id: string
@@ -96,7 +104,7 @@ const expectAPIError = async (
     compareErrors(error, expectedError)
 }
 
-describe('category', () => {
+describe('category', runInTransaction(async () => {
     let connection: TestConnection
     let admin: User
     let userWithPermission: User
@@ -144,6 +152,12 @@ describe('category', () => {
     before(async () => {
         connection = await createTestConnection()
         await createServer(new Model(connection))
+
+        await truncateTables(connection)
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
+
+        faker.seed(123)
+        await RoleInitializer.run()
     })
 
     after(async () => {
@@ -2776,4 +2790,4 @@ describe('category', () => {
             })
         })
     })
-})
+}))
