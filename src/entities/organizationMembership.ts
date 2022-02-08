@@ -172,7 +172,7 @@ export class OrganizationMembership extends CustomBaseEntity {
         try {
             if (
                 info.operation.operation !== 'mutation' ||
-                this.status == Status.INACTIVE
+                this.status !== Status.ACTIVE
             ) {
                 return null
             }
@@ -204,7 +204,7 @@ export class OrganizationMembership extends CustomBaseEntity {
         try {
             if (
                 info.operation.operation !== 'mutation' ||
-                this.status == Status.INACTIVE
+                this.status !== Status.ACTIVE
             ) {
                 return null
             }
@@ -246,7 +246,7 @@ export class OrganizationMembership extends CustomBaseEntity {
         try {
             if (
                 info.operation.operation !== 'mutation' ||
-                this.status == Status.INACTIVE
+                this.status !== Status.ACTIVE
             ) {
                 return null
             }
@@ -273,7 +273,7 @@ export class OrganizationMembership extends CustomBaseEntity {
         try {
             if (
                 info.operation.operation !== 'mutation' ||
-                this.status == Status.INACTIVE
+                this.status !== Status.ACTIVE
             ) {
                 return null
             }

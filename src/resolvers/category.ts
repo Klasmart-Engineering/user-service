@@ -152,7 +152,7 @@ export async function updateCategories(
             continue
         }
 
-        if (category.status === Status.INACTIVE) {
+        if (category.status !== Status.ACTIVE) {
             errors.push(createEntityAPIError('inactive', index, 'Category', id))
         }
 
@@ -629,7 +629,7 @@ export async function removeSubcategoriesFromCategories(
             )
         }
 
-        if (category.status === Status.INACTIVE) {
+        if (category.status !== Status.ACTIVE) {
             errors.push(
                 createEntityAPIError('inactive', index, 'Category', category.id)
             )
@@ -669,7 +669,7 @@ export async function removeSubcategoriesFromCategories(
                 continue
             }
 
-            if (subcategory.status === Status.INACTIVE) {
+            if (subcategory.status !== Status.ACTIVE) {
                 errors.push(
                     createEntityAPIError(
                         'inactive',
@@ -755,7 +755,7 @@ const validateEntity = (
         )
         return errors
     }
-    if (entity.status === Status.INACTIVE) {
+    if (entity.status !== Status.ACTIVE) {
         errors.push(
             new APIError({
                 code: customErrors.inactive_status.code,

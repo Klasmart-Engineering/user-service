@@ -50,7 +50,7 @@ export class Category extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -89,7 +89,7 @@ export class Category extends CustomBaseEntity {
         const organization_id = (await this.organization)?.organization_id
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return false
         }

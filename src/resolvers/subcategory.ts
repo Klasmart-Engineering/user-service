@@ -198,7 +198,7 @@ export const deleteSubcategories = async (
             )
             continue
         }
-        if (subcategory.status === Status.INACTIVE) {
+        if (subcategory.status !== Status.ACTIVE) {
             errors.push(
                 new APIError({
                     code: customErrors.inactive_status.code,
@@ -340,7 +340,7 @@ export async function updateSubcategories(
             continue
         }
 
-        if (subcategory.status === Status.INACTIVE) {
+        if (subcategory.status !== Status.ACTIVE) {
             errors.push(createSubcategoryAPIError('inactive', index, id))
         }
 
