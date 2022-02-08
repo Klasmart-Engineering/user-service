@@ -32,8 +32,12 @@ services:
         environment:
             - POSTGRES_DB=postgres1
             - POSTGRES_PASSWORD=kidsloop
+            - PGDATA=/pgtmpfs
         ports:
             - 5432:5432
+        tmpfs:
+            - /run
+            - /var/cache
     localstack1:
         container_name: localstack1
         image: localstack/localstack:0.12.12
