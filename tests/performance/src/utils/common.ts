@@ -18,7 +18,7 @@ export function generateCodeChallenge() {
   };
 };
 
-const userAgent = 'k6 - open credo loadtest';
+export const userAgent = 'k6 - open credo loadtest';
 
 export const defaultHeaders = {
   pragma: 'no-cache',

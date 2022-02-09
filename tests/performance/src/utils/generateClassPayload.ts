@@ -40,7 +40,8 @@ export default function() {
             process.env.CLASS_STUDENT_ID_2,
         ],
         class_roster_teacher_ids: [
-            process.env.TEACHER_ID_1
+            process.env.TEACHER_ID_1,
+            process.env.ID_ORG_ADMIN_1
         ],
         class_type: "OnlineClass",
         description: "Test",
@@ -61,7 +62,8 @@ export default function() {
             process.env.SUBJECT_ID
         ],
         teacher_ids: [
-            process.env.TEACHER_ID_1
+            process.env.TEACHER_ID_1,
+            process.env.ID_ORG_ADMIN_1
         ],
         title: `Test 1A - ${random(100000)}`,
         start_at: Math.round((new Date().getTime() + (5 * 60000)) / 1000),

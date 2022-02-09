@@ -25,19 +25,15 @@ export function setup() {
     };
 
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
     const payload = JSON.stringify(generateClassPayload());
     const classData = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, payload, params);
-
-    // console.log('res === ', payload);
-   
-    console.log('class data: ', JSON.stringify(classData));
 
     data = {
         ...data,
@@ -47,10 +43,18 @@ export function setup() {
     return data;
 }
 
-export default function(data: { [key: string]: { res: any, userId: string } | string }) {
+export default function(data: { [key: string]: { res: any, userId: string } }) {
     if (!data.classId) {
         throw new Error('Class ID not setup' + JSON.stringify(data));
     }
 
-    getLiveClassToken(data.classId as string)
+    const jar = http.cookieJar();
+    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+
+    getLiveClassToken(data.classId as unknown as string)
 }
