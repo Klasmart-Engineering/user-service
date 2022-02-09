@@ -1,5 +1,6 @@
 import logger from '../logging'
 import { createCloudClient, STORAGE } from '../utils/storage'
+import { reportError } from '../utils/resolvers/errors'
 
 export class CloudStorageUrlBuilder {
     /**
@@ -33,6 +34,7 @@ export class CloudStorageUrlBuilder {
                         break
 
                     case 'google':
+                        reportError(Error("Unsupported Storage Provider: google"))
                         logger.debug(file)
                         break
 
@@ -45,7 +47,7 @@ export class CloudStorageUrlBuilder {
                         break
 
                     default:
-                        throw new Error('not supported provider')
+                        throw new Error(`Unsupported Storage Provider: ${STORAGE.PROVIDER}`)
                 }
 
                 return paths.join('/')

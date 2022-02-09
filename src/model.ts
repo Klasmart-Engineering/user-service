@@ -95,7 +95,7 @@ import { reportError } from './utils/resolvers/errors'
 
 export class Model {
     public static async create() {
-        const RO_DATABASE_URL = getEnvVar('RO_DATABASE_URL', '')!
+        const RO_DATABASE_URL = getEnvVar('RO_DATABASE_URL')!
         const RO_DATABASE = RO_DATABASE_URL
             ? [
                   {
