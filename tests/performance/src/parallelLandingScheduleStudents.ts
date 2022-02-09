@@ -7,6 +7,7 @@ import http from 'k6/http';
 import viewStudyClass from './scripts/viewStudyClass';
 //import loginSetup from './utils/uniqueUserCookies';
 import loginSetup from './utils/loginSetup';
+import landingV3Students from './scripts/landingV3Students';
 
 // This script simulate the a student select a Study class from the calendar
 // click on the Go Study button
@@ -248,7 +249,7 @@ export function students00(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    // landingV2(data.students00);
+    landingV3Students(data.students00);
     sleep(2);
     landingScheduleStudents();
 
@@ -264,7 +265,7 @@ export function students01(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    // landingV2(data.students01);
+    landingV3Students(data.students01);
     sleep(2);
     landingScheduleStudents();
 }
@@ -278,7 +279,7 @@ export function students02(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    //landingV2(data.students02);
+    landingV3Students(data.students02);
     sleep(2);
     landingScheduleStudents();
 }
@@ -292,8 +293,8 @@ export function students03(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    //landingV2(data.students03);
-    sleep(2);
+    landingV3Students(data.students03);
+    sleep(1);
     landingScheduleStudents();
 }
 export function students04(data: { [key: string]: { res: any, userId: string }}) {
@@ -305,8 +306,8 @@ export function students04(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    //landingV2(data.students04);
-    sleep(2);
+    landingV3Students(data.students04);
+    sleep(1);
     landingScheduleStudents();
 }
 /* 
@@ -320,8 +321,8 @@ export function students05(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    //landingV2(data.students05);
-    sleep(5);
+    landingV3Students(data.students05);
+    sleep(1);
     landingScheduleStudents();
 }
 export function students06(data: { [key: string]: { res: any, userId: string }}) {
@@ -333,8 +334,8 @@ export function students06(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    //landingV2(data.students06);
-    sleep(5);
+    landingV3Students(data.students06);
+    sleep(1);
     landingScheduleStudents();
 }
 export function students07(data: { [key: string]: { res: any, userId: string }}) {
@@ -346,8 +347,8 @@ export function students07(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    //landingV2(data.students07);
-    sleep(5);
+    landingV3Students(data.students07);
+    sleep(1);
     landingScheduleStudents();
 }
 export function students08(data: { [key: string]: { res: any, userId: string }}) {
@@ -359,8 +360,8 @@ export function students08(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    //landingV2(data.students08);
-    sleep(5);
+    landingV3Students(data.students08);
+    sleep(1);
     landingScheduleStudents();
 }
 export function students09(data: { [key: string]: { res: any, userId: string }}) {
@@ -372,8 +373,8 @@ export function students09(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    //landingV2(data.students09);
-    sleep(5);
+    landingV3Students(data.students09);
+    sleep(1);
     landingScheduleStudents();
 } 
   */

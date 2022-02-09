@@ -2,11 +2,11 @@
 import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
 import { sleep } from 'k6';
-import landingSchedule from './scripts/landingSchedule';
 import http from 'k6/http';
 import viewStudyClass from './scripts/viewStudyClass';
 //import loginSetup from './utils/uniqueUserCookies';
 import loginSetup from './utils/loginSetup';
+import landingScheduleStudents from './scripts/landingScheduleStudents';
 
 // This script simulate the a student select a Study class from the calendar
 // click on the Go Study button
@@ -75,7 +75,7 @@ export function students00(data: { [key: string]: { res: any, userId: string }})
 
     landingV2(data.students00);
     sleep(5);
-    landingSchedule();
+    landingScheduleStudents();
     viewStudyClass();
 
 }
