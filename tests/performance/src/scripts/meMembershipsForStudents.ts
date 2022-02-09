@@ -61,20 +61,20 @@ export default function (roleType?: string) {
     // request to verfiy the memershipPayload 3
     const res3 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload3, params);
     
-    // request to verfiy the memershipPayload 3
+    // request to verfiy the memershipPayload 4
     const res4 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload4, params);
 
     const resBascic = http.post(process.env.SERVICE_URL as string, meQueryBasic, params);
 
-    // request to verfiy the memershipPayload 3
+    // request to verfiy the memershipPayload 5
     const res5 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload5, params);
  
 
     check(res, {
         '"Get me membership 1" status is 200': (r) => r.status === 200,
-        '"Get me membership 1" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_schedule_page_501 ?? false, // expected: true
+       /*'"Get me membership 1" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_schedule_page_501 ?? false, // expected: true
         '"Get me membership 1.B" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.schedule_search_582 ?? false, // expected: false
-      
+       */
    }, {
         userRoleType: roleType
     });
@@ -82,12 +82,12 @@ export default function (roleType?: string) {
     check(res2, {
 
         '"Get me membership 2" status is 200': (r) => r.status === 200,
-        '"Get me membership 2" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.attend_live_class_as_a_teacher_186 ?? false, // expected: true
+        /* '"Get me membership 2" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.attend_live_class_as_a_teacher_186 ?? false, // expected: true
         '"Get me membership 2.B" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_event_520 ?? false, //false
         '"Get me membership 2.C" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_my_schedule_events_521 ?? false, // expected: true
         '"Get me membership 2.D" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_my_schools_schedule_events_522 ?? false, //false
         '"Get me membership 2.E" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.attend_live_class_as_a_student_187 ?? false, //false
-    
+     */
    }, {
         userRoleType: roleType
     });
@@ -95,11 +95,11 @@ export default function (roleType?: string) {
     check(res3, {
          
         '"Get me membership 3" status is 200': (r) => r.status === 200,
-        '"Get me membership 3" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_live_calendar_events_524 ?? false, // expected: true
+       /*  '"Get me membership 3" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_live_calendar_events_524 ?? false, // expected: true
         '"Get me membership 3.B" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_class_calendar_events_525 ?? false, // expected: true
         '"Get me membership 3.C" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_study_calendar_events_526 ?? false, // expected: true
         '"Get me membership 3.D" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_home_fun_calendar_events_527 ?? false, // expected: true
-     
+   */   
    }, {
         userRoleType: roleType
     });
@@ -107,17 +107,17 @@ export default function (roleType?: string) {
     check(res4, {
         
         '"Get me membership 4" status is 200': (r) => r.status === 200,
-        '"Get me membership 4" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.attend_live_class_as_a_student_187 ?? false, // expected: false
+        /* '"Get me membership 4" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.attend_live_class_as_a_student_187 ?? false, // expected: false
         '"Get me membership 4.B" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.view_my_calendar_510 ?? false, // expected: true
         '"Get me membership 4.C" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_schedule_page_501 ?? false, // expected: true
-     
+      */
    }, {
         userRoleType: roleType
     });
 
     check(resBascic, {
         'status is 200 meQueryReq1': () => res.status === 200,
-        '"meQueryReq1" query returns data': (r) => JSON.parse(r.body as string).data?.me ?? false,
+      //  '"meQueryReq1" query returns data': (r) => JSON.parse(r.body as string).data?.me ?? false,
 
     }, {
         userRoleType: roleType
@@ -126,12 +126,12 @@ export default function (roleType?: string) {
     check(res5, {
          
         '"Get me membership 5" status is 200': (r) => r.status === 200,
-        '"Get me membership 5" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_event_520 ?? false, // expected: false
+        /* '"Get me membership 5" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_event_520 ?? false, // expected: false
         '"Get me membership 5.B" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_my_schools_schedule_events_522 ?? false, // expected: false
         '"Get me membership 5.C" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.create_my_schedule_events_521 ?? false, // expected: true
         '"Get me membership 5.D" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.attend_live_class_as_a_student_187 ?? false, // expected: false
         '"Get me membership 5.E" query returns data': (r) => JSON.parse(r.body as string).data?.meMembership?.membership.view_subjects_20115 ?? false, // expected: true
-     
+      */
    }, {
         userRoleType: roleType
     });

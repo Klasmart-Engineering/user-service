@@ -30,7 +30,7 @@ export default function (roleType?: string) {
 
     check(res, {
         'SCHEDULES_TIME_VIEW - status is 200': () => res.status === 200,
-        'schedule time view endpoint returns data': (r) => JSON.parse(r.body as string).data,
+        //'schedule time view endpoint returns data': (r) => JSON.parse(r.body as string).data,
     }, {
         userRoleType: roleType
     });

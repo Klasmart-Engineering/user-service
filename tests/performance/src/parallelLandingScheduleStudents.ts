@@ -2,7 +2,7 @@
 import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
 import { sleep } from 'k6';
-import landingSchedule from './scripts/landingSchedule';
+import landingScheduleStudents from './scripts/landingScheduleStudents';
 import http from 'k6/http';
 import viewStudyClass from './scripts/viewStudyClass';
 //import loginSetup from './utils/uniqueUserCookies';
@@ -211,8 +211,8 @@ export const options: Options = {
             exec: 'students04',
             vus: 100,
             duration: '10m',
-          },
-    },
+          }, 
+    }, 
 };
 
 export function setup() {
@@ -250,7 +250,7 @@ export function students00(data: { [key: string]: { res: any, userId: string }})
 
     // landingV2(data.students00);
     sleep(2);
-    landingSchedule();
+    landingScheduleStudents();
 
 
 }
@@ -266,7 +266,7 @@ export function students01(data: { [key: string]: { res: any, userId: string }})
 
     // landingV2(data.students01);
     sleep(2);
-    landingSchedule();
+    landingScheduleStudents();
 }
 
 export function students02(data: { [key: string]: { res: any, userId: string }}) {
@@ -280,7 +280,7 @@ export function students02(data: { [key: string]: { res: any, userId: string }})
     
     //landingV2(data.students02);
     sleep(2);
-    landingSchedule();
+    landingScheduleStudents();
 }
 
 export function students03(data: { [key: string]: { res: any, userId: string }}) {
@@ -294,7 +294,7 @@ export function students03(data: { [key: string]: { res: any, userId: string }})
 
     //landingV2(data.students03);
     sleep(2);
-    landingSchedule();
+    landingScheduleStudents();
 }
 export function students04(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -307,9 +307,9 @@ export function students04(data: { [key: string]: { res: any, userId: string }})
 
     //landingV2(data.students04);
     sleep(2);
-    landingSchedule();
+    landingScheduleStudents();
 }
-
+/* 
 
 export function students05(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -322,7 +322,7 @@ export function students05(data: { [key: string]: { res: any, userId: string }})
     
     //landingV2(data.students05);
     sleep(5);
-    landingSchedule();
+    landingScheduleStudents();
 }
 export function students06(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -335,7 +335,7 @@ export function students06(data: { [key: string]: { res: any, userId: string }})
     
     //landingV2(data.students06);
     sleep(5);
-    landingSchedule();
+    landingScheduleStudents();
 }
 export function students07(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -348,7 +348,7 @@ export function students07(data: { [key: string]: { res: any, userId: string }})
 
     //landingV2(data.students07);
     sleep(5);
-    landingSchedule();
+    landingScheduleStudents();
 }
 export function students08(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -361,7 +361,7 @@ export function students08(data: { [key: string]: { res: any, userId: string }})
     
     //landingV2(data.students08);
     sleep(5);
-    landingSchedule();
+    landingScheduleStudents();
 }
 export function students09(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -374,6 +374,6 @@ export function students09(data: { [key: string]: { res: any, userId: string }})
 
     //landingV2(data.students09);
     sleep(5);
-    landingSchedule();
+    landingScheduleStudents();
 } 
- 
+  */
