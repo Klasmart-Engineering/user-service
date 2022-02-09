@@ -24,11 +24,8 @@ export class RolesInitializer {
 
     public async run() {
         const roles = new Map<string, Role>()
-
         await this._removeDuplicatedSystemRoles()
-
         await this.createSystemPermissions()
-
         await getManager().transaction(async (manager) => {
             await this._createDefaultRoles(manager, roles)
         })
@@ -147,48 +144,10 @@ export class RolesInitializer {
                 system_role: true,
                 organization: { organization_id: null },
             },
+            order: {
+                created_at: 'ASC',
+            },
         })
-
-        // const rolesWithName = new Map<string, Role[]>()
-        // const rolesToPersistMap = new Map<string, Role>()
-        // const duplicatedRoleIds = new Set<string>()
-        // systemRoles.forEach((r) => {
-        //     const roleName = r.role_name!
-
-        //     if (rolesToPersistMap.has(roleName)) {
-        //         duplicatedRoleIds.add(r.role_id)
-        //     } else {
-        //         rolesToPersistMap.set(roleName, r)
-        //     }
-        // })
-
-        // const orgMemberships = await manager.find(OrganizationMembership, {
-        //     join: {
-        //         alias: 'OrgMembership',
-        //         innerJoin: {
-        //             roles: 'OrgMembership.roles',
-        //         },
-        //     },
-        //     where: (qb: WhereExpression) => {
-        //         qb.where('roles.role_id IN (:...roleIds)', {
-        //             roleIds: [...duplicatedRoleIds],
-        //         })
-        //     },
-        // })
-
-        // const schoolMemberships = await manager.find(SchoolMembership, {
-        //     join: {
-        //         alias: 'SchoolMembership',
-        //         innerJoin: {
-        //             roles: 'SchoolMembership.roles',
-        //         },
-        //     },
-        //     where: (qb: WhereExpression) => {
-        //         qb.where('roles.role_id IN (:...roleIds)', {
-        //             roleIds: [...duplicatedRoleIds],
-        //         })
-        //     },
-        // })
 
         if (systemRoles.length > systemRoleNames.length) {
             const {
@@ -216,11 +175,15 @@ export class RolesInitializer {
                 )
 
                 // Once these roles are not in any organization or school membership, they can be removed
-                const deleteRoleIds = Array.from(rolesToDelete.values())
-                    .flat()
-                    .map((r) => r.role_id)
+                const allRolesToDelete = Array.from(
+                    rolesToDelete.values()
+                ).flat()
 
-                await transactionManager.softDelete(Role, deleteRoleIds)
+                await Promise.all(
+                    allRolesToDelete.map((r) =>
+                        r.inactivate(transactionManager)
+                    )
+                )
             })
         }
     }

@@ -14,6 +14,21 @@ import { Organization } from '../../../src/entities/organization'
 import RoleInitializer from '../../../src/initializers/roles'
 import { Role } from '../../../src/entities/role'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { organizationAdminRole } from '../../../src/permissions/organizationAdmin'
+import { schoolAdminRole } from '../../../src/permissions/schoolAdmin'
+import { parentRole } from '../../../src/permissions/parent'
+import { studentRole } from '../../../src/permissions/student'
+import { teacherRole } from '../../../src/permissions/teacher'
+import { createRole } from '../../factories/role.factory'
+import { createOrganization } from '../../factories/organization.factory'
+import { createSchool } from '../../factories/school.factory'
+import { User } from '../../../src/entities/user'
+import { createUser } from '../../factories/user.factory'
+import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { SchoolMembership } from '../../../src/entities/schoolMembership'
+import { createSchoolMembership } from '../../factories/schoolMembership.factory'
+import { Status } from '../../../src/entities/status'
 
 use(deepEqualInAnyOrder)
 
@@ -103,6 +118,150 @@ describe('RolesInitializer', () => {
 
                 expect(rolesAfter).to.have.lengthOf(rolesBefore.length)
                 expect(rolesAfter).to.deep.equalInAnyOrder(rolesBefore)
+            })
+        })
+
+        context('when already exist duplicated system roles', () => {
+            let originalSystemRoles: Role[]
+            let duplicatedSystemRoles: Role[]
+
+            beforeEach(async () => {
+                originalSystemRoles = Array.from(await RoleInitializer.run())
+                const systemRolesData = [
+                    organizationAdminRole,
+                    schoolAdminRole,
+                    parentRole,
+                    studentRole,
+                    teacherRole,
+                ]
+
+                duplicatedSystemRoles = await Role.save(
+                    Array.from([...systemRolesData, ...systemRolesData], (d) =>
+                        createRole(
+                            d.role_name,
+                            undefined,
+                            { permissions: d.permissions },
+                            true
+                        )
+                    )
+                )
+
+                const organization = await createOrganization().save()
+                const school = await createSchool().save()
+                const users = await User.save(
+                    Array.from(originalSystemRoles, () => createUser())
+                )
+
+                await OrganizationMembership.save(
+                    Array.from(users, (user, i) =>
+                        createOrganizationMembership({
+                            user,
+                            organization,
+                            roles: [duplicatedSystemRoles[i]],
+                        })
+                    )
+                )
+
+                await SchoolMembership.save(
+                    Array.from(users, (user, i) =>
+                        createSchoolMembership({
+                            user,
+                            school,
+                            roles: [
+                                duplicatedSystemRoles[
+                                    originalSystemRoles.length + i
+                                ],
+                            ],
+                        })
+                    )
+                )
+            })
+
+            it('should remove all the duplications', async () => {
+                await RoleInitializer.run()
+                const removedRoles = await Role.findByIds(
+                    duplicatedSystemRoles.map((r) => r.role_id)
+                )
+
+                expect(removedRoles).to.have.lengthOf(
+                    duplicatedSystemRoles.length
+                )
+
+                removedRoles.forEach((r) => {
+                    expect(r.status).to.equal(Status.INACTIVE)
+                    expect(r.deleted_at).to.not.be.null
+                })
+            })
+
+            it('should left just one system role per name', async () => {
+                await RoleInitializer.run()
+                const persistentRoles = await Role.find({
+                    where: { status: Status.ACTIVE },
+                })
+
+                expect(persistentRoles).to.have.lengthOf(
+                    originalSystemRoles.length
+                )
+
+                const persistentNames = persistentRoles.map((r) => r.role_name)
+                const uniqueNames = new Set(persistentNames)
+
+                expect(persistentRoles).to.have.lengthOf(uniqueNames.size)
+                expect(persistentNames).to.be.deep.equalInAnyOrder(
+                    Array.from(uniqueNames.values())
+                )
+            })
+
+            it('should change the deleted roles to the persistent ones in the organization memberships that are using them', async () => {
+                await RoleInitializer.run()
+
+                const orgMemberships = await OrganizationMembership.find()
+                expect(orgMemberships).to.have.lengthOf(
+                    originalSystemRoles.length
+                )
+
+                const originalRoleIds = originalSystemRoles.map(
+                    (r) => r.role_id
+                )
+
+                const duplicateRoleIds = duplicatedSystemRoles.map(
+                    (r) => r.role_id
+                )
+
+                for (const m of orgMemberships) {
+                    const roles = await m.roles!
+
+                    roles.forEach((r) => {
+                        expect(originalRoleIds).to.include(r.role_id)
+                        expect(duplicateRoleIds).to.not.include(r.role_id)
+                    })
+                }
+            })
+
+            it('should change the deleted roles to the persistent ones in the school memberships that are using them', async () => {
+                await RoleInitializer.run()
+
+                const schoolMemberships = await SchoolMembership.find()
+                expect(schoolMemberships).to.have.lengthOf(
+                    originalSystemRoles.length
+                )
+
+                const originalRoleIds = originalSystemRoles.map(
+                    (r) => r.role_id
+                )
+
+                const duplicateRoleIds = duplicatedSystemRoles.map(
+                    (r) => r.role_id
+                )
+
+                for (const m of schoolMemberships) {
+                    const roles = await m.roles!
+
+                    roles.forEach((r) => {
+                        expect(originalRoleIds).to.include(r.role_id)
+                        expect(duplicateRoleIds).to.not.include(r.role_id)
+                    })
+                }
             })
         })
     })
