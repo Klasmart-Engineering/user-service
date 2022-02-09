@@ -14,14 +14,14 @@ interface AzureB2CTokenPayload extends ITokenPayload {
 }
 
 const credentials = {
-    tenantName: getEnvVar('AZURE_B2C_TENANT_NAME', '' )!,
-    clientID: getEnvVar('AZURE_B2C_CLIENT_ID', '' )!,
+    tenantName: getEnvVar('AZURE_B2C_TENANT_NAME', '')!,
+    clientID: getEnvVar('AZURE_B2C_CLIENT_ID', '')!,
 }
 const policies = {
-    policyName: getEnvVar('AZURE_B2C_POLICY_NAME', '' )!,
+    policyName: getEnvVar('AZURE_B2C_POLICY_NAME', '')!,
 }
 const metadata = {
-    authority: getEnvVar('AZURE_B2C_AUTHORITY', '' )!,
+    authority: getEnvVar('AZURE_B2C_AUTHORITY', '')!,
     discovery: '.well-known/openid-configuration',
     version: 'v2.0',
 }
@@ -52,7 +52,7 @@ const bearerStrategy = () =>
         }
     )
 
-if (getEnvVar('AZURE_B2C_ENABLED', 'false' ) === 'true') {
+if (getEnvVar('AZURE_B2C_ENABLED', 'false') === 'true') {
     passport.initialize()
     passport.use(bearerStrategy())
 }

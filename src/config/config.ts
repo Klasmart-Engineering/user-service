@@ -25,7 +25,10 @@ export const config = {
     },
 } as const
 
-export const getEnvVar = (name: string, defaultValue?: string): string | undefined => {
+export const getEnvVar = (
+    name: string,
+    defaultValue?: string
+): string | undefined => {
     const val = process.env[name]
 
     if (val) {

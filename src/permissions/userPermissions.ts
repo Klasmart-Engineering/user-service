@@ -75,7 +75,7 @@ export class UserPermissions {
         }
 
         logger.debug(`UserPermissions created: 
-            UserId: ${this.user_id },
+            UserId: ${this.user_id},
             Email: ${this.email},
             Phone: ${this.phone},
             Username: ${this.username},

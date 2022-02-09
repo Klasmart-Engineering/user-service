@@ -7,8 +7,7 @@ import clean from './utils/clean'
 import { stringInject } from './utils/stringUtils'
 import { getEnvVar } from './config/config'
 
-const IS_AZURE_B2C_ENABLED =
-    getEnvVar('AZURE_B2C_ENABLED', 'false' ) === 'true'
+const IS_AZURE_B2C_ENABLED = getEnvVar('AZURE_B2C_ENABLED', 'false') === 'true'
 const issuers = new Map<
     string,
     {

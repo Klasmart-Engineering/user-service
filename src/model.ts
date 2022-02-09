@@ -110,14 +110,17 @@ export class Model {
                 type: 'postgres',
                 synchronize: false,
                 logger:
-                    getEnvVar('DATABASE_LOGGING' ) === 'true'
+                    getEnvVar('DATABASE_LOGGING') === 'true'
                         ? new TypeORMLogger()
                         : undefined,
                 entities: ['src/entities/*{.ts,.js}'],
                 migrations: ['migrations/*{.ts,.js}'],
                 replication: {
                     master: {
-                        url: getEnvVar('DATABASE_URL', 'postgres://postgres:kidsloop@localhost'),
+                        url: getEnvVar(
+                            'DATABASE_URL',
+                            'postgres://postgres:kidsloop@localhost'
+                        ),
                     },
                     slaves: RO_DATABASE,
                 },
@@ -139,7 +142,10 @@ export class Model {
         }
     }
 
-    public static readonly SIMILARITY_THRESHOLD = getEnvVar('POSTGRES_TRGM_LIMIT', '0.1')
+    public static readonly SIMILARITY_THRESHOLD = getEnvVar(
+        'POSTGRES_TRGM_LIMIT',
+        '0.1'
+    )
 
     private connection: Connection
     private manager: EntityManager

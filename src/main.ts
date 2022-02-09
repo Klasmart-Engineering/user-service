@@ -10,7 +10,7 @@ import { TokenPayload } from './token'
 import { getEnvVar } from './config/config'
 import { reportError } from './utils/resolvers/errors'
 
-const port = getEnvVar('PORT', '8080' )
+const port = getEnvVar('PORT', '8080')
 
 export interface Context {
     token: TokenPayload | undefined
@@ -24,7 +24,7 @@ export interface Context {
 Sentry.init({
     dsn:
         'https://b78d8510ecce48dea32a0f6a6f345614@o412774.ingest.sentry.io/5388815',
-    environment: getEnvVar('NODE_ENV', 'not-specified' ),
+    environment: getEnvVar('NODE_ENV', 'not-specified'),
     release: 'kidsloop-users-gql@' + getEnvVar('npm_package_version'),
 })
 

@@ -34,7 +34,9 @@ export class CloudStorageUrlBuilder {
                         break
 
                     case 'google':
-                        reportError(Error("Unsupported Storage Provider: google"))
+                        reportError(
+                            Error('Unsupported Storage Provider: google')
+                        )
                         logger.debug(file)
                         break
 
@@ -47,7 +49,9 @@ export class CloudStorageUrlBuilder {
                         break
 
                     default:
-                        throw new Error(`Unsupported Storage Provider: ${STORAGE.PROVIDER}`)
+                        throw new Error(
+                            `Unsupported Storage Provider: ${STORAGE.PROVIDER}`
+                        )
                 }
 
                 return paths.join('/')

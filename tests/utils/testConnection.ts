@@ -41,12 +41,12 @@ export const createTestConnection = async ({
 } = {}): Promise<TestConnection> => {
     const RO_DATABASE_URL = getEnvVar('RO_DATABASE_URL', '')!
     const slavesURLList = RO_DATABASE_URL
-                ? [
-                      {
-                          url: RO_DATABASE_URL,
-                      },
-                  ]
-                : []
+        ? [
+              {
+                  url: RO_DATABASE_URL,
+              },
+          ]
+        : []
 
     return createConnection({
         name: name,
@@ -57,7 +57,10 @@ export const createTestConnection = async ({
         logger: new QueryMetricsLogger(),
         replication: {
             master: {
-                url: getEnvVar('DATABASE_URL', 'postgres://postgres:kidsloop@localhost/testdb'),
+                url: getEnvVar(
+                    'DATABASE_URL',
+                    'postgres://postgres:kidsloop@localhost/testdb'
+                ),
             },
             slaves: slavesURLList,
         },
@@ -72,7 +75,10 @@ export const createMigrationsTestConnection = async (
     return createConnection({
         name: name,
         type: 'postgres',
-        url: getEnvVar('DATABASE_URL', 'postgres://postgres:kidsloop@localhost/testdb'),
+        url: getEnvVar(
+            'DATABASE_URL',
+            'postgres://postgres:kidsloop@localhost/testdb'
+        ),
         synchronize,
         dropSchema: drop,
         migrations: ['migrations/*{.ts,.js}'],

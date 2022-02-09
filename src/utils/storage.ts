@@ -20,7 +20,10 @@ export const STORAGE = (function () {
     }
 
     if (storage.PROVIDER == 'google') {
-        storage.GOOGLE_KEY_FILE_NAME = getEnvVar('STORAGE_GOOGLE_KEY_FILE_NAME', '')!
+        storage.GOOGLE_KEY_FILE_NAME = getEnvVar(
+            'STORAGE_GOOGLE_KEY_FILE_NAME',
+            ''
+        )!
     }
 
     return storage
