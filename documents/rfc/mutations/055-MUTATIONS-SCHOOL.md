@@ -145,8 +145,8 @@ GraphQL definitions:
         school_id: ID!
         name: String
         shortcode: String
-        programs: [ID!]
-        classes: [ID!]
+        programIds: [ID!]
+        classIds: [ID!]
     }
 ```
 ### Mutation

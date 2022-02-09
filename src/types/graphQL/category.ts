@@ -14,7 +14,7 @@ export interface CategoryConnectionNode {
 export interface CreateCategoryInput {
     name: string
     organizationId: string
-    subcategories?: string[]
+    subcategoryIds?: string[]
 }
 
 export interface DeleteCategoryInput {
@@ -24,7 +24,7 @@ export interface DeleteCategoryInput {
 export interface UpdateCategoryInput {
     id: string
     name?: string
-    subcategories?: string[]
+    subcategoryIds?: string[]
 }
 
 export interface AddSubcategoriesToCategoryInput {

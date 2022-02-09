@@ -70,7 +70,7 @@ interface CategoryAndSubcategories {
     __subcategories__?: { id: string }[]
 }
 
-type NoUpdateProp = 'name' | 'subcategories' | 'both'
+type NoUpdateProp = 'name' | 'subcategoryIds' | 'both'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -220,11 +220,11 @@ describe('category', () => {
             name: string,
             org: Organization,
             subcats?: Subcategory[]
-        ) => {
+        ): CreateCategoryInput => {
             return {
                 name,
                 organizationId: org.organization_id,
-                subcategories: subcats?.map((s) => s.id),
+                subcategoryIds: subcats?.map((s) => s.id),
             }
         }
 
@@ -268,7 +268,7 @@ describe('category', () => {
                     name: c.name as string,
                     organizationId: (c as any).__organization__
                         .organization_id as string,
-                    subcategories: (c as any).__subcategories__.map(
+                    subcategoryIds: (c as any).__subcategories__.map(
                         (s: Subcategory) => s.id
                     ),
                 }
@@ -296,8 +296,8 @@ describe('category', () => {
             categoriesDB.forEach((cdb, i) => {
                 expect(cdb.name).to.include(input[i].name)
                 expect(cdb.organizationId).to.eq(input[i].organizationId)
-                expect(cdb.subcategories).to.deep.equalInAnyOrder(
-                    input[i].subcategories
+                expect(cdb.subcategoryIds).to.deep.equalInAnyOrder(
+                    input[i].subcategoryIds
                 )
             })
         }
@@ -320,7 +320,7 @@ describe('category', () => {
             })
         })
 
-        context('when subcategories are not provided', () => {
+        context('when subcategoryIds are not provided', () => {
             it('should create categories without subcategories', async () => {
                 const input = generateInput(2, org1, false)
                 await expectCategoriesCreated(admin, input)
@@ -448,7 +448,7 @@ describe('category', () => {
                             return {
                                 name: `Category ${i + 1}`,
                                 organizationId: NIL_UUID,
-                                subcategories: subcategoryIds,
+                                subcategoryIds,
                             }
                         })
 
@@ -485,7 +485,7 @@ describe('category', () => {
                             return {
                                 name: `Category ${i + 1}`,
                                 organizationId: org1.organization_id,
-                                subcategories: [NIL_UUID],
+                                subcategoryIds: [NIL_UUID],
                             }
                         })
 
@@ -500,7 +500,7 @@ describe('category', () => {
                                 ['id'],
                                 'IDs',
                                 'Subcategory',
-                                i.subcategories.toString()
+                                i.subcategoryIds.toString()
                             )
                         )
 
@@ -602,7 +602,7 @@ describe('category', () => {
                 return {
                     id: c.id,
                     name: c.name,
-                    subcategories: (c as CategoryAndSubcategories).__subcategories__?.map(
+                    subcategoryIds: (c as CategoryAndSubcategories).__subcategories__?.map(
                         (s) => s.id
                     ),
                 }
@@ -633,8 +633,8 @@ describe('category', () => {
                 const inputRelated = input.find((i) => i.id === cdb.id)
                 expect(inputRelated).to.exist
                 expect(cdb.name).to.eq(inputRelated?.name)
-                expect(cdb.subcategories).to.deep.equalInAnyOrder(
-                    inputRelated?.subcategories
+                expect(cdb.subcategoryIds).to.deep.equalInAnyOrder(
+                    inputRelated?.subcategoryIds
                 )
             })
         }
@@ -646,7 +646,7 @@ describe('category', () => {
         ) => {
             const avoidNames = noUpdate === 'name' || noUpdate === 'both'
             const avoidSubcategories =
-                noUpdate === 'subcategories' || noUpdate === 'both'
+                noUpdate === 'subcategoryIds' || noUpdate === 'both'
 
             const input = buildUpdateCategoryInputArray(
                 categoriesToUpdate.map((c) => c.id),
@@ -686,12 +686,12 @@ describe('category', () => {
                 expect(cdb.name).to.eq(
                     avoidNames ? categoryRelated?.name : inputRelated?.name
                 )
-                expect(cdb.subcategories).to.deep.eq(
+                expect(cdb.subcategoryIds).to.deep.eq(
                     avoidSubcategories
                         ? (await categoryRelated?.subcategories)?.map(
                               (s) => s.id
                           )
-                        : inputRelated?.subcategories
+                        : inputRelated?.subcategoryIds
                 )
             }
         }
@@ -931,7 +931,7 @@ describe('category', () => {
                         await expectCategoriesFromCategories(
                             admin,
                             org1Categories,
-                            'subcategories'
+                            'subcategoryIds'
                         )
                     })
                 })
