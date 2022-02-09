@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import endPointOrganizationRequest2 from "./scripts/endPointOrganizationRequest2";
 
 // Notes: the request 6 is the same as the request 2

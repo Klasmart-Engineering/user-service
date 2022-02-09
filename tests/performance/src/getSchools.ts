@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import getSchools from './scripts/getSchools';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 } from './utils/loginSetupV2';
 
 // command: k6 run -e VUS=1 -e DURATION=1m getSchools.js
 // For increase the VUS -> change the value of the variable: VUS
@@ -21,7 +21,7 @@ export function setup() {
         pw: process.env.PW as string,
     };
     
-    const orgAdminLoginData = loginSetup(orgAdminLoginPayload);
+    const orgAdminLoginData = loginSetupV2(orgAdminLoginPayload);
     data = { 
         ...data, 
         [`orgAdmin`]: orgAdminLoginData,

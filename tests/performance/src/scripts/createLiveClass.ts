@@ -12,8 +12,6 @@ export default function () {
     const payload = JSON.stringify(generateClassPayload());
     const res = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, payload, params);
 
-    console.log('res === ', payload);
-
     check(res, {
         'CREATE LIVE CLASS status is 200': () => res.status === 200,
         'CREATE LIVE CLASS returned class ID': (r) => JSON.parse(r.body as string).data?.id ?? false,

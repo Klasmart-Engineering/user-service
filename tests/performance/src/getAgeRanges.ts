@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
 import getAgeRanges from './scripts/getAgeRanges';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 
 // command: k6 run -e VUS=1 -e DURATION=1m getAgeRanges.js
 // For increase the VUS -> change the value of the variable: VUS

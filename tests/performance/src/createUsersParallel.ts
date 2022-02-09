@@ -1,6 +1,6 @@
 import createUsersParallel from './scripts/createUsersParallel';
 import { Options } from 'k6/options';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import http from 'k6/http';
 
 export const options: Options = {

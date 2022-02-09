@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import endPointHomeRequest6 from './scripts/endPointHomeRequest6';
 
 // command: k6 run -e VUS=1 -e DURATION=1m testEndPointLandingHome6.js

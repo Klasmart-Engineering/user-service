@@ -6,7 +6,7 @@ import getCmsMemberships from './scripts/getCmsMemberships';
 import getCmsMemberships2 from './scripts/getCmsMemberships2';
 import meQueryBasic from './scripts/meQueryBasic';
 import userSettings from './scripts/userSettings';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 
 export function setup() {
     let data = {};

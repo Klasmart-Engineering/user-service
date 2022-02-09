@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { Options } from 'k6/options';
 import scheduleSearch from "./scripts/scheduleSearch";
 import generateClassPayload from './utils/generateClassPayload';
-import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 
 export const options: Options = {
     scenarios: {

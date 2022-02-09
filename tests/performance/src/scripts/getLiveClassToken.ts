@@ -8,7 +8,7 @@ const params = {
 };
 
 export default function (classId: string) {
-    const path = `schedules/${classId}/live/token?live_token_type=live&org_id${process.env.ORG_ID}`;
+    const path = `schedules/${classId}/live/token?live_token_type=live&org_id=${process.env.ORG_ID}`;
     const res = http.get(`${process.env.CMS_URL}/v1/${path}` as string, params);
 
     check(res, {
@@ -16,4 +16,5 @@ export default function (classId: string) {
         '"Get Live Class Token" query returns data': (r) => JSON.parse(r.body as string).token !== undefined,
     });
 
+    return JSON.parse(res?.body as string).token;
 }
