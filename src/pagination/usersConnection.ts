@@ -3,6 +3,7 @@ import { SelectQueryBuilder } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
+import { logger } from '../logging'
 import { UserConnectionNode } from '../types/graphQL/user'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
@@ -118,6 +119,18 @@ export async function usersConnectionQuery(
             if (filterHasProperty('classTeachingId', filter)) {
                 scope.innerJoin('User.classesTeaching', 'ClassTeaching')
             }
+        }
+
+        // organizationUserStatus requires organizationId to avoid duplicating users
+        // who are members of > 1 orgs
+        if (
+            filterHasProperty('organizationUserStatus', filter) &&
+            !filterHasProperty('organizationId', filter)
+        ) {
+            // TODO error to clients once all have migrated
+            logger.warn(
+                "User filter 'organizationUserStatus' requires 'organizationId'"
+            )
         }
 
         scope.andWhere(

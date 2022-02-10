@@ -76,9 +76,9 @@ GraphQL definitions:
 
 ```graphql
 extend type Mutation {
-    createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationOutput
-    updateSubjects(input: [UpdateSubjectInput!]!): SubjectsMutationOutput
-    deleteSubjects(input: [DeleteSubjectInput!]!): SubjectsMutationOutput
+    createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationResult
+    updateSubjects(input: [UpdateSubjectInput!]!): SubjectsMutationResult
+    deleteSubjects(input: [DeleteSubjectInput!]!): SubjectsMutationResult
 }
 
 input CreateSubjectInput {
@@ -97,7 +97,7 @@ input DeleteSubjectInput {
     id: ID!
 }
 
-type SubjectsMutationOutput {
+type SubjectsMutationResult {
     subjects: [SubjectConnectionNode!]!
 }
 

@@ -15,6 +15,9 @@ import {
 } from '../directives'
 import { loadPlugins } from './plugins'
 
+import newrelic from 'newrelic'
+import { withCorrelation } from 'kidsloop-nodejs-logger'
+
 /* accessing a child via a connection field takes 3 depth
     myconnection { // 0
         edges{ // 1
@@ -63,6 +66,16 @@ async function createContext({
     const apiKey = res.locals.hasApiKey
 
     const permissions = new UserPermissions(token, apiKey)
+
+    const correlationId = withCorrelation()
+    if (correlationId) {
+        newrelic.addCustomAttribute('correlationId', correlationId)
+    }
+
+    const requestOrigin = req.headers.origin
+    if (requestOrigin) {
+        newrelic.addCustomAttribute('requestOrigin', requestOrigin)
+    }
 
     return {
         token,

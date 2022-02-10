@@ -3,15 +3,19 @@ import csvParser from 'csv-parser'
 import fs from 'fs'
 import path from 'path'
 
-const PERMISSIONS_CSV_URL =
-    'https://docs.google.com/spreadsheets/d/1C1g-Q3UUsBBnDTXIFq75FSNdRN9Mr1qbJzyTYlpTePU/export?format=csv'
-const PERMISSIONS_CSV_INFO_URL =
-    'https://docs.google.com/spreadsheets/d/1C1g-Q3UUsBBnDTXIFq75FSNdRN9Mr1qbJzyTYlpTePU/export?format=csv&gid=680886613'
-const PERMISSION_FILE = path.join(__dirname, '../fixtures/permissions.csv')
+// application permissions
 const PERMISSION_INFO_FILE = path.join(
     __dirname,
     '../../src/permissions/permissionInfo.csv'
 )
+const PERMISSIONS_CSV_INFO_URL =
+    'https://docs.google.com/spreadsheets/d/1C1g-Q3UUsBBnDTXIFq75FSNdRN9Mr1qbJzyTYlpTePU/export?format=csv&gid=680886613'
+
+// test permissions
+const PERMISSIONS_CSV_URL =
+    'https://docs.google.com/spreadsheets/d/1C1g-Q3UUsBBnDTXIFq75FSNdRN9Mr1qbJzyTYlpTePU/export?format=csv'
+
+const PERMISSION_FILE = path.join(__dirname, '../fixtures/permissions.csv')
 
 interface PermissionInfo {
     name: string
@@ -23,24 +27,8 @@ interface PermissionInfo {
     student: boolean
 }
 
-export const latestPermissions = async (forceDownload = false) => {
+export const latestPermissions = async () => {
     const permissions: Map<string, PermissionInfo> = new Map()
-
-    if (forceDownload) {
-        const permissions = await axios.get(PERMISSIONS_CSV_URL, {
-            responseType: 'stream',
-        })
-
-        await permissions.data.pipe(fs.createWriteStream(PERMISSION_FILE))
-
-        const permissionInfo = await axios.get(PERMISSIONS_CSV_INFO_URL, {
-            responseType: 'stream',
-        })
-
-        await permissionInfo.data.pipe(
-            fs.createWriteStream(PERMISSION_INFO_FILE)
-        )
-    }
 
     const readStream = await fs.createReadStream(PERMISSION_FILE)
     const csvPermissions = await new Promise((resolve) =>

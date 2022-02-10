@@ -328,7 +328,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -464,7 +464,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -493,7 +493,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -563,7 +563,7 @@ export class Organization extends CustomBaseEntity {
 
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -764,7 +764,7 @@ export class Organization extends CustomBaseEntity {
 
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -1118,7 +1118,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -1157,7 +1157,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -1197,7 +1197,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -1234,7 +1234,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return []
         }
@@ -1312,7 +1312,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return []
         }
@@ -1389,7 +1389,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return []
         }
@@ -1458,7 +1458,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return []
         }
@@ -1533,7 +1533,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return []
         }
@@ -1657,7 +1657,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return []
         }
@@ -1737,7 +1737,7 @@ export class Organization extends CustomBaseEntity {
     ) {
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }

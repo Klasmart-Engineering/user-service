@@ -11,6 +11,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     In,
+    RelationId,
 } from 'typeorm'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
@@ -42,6 +43,9 @@ export class Class extends CustomBaseEntity {
 
     @ManyToOne(() => Organization, (organization) => organization.classes)
     public organization?: Promise<Organization>
+
+    @RelationId((_class: Class) => _class.organization)
+    public organizationId!: string
 
     @ManyToMany(() => School, (school) => school.classes)
     public schools?: Promise<School[]>
@@ -77,7 +81,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -182,7 +186,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -247,7 +251,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -280,7 +284,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -318,7 +322,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -383,7 +387,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -416,7 +420,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -454,7 +458,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -519,7 +523,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -554,7 +558,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -594,7 +598,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -622,7 +626,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -652,7 +656,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -680,7 +684,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }
@@ -748,7 +752,7 @@ export class Class extends CustomBaseEntity {
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return null
         }

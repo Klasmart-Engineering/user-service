@@ -81,9 +81,9 @@ GraphQL definitions:
 
 ```graphql
 extend type Mutation {
-    createAgeRanges(input: [CreateAgeRangeInput!]!): AgeRangesMutationOutput
-    updateAgeRanges(input: [UpdateAgeRangeInput!]!): AgeRangesMutationOutput
-    deleteAgeRanges(input: [DeleteAgeRangeInput!]!): AgeRangesMutationOutput
+    createAgeRanges(input: [CreateAgeRangeInput!]!): AgeRangesMutationResult
+    updateAgeRanges(input: [UpdateAgeRangeInput!]!): AgeRangesMutationResult
+    deleteAgeRanges(input: [DeleteAgeRangeInput!]!): AgeRangesMutationResult
 }
 
 input CreateAgeRangeInput {
@@ -107,7 +107,7 @@ input DeleteAgeRangeInput {
     id: ID!
 }
 
-type AgeRangesMutationOutput {
+type AgeRangesMutationResult {
     ageRanges: [AgeRangeConnectionNode!]!
 }
 

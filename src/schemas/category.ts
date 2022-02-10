@@ -98,7 +98,7 @@ const typeDefs = gql`
     input CreateCategoryInput {
         name: String!
         organizationId: ID!
-        subcategories: [ID!]
+        subcategoryIds: [ID!]
     }
 
     input DeleteCategoryInput {
@@ -108,7 +108,7 @@ const typeDefs = gql`
     input UpdateCategoryInput {
         id: ID!
         name: String
-        subcategories: [ID!]
+        subcategoryIds: [ID!]
     }
 
     type CategoriesMutationResult {

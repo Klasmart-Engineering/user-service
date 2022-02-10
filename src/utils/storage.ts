@@ -1,4 +1,33 @@
 import pkgcloud from 'pkgcloud'
+import { getEnvVar } from '../config/config'
+
+export const STORAGE = (function () {
+    const storage = {
+        FORCE_LOCAL_STORAGE: getEnvVar('FORCE_LOCAL_STORAGE', '')!,
+        PROVIDER: getEnvVar('STORAGE_PROVIDER', '')!,
+        BUCKET: getEnvVar('STORAGE_BUCKET', '')!,
+        REGION: getEnvVar('STORAGE_REGION', '')!,
+        ENDPOINT: getEnvVar('STORAGE_ENDPOINT', '')!,
+        ACCESS_KEY_ID: getEnvVar('STORAGE_ACCESS_KEY_ID', '')!,
+        SECRET_ACCESS_KEY: getEnvVar('STORAGE_SECRET_ACCESS_KEY', '')!,
+        SESSION_TOKEN: getEnvVar('STORAGE_SESSION_TOKEN', '')!,
+        PROJECT_ID: '',
+        GOOGLE_KEY_FILE_NAME: '',
+    }
+
+    if (storage.PROVIDER == 'google' || storage.PROVIDER == 'vngcloud') {
+        storage.PROJECT_ID = getEnvVar('STORAGE_PROJECT_ID', '')!
+    }
+
+    if (storage.PROVIDER == 'google') {
+        storage.GOOGLE_KEY_FILE_NAME = getEnvVar(
+            'STORAGE_GOOGLE_KEY_FILE_NAME',
+            ''
+        )!
+    }
+
+    return storage
+})()
 
 /**
  * Build file path on cloud storage.
@@ -43,57 +72,54 @@ export function createCloudClient(provider: string) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const clientParams: any = {}
 
-    if (process.env.FORCE_LOCAL_STORAGE) {
-        clientParams.endpoint = process.env.STORAGE_ENDPOINT
+    if (STORAGE.FORCE_LOCAL_STORAGE) {
+        clientParams.endpoint = STORAGE.ENDPOINT
         clientParams.forcePathBucket = true
     }
 
-    if (process.env.STORAGE_ACCESS_KEY_ID) {
-        clientParams.keyId = process.env.STORAGE_ACCESS_KEY_ID
+    if (STORAGE.ACCESS_KEY_ID) {
+        clientParams.keyId = STORAGE.ACCESS_KEY_ID
     }
 
-    if (process.env.STORAGE_SECRET_ACCESS_KEY) {
-        clientParams.key = process.env.STORAGE_SECRET_ACCESS_KEY
+    if (STORAGE.SECRET_ACCESS_KEY) {
+        clientParams.key = STORAGE.SECRET_ACCESS_KEY
     }
 
-    if (process.env.STORAGE_SESSION_TOKEN) {
-        clientParams.sessionToken = process.env.STORAGE_SESSION_TOKEN
+    if (STORAGE.SESSION_TOKEN) {
+        clientParams.sessionToken = STORAGE.SESSION_TOKEN
     }
 
     switch (provider) {
         case 'amazon':
-            if (!process.env.STORAGE_BUCKET || !process.env.STORAGE_REGION) {
+            if (!STORAGE.BUCKET || !STORAGE.REGION) {
                 throw new Error('missing AWS env variable(s)')
             }
             clientParams.provider = 'amazon'
-            clientParams.region = process.env.STORAGE_REGION
+            clientParams.region = STORAGE.REGION
             break
 
         case 'google':
             if (
-                !process.env.STORAGE_BUCKET ||
-                !process.env.STORAGE_GOOGLE_KEY_FILE_NAME ||
-                !process.env.STORAGE_PROJECT_ID
+                !STORAGE.BUCKET ||
+                !STORAGE.GOOGLE_KEY_FILE_NAME ||
+                !STORAGE.PROJECT_ID
             ) {
                 throw new Error('missing Google Cloud env variable(s)')
             }
 
             clientParams.provider = 'google'
-            clientParams.keyFilename = process.env.STORAGE_GOOGLE_KEY_FILE_NAME
-            clientParams.projectId = process.env.STORAGE_PROJECT_ID
+            clientParams.keyFilename = STORAGE.GOOGLE_KEY_FILE_NAME
+            clientParams.projectId = STORAGE.PROJECT_ID
             break
 
         case 'vngcloud':
-            if (
-                !process.env.STORAGE_PROJECT_ID ||
-                !process.env.STORAGE_REGION
-            ) {
+            if (!STORAGE.PROJECT_ID || !STORAGE.REGION) {
                 throw new Error('missing VNG Cloud env variable(s)')
             }
 
             clientParams.provider = 'amazon'
-            clientParams.region = process.env.STORAGE_REGION
-            clientParams.projectId = process.env.STORAGE_PROJECT_ID
+            clientParams.region = STORAGE.REGION
+            clientParams.projectId = STORAGE.PROJECT_ID
             break
 
         default:

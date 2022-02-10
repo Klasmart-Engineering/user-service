@@ -143,7 +143,7 @@ export const customErrors = {
     invalid_alphanumeric_special: {
         code: 'ERR_INVALID_ALPHANUMERIC_SPECIAL_CHARACTERS',
         message:
-            '{entity} {attribute} must only contain letters, numbers, space and & / , - .',
+            "{entity} {attribute} must only contain letters, numbers, space and & / , - . '",
     },
     invalid_alpha: {
         code: 'ERR_INVALID_ALPHABETIC',

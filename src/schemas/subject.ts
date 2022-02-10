@@ -21,9 +21,9 @@ const typeDefs = gql`
         uploadSubjectsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateSubjects: Boolean @isAdmin
-        createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationOutput
-        updateSubjects(input: [UpdateSubjectInput!]!): SubjectsMutationOutput
-        deleteSubjects(input: [DeleteSubjectInput!]!): SubjectsMutationOutput
+        createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationResult
+        updateSubjects(input: [UpdateSubjectInput!]!): SubjectsMutationResult
+        deleteSubjects(input: [DeleteSubjectInput!]!): SubjectsMutationResult
     }
 
     # pagination extension types start here
@@ -146,7 +146,7 @@ const typeDefs = gql`
         id: ID!
     }
 
-    type SubjectsMutationOutput {
+    type SubjectsMutationResult {
         subjects: [SubjectConnectionNode!]!
     }
 `

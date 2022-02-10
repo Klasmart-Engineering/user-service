@@ -1,7 +1,6 @@
 import chaiAsPromised from 'chai-as-promised'
 import { Connection } from 'typeorm'
 import { expect, use } from 'chai'
-
 import { Model } from '../../../../src/model'
 import { createServer } from '../../../../src/utils/createServer'
 import {
@@ -16,7 +15,6 @@ import { Class } from '../../../../src/entities/class'
 import { createOrganization } from '../../../factories/organization.factory'
 import { createProgram } from '../../../factories/program.factory'
 import { createSchool } from '../../../factories/school.factory'
-
 import { processClassFromCSVRow } from '../../../../src/utils/csv/class'
 import { ClassRow } from '../../../../src/types/csv/classRow'
 import { CSVError } from '../../../../src/types/csv/csvError'
@@ -26,7 +24,6 @@ import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { config } from '../../../../src/config/config'
 import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
-import { Role } from '../../../../src/entities/role'
 
 use(chaiAsPromised)
 
@@ -302,6 +299,36 @@ describe('processClassFromCSVRow', () => {
         expect(classRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
         expect(classRowError.message).to.equal(
             'On row number 1, class name is required.'
+        )
+
+        const dbClass = await Class.find()
+        expect(dbClass.length).to.equal(1)
+    })
+
+    it('should record an error for invalid class name', async () => {
+        row = {
+            organization_name: orgName,
+            class_name: '!nv@l!d n@m€',
+            class_shortcode: 'CODE123',
+            school_name: school1Name,
+            program_name: progName,
+        }
+        const rowErrors = await processClassFromCSVRow(
+            connection.manager,
+            row,
+            1,
+            fileErrors,
+            adminPermissions,
+            queryResultCache
+        )
+        expect(rowErrors).to.have.length(1)
+
+        const classRowError = rowErrors[0]
+        expect(classRowError.code).to.equal(
+            'ERR_INVALID_ALPHANUMERIC_SPECIAL_CHARACTERS'
+        )
+        expect(classRowError.message).to.equal(
+            "On row number 1, class name must only contain letters, numbers, space and & / , - . '"
         )
 
         const dbClass = await Class.find()

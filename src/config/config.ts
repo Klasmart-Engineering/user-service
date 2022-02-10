@@ -1,3 +1,5 @@
+import logger from '../logging'
+
 export const config = {
     limits: {
         MUTATION_MIN_INPUT_ARRAY_SIZE: 1,
@@ -17,8 +19,24 @@ export const config = {
         SCHOOL_SHORTCODE_MAX_LENGTH: 10,
         GENDER_MIN_LENGTH: 3,
         GENDER_MAX_LENGTH: 16,
-        USERNAME_MAX_LEN: 35,
+        USERNAME_MAX_LENGTH: 50,
         AVATAR_MAX_LEN: 8192,
         CSV_MAX_FILESIZE: 50 * 1024,
     },
 } as const
+
+export const getEnvVar = (
+    name: string,
+    defaultValue?: string
+): string | undefined => {
+    const val = process.env[name]
+
+    if (val) {
+        return val
+    } else {
+        logger.warn(
+            `Env Variable not set: "${name}" - defaulting to "${defaultValue}"`
+        )
+        return defaultValue
+    }
+}

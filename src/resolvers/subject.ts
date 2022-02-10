@@ -11,7 +11,7 @@ import {
     CreateSubjectInput,
     UpdateSubjectInput,
     DeleteSubjectInput,
-    SubjectsMutationOutput,
+    SubjectsMutationResult,
 } from '../types/graphQL/subject'
 import {
     CreateMutation,
@@ -55,12 +55,12 @@ export interface DeleteSubjectsEntityMap extends EntityMap<Subject> {
 export class CreateSubjects extends CreateMutation<
     Subject,
     CreateSubjectInput,
-    SubjectsMutationOutput,
+    SubjectsMutationResult,
     CreateSubjectsEntityMap
 > {
     protected readonly EntityType = Subject
     protected inputTypeName = 'CreateSubjectInput'
-    protected output: SubjectsMutationOutput = { subjects: [] }
+    protected output: SubjectsMutationResult = { subjects: [] }
 
     constructor(
         input: CreateSubjectInput[],
@@ -262,13 +262,13 @@ export class CreateSubjects extends CreateMutation<
 export class UpdateSubjects extends UpdateMutation<
     Subject,
     UpdateSubjectInput,
-    SubjectsMutationOutput,
+    SubjectsMutationResult,
     UpdateSubjectsEntityMap
 > {
     protected readonly EntityType = Subject
     protected inputTypeName = 'UpdateSubjectInput'
     protected mainEntityIds: string[] = []
-    protected output: SubjectsMutationOutput = { subjects: [] }
+    protected output: SubjectsMutationResult = { subjects: [] }
 
     constructor(
         input: UpdateSubjectInput[],
@@ -511,11 +511,11 @@ export class UpdateSubjects extends UpdateMutation<
 export class DeleteSubjects extends DeleteMutation<
     Subject,
     DeleteSubjectInput,
-    SubjectsMutationOutput
+    SubjectsMutationResult
 > {
     protected readonly EntityType = Subject
     protected readonly inputTypeName = 'DeleteSubjectInput'
-    protected readonly output: SubjectsMutationOutput = { subjects: [] }
+    protected readonly output: SubjectsMutationResult = { subjects: [] }
     protected readonly mainEntityIds: string[]
 
     constructor(

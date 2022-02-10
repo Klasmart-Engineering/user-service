@@ -12,7 +12,6 @@ import { Subcategory } from '../../src/entities/subcategory'
 import { Subject } from '../../src/entities/subject'
 import { User } from '../../src/entities/user'
 import { Model } from '../../src/model'
-import { TokenPayload } from '../../src/token'
 import { createServer } from '../../src/utils/createServer'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
@@ -911,21 +910,18 @@ describe('model', () => {
 
         context('when user has not Admin permissions', () => {
             it('should throw an error', async () => {
-                const fn = async () =>
-                    it('should rename the duplicated subjects', async () => {
-                        const result = await renameDuplicateSubjectsMutation(
-                            testClient,
-                            getAdminAuthToken()
-                        )
+                const result = await renameDuplicateSubjectsMutation(
+                    testClient,
+                    getAdminAuthToken()
+                )
 
-                        expect(result).eq(true)
+                expect(result).eq(true)
 
-                        const duplicatedSubjects = await Subject.count({
-                            where: { name: subjectName, organization },
-                        })
+                const duplicatedSubjects = await Subject.count({
+                    where: { name: subjectName, organization },
+                })
 
-                        expect(duplicatedSubjects).eq(1)
-                    })
+                expect(duplicatedSubjects).eq(1)
             })
         })
     })

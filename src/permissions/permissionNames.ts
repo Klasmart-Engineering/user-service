@@ -130,6 +130,7 @@ export enum PermissionName {
     publish_free_content_with_lo_287 = 'publish_free_content_with_lo_287',
     publish_free_content_no_lo_288 = 'publish_free_content_no_lo_288',
     full_content_management_294 = 'full_content_management_294',
+    show_all_folders_295 = 'show_all_folders_295',
     asset_db_300 = 'asset_db_300',
     create_asset_page_301 = 'create_asset_page_301',
     view_asset_310 = 'view_asset_310',
