@@ -1,4 +1,4 @@
-import { EntityManager, getManager } from 'typeorm'
+import { EntityManager, getManager, In } from 'typeorm'
 
 import { Permission } from '../entities/permission'
 import { organizationAdminRole } from '../permissions/organizationAdmin'
@@ -12,12 +12,12 @@ import { teacherRole } from '../permissions/teacher'
 
 export class RolesInitializer {
     public async run() {
-        const roles = new Map<string, Role>()
+        let roles: Role[] = []
 
         await this.createSystemPermissions()
 
         await getManager().transaction(async (manager) => {
-            await this._createDefaultRoles(manager, roles)
+            roles = await this._createDefaultRoles(manager)
         })
 
         return roles.values()
@@ -78,55 +78,46 @@ export class RolesInitializer {
     }
 
     private async _createDefaultRoles(
-        manager: EntityManager = getManager(),
-        roles: Map<string, Role>
-    ) {
-        for (const { role_name, permissions } of [
+        manager: EntityManager = getManager()
+    ): Promise<Role[]> {
+        const defaultRoles = [
             organizationAdminRole,
             schoolAdminRole,
             parentRole,
             studentRole,
             teacherRole,
-        ]) {
-            let role = await manager.findOne(Role, {
+        ]
+
+        const roleNames = defaultRoles.map((r) => r.role_name)
+        const dbRolesMap = await manager
+            .find(Role, {
                 where: {
-                    role_name: role_name,
+                    role_name: In(roleNames),
                     system_role: true,
                     organization: { organization_id: null },
                 },
             })
+            .then((dbRoles) => {
+                return new Map(dbRoles.map((r) => [r.role_name!, r]))
+            })
 
+        const roles: Role[] = []
+        for (const { role_name, permissions } of defaultRoles) {
+            let role = dbRolesMap.get(role_name)
             if (!role) {
                 role = new Role()
                 role.role_name = role_name
                 role.system_role = true
             }
-
-            await this._assignPermissionsDefaultRoles(
-                manager,
-                role,
-                permissions
+            role.permissions = Promise.resolve(
+                permissions.map((p) => {
+                    return { permission_name: p } as Permission
+                })
             )
-
-            roles.set(role_name, role)
+            roles.push(role)
         }
 
-        return roles
-    }
-
-    private async _assignPermissionsDefaultRoles(
-        manager: EntityManager,
-        role: Role,
-        permissions: string[]
-    ) {
-        role.permissions = Promise.resolve([])
-        await manager.save(role)
-
-        await manager
-            .createQueryBuilder()
-            .relation(Role, 'permissions')
-            .of(role)
-            .add(permissions)
+        return manager.save(roles)
     }
 }
 
