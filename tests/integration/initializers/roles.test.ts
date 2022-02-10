@@ -12,6 +12,8 @@ import { createAdminUser } from '../../utils/testEntities'
 import { Model } from '../../../src/model'
 import { Organization } from '../../../src/entities/organization'
 import RoleInitializer from '../../../src/initializers/roles'
+import { Permission } from '../../../src/entities/permission'
+import { permissionInfo } from '../../../src/permissions/permissionInfo'
 
 describe('RolesInitializer', () => {
     let connection: Connection
@@ -25,6 +27,18 @@ describe('RolesInitializer', () => {
 
     after(async () => {
         await connection?.close()
+    })
+
+    it('adds all permissions from permissionInfo.csv', async () => {
+        await RoleInitializer.run()
+
+        const filePermissions = await permissionInfo()
+        const dbPermissions = await Permission.find()
+
+        expect(dbPermissions.length).to.equal(filePermissions.size)
+        expect(
+            dbPermissions.map((p) => p.permission_name)
+        ).to.have.same.members(Array.from(filePermissions.keys()))
     })
 
     describe('run', () => {

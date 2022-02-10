@@ -70,6 +70,7 @@ export const superAdminRole = {
         PermissionName.delete_folder_292,
         PermissionName.bulk_visibility_settings_293,
         PermissionName.full_content_management_294,
+        PermissionName.show_all_folders_295,
         PermissionName.asset_db_300,
         PermissionName.create_asset_page_301,
         PermissionName.view_asset_310,
