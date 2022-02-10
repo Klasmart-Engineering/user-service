@@ -54,6 +54,7 @@ export const options: Options = {
             gracefulStop: '5s',
             stages:  generateStages(stages),
         },
+        /*
         student02: {
             executor: 'ramping-vus',
             exec: 'student02',

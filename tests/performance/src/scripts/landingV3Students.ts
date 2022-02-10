@@ -5,13 +5,21 @@ import meTest from "./meTest";
 import loginSetup from "../utils/loginSetup";
 import endPointOrganizationRequest2 from "./endPointOrganizationRequest2";
 import meQueryBasic from "./meQueryBasic";
-import endPointHomeRequest7 from "./endPointHomeRequest7";
+import getMyUsers from "./getMyUsers";
+import getMyUser from "./getMyUser";
+import endPointOrganizationRequest5 from "./endPointOrganizationRequest5";
+import endPointHomeRequest7AsStudent from "./endPointHomeRequest7AsStudent";
+import getMeClassesStudying from "./getMeClassesStudying";
+
+
+// This function is for Students that lands on the HOMEPAGE section.
+// Emulates the request that are made from the FE side.
 
 export function setup() {
     const loginPayload = {
         deviceId: "webpage",
         deviceName: "k6",
-        email: process.env.EMAIL_TEACHER_1 as string,
+        email: process.env.STUDENT00_USERNAME as string,
         pw: process.env.PW as string,
     };
 
@@ -19,36 +27,41 @@ export function setup() {
 }   
 
 export default function(data: { res: any, userId: string }) {
-    meTest(); // request #1
-    sleep(1); 
-    // meTest();
-    // sleep(1);
-    endPointOrganizationRequest2();
-    sleep(0.5)
-    endPointOrganizationRequest2();
-    sleep(0.5)
-    
+    // request #1 USER service
     meQueryBasic();
+    sleep(2);
+    // request #2 USER service
+    endPointOrganizationRequest5();
+    sleep(2);
 
-    // ver las request 7 y 8
-    // agregar request classesStudying
-    sleep(0.5)
-    meQueryBasic();
-    sleep(0.5)
+    // Request #3
+    getMyUser();
+    sleep(2);
+
+    // Request #4 User service
     endPointOrganizationRequest2();
-    sleep(0.5)
-    endPointHomeRequest7(),
+    sleep(2);
 
-    
+    // Request #5 User service
+    getMyUsers();
+    sleep(2);
 
+    // Request #6 User service
+    meQueryBasic(); 
+    sleep(2);
 
-    meTest();
-    sleep(0.5)
-    getUserTest(data.userId);
-    sleep(1);
-    meTest();
-    sleep(0.5)
-    getUserTest(data.userId);
-    sleep(0.5)
-    meTest();
+    // Request #7 User service
+    endPointOrganizationRequest5();
+    sleep(2);
+
+    // Request #8 User service
+    getMeClassesStudying();
+    sleep(2);
+
+    // Request #9 User service
+    endPointHomeRequest7AsStudent(data.userId);
+    sleep(2);
+
+    // Request #10 User service
+    endPointOrganizationRequest2();
 }

@@ -345,25 +345,33 @@ export const getUserNode = `query getUserNode($id: ID!, $organizationId: UUID!) 
 
 
 export const meQueryOrganizationReq3 = `{ me {
-    user_id
-    user_name
-    organization_ownerships {
-        organization_id
-        status
-        organization {
-            organization_id
-            organization_name
-            phone
-            roles {
-                role_id
-                role_name
-                status
+        user_id
+        full_name
+        classesStudying {
+            class_id
+            class_name
+            schools {
+                school_id
+                school_name
+            }
+            organization {
+                organization_id
+                organization_name
             }
         }
-        user {
-            email
+        classesTeaching {
+            class_id
+            class_name
+            schools {
+                school_id
+                school_name
+                __typename
+            }
+            organization {
+                organization_id
+                organization_name
+            }
         }
-    }
     }
 }`;
 
@@ -379,6 +387,75 @@ export const meQueryOrganizationReq5 = `{ me {
         }
     }
 }`;
+
+
+// Users in Plural
+export const getMyUsers = ` { my_users {
+            user_id
+            full_name
+            given_name
+            family_name
+            email
+            phone
+            date_of_birth
+            avatar
+            username
+            memberships {
+                status
+            }
+        }
+    }
+`;
+
+// User in Singular
+export const getMyUser = ` { myUser {
+    node {
+        id
+        familyName
+        givenName
+        avatar
+        contactInfo {
+            email
+            phone
+        }
+    }
+}
+}
+`;
+
+
+export const meClassesStudying = ` { me {
+        user_id
+        full_name
+        classesStudying {
+            class_id
+            class_name
+            schools {
+                school_id
+                school_name
+            }
+            organization {
+                organization_id
+                organization_name
+            }
+        }
+        classesTeaching {
+            class_id
+            class_name
+            schools {
+                school_id
+                school_name
+                __typename
+            }
+            organization {
+                organization_id
+                organization_name
+            }
+        }
+    }
+}
+`;
+
 
 
 export const contentsMe1 =  (orgId: string) => (`{ meMembership: me {

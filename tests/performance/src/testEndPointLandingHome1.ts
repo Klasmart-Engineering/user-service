@@ -1,7 +1,8 @@
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
-import endPointHomeRequest1 from "./scripts/meQueryBasic";
+//import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
+import endPointHomeRequest1 from "./scripts/endPointHomeRequest1";
+import loginSetup from './utils/loginSetup';
 
 /*
 
@@ -52,5 +53,6 @@ export default function(data: { [key: string]: { res: any, userId: string }}) {
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    endPointHomeRequest1('Org admin');
+    //endPointHomeRequest1('Org admin');
+    endPointHomeRequest1();
 }

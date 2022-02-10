@@ -173,10 +173,10 @@ export const options: Options = {
         students00: {
             executor: 'constant-vus',
             exec: 'students00',
-            vus: 100,
-            duration: '10m',
+            vus: 1,
+            duration: '1m',
           },
-
+/* 
           students01: {
             executor: 'constant-vus',
             exec: 'students01',
@@ -203,7 +203,7 @@ export const options: Options = {
             exec: 'students04',
             vus: 100,
             duration: '10m',
-          },
+          }, */
     },
 };
 

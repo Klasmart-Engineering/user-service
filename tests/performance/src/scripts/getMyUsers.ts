@@ -1,6 +1,6 @@
 import { check } from 'k6';
 import http from 'k6/http';
-import { meQueryOrganizationReq5 } from '../queries/users';
+import { getMyUsers } from '../queries/users';
 
 const params = {
     headers: {
@@ -11,15 +11,14 @@ const params = {
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
         variables: {},
-        //operationName: "me",
-        query: meQueryOrganizationReq5,
+        query: getMyUsers
     });
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
 
     check(res, {
-        'status is 200 meQueryOrganizationReq5': () => res.status === 200,
-        '"meQueryOrganizationReq5" query returns data': (r) => JSON.parse(r.body as string).data !== undefined,
+        'status is 200 myUser plural': () => res.status === 200,
+        '"myUsers plural" query returns data': (r) => JSON.parse(r.body as string).data?.my_users !== undefined,
 
     }, {
         userRoleType: roleType
