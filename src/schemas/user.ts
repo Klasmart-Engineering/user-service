@@ -199,6 +199,9 @@ const typeDefs = gql`
         organizationId: UUIDFilter
         roleId: UUIDFilter
         schoolId: UUIDExclusiveFilter
+        """
+        Note: use organizationUserStatus with organizationId filter to avoid duplicating users
+        """
         organizationUserStatus: StringFilter
         classId: UUIDExclusiveFilter
 
