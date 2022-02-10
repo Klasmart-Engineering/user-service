@@ -8,6 +8,7 @@ import { superAdminRole } from './superAdmin'
 import { uniqueAndTruthy } from '../utils/clean'
 import { Organization } from '../entities/organization'
 import { TokenPayload } from '../token'
+import logger from '../logging'
 
 export interface PermissionContext {
     school_ids?: string[]
@@ -72,6 +73,13 @@ export class UserPermissions {
         ) {
             this.username = token?.user_name
         }
+
+        logger.debug(`UserPermissions created: 
+            UserId: ${this.user_id},
+            Email: ${this.email},
+            Phone: ${this.phone},
+            Username: ${this.username},
+            isAdmin: ${this.isAdmin}`)
     }
 
     private isAdminEmail(email: string): boolean {

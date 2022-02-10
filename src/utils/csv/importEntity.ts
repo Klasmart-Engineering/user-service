@@ -26,7 +26,7 @@ export async function createEntityFromCsvWithRollBack(
             userPermissions,
             functionToValidateCSVHeaders
         )
-        logger.info('Generic Upload CSV File finished')
+        logger.debug('Generic Upload CSV File finished')
 
         if (!isDryRun) {
             await queryRunner.commitTransaction()

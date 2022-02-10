@@ -90,34 +90,39 @@ import {
     eligibleMembersConnectionResolver,
     EligibleMembersPaginationArgs,
 } from './pagination/eligibleMembersConnection'
+import { getEnvVar } from './config/config'
 import { reportError } from './utils/resolvers/errors'
 
 export class Model {
     public static async create() {
+        const RO_DATABASE_URL = getEnvVar('RO_DATABASE_URL')!
+        const RO_DATABASE = RO_DATABASE_URL
+            ? [
+                  {
+                      url: RO_DATABASE_URL,
+                  },
+              ]
+            : []
+
         try {
             const connection = await createConnection({
                 name: 'default',
                 type: 'postgres',
                 synchronize: false,
                 logger:
-                    process.env.DATABASE_LOGGING === 'true'
+                    getEnvVar('DATABASE_LOGGING') === 'true'
                         ? new TypeORMLogger()
                         : undefined,
                 entities: ['src/entities/*{.ts,.js}'],
                 migrations: ['migrations/*{.ts,.js}'],
                 replication: {
                     master: {
-                        url:
-                            process.env.DATABASE_URL ||
-                            'postgres://postgres:kidsloop@localhost',
+                        url: getEnvVar(
+                            'DATABASE_URL',
+                            'postgres://postgres:kidsloop@localhost'
+                        ),
                     },
-                    slaves: process.env.RO_DATABASE_URL
-                        ? [
-                              {
-                                  url: process.env.RO_DATABASE_URL,
-                              },
-                          ]
-                        : [],
+                    slaves: RO_DATABASE,
                 },
             })
 
@@ -137,8 +142,10 @@ export class Model {
         }
     }
 
-    public static readonly SIMILARITY_THRESHOLD =
-        process.env.POSTGRES_TRGM_LIMIT || 0.1
+    public static readonly SIMILARITY_THRESHOLD = getEnvVar(
+        'POSTGRES_TRGM_LIMIT',
+        '0.1'
+    )
 
     private connection: Connection
     private manager: EntityManager

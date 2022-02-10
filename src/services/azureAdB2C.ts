@@ -5,6 +5,7 @@ import {
     ITokenPayload,
 } from 'passport-azure-ad'
 import { Request } from 'express'
+import { getEnvVar } from '../config/config'
 
 interface AzureB2CTokenPayload extends ITokenPayload {
     emails?: string[]
@@ -13,14 +14,14 @@ interface AzureB2CTokenPayload extends ITokenPayload {
 }
 
 const credentials = {
-    tenantName: process.env.AZURE_B2C_TENANT_NAME,
-    clientID: process.env.AZURE_B2C_CLIENT_ID || '',
+    tenantName: getEnvVar('AZURE_B2C_TENANT_NAME', '')!,
+    clientID: getEnvVar('AZURE_B2C_CLIENT_ID', '')!,
 }
 const policies = {
-    policyName: process.env.AZURE_B2C_POLICY_NAME,
+    policyName: getEnvVar('AZURE_B2C_POLICY_NAME', '')!,
 }
 const metadata = {
-    authority: process.env.AZURE_B2C_AUTHORITY,
+    authority: getEnvVar('AZURE_B2C_AUTHORITY', '')!,
     discovery: '.well-known/openid-configuration',
     version: 'v2.0',
 }
@@ -51,7 +52,7 @@ const bearerStrategy = () =>
         }
     )
 
-if (process.env.AZURE_B2C_ENABLED === 'true') {
+if (getEnvVar('AZURE_B2C_ENABLED', 'false') === 'true') {
     passport.initialize()
     passport.use(bearerStrategy())
 }
