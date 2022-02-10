@@ -140,6 +140,7 @@ import { ObjMap } from '../../src/utils/stringUtils'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { mapClassToClassConnectionNode } from '../../src/pagination/classesConnection'
 import { config } from '../../src/config/config'
+import { compareMultipleEntities } from '../utils/assertions'
 
 type ClassSpecs = {
     class: Class
@@ -6413,37 +6414,44 @@ describe('class', () => {
         })
 
         context('.generateEntityMaps', () => {
+            function generateMaps(mapInputs: AddStudentsToClassInput[]) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new AddStudentsToClasses([], permissions)
+                return mutation.generateEntityMaps(mapInputs)
+            }
+
             context('populates the maps correctly', () => {
-                let maps: AddStudentsClassesEntityMap
+                context('when a class has students', () => {
+                    let studentsInClass: User[]
 
-                beforeEach(async () => {
-                    const permissions = new UserPermissions(
-                        userToPayload(adminUser)
-                    )
+                    beforeEach(async () => {
+                        studentsInClass = students.slice(1)
+                        classes[1].students = Promise.resolve(studentsInClass)
+                        await classes[1].save()
+                    })
 
-                    const mutation = new AddStudentsToClasses(
-                        input,
-                        permissions
-                    )
-                    maps = await mutation.generateEntityMaps(input)
-                })
-
-                it('populates students correctly', () => {
-                    it('popualtes classesStudents correctly', () => {
-                        expect(
-                            Array.from(
-                                maps.classesStudents.entries()
-                            ).map(([classId, students]) => [
-                                classId,
-                                students.map((st) => st.user_id),
-                            ])
-                        ).to.deep.equalInAnyOrder([
-                            input.map((i) => [i.classId, [...i.studentIds]]),
-                        ])
+                    it('populates classesStudents correctly', async () => {
+                        const maps = await generateMaps(input)
+                        for (const cls of classes) {
+                            const mapStudents = maps.classesStudents.get(
+                                cls.class_id
+                            )!
+                            if (cls.class_id == classes[1].class_id) {
+                                compareMultipleEntities(
+                                    mapStudents,
+                                    studentsInClass
+                                )
+                            } else {
+                                expect(mapStudents).to.be.empty
+                            }
+                        }
                     })
                 })
 
-                it('populates organizations correctly', () => {
+                it('populates organizations correctly', async () => {
+                    const maps = await generateMaps(input)
                     expect(maps.organizationIds).to.deep.equalInAnyOrder([
                         org.organization_id,
                         org.organization_id,
@@ -6851,37 +6859,29 @@ describe('class', () => {
         })
 
         context('.generateEntityMaps', () => {
+            function generateMaps(mapInputs: RemoveStudentsFromClassInput[]) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new RemoveStudentsFromClasses([], permissions)
+                return mutation.generateEntityMaps(mapInputs)
+            }
+
             context('populates the maps correctly', () => {
-                let maps: RemoveStudentsClassesEntityMap
-
-                beforeEach(async () => {
-                    const permissions = new UserPermissions(
-                        userToPayload(adminUser)
-                    )
-
-                    const mutation = new RemoveStudentsFromClasses(
-                        input,
-                        permissions
-                    )
-                    maps = await mutation.generateEntityMaps(input)
+                it('populates classesStudents correctly', async () => {
+                    const maps = await generateMaps(input)
+                    for (const { classId, studentIds } of input) {
+                        const mapStudentIds = maps.classesStudents
+                            .get(classId)!
+                            .map((u) => u.user_id)
+                        expect(mapStudentIds).to.deep.equalInAnyOrder(
+                            studentIds
+                        )
+                    }
                 })
 
-                it('populates classesStudents correctly', () => {
-                    it('populates classesStudents correctly', () => {
-                        expect(
-                            Array.from(
-                                maps.classesStudents.entries()
-                            ).map(([classId, students]) => [
-                                classId,
-                                students.map((st) => st.user_id),
-                            ])
-                        ).to.deep.equalInAnyOrder([
-                            input.map((i) => [i.classId, [...i.studentIds]]),
-                        ])
-                    })
-                })
-
-                it('populates organizations correctly', () => {
+                it('populates organizations correctly', async () => {
+                    const maps = await generateMaps(input)
                     expect(maps.organizationIds).to.deep.equalInAnyOrder([
                         org.organization_id,
                         org.organization_id,
@@ -7283,37 +7283,44 @@ describe('class', () => {
         })
 
         context('.generateEntityMaps', () => {
+            function generateMaps(mapInputs: AddTeachersToClassInput[]) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new AddTeachersToClasses([], permissions)
+                return mutation.generateEntityMaps(mapInputs)
+            }
+
             context('populates the maps correctly', () => {
-                let maps: AddTeachersClassesEntityMap
+                context('when a class has teachers', () => {
+                    let teachersInClass: User[]
 
-                beforeEach(async () => {
-                    const permissions = new UserPermissions(
-                        userToPayload(adminUser)
-                    )
+                    beforeEach(async () => {
+                        teachersInClass = teachers.slice(1)
+                        classes[1].teachers = Promise.resolve(teachersInClass)
+                        await classes[1].save()
+                    })
 
-                    const mutation = new AddTeachersToClasses(
-                        input,
-                        permissions
-                    )
-                    maps = await mutation.generateEntityMaps(input)
-                })
-
-                it('populates teachers correctly', () => {
-                    it('populates classesTeachers correctly', () => {
-                        expect(
-                            Array.from(
-                                maps.classesTeachers.entries()
-                            ).map(([classId, teachers]) => [
-                                classId,
-                                teachers.map((st) => st.user_id),
-                            ])
-                        ).to.deep.equalInAnyOrder([
-                            input.map((i) => [i.classId, [...i.teacherIds]]),
-                        ])
+                    it('populates classesTeachers correctly', async () => {
+                        const maps = await generateMaps(input)
+                        for (const cls of classes) {
+                            const mapTeachers = maps.classesTeachers.get(
+                                cls.class_id
+                            )!
+                            if (cls.class_id == classes[1].class_id) {
+                                compareMultipleEntities(
+                                    mapTeachers,
+                                    teachersInClass
+                                )
+                            } else {
+                                expect(mapTeachers).to.be.empty
+                            }
+                        }
                     })
                 })
 
-                it('populates organizations correctly', () => {
+                it('populates organizations correctly', async () => {
+                    const maps = await generateMaps(input)
                     expect(maps.organizationIds).to.deep.equalInAnyOrder([
                         org.organization_id,
                         org.organization_id,
@@ -7712,37 +7719,29 @@ describe('class', () => {
         })
 
         context('.generateEntityMaps', () => {
+            function generateMaps(mapInputs: RemoveTeachersFromClassInput[]) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new RemoveTeachersFromClasses([], permissions)
+                return mutation.generateEntityMaps(mapInputs)
+            }
+
             context('populates the maps correctly', () => {
-                let maps: RemoveTeachersClassesEntityMap
-
-                beforeEach(async () => {
-                    const permissions = new UserPermissions(
-                        userToPayload(adminUser)
-                    )
-
-                    const mutation = new RemoveTeachersFromClasses(
-                        input,
-                        permissions
-                    )
-                    maps = await mutation.generateEntityMaps(input)
+                it('populates classesTeachers correctly', async () => {
+                    const maps = await generateMaps(input)
+                    for (const { classId, teacherIds } of input) {
+                        const mapTeacherIds = maps.classesTeachers
+                            .get(classId)!
+                            .map((u) => u.user_id)
+                        expect(mapTeacherIds).to.deep.equalInAnyOrder(
+                            teacherIds
+                        )
+                    }
                 })
 
-                it('populates classesTeachers correctly', () => {
-                    it('populates classesTeachers correctly', () => {
-                        expect(
-                            Array.from(
-                                maps.classesTeachers.entries()
-                            ).map(([classId, teachers]) => [
-                                classId,
-                                teachers.map((st) => st.user_id),
-                            ])
-                        ).to.deep.equalInAnyOrder([
-                            input.map((i) => [i.classId, [...i.teacherIds]]),
-                        ])
-                    })
-                })
-
-                it('populates organizations correctly', () => {
+                it('populates organizations correctly', async () => {
+                    const maps = await generateMaps(input)
                     expect(maps.organizationIds).to.deep.equalInAnyOrder([
                         org.organization_id,
                         org.organization_id,
@@ -7871,7 +7870,7 @@ describe('class', () => {
             })
 
             context(
-                'when there are duplicated teacherIds in a single input elemnet',
+                'when there are duplicated teacherIds in a single input element',
                 () => {
                     beforeEach(async () => {
                         input[0].teacherIds = [
