@@ -528,7 +528,7 @@ export class Model {
                     otherAttribute: 'mutation',
                 })
             )
-        if (organization.status == Status.INACTIVE)
+        if (organization.status !== Status.ACTIVE)
             errors.push(
                 new APIError({
                     code: customErrors.inactive_status.code,

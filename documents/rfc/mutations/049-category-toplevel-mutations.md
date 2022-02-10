@@ -87,13 +87,13 @@ For `CreateCategoryInput`, `status` field has been omitted as it may not make se
 input CreateCategoryInput {
     name: String!
     organizationId: ID!
-    subcategories: [ID!]
+    subcategoryIds: [ID!]
 }
 
 input UpdateCategoryInput {
     id: ID!
     name: String
-    subcategories: [ID!]
+    subcategoryIds: [ID!]
 }
 
 input DeleteCategoryInput {

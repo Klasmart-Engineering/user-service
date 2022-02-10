@@ -145,7 +145,6 @@ const typeDefs = gql`
         dateOfBirth: String
         username: String
         gender: String!
-        shortcode: String
         alternateEmail: String
         alternatePhone: String
     }
@@ -200,6 +199,9 @@ const typeDefs = gql`
         organizationId: UUIDFilter
         roleId: UUIDFilter
         schoolId: UUIDExclusiveFilter
+        """
+        Note: use organizationUserStatus with organizationId filter to avoid duplicating users
+        """
         organizationUserStatus: StringFilter
         classId: UUIDExclusiveFilter
 

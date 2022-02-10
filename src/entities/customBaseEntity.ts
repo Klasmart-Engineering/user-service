@@ -31,7 +31,7 @@ export abstract class CustomBaseEntity extends BaseEntity {
     public status!: Status
 
     public async inactivate(manager?: EntityManager) {
-        if (this.status === Status.INACTIVE) return
+        if (this.status !== Status.ACTIVE) return
 
         this.status = Status.INACTIVE
         this.deleted_at = new Date()

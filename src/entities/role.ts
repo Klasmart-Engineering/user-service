@@ -317,7 +317,7 @@ export class Role extends CustomBaseEntity {
                 })
             )
 
-        if (this.status == Status.INACTIVE)
+        if (this.status !== Status.ACTIVE)
             errors.push(
                 new APIError({
                     code: customErrors.inactive_status.code,

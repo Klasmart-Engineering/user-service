@@ -125,7 +125,7 @@ input UpdateClassInput {
   className: String
   shortcode: String
   schoolIds: [ID!]
-  programsIds: [ID!]
+  programIds: [ID!]
   ageRangeIds: [ID!]
   gradeIds: [ID!]
   subjectIds: [ID!]
@@ -137,12 +137,12 @@ input DeleteClassInput {
 
 input AddProgramsToClassInput {
   classId: ID!
-  programsIds: [ID!]!
+  programIds: [ID!]!
 }
 
 input RemoveProgramsFromClassInput {
   classId: ID!
-  programsIds: [ID!]!
+  programIds: [ID!]!
 }
 
 input AddAgeRangesToClassInput {

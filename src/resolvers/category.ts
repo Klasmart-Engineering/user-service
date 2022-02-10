@@ -55,7 +55,7 @@ export async function updateCategories(
 
     const errors: APIError[] = []
     const ids = args.input.map((val) => val.id)
-    const subcategoryIds = args.input.map((val) => val.subcategories).flat()
+    const subcatIds = args.input.map((val) => val.subcategoryIds).flat()
     const categoryNames = args.input.map((val) => val.name)
     const categoryNodes: CategoryConnectionNode[] = []
 
@@ -119,7 +119,7 @@ export async function updateCategories(
 
     const preloadedSubcategories = new Map(
         (
-            await Subcategory.findByIds(subcategoryIds, {
+            await Subcategory.findByIds(subcatIds, {
                 where: { status: Status.ACTIVE },
             })
         ).map((i) => [i.id, i])
@@ -127,7 +127,7 @@ export async function updateCategories(
 
     // Process inputs
     for (const [index, subArgs] of args.input.entries()) {
-        const { id, name, subcategories } = subArgs
+        const { id, name, subcategoryIds } = subArgs
         const duplicateInputId = inputsAndOrgRelation.find(
             (i, findIndex) => i.id === id && findIndex < index
         )
@@ -152,7 +152,7 @@ export async function updateCategories(
             continue
         }
 
-        if (category.status === Status.INACTIVE) {
+        if (category.status !== Status.ACTIVE) {
             errors.push(createEntityAPIError('inactive', index, 'Category', id))
         }
 
@@ -196,11 +196,11 @@ export async function updateCategories(
         }
 
         // subcategories arg validations
-        if (subcategories) {
+        if (subcategoryIds) {
             const subcategoriesFound: Subcategory[] = []
             const missingSubcategoryIds: string[] = []
 
-            subcategories.forEach((val) => {
+            subcategoryIds.forEach((val) => {
                 const subcategory = preloadedSubcategories.get(val)
 
                 if (subcategory) {
@@ -225,7 +225,7 @@ export async function updateCategories(
             }
         }
 
-        if (!name && !subcategories) {
+        if (!name && !subcategoryIds) {
             errors.push(
                 createInputRequiresAtLeastOne(index, 'Category', [
                     'name',
@@ -262,7 +262,7 @@ export async function createCategories(
         throw createInputLengthAPIError('Category', 'max')
 
     const organizationIds = args.input.map((val) => val.organizationId)
-    const subcategoryIds = args.input.map((val) => val.subcategories).flat()
+    const subcategoryIds = args.input.map((val) => val.subcategoryIds).flat()
     const categoryNames = args.input.map((val) => val.name)
     const organizationIdsAndNames = args.input.map((val) =>
         [val.organizationId, val.name].toString()
@@ -310,7 +310,7 @@ export async function createCategories(
     const errors: APIError[] = []
 
     for (const [index, subArgs] of args.input.entries()) {
-        const { name, organizationId, subcategories } = subArgs
+        const { name, organizationId, subcategoryIds } = subArgs
 
         // Organization validation
         const organization = preloadedOrgs.get(organizationId) as Organization
@@ -331,7 +331,7 @@ export async function createCategories(
         const subcategoriesFound: Subcategory[] = []
         const missingSubcategoryIds: string[] = []
 
-        subcategories?.forEach((val) => {
+        subcategoryIds?.forEach((val) => {
             const subcategory = preloadedSubcategories.get(val)
 
             if (subcategory) {
@@ -629,7 +629,7 @@ export async function removeSubcategoriesFromCategories(
             )
         }
 
-        if (category.status === Status.INACTIVE) {
+        if (category.status !== Status.ACTIVE) {
             errors.push(
                 createEntityAPIError('inactive', index, 'Category', category.id)
             )
@@ -669,7 +669,7 @@ export async function removeSubcategoriesFromCategories(
                 continue
             }
 
-            if (subcategory.status === Status.INACTIVE) {
+            if (subcategory.status !== Status.ACTIVE) {
                 errors.push(
                     createEntityAPIError(
                         'inactive',
@@ -755,7 +755,7 @@ const validateEntity = (
         )
         return errors
     }
-    if (entity.status === Status.INACTIVE) {
+    if (entity.status !== Status.ACTIVE) {
         errors.push(
             new APIError({
                 code: customErrors.inactive_status.code,

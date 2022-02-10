@@ -54,7 +54,7 @@ export class Grade extends CustomBaseEntity {
         const organization_id = (await this.organization)?.organization_id
         if (
             info.operation.operation !== 'mutation' ||
-            this.status == Status.INACTIVE
+            this.status !== Status.ACTIVE
         ) {
             return false
         }

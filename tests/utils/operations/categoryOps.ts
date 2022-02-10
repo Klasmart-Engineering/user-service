@@ -151,12 +151,12 @@ export function buildDeleteCategoryInputArray(
 export function buildSingleUpdateCategoryInput(
     id: string,
     name?: string,
-    subcategories?: string[]
+    subcategoryIds?: string[]
 ): UpdateCategoryInput {
     return {
         id,
         name,
-        subcategories,
+        subcategoryIds,
     }
 }
 

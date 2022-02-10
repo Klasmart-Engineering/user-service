@@ -25,6 +25,6 @@ export interface DeleteSubjectInput {
     id: string
 }
 
-export interface SubjectsMutationOutput {
+export interface SubjectsMutationResult {
     subjects: SubjectConnectionNode[]
 }
