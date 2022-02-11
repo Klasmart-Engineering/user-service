@@ -1,5 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import { getConnection } from 'typeorm'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
 import { Class } from '../../../src/entities/class'
@@ -54,10 +55,7 @@ import {
     getAdminAuthToken,
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
@@ -91,13 +89,9 @@ describe('classesConnection', () => {
     const programsCount = 2
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

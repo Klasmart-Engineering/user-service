@@ -1,9 +1,9 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
-import { getManager, In } from 'typeorm'
+import { getManager, In, getConnection } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 import { Model } from '../../src/model'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
@@ -161,13 +161,9 @@ describe('class', () => {
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('createClasses', () => {

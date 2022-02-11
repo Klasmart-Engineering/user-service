@@ -1,7 +1,7 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { nonAdminClassScope } from '../../../src/directives/isAdmin'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { Class } from '../../../src/entities/class'
@@ -42,10 +42,7 @@ import { NIL_UUID } from '../../utils/database'
 import { class2Nodes } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 
 use(deepEqualInAnyOrder)
@@ -185,13 +182,9 @@ describe('classNode', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

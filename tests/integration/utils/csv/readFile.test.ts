@@ -1,12 +1,12 @@
 import { expect, use } from 'chai'
-import { Connection, EntityManager } from 'typeorm'
+import { EntityManager, getConnection } from 'typeorm'
 import { Model } from '../../../../src/model'
 import { createServer } from '../../../../src/utils/createServer'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import { resolve } from 'path'
 import fs from 'fs'
 import chaiAsPromised from 'chai-as-promised'
@@ -21,12 +21,12 @@ import { processUserFromCSVRow } from '../../../../src/utils/csv/user'
 use(chaiAsPromised)
 
 describe('read file', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let adminPermissions: UserPermissions
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
         const adminUser = await createAdminUser(testClient)
@@ -34,10 +34,6 @@ describe('read file', () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     context('when file data is empty', () => {

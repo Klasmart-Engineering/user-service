@@ -1,8 +1,6 @@
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
 import { expect, use } from 'chai'
-import { createTestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 import { generateToken } from '../utils/testConfig'
 import { createUser } from '../factories/user.factory'
@@ -16,16 +14,6 @@ const url = 'http://localhost:8080/user'
 const request = supertest(url)
 
 describe('acceptance.authorization', () => {
-    let connection: Connection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     context('when user has a super admins email address', () => {
         let user: User
 

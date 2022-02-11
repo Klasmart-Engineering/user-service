@@ -49,10 +49,7 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { generateToken, getAdminAuthToken } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 import { subjectsChildConnectionResolver as categorySubjectsResolver } from '../../../src/schemas/category'
 import { subjectsChildConnectionResolver as classSubjectsResolver } from '../../../src/schemas/class'
@@ -60,6 +57,7 @@ import {
     loadSubjectsForProgram,
     subjectsChildConnectionResolver as programSubjectsResolver,
 } from '../../../src/schemas/program'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -83,13 +81,9 @@ describe('subjectsConnection', () => {
     const subjectsCount = 8
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

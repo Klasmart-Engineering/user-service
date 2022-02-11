@@ -1,14 +1,9 @@
-import faker from 'faker'
 import { User } from '../../../src/entities/user'
 import { Organization } from '../../../src/entities/organization'
-import { getRepository } from 'typeorm'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { getRepository, getConnection } from 'typeorm'
+import { TestConnection } from '../../utils/testConnection'
 import { ownersForOrgs } from '../../../src/loaders/organizationsConnection'
 import { expect } from 'chai'
-import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createUser } from '../../factories/user.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createOrganizationOwnership } from '../../factories/organizationOwnership.factory'
@@ -25,11 +20,7 @@ describe('organizationsConnection loaders', async () => {
     let organizationOwnersList: OrganizationOwnership[] = []
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

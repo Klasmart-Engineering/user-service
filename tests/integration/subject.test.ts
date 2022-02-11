@@ -2,12 +2,12 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
+import { getConnection } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 import { Category } from '../../src/entities/category'
 import { Organization } from '../../src/entities/organization'
 import { Status } from '../../src/entities/status'
 import { Subject } from '../../src/entities/subject'
-import { Model } from '../../src/model'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
@@ -24,7 +24,6 @@ import {
     SubjectConnectionNode,
     UpdateSubjectInput,
 } from '../../src/types/graphQL/subject'
-import { createServer } from '../../src/utils/createServer'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import {
     createDuplicateAttributeAPIError,
@@ -42,28 +41,17 @@ import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
 import { compareErrors } from '../utils/apiError'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../utils/createTestClient'
 import { userToPayload } from '../utils/operations/userOps'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
 
 describe('subject', () => {
     let connection: TestConnection
-    let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     const createInitialData = async (permissionNames: PermissionName[]) => {

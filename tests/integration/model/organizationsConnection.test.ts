@@ -3,6 +3,7 @@ import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
 import { sortBy } from 'lodash'
+import { getConnection } from 'typeorm'
 import { Class } from '../../../src/entities/class'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
@@ -22,7 +23,6 @@ import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import {
     convertDataToCursor,
     IEdge,
-    IPaginatedResponse,
 } from '../../../src/utils/pagination/paginate'
 import { generateShortCode } from '../../../src/utils/shortcode'
 import { createClass } from '../../factories/class.factory'
@@ -52,10 +52,7 @@ import {
     getAdminAuthToken,
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createNonAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
@@ -68,13 +65,9 @@ describe('organizationsConnection', () => {
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     const expectOrganizationConnectionEdge = (

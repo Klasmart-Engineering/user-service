@@ -1,7 +1,7 @@
 import { expect, use } from 'chai'
-import { getManager, In } from 'typeorm'
+import { getManager, In, getConnection } from 'typeorm'
 import { Model } from '../../src/model'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { User } from '../../src/entities/user'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
@@ -132,7 +132,6 @@ use(deepEqualInAnyOrder)
 
 describe('user', () => {
     let connection: TestConnection
-    let originalAdmins: string[]
     let testClient: ApolloServerTestClient
     let adminUser: User
     let nonAdminUser: User
@@ -141,14 +140,10 @@ describe('user', () => {
     let model: Model
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         model = new Model(connection)
         const server = await createServer(model)
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

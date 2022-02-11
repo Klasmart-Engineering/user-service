@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { ICreateScopeArgs } from '../../../../src/directives/isAdmin'
 import { AgeRange } from '../../../../src/entities/ageRange'
 import { Class } from '../../../../src/entities/class'
@@ -44,7 +44,7 @@ import {
     createTestClient,
 } from '../../../utils/createTestClient'
 import { isStringArraySortedAscending } from '../../../utils/sorting'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import {
     createAdminUser,
     createNonAdminUser,
@@ -74,7 +74,7 @@ function getDataloaderKeys(
 }
 
 describe('child connections', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let orgs: Organization[] = []
 
@@ -91,7 +91,7 @@ describe('child connections', () => {
     let scopeArgs: ICreateScopeArgs
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
         const adminUser = await createAdminUser(testClient)
@@ -101,10 +101,6 @@ describe('child connections', () => {
         })
 
         scopeArgs = { permissions: adminPermissions, entity: 'user' }
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

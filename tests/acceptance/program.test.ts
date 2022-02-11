@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import { print } from 'graphql'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { Organization } from '../../src/entities/organization'
@@ -31,7 +30,7 @@ import {
 } from '../utils/operations/programOps'
 import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 import { createUser as createUserFactory } from './../factories/user.factory'
 import { createAgeRanges as createAgeRangesFactory } from './../factories/ageRange.factory'
@@ -40,6 +39,7 @@ import { createSubjects as createSubjectsFactory } from './../factories/subject.
 import { Grade } from '../../src/entities/grade'
 import { Subject } from '../../src/entities/subject'
 import { UserPermissions } from '../../src/permissions/userPermissions'
+import { getConnection } from 'typeorm'
 
 interface IProgramEdge {
     node: ProgramConnectionNode
@@ -57,14 +57,10 @@ let classIds: string[] = []
 let orgId: string
 
 describe('acceptance.program', () => {
-    let connection: Connection
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

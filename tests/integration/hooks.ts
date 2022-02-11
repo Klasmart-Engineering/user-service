@@ -1,19 +1,14 @@
-import { Connection } from 'typeorm'
 import faker from 'faker'
-
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { truncateTables } from '../utils/database'
 
-let connection: Connection
+let connection: TestConnection
 let originalAdmins: string[]
 
 before(async () => {
-    connection = await createTestConnection({
-        synchronize: true,
-        name: 'master',
-    })
+    connection = await createTestConnection({ synchronize: true })
     await truncateTables(connection)
     originalAdmins = UserPermissions.ADMIN_EMAILS
     UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
@@ -21,7 +16,7 @@ before(async () => {
 
 after(async () => {
     UserPermissions.ADMIN_EMAILS = originalAdmins
-    await connection?.close()
+    await connection.close()
 })
 
 beforeEach(async () => {

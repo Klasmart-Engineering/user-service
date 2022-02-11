@@ -1,12 +1,12 @@
 import { expect, use } from 'chai'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Role } from '../../src/entities/role'
 import { createOrganization } from '../factories/organization.factory'
 import { loadFixtures } from '../utils/fixtures'
 import { ROLES_CONNECTION, ROLE_NODE } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createRole } from '../factories/role.factory'
 import {
     UpdateRoleInput,
@@ -38,7 +38,6 @@ interface IRoleEdge {
 use(deepEqualInAnyOrder)
 
 describe('acceptance.role', () => {
-    let connection: Connection
     let systemRolesCount = 0
     let orgAdmin: User
     let organization: Organization
@@ -80,12 +79,10 @@ describe('acceptance.role', () => {
             })
     }
 
-    before(async () => {
-        connection = await createTestConnection()
-    })
+    let connection: TestConnection
 
-    after(async () => {
-        await connection?.close()
+    before(async () => {
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

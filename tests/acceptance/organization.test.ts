@@ -1,14 +1,14 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
 import { v4 as uuid_v4 } from 'uuid'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Organization } from '../../src/entities/organization'
 import { User } from '../../src/entities/user'
 import { createUser, createUsers } from '../factories/user.factory'
 import { ORGANIZATION_NODE } from '../utils/operations/modelOps'
 import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Branding } from '../../src/entities/branding'
 import { BrandingImage } from '../../src/entities/brandingImage'
@@ -48,19 +48,15 @@ const url = 'http://localhost:8080'
 const request = supertest(url)
 
 describe('acceptance.organization', () => {
-    let connection: Connection
     let user: User
     let organization: Organization
     let branding: Branding
     let school: School
     let class_: Class
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

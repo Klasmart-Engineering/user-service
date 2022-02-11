@@ -1,19 +1,13 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
-import { Connection } from 'typeorm'
-import { createTestConnection } from '../utils/testConnection'
-import { createServer } from '../../src/utils/createServer'
+import { getConnection } from 'typeorm'
+import { TestConnection } from '../utils/testConnection'
 import { Subcategory } from '../../src/entities/subcategory'
 import { Status } from '../../src/entities/status'
 import { createSubcategory } from '../factories/subcategory.factory'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../utils/createTestClient'
 import { createUser, createAdminUser } from '../factories/user.factory'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { Model } from '../../src/model'
 import { User } from '../../src/entities/user'
 import {
     createSubcategoryAPIError,
@@ -60,8 +54,7 @@ const buildContext = async (permissions: UserPermissions) => {
 }
 
 describe('subcategory', () => {
-    let connection: Connection
-    let testClient: ApolloServerTestClient
+    let connection: TestConnection
     let org1: Organization
     let org2: Organization
     let deleteSubcategoriesRoleOrg1: Role
@@ -76,13 +69,7 @@ describe('subcategory', () => {
     let userWithoutMembership: User
 
     before(async () => {
-        connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

@@ -1,7 +1,7 @@
 import { expect, use } from 'chai'
 import { print } from 'graphql'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Class } from '../../src/entities/class'
 import { Organization } from '../../src/entities/organization'
 import { Program } from '../../src/entities/program'
@@ -42,7 +42,7 @@ import {
     SCHOOL_NODE,
 } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 import ProgramsInitializer from '../../src/initializers/programs'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
@@ -101,14 +101,14 @@ const makeNodeQuery = async (id: string) => {
 use(deepEqualInAnyOrder)
 
 describe('acceptance.school', () => {
-    let connection: Connection
     let schoolId: string
     let clientUser: User
     let schoolMember: User
     let organizationId: string
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {
@@ -143,10 +143,6 @@ describe('acceptance.school', () => {
             school: school!,
             user: clientUser!,
         }).save()
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     context('schoolsConnection', () => {

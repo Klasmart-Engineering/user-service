@@ -7,12 +7,7 @@ import {
     OrganizationMembershipMap,
     SchoolMembershipMap,
 } from '../../../../src/utils/resolvers/entityMaps'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../../utils/testConnection'
-import { createServer } from '../../../../src/utils/createServer'
-import { Model } from '../../../../src/model'
+import { TestConnection } from '../../../utils/testConnection'
 import {
     compareMultipleEntities,
     compareEntities,
@@ -31,18 +26,15 @@ import {
 } from '../../../factories/organizationMembership.factory'
 import { SchoolMembership } from '../../../../src/entities/schoolMembership'
 import { createSchoolMembershipsInManySchools } from '../../../factories/schoolMembership.factory'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
 describe('entityMaps', () => {
     let connection: TestConnection
-    before(async () => {
-        connection = await createTestConnection()
-        await createServer(new Model(connection))
-    })
 
-    after(async () => {
-        await connection.close()
+    before(async () => {
+        connection = getConnection() as TestConnection
     })
 
     context('#idToEntityMap', () => {

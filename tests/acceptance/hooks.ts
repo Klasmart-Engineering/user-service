@@ -1,17 +1,12 @@
-import { Connection } from 'typeorm'
 import faker from 'faker'
-
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
 import { truncateTables } from '../utils/database'
 
-let connection: Connection
+let connection: TestConnection
 
 before(async () => {
-    connection = await createTestConnection({
-        synchronize: true,
-        name: 'master',
-    })
+    connection = await createTestConnection({ synchronize: true })
     await truncateTables(connection)
 })
 

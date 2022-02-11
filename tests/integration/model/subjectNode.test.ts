@@ -19,10 +19,7 @@ import {
 import { gqlTry } from '../../utils/gqlTry'
 import { SUBJECT_MAIN_FIELDS } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { NIL_UUID } from '../../utils/database'
 import { Category } from '../../../src/entities/category'
@@ -30,6 +27,7 @@ import { createOrganization } from '../../factories/organization.factory'
 import { createSubject } from '../../factories/subject.factory'
 import { createCategory } from '../../factories/category.factory'
 import { CategoryConnectionNode } from '../../../src/types/graphQL/category'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
@@ -72,13 +70,9 @@ describe('subjectNode', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

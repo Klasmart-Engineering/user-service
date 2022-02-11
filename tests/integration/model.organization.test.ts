@@ -1,9 +1,9 @@
 import { stub, restore } from 'sinon'
 
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Model } from '../../src/model'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Organization } from '../../src/entities/organization'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
@@ -63,12 +63,11 @@ const RESET_ORGANIZATION_ROLES_PERMISSIONS = `
 `
 
 describe('model.organization', () => {
-    let connection: Connection
-    let originalAdmins: string[]
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
         stub(CloudStorageUploader, 'call').returns(
@@ -78,7 +77,6 @@ describe('model.organization', () => {
 
     after(async () => {
         restore()
-        await connection?.close()
     })
 
     describe('getOrganizations', () => {

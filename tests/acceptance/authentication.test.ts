@@ -1,8 +1,8 @@
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { Connection, getConnection } from 'typeorm'
 import { expect, use } from 'chai'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 import {
     generateToken,
@@ -21,16 +21,6 @@ const url = 'http://localhost:8080/user'
 const request = supertest(url)
 
 describe('acceptance.authentication', () => {
-    let connection: Connection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     context('tokenAuth', () => {
         // categoriesConnection chosen because it doesn't error
         // without token information

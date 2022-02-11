@@ -1,6 +1,5 @@
 import { Organization } from '../../../src/entities/organization'
 import { School } from '../../../src/entities/school'
-import { createTestConnection } from '../../utils/testConnection'
 import { createOrganization } from '../../factories/organization.factory'
 import { createSchool } from '../../factories/school.factory'
 import {
@@ -8,20 +7,11 @@ import {
     schoolsByIds,
 } from '../../../src/loaders/school'
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
 
 describe('School Dataloaders', () => {
     const numSchools = 5
     let orgs: Organization[]
     let schools: School[]
-
-    let connection: Connection
-    before(async () => {
-        connection = await createTestConnection()
-    })
-    after(async () => {
-        await connection?.close()
-    })
 
     beforeEach(async () => {
         orgs = await Organization.save(

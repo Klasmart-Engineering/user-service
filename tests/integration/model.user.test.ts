@@ -1,15 +1,10 @@
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { User } from '../../src/entities/user'
 import { Model } from '../../src/model'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
-import {
-    getUser,
-    getUsers,
-    updateUser,
-    createUserAndValidate,
-} from '../utils/operations/modelOps'
+import { getUser, getUsers, updateUser } from '../utils/operations/modelOps'
 import { createAdminUser } from '../utils/testEntities'
 import {
     ApolloServerTestClient,
@@ -19,18 +14,13 @@ import faker from 'faker'
 import { getAdminAuthToken } from '../utils/testConfig'
 
 describe('model.user', () => {
-    let connection: Connection
-    let originalAdmins: string[]
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('newUser', () => {

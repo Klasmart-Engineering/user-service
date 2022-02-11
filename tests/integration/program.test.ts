@@ -33,7 +33,7 @@ import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
 import { userToPayload } from '../utils/operations/userOps'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { PermissionName } from './../../src/permissions/permissionNames'
 import { v4 as uuid_v4 } from 'uuid'
 import { APIError } from '../../src/types/errors/apiError'
@@ -46,6 +46,7 @@ import {
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
 } from '../../src/utils/resolvers/errors'
+import { getConnection } from 'typeorm'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -54,11 +55,7 @@ describe('program', () => {
     let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     const createInitialData = async (permissionNames: PermissionName[]) => {

@@ -2,6 +2,7 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
+import { getConnection } from 'typeorm'
 import { Class } from '../../../src/entities/class'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
@@ -39,10 +40,7 @@ import {
     getAdminAuthToken,
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
@@ -69,13 +67,9 @@ describe('schoolsConnection', () => {
     let ctx: Pick<Context, 'loaders'>
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

@@ -1,13 +1,13 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Permission } from '../../src/entities/permission'
 import {
     PERMISSIONS_CONNECTION,
     PERMISSION_NODE,
 } from '../utils/operations/modelOps'
 import { generateToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { User } from '../../src/entities/user'
 import { Organization } from '../../src/entities/organization'
@@ -31,7 +31,6 @@ let organizationMember: User
 let organization: Organization
 
 describe('acceptance.permission', () => {
-    let connection: Connection
     let permissionsCount: number
 
     async function makeConnectionQuery(pageSize: any, token: string) {
@@ -65,12 +64,10 @@ describe('acceptance.permission', () => {
             })
     }
 
-    before(async () => {
-        connection = await createTestConnection()
-    })
+    let connection: TestConnection
 
-    after(async () => {
-        await connection?.close()
+    before(async () => {
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

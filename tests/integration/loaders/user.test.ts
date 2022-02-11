@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import faker from 'faker'
 import { pick } from 'lodash'
-import { Connection } from 'typeorm'
 import { Organization } from '../../../src/entities/organization'
 import { User } from '../../../src/entities/user'
 import { School } from '../../../src/entities/school'
@@ -12,7 +11,6 @@ import {
     orgMembershipsForUsers,
     schoolMembershipsForUsers,
 } from '../../../src/loaders/user'
-import { createTestConnection } from '../../utils/testConnection'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
@@ -20,16 +18,6 @@ import { createOrganizationMembership } from '../../factories/organizationMember
 import { usersByIds } from '../../../src/loaders/user'
 
 context('User loaders', () => {
-    let connection: Connection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     describe('memberships', () => {
         const numUsers = 5
         let users: User[]

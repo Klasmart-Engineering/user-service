@@ -3,12 +3,12 @@ import chaiAsPromised from 'chai-as-promised'
 import { resolve } from 'path'
 import { ReadStream } from 'fs'
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Model } from '../../src/model'
 import { User } from '../../src/entities/user'
@@ -100,18 +100,13 @@ import iconv from 'iconv-lite'
 use(chaiAsPromised)
 
 describe('model.csv', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
-
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     function checkErrorsMatch(error: Error, expectedError: CSVError) {

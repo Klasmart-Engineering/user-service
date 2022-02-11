@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
@@ -16,7 +16,7 @@ import {
     AGE_RANGE_NODE,
 } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Organization } from '../../src/entities/organization'
 import { User } from '../../src/entities/user'
@@ -70,14 +70,10 @@ const makeNodeQuery = async (id: string) => {
 }
 
 describe('acceptance.ageRange', () => {
-    let connection: Connection
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

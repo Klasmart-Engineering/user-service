@@ -9,10 +9,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import gql from 'graphql-tag'
 import { gqlTry } from '../../utils/gqlTry'
 import { print } from 'graphql'
@@ -20,12 +17,12 @@ import { Headers } from 'node-mocks-http'
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { userToPayload } from '../../utils/operations/userOps'
 import { createAdminUser } from '../../factories/user.factory'
-import { Category } from '../../../src/entities/category'
 import { NIL_UUID } from '../../utils/database'
 import { Subcategory } from '../../../src/entities/subcategory'
 import { SubcategoryConnectionNode } from '../../../src/types/graphQL/subcategory'
 import { nonAdminSubcategoryScope } from '../../../src/directives/isAdmin'
 import { createSubcategory } from '../../factories/subcategory.factory'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
@@ -66,13 +63,9 @@ describe('subcategoryNode', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

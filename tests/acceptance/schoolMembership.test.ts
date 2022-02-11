@@ -1,11 +1,8 @@
-import { Connection } from 'typeorm'
-import { createTestConnection } from '../utils/testConnection'
 import { createOrganization } from '../factories/organization.factory'
 import { expect, use } from 'chai'
 import { createUser } from '../factories/user.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { loadFixtures } from '../utils/fixtures'
 import supertest from 'supertest'
 import { generateToken } from '../utils/testConfig'
 import { createRole } from '../factories/role.factory'
@@ -19,16 +16,6 @@ const request = supertest('http://localhost:8080/user')
 use(deepEqualInAnyOrder)
 
 describe('acceptance.SchoolMembership', () => {
-    let connection: Connection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     context('schoolMembershipConnection', () => {
         it('has rolesConnection as a child', async () => {
             const query = `

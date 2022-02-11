@@ -25,14 +25,11 @@ import {
     isStringArraySortedAscending,
     isStringArraySortedDescending,
 } from '../../utils/sorting'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { GraphQLResolveInfo } from 'graphql'
 import { Context } from '../../../src/main'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
-import { SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { nonAdminSubcategoryScope } from '../../../src/directives/isAdmin'
 import { subcategoriesConnectionResolver } from '../../../src/pagination/subcategoriesConnection'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
@@ -52,7 +49,6 @@ use(deepEqualInAnyOrder)
 
 describe('subcategoriesConnection', () => {
     let connection: TestConnection
-    let testClient: ApolloServerTestClient
     let adminUser: User
     let organizationMember1: User
     let organizationMember2: User
@@ -114,13 +110,7 @@ describe('subcategoriesConnection', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

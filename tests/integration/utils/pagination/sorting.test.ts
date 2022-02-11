@@ -1,14 +1,7 @@
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, createQueryBuilder } from 'typeorm'
+import { createQueryBuilder, getConnection } from 'typeorm'
 import { expect, use } from 'chai'
-
-import { Model } from '../../../../src/model'
-import { createServer } from '../../../../src/utils/createServer'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../../../utils/createTestClient'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { createUser } from '../../../factories/user.factory'
 import {
@@ -28,17 +21,10 @@ interface OrgAndOwner extends Organization {
 use(chaiAsPromised)
 
 describe('sorting', () => {
-    let connection: Connection
-    let testClient: ApolloServerTestClient
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     context('strings', () => {

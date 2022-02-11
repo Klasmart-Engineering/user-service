@@ -36,10 +36,7 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 import { Class } from '../../../src/entities/class'
 import { createClass } from '../../factories/class.factory'
@@ -49,6 +46,7 @@ import {
     loadAgeRangesForProgram,
     ageRangesChildConnectionResolver as resolverForProgram,
 } from '../../../src/schemas/program'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
@@ -66,13 +64,9 @@ describe('model', () => {
     const ageRangesCount = 12
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

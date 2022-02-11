@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import supertest from 'supertest'
-import { Connection, In } from 'typeorm'
+import { getConnection, In } from 'typeorm'
 import faker from 'faker'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { Class } from '../../src/entities/class'
@@ -59,7 +59,6 @@ import {
 } from '../utils/operations/organizationOps'
 import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Program } from '../../src/entities/program'
 import ProgramsInitializer from '../../src/initializers/programs'
@@ -79,6 +78,7 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { TestConnection } from '../utils/testConnection'
 
 use(deepEqualInAnyOrder)
 
@@ -173,14 +173,10 @@ async function deleteClass(classId: string, token: string) {
 }
 
 describe('acceptance.class', () => {
-    let connection: Connection
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

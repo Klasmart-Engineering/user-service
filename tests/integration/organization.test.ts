@@ -1,10 +1,16 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
 import { v4 as uuid_v4 } from 'uuid'
-import { createQueryBuilder, getManager, getRepository, In } from 'typeorm'
+import {
+    createQueryBuilder,
+    getManager,
+    getRepository,
+    In,
+    getConnection,
+} from 'typeorm'
 import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
 import { Model } from '../../src/model'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
@@ -149,13 +155,9 @@ describe('organization', () => {
     const shortcode_re = /^[A-Z|0-9]+$/
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('set', async () => {

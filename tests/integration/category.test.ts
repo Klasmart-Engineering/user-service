@@ -1,8 +1,7 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { before } from 'mocha'
-import { In, Not } from 'typeorm'
+import { getConnection, In, Not } from 'typeorm'
 import { Category } from '../../src/entities/category'
 import { Organization } from '../../src/entities/organization'
 import { Role } from '../../src/entities/role'
@@ -10,7 +9,6 @@ import { Status } from '../../src/entities/status'
 import { Subcategory } from '../../src/entities/subcategory'
 import { User } from '../../src/entities/user'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
-import { Model } from '../../src/model'
 import { categoryConnectionNodeFields } from '../../src/pagination/categoriesConnection'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
@@ -31,7 +29,6 @@ import {
     RemoveSubcategoriesFromCategoryInput,
     UpdateCategoryInput,
 } from '../../src/types/graphQL/category'
-import { createServer } from '../../src/utils/createServer'
 import { createCategory } from '../factories/category.factory'
 import {
     createDuplicateAttributeAPIError,
@@ -51,7 +48,6 @@ import {
     buildSingleUpdateCategoryInput,
     buildUpdateCategoryInputArray,
 } from '../utils/operations/categoryOps'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { userToPayload } from '../utils/operations/userOps'
 import { config } from '../../src/config/config'
 import { customErrors } from '../../src/types/errors/customError'
@@ -63,6 +59,7 @@ import { buildDeleteCategoryInputArray } from '../utils/operations/categoryOps'
 import { compareErrors } from '../utils/apiError'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { permErrorMeta } from '../utils/errors'
+import { TestConnection } from '../utils/testConnection'
 
 interface CategoryAndSubcategories {
     id: string
@@ -97,7 +94,6 @@ const expectAPIError = async (
 }
 
 describe('category', () => {
-    let connection: TestConnection
     let admin: User
     let userWithPermission: User
     let userWithoutPermission: User
@@ -113,6 +109,7 @@ describe('category', () => {
     let subcategoriesToAdd: Subcategory[]
     let categoriesTotalCount = 0
     const categoriesCount = 5
+    let connection: TestConnection
 
     const expectCategories = async (quantity: number) => {
         const categoryCount = await Category.count({
@@ -141,14 +138,7 @@ describe('category', () => {
         categoriesTotalCount = await Category.count()
     }
 
-    before(async () => {
-        connection = await createTestConnection()
-        await createServer(new Model(connection))
-    })
-
-    after(async () => {
-        await connection.close()
-    })
+    before(() => (connection = getConnection() as TestConnection))
 
     beforeEach(async () => {
         await SubcategoriesInitializer.run()

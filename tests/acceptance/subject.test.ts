@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Status } from '../../src/entities/status'
 import { Subject } from '../../src/entities/subject'
 import SubjectsInitializer from '../../src/initializers/subjects'
@@ -15,7 +15,7 @@ import {
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { SUBJECTS_CONNECTION, SUBJECT_NODE } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { SubjectConnectionNode } from '../../src/types/graphQL/subject'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
@@ -68,8 +68,6 @@ let systemSubjectsCount = 0
 use(deepEqualInAnyOrder)
 
 describe('acceptance.subject', () => {
-    let connection: Connection
-
     async function makeConnectionQuery(pageSize: number) {
         return makeRequest(
             request,
@@ -91,12 +89,10 @@ describe('acceptance.subject', () => {
         )
     }
 
-    before(async () => {
-        connection = await createTestConnection()
-    })
+    let connection: TestConnection
 
-    after(async () => {
-        await connection?.close()
+    before(async () => {
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

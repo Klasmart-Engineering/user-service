@@ -1,6 +1,6 @@
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Organization } from '../../../../src/entities/organization'
 import { Program } from '../../../../src/entities/program'
 import { School } from '../../../../src/entities/school'
@@ -21,7 +21,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import { User } from '@sentry/node'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
@@ -30,7 +30,7 @@ import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 use(chaiAsPromised)
 
 describe('processSchoolFromCSVRow', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let row: SchoolRow
     let organization: Organization
@@ -41,13 +41,9 @@ describe('processSchoolFromCSVRow', () => {
     const sameShortcodeAnotherSchoolName = 'School One'
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

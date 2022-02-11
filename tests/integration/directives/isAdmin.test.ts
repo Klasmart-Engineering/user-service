@@ -1,8 +1,8 @@
 import { expect, use } from 'chai'
 import {
     Brackets,
-    Connection,
     createQueryBuilder,
+    getConnection,
     getRepository,
     SelectQueryBuilder,
 } from 'typeorm'
@@ -10,7 +10,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import { createTestConnection } from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createServer } from '../../../src/utils/createServer'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 import {
@@ -88,17 +88,13 @@ use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('isAdmin', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('organizations', () => {

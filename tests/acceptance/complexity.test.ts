@@ -1,8 +1,8 @@
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { expect, use } from 'chai'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import { User } from '../../src/entities/user'
@@ -104,15 +104,11 @@ query {
 `
 
 describe('acceptance.complexity', () => {
-    let connection: Connection
     let userId: string
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

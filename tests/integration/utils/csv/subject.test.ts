@@ -1,6 +1,5 @@
-import { use, expect } from 'chai'
-import chaiAsPromised from 'chai-as-promised'
-import { Connection, getManager } from 'typeorm'
+import { expect } from 'chai'
+import { getConnection } from 'typeorm'
 import { Organization } from '../../../../src/entities/organization'
 import { Category } from '../../../../src/entities/category'
 import { Subject } from '../../../../src/entities/subject'
@@ -13,7 +12,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import CategoriesInitializer from '../../../../src/initializers/categories'
 import SubcategoriesInitializer from '../../../../src/initializers/subcategories'
 import { CSVError } from '../../../../src/types/csv/csvError'
@@ -23,7 +22,7 @@ import { createAdminUser } from '../../../utils/testEntities'
 import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 
 describe('processSubjectFromCSVRow', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let row: SubjectRow
     let organization: Organization
@@ -33,13 +32,9 @@ describe('processSubjectFromCSVRow', () => {
     let queryResultCache: QueryResultCache
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

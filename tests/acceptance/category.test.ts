@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { Connection, getConnection } from 'typeorm'
 import { Category } from '../../src/entities/category'
 import CategoriesInitializer from '../../src/initializers/categories'
 import {
@@ -23,7 +23,7 @@ import {
     CATEGORIES_CONNECTION,
 } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import {
     buildRemoveSubcategoriesFromCategoryInputArray,
@@ -87,17 +87,14 @@ const makeNodeQuery = async (id: string) => {
 }
 
 describe('acceptance.category', () => {
-    let connection: Connection
     let categoryIds: string[]
     let subcategoryIds: string[]
     let orgId: string
 
-    before(async () => {
-        connection = await createTestConnection()
-    })
+    let connection: TestConnection
 
-    after(async () => {
-        await connection?.close()
+    before(async () => {
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

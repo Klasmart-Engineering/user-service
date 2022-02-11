@@ -1,7 +1,5 @@
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
 import { Grade } from '../../src/entities/grade'
-import { createTestConnection } from '../utils/testConnection'
 import GradesInitializer from '../../src/initializers/grades'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { expect } from 'chai'
@@ -12,16 +10,7 @@ const url = 'http://localhost:8080'
 const request = supertest(url)
 
 describe('acceptance.grade', () => {
-    let connection: Connection
     let grades: Grade[]
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
 
     beforeEach(async () => {
         await GradesInitializer.run()

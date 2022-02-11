@@ -1,9 +1,8 @@
-/* eslint-disable no-await-in-loop */
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
 import { expect, use } from 'chai'
 import { before } from 'mocha'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
@@ -62,8 +61,8 @@ import {
 import { config } from '../../src/config/config'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
-import { NIL_UUID } from '../utils/database'
 import { v4 } from 'uuid'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
@@ -93,16 +92,12 @@ const ME = `
 `
 
 describe('acceptance.user', () => {
-    let connection: TestConnection
     let memberships: OrganizationMembership[]
     let schoolMemberships: SchoolMembership[]
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

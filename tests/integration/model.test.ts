@@ -2,6 +2,7 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { before } from 'mocha'
+import { getConnection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
 import { Organization } from '../../src/entities/organization'
@@ -54,7 +55,7 @@ import {
     getAPIKeyAuth,
     getNonAdminAuthToken,
 } from '../utils/testConfig'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 
 use(chaiAsPromised)
@@ -66,14 +67,10 @@ describe('model', () => {
     let model: Model
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         model = new Model(connection)
         const server = await createServer(model)
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('getMyUser', () => {

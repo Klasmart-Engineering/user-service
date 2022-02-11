@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { In } from 'typeorm'
+import { In, getConnection, getManager } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -18,7 +18,7 @@ import {
     createOrganizationAndValidate,
     userToPayload,
 } from '../utils/operations/userOps'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import {
@@ -55,7 +55,6 @@ import {
 } from '../factories/user.factory'
 import { createRole as createARole } from '../factories/role.factory'
 import { createOrganization } from '../factories/organization.factory'
-import { getManager } from 'typeorm'
 import { NIL_UUID } from '../utils/database'
 import {
     createEntityAPIError,
@@ -77,16 +76,11 @@ type RoleAndPermissions = Role & { __permissions__?: Permission[] }
 describe('role', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
-    let originalAdmins: string[]
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('#set', () => {
