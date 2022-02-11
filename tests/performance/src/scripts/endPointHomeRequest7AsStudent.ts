@@ -28,7 +28,7 @@ export default function (roleType?: string) {
 
     check(res, {
         'status is 200 meQueryReq7 STUDENT': () => res.status === 200,
-        '"meQueryReq7 STUDENT" query returns data': (r) => JSON.parse(r.body as string).data?.userNode?.id !== undefined,
+        //'"meQueryReq7 STUDENT" query returns data': (r) => JSON.parse(r.body as string).data?.me !== undefined,
 
     }, {
         userRoleType: roleType

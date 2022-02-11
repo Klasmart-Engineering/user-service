@@ -173,10 +173,10 @@ export const options: Options = {
         students00: {
             executor: 'constant-vus',
             exec: 'students00',
-            vus: 1,
-            duration: '1m',
+            vus: 100,
+            duration: '10m',
           },
-/* 
+ 
           students01: {
             executor: 'constant-vus',
             exec: 'students01',
@@ -203,7 +203,7 @@ export const options: Options = {
             exec: 'students04',
             vus: 100,
             duration: '10m',
-          }, */
+          },
     },
 };
 
@@ -243,7 +243,7 @@ export function students00(data: { [key: string]: { res: any, userId: string }})
     landingV3Students(data.students00);
     
 }
-/* 
+
 
 export function students01(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -254,7 +254,7 @@ export function students01(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.students01);
+    landingV3Students(data.students01);
     
 }
 
@@ -267,7 +267,7 @@ export function students02(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.students02);
+    landingV3Students(data.students02);
   
 }
 export function students03(data: { [key: string]: { res: any, userId: string }}) {
@@ -279,8 +279,8 @@ export function students03(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.students03);
-    sleep(5);
+    landingV3Students(data.students03);
+  
 } 
 
 export function students04(data: { [key: string]: { res: any, userId: string }}) {
@@ -292,7 +292,7 @@ export function students04(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.students04);
+    landingV3Students(data.students04);
 }
  
 /*
