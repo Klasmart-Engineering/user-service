@@ -173,35 +173,65 @@ export const options: Options = {
         students00: {
             executor: 'constant-vus',
             exec: 'students00',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
  
           students01: {
             executor: 'constant-vus',
             exec: 'students01',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students02: {
             executor: 'constant-vus',
             exec: 'students02',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students03: {
             executor: 'constant-vus',
             exec: 'students03',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students04: {
             executor: 'constant-vus',
             exec: 'students04',
-            vus: 100,
+            vus: 50,
+            duration: '10m',
+          },
+          students05: {
+            executor: 'constant-vus',
+            exec: 'students05',
+            vus: 50,
+            duration: '10m',
+          },
+          students06: {
+            executor: 'constant-vus',
+            exec: 'students06',
+            vus: 50,
+            duration: '10m',
+          },
+          students07: {
+            executor: 'constant-vus',
+            exec: 'students07',
+            vus: 50,
+            duration: '10m',
+          },
+          students08: {
+            executor: 'constant-vus',
+            exec: 'students08',
+            vus: 50,
+            duration: '10m',
+          },
+          students09: {
+            executor: 'constant-vus',
+            exec: 'students09',
+            vus: 50,
             duration: '10m',
           },
     },
@@ -209,7 +239,7 @@ export const options: Options = {
 
 export function setup() {
     let i = 0;
-    const l = 9;
+    const l = 10;
     let data = {};
 
     for (i; i < l; i++) {
@@ -295,7 +325,7 @@ export function students04(data: { [key: string]: { res: any, userId: string }})
     landingV3Students(data.students04);
 }
  
-/*
+
 export function students05(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data.students05.res.cookies?.access[0].Value, {
@@ -305,69 +335,51 @@ export function students05(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.students05);
+    landingV3Students(data.students05);
  }
-/*
-export function student05(data: { [key: string]: { res: any, userId: string }}) {
+
+export function students06(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.student05.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data.students06.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.student05.res.cookies?.refresh[0].Value, {
-        domain: process.env.COOKIE_DOMAIN,
-    });
-    
-    landingV2(data.student05);
-    sleep(5);
-}
-/*
-export function student06(data: { [key: string]: { res: any, userId: string }}) {
-    const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.student06.res.cookies?.access[0].Value, {
-        domain: process.env.COOKIE_DOMAIN,
-    });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.student06.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students06.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV2(data.student06);
-    sleep(5);
+    landingV3Students(data.students06);
 }
-/*
-export function student07(data: { [key: string]: { res: any, userId: string }}) {
+
+export function students07(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.student07.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data.students07.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.student07.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students07.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.student07);
-    sleep(5);
+    landingV3Students(data.students07);
 }
-export function student08(data: { [key: string]: { res: any, userId: string }}) {
+export function students08(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.student08.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data.students08.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.student08.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students08.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV2(data.student08);
-    sleep(5);
+    landingV3Students(data.students08);
 }
-export function student09(data: { [key: string]: { res: any, userId: string }}) {
+export function students09(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.student09.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data.students09.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.student09.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students09.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.student09);
-    sleep(5);
+    landingV3Students(data.students09);
 }
-*/
