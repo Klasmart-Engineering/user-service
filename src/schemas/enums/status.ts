@@ -5,6 +5,7 @@ const status = gql`
     enum Status {
         active
         inactive
+        deleted
     }
 `
 

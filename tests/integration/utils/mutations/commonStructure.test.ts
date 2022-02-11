@@ -576,6 +576,7 @@ describe('commonStructure', () => {
                 return {
                     organizationId: o.organization_id,
                     userIds: usrs.map((u) => u.user_id),
+                    status: Status.INACTIVE,
                 }
             })
         }

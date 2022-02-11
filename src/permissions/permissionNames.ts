@@ -466,4 +466,5 @@ export enum PermissionName {
     publish_free_content_for_all_hub_89000 = 'publish_free_content_for_all_hub_89000',
     publish_free_content_for_specific_orgs_89001 = 'publish_free_content_for_specific_orgs_89001',
     publish_free_content_for_all_orgs_89002 = 'publish_free_content_for_all_orgs_89002',
+    reactivate_user_123 = 'reactivate_user_123',
 }

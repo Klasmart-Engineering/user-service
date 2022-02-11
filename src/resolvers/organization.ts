@@ -453,11 +453,51 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
     ): Promise<RemoveUsersFromOrganizationsEntityMap> =>
         generateAddRemoveOrgUsersMap(this.mainEntityIds, input)
 
-    protected authorize(): Promise<void> {
-        return this.permissions.rejectIfNotAllowed(
-            { organization_ids: this.mainEntityIds },
-            PermissionName.edit_this_organization_10330
-        )
+    normalize(inputs: RemoveUsersFromOrganizationInput[]) {
+        for (const input of inputs) {
+            if (input.status === undefined) {
+                input.status = Status.INACTIVE
+            }
+        }
+        return inputs
+    }
+
+    async authorize(input: RemoveUsersFromOrganizationInput[]): Promise<void> {
+        const [
+            hasDeletePermission,
+            hasDeactivatePermission,
+        ] = await Promise.all([
+            this.permissions.allowed(
+                { organization_ids: this.mainEntityIds },
+                PermissionName.delete_users_40440
+            ),
+            this.permissions.allowed(
+                { organization_ids: this.mainEntityIds },
+                PermissionName.deactivate_user_40883
+            ),
+        ])
+
+        const deleteOrgIds = input
+            .filter((i) => i.status == Status.DELETED)
+            .map((i) => i.organizationId)
+
+        if (!hasDeletePermission && deleteOrgIds.length > 0) {
+            throw new Error(
+                `User must have ${PermissionName.delete_users_40440} to use the delete status on organizations ${deleteOrgIds}`
+            )
+        }
+
+        const inactiveOrgIds = input
+            .filter(
+                (i) => i.status === Status.INACTIVE || i.status === undefined
+            )
+            .map((i) => i.organizationId)
+
+        if (!hasDeactivatePermission && inactiveOrgIds.length > 0) {
+            throw new Error(
+                `User must have ${PermissionName.deactivate_user_40883} to use the inactive status on organizaton ${inactiveOrgIds}`
+            )
+        }
     }
 
     protected validationOverAllInputs(
@@ -506,7 +546,7 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
         return errors
     }
 
-    protected process(
+    process(
         currentInput: RemoveUsersFromOrganizationInput,
         maps: RemoveUsersFromOrganizationsEntityMap,
         index: number
@@ -516,7 +556,9 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
         const memberships: OrganizationMembership[] = []
         for (const userId of userIds) {
             const membership = maps.memberships.get({ organizationId, userId })!
+            // todo: should we refactor this so partialEntity has no defualt status
             Object.assign(membership, this.partialEntity)
+            membership.status = currentInput.status!
             memberships.push(membership)
         }
 

@@ -300,6 +300,7 @@ const typeDefs = gql`
     input RemoveUsersFromOrganizationInput {
         organizationId: ID!
         userIds: [ID!]!
+        status: Status
     }
 
     type OrganizationsMutationResult {
