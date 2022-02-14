@@ -169,6 +169,7 @@ describe('class', () => {
     describe('createClasses', () => {
         let ctx: { permissions: UserPermissions }
         let org: Organization
+        let org2: Organization
         let createClasses: CreateClasses
 
         beforeEach(async () => {
@@ -177,6 +178,7 @@ describe('class', () => {
             const r = await createRoleFactory(undefined, org, {
                 permissions: [PermissionName.create_class_20224],
             }).save()
+            org2 = await createOrganization().save()
             await createOrganizationMembership({
                 user: clientUser,
                 organization: org,
@@ -636,6 +638,26 @@ describe('class', () => {
                 ]
             })
 
+            it('duplicates names but in different orgs', async () => {
+                const duplicateInput = inputs[1]
+
+                duplicateInput.name = inputs[0].name
+                duplicateInput.organizationId = org2.organization_id
+
+                const {
+                    validInputs,
+                    apiErrors,
+                } = createClasses.validationOverAllInputs(inputs)
+
+                expect(validInputs.length).to.eq(3)
+                expect(validInputs[0].input.name).to.eq(inputs[0].name)
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].input.name).to.eq(inputs[1].name)
+                expect(validInputs[1].index).to.eq(1)
+                expect(validInputs[2].input.name).to.eq(inputs[2].name)
+                expect(validInputs[2].index).to.eq(2)
+                expect(apiErrors.length).to.equal(0)
+            })
             it('duplicate names', async () => {
                 const duplicateInput = inputs[1]
 
@@ -654,7 +676,7 @@ describe('class', () => {
 
                 const error = createDuplicateAttributeAPIError(
                     1,
-                    ['name'],
+                    ['name+organizationId'],
                     'class'
                 )
 
