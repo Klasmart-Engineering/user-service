@@ -566,7 +566,6 @@ export class CreateClasses extends CreateMutation<
         const errors: APIError[] = []
 
         const failedDuplicateNames = validateNoDuplicate(
-            //inputs.map((i) => i.name),
             inputs.map(function (i) {
                 return JSON.stringify({
                     name: i.name,
