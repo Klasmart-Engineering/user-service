@@ -10,6 +10,7 @@ import {
     AddUsersToOrganizationInput,
     CreateOrganizationInput,
     OrganizationsMutationResult,
+    ReactivateUsersInOrganizationInput,
     RemoveUsersFromOrganizationInput,
 } from '../types/graphQL/organization'
 import {
@@ -32,6 +33,7 @@ import {
     filterInvalidInputs,
     CreateMutation,
     validateNoDuplicate,
+    validateNoDuplicates,
 } from '../utils/mutations/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
 import {
@@ -284,7 +286,7 @@ export class CreateOrganizations extends CreateMutation<
     }
 }
 
-interface RemoveUsersFromOrganizationsEntityMap
+export interface RemoveUsersFromOrganizationsEntityMap
     extends EntityMap<Organization> {
     mainEntity: Map<string, Organization>
     users: Map<string, User>
@@ -418,7 +420,114 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
     ): Promise<void> => addOrgToOutput(currentEntity, this.output)
 }
 
-export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
+export class ReactivateUsersInOrganizations extends AddMembershipMutation<
+    Organization,
+    ReactivateUsersInOrganizationInput,
+    OrganizationsMutationResult,
+    RemoveUsersFromOrganizationsEntityMap,
+    OrganizationMembership
+> {
+    protected readonly EntityType = Organization
+    protected inputTypeName = 'ReactivateUsersInOrganizationsInput'
+    protected output: OrganizationsMutationResult = { organizations: [] }
+    protected mainEntityIds: string[]
+
+    constructor(
+        input: ReactivateUsersInOrganizationInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.organizationId)
+    }
+
+    generateEntityMaps = (
+        input: ReactivateUsersInOrganizationInput[]
+    ): Promise<RemoveUsersFromOrganizationsEntityMap> =>
+        generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [
+            Status.INACTIVE,
+        ])
+
+    authorize(): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: this.mainEntityIds },
+            PermissionName.reactivate_user_123
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: ReactivateUsersInOrganizationInput[]
+    ): {
+        validInputs: {
+            index: number
+            input: ReactivateUsersInOrganizationInput
+        }[]
+        apiErrors: APIError[]
+    } {
+        // todo: validate per input no duplciate user ids
+        return filterInvalidInputs(
+            inputs,
+            validateNoDuplicates(
+                inputs,
+                inputs.map((val) => val.organizationId),
+                this.inputTypeName
+            )
+        )
+    }
+
+    validate(
+        index: number,
+        _currentEntity: Organization,
+        currentInput: ReactivateUsersInOrganizationInput,
+        maps: RemoveUsersFromOrganizationsEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { organizationId, userIds } = currentInput
+
+        // don't need to validate organizationId
+        // because if the organization didn't exist
+        // authorization would of failed
+
+        const users = flagNonExistent(User, index, userIds, maps.users)
+        errors.push(...users.errors)
+
+        if (!users.values.length) return errors
+        const memberships = flagNonExistentOrganizationMembership(
+            index,
+            organizationId,
+            users.values.map((u) => u.user_id),
+            maps.memberships
+        )
+        errors.push(...memberships.errors)
+
+        return errors
+    }
+
+    protected process(
+        currentInput: ReactivateUsersInOrganizationInput,
+        maps: RemoveUsersFromOrganizationsEntityMap,
+        index: number
+    ): ProcessedResult<Organization, OrganizationMembership> {
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+
+        // Retrieval
+        const { organizationId, userIds } = currentInput
+
+        // Create new memberships in organisation
+        const memberships: OrganizationMembership[] = []
+        for (const userId of userIds) {
+            const membership = maps.memberships.get({ organizationId, userId })!
+            membership.status = Status.ACTIVE
+            memberships.push(membership)
+        }
+        return { outputEntity: currentEntity, modifiedEntity: memberships }
+    }
+
+    protected buildOutput = async (
+        currentEntity: Organization
+    ): Promise<void> => addOrgToOutput(currentEntity, this.output)
+}
+
+export abstract class DowngradeMembership extends RemoveMembershipMutation<
     Organization,
     RemoveUsersFromOrganizationInput,
     OrganizationsMutationResult,
@@ -427,10 +536,11 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
 > {
     protected readonly EntityType = Organization
     protected readonly MembershipType = OrganizationMembership
-    protected inputTypeName = 'RemoveUsersFromOrganizationInput'
     protected output: OrganizationsMutationResult = { organizations: [] }
     protected mainEntityIds: string[]
     protected readonly saveIds: Record<string, string>[]
+    abstract permission: PermissionName
+    abstract statuses: Status[]
 
     constructor(
         input: RemoveUsersFromOrganizationInput[],
@@ -451,53 +561,13 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
     generateEntityMaps = (
         input: RemoveUsersFromOrganizationInput[]
     ): Promise<RemoveUsersFromOrganizationsEntityMap> =>
-        generateAddRemoveOrgUsersMap(this.mainEntityIds, input)
+        generateAddRemoveOrgUsersMap(this.mainEntityIds, input, this.statuses)
 
-    normalize(inputs: RemoveUsersFromOrganizationInput[]) {
-        for (const input of inputs) {
-            if (input.status === undefined) {
-                input.status = Status.INACTIVE
-            }
-        }
-        return inputs
-    }
-
-    async authorize(input: RemoveUsersFromOrganizationInput[]): Promise<void> {
-        const [
-            hasDeletePermission,
-            hasDeactivatePermission,
-        ] = await Promise.all([
-            this.permissions.allowed(
-                { organization_ids: this.mainEntityIds },
-                PermissionName.delete_users_40440
-            ),
-            this.permissions.allowed(
-                { organization_ids: this.mainEntityIds },
-                PermissionName.deactivate_user_40883
-            ),
-        ])
-
-        const deleteOrgIds = input
-            .filter((i) => i.status == Status.DELETED)
-            .map((i) => i.organizationId)
-
-        if (!hasDeletePermission && deleteOrgIds.length > 0) {
-            throw new Error(
-                `User must have ${PermissionName.delete_users_40440} to use the delete status on organizations ${deleteOrgIds}`
-            )
-        }
-
-        const inactiveOrgIds = input
-            .filter(
-                (i) => i.status === Status.INACTIVE || i.status === undefined
-            )
-            .map((i) => i.organizationId)
-
-        if (!hasDeactivatePermission && inactiveOrgIds.length > 0) {
-            throw new Error(
-                `User must have ${PermissionName.deactivate_user_40883} to use the inactive status on organizaton ${inactiveOrgIds}`
-            )
-        }
+    protected authorize(): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: this.mainEntityIds },
+            this.permission
+        )
     }
 
     protected validationOverAllInputs(
@@ -556,9 +626,7 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
         const memberships: OrganizationMembership[] = []
         for (const userId of userIds) {
             const membership = maps.memberships.get({ organizationId, userId })!
-            // todo: should we refactor this so partialEntity has no defualt status
             Object.assign(membership, this.partialEntity)
-            membership.status = currentInput.status!
             memberships.push(membership)
         }
 
@@ -570,12 +638,51 @@ export class RemoveUsersFromOrganizations extends RemoveMembershipMutation<
     ): Promise<void> => addOrgToOutput(currentEntity, this.output)
 }
 
+export class RemoveUsersFromOrganizations extends DowngradeMembership {
+    protected inputTypeName = 'RemoveUsersFromOrganizationInput'
+    statuses = [Status.ACTIVE]
+    protected readonly partialEntity = {
+        status: Status.INACTIVE,
+        deleted_at: new Date(),
+    }
+    permission = PermissionName.deactivate_user_40883
+}
+
+export class DeleteUsersFromOrganizations extends DowngradeMembership {
+    protected inputTypeName = 'DeleteUsersFromOrganizations'
+    statuses = [Status.ACTIVE, Status.INACTIVE]
+    protected readonly partialEntity = {
+        status: Status.DELETED,
+        deleted_at: new Date(),
+    }
+    permission = PermissionName.delete_users_40440
+
+    process(
+        currentInput: RemoveUsersFromOrganizationInput,
+        maps: RemoveUsersFromOrganizationsEntityMap,
+        index: number
+    ) {
+        const { outputEntity, others } = super.process(
+            currentInput,
+            maps,
+            index
+        )
+
+        for (const membership of others) {
+            membership.roles = Promise.resolve([])
+        }
+
+        return { outputEntity, others }
+    }
+}
+
 async function generateAddRemoveOrgUsersMap(
     organizationIds: string[],
     input: {
         userIds: string[]
         organizationRoleIds?: string[]
-    }[]
+    }[],
+    statuses = [Status.ACTIVE]
 ): Promise<AddUsersToOrganizationsEntityMap> {
     const orgMap = getMap.organization(organizationIds)
     const userMap = getMap.user(input.flatMap((i) => i.userIds))
@@ -587,7 +694,9 @@ async function generateAddRemoveOrgUsersMap(
 
     const membershipMap = getMap.membership.organization(
         organizationIds,
-        input.flatMap((i) => i.userIds)
+        input.flatMap((i) => i.userIds),
+        undefined,
+        statuses
     )
 
     return {

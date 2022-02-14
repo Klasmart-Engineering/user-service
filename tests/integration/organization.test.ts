@@ -104,6 +104,7 @@ import {
 } from '../../src/operations/organization'
 import { Headers } from 'node-mocks-http'
 import {
+    compareErrors,
     compareMultipleErrors,
     expectAPIError,
     expectToBeAPIErrorCollection,
@@ -113,12 +114,14 @@ import {
     AddUsersToOrganizationInput,
     CreateOrganizationInput,
     OrganizationsMutationResult,
+    ReactivateUsersInOrganizationInput,
     RemoveUsersFromOrganizationInput,
 } from '../../src/types/graphQL/organization'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     AddUsersToOrganizations,
     CreateOrganizations,
+    ReactivateUsersInOrganizations,
     RemoveUsersFromOrganizations,
 } from '../../src/resolvers/organization'
 import { mutate } from '../../src/utils/mutations/commonStructure'
@@ -132,7 +135,8 @@ import {
 import { APIError } from '../../src/types/errors/apiError'
 import { customErrors } from '../../src/types/errors/customError'
 import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
-import { Permission } from '../../src/entities/permission'
+import { ObjMap } from '../../src/utils/stringUtils'
+import { createOrg } from '../utils/operations/acceptance/acceptanceOps.test'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -7772,6 +7776,235 @@ describe('organization', () => {
         )
     })
 
+    describe.only('ReactivateUsersInOrganizations', () => {
+        context('generateEntityMaps', () => {
+            it('finds only inactive memberships', async () => {
+                const organization = await createOrganization().save()
+                const input: ReactivateUsersInOrganizationInput[] = await Promise.all(
+                    [Status.ACTIVE, Status.INACTIVE, Status.DELETED].map(
+                        (status) =>
+                            createUser()
+                                .save()
+                                .then((user) => {
+                                    return createOrganizationMembership({
+                                        user,
+                                        organization,
+                                        roles: [],
+                                        status,
+                                    }).save()
+                                })
+                                .then((membership) => {
+                                    return {
+                                        organizationId:
+                                            membership.organization_id,
+                                        userIds: [membership.user_id],
+                                    }
+                                })
+                    )
+                )
+
+                const callingUser = await createUser().save()
+                const mute = new ReactivateUsersInOrganizations(
+                    input,
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const entityMaps = await mute.generateEntityMaps(input)
+                expect(entityMaps.memberships.size).to.eq(1)
+                expect(
+                    Array.from(entityMaps.memberships.values())[0].status
+                ).to.eq(Status.INACTIVE)
+            })
+        })
+
+        context('authorize', () => {
+            const makeMembership = async (
+                permissions: PermissionName[] = []
+            ) => {
+                const user = await createUser().save()
+                const organization = await createOrganization().save()
+                const role = await roleFactory(undefined, organization, {
+                    permissions,
+                }).save()
+                const membership = await createOrganizationMembership({
+                    user,
+                    organization,
+                    roles: [role],
+                }).save()
+                return { user, organization, membership }
+            }
+
+            it('rejects when user does not have reactivate_user_123', async () => {
+                const { user } = await makeMembership()
+                const mute = new ReactivateUsersInOrganizations(
+                    [],
+                    new UserPermissions(userToPayload(user))
+                )
+                await expect(mute.authorize()).to.eventually.rejectedWith(
+                    /reactivate_user_123/
+                )
+            })
+
+            it('resolvers when user does have reactivate_user_123', async () => {
+                const { user } = await makeMembership([
+                    PermissionName.reactivate_user_123,
+                ])
+                const mute = new ReactivateUsersInOrganizations(
+                    [],
+                    new UserPermissions(userToPayload(user))
+                )
+                await expect(mute.authorize()).to.eventually.rejectedWith(
+                    /reactivate_user_123/
+                )
+            })
+        })
+
+        context('validationOverAllInputs', () => {
+            it('reject duplicate organizationIds', async () => {
+                const callingUser = await createUser().save()
+                const mute = new ReactivateUsersInOrganizations(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+
+                const duplicateOrganizationId = uuid_v4()
+                const notDuplicatedOrganizationId = uuid_v4()
+
+                const input = [
+                    { organizationId: duplicateOrganizationId, userIds: [] },
+                    { organizationId: duplicateOrganizationId, userIds: [] },
+                    {
+                        organizationId: notDuplicatedOrganizationId,
+                        userIds: [],
+                    },
+                ]
+                const { validInputs, apiErrors } = mute.validationOverAllInputs(
+                    input
+                )
+                expect(validInputs).to.have.length(2)
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].index).to.eq(2)
+                expect(apiErrors).to.have.length(1)
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['id'],
+                    'ReactivateUsersInOrganizationsInput'
+                )
+                compareErrors(apiErrors[0], error)
+            })
+
+            //todo: reject duplicate user ids per input
+        })
+
+        context('validate', () => {
+            const makeMembership = (organization: Organization) => {
+                const user = createUser()
+                user.user_id = uuid_v4()
+                const membership = createOrganizationMembership({
+                    user,
+                    organization,
+                    status: Status.INACTIVE,
+                })
+                return { membership, user }
+            }
+
+            it('no errors when user and membership exists', async () => {
+                const callingUser = await createUser().save()
+                const mute = new ReactivateUsersInOrganizations(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const organization = createOrganization()
+                organization.organization_id = uuid_v4()
+                const { membership, user } = makeMembership(organization)
+                const maps = {
+                    mainEntity: new Map(),
+                    users: new Map([[user.user_id, user]]),
+                    memberships: new ObjMap([
+                        {
+                            key: {
+                                organizationId: organization.organization_id,
+                                userId: user.user_id,
+                            },
+                            value: membership,
+                        },
+                    ]),
+                }
+                const input = {
+                    userIds: [user.user_id],
+                    organizationId: organization.organization_id,
+                }
+                const apiErrors = mute.validate(0, organization, input, maps)
+                expect(apiErrors).to.have.length(0)
+            })
+            it('errors when userIds are not found', async () => {
+                const callingUser = await createUser().save()
+                const mute = new ReactivateUsersInOrganizations(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const maps = {
+                    mainEntity: new Map(),
+                    users: new Map(),
+                    memberships: new ObjMap<
+                        { organizationId: string; userId: string },
+                        OrganizationMembership
+                    >(),
+                }
+
+                const nonExistantUser = uuid_v4()
+
+                const input = {
+                    userIds: [nonExistantUser],
+                    organizationId: uuid_v4(),
+                }
+                const apiErrors = mute.validate(0, organization, input, maps)
+                expect(apiErrors).to.have.length(1)
+                const error = createEntityAPIError(
+                    'nonExistent',
+                    0,
+                    'User',
+                    nonExistantUser
+                )
+                compareErrors(apiErrors[0], error)
+            })
+            it('errors when memberships are not found', async () => {
+                const callingUser = await createUser().save()
+                const mute = new ReactivateUsersInOrganizations(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const user = createUser()
+                user.user_id = uuid_v4()
+                const maps = {
+                    mainEntity: new Map(),
+                    users: new Map([[user.user_id, user]]),
+                    memberships: new ObjMap<
+                        { organizationId: string; userId: string },
+                        OrganizationMembership
+                    >(),
+                }
+
+                const nonExistantOrg = uuid_v4()
+
+                const input = {
+                    userIds: [user.user_id],
+                    organizationId: nonExistantOrg,
+                }
+                const apiErrors = mute.validate(0, organization, input, maps)
+                expect(apiErrors).to.have.length(1)
+                const error = createEntityAPIError(
+                    'nonExistentChild',
+                    0,
+                    'User',
+                    user.user_id,
+                    'Organization',
+                    nonExistantOrg
+                )
+                compareErrors(apiErrors[0], error)
+            })
+        })
+    })
+
     describe('RemoveUsersFromOrganizations', () => {
         let input: RemoveUsersFromOrganizationInput[]
 
@@ -7852,175 +8085,9 @@ describe('organization', () => {
                         })
                     )
                 }
-                input.push({
-                    organizationId: org.organization_id,
-                    userIds,
-                    status: Status.INACTIVE,
-                })
+                input.push({ organizationId: org.organization_id, userIds })
             }
             await OrganizationMembership.save(memberships)
-        })
-
-        context.only('normalize', () => {
-            const expectedStatuses = [
-                { inputStatus: Status.INACTIVE, expected: Status.INACTIVE },
-                { inputStatus: Status.DELETED, expected: Status.DELETED },
-                { inputStatus: undefined, expected: Status.INACTIVE },
-            ]
-
-            for (const { inputStatus: input, expected } of expectedStatuses) {
-                it(`normalizes status ${input} to ${expected}`, () => {
-                    const user = createUser()
-                    const org = createOrganization()
-                    const input = [
-                        {
-                            organizationId: org.organization_id,
-                            userIds: [createUser().user_id],
-                        },
-                    ]
-
-                    const mut = new RemoveUsersFromOrganizations(
-                        input,
-                        new UserPermissions(userToPayload(user))
-                    )
-                    const normalize = mut.normalize(input)
-                    expect(normalize).to.have.length(1)
-                    expect(normalize[0].status).to.eq(Status.INACTIVE)
-                })
-            }
-        })
-
-        context.only('authorize', () => {
-            const makeUserWithPermissions = async (
-                permissionNames: PermissionName[]
-            ) => {
-                const user = await createUser().save()
-                const org = await createOrganization().save()
-                const role = await roleFactory(undefined, org, {
-                    permissions: permissionNames,
-                }).save()
-                await createOrganizationMembership({
-                    user,
-                    organization: org,
-                    roles: [role],
-                }).save()
-                const permissions = new UserPermissions(userToPayload(user))
-                return { user, org, permissions }
-            }
-
-            it('succeeds if user has the delete permission', async () => {
-                const {
-                    user,
-                    org,
-                    permissions,
-                } = await makeUserWithPermissions([
-                    PermissionName.delete_users_40440,
-                ])
-                const input = [
-                    {
-                        organizationId: org.organization_id,
-                        userIds: [user.user_id],
-                        status: Status.DELETED,
-                    },
-                ]
-                const mut = new RemoveUsersFromOrganizations(input, permissions)
-                await expect(mut.authorize(input)).to.eventually.be.fulfilled
-            })
-
-            it('succeeds if user has the deactivate permission', async () => {
-                const {
-                    user,
-                    org,
-                    permissions,
-                } = await makeUserWithPermissions([
-                    PermissionName.deactivate_user_40883,
-                ])
-                const input = [
-                    {
-                        organizationId: org.organization_id,
-                        userIds: [user.user_id],
-                        status: Status.INACTIVE,
-                    },
-                    {
-                        organizationId: org.organization_id,
-                        userIds: [user.user_id],
-                        // status should be treated as inactive by default
-                    },
-                ]
-                const mut = new RemoveUsersFromOrganizations(input, permissions)
-                await expect(mut.authorize(input)).to.eventually.be.fulfilled
-            })
-
-            it('fails if user is missing deactivate permission', async () => {
-                const {
-                    user,
-                    org,
-                    permissions,
-                } = await makeUserWithPermissions([])
-                const input = [
-                    {
-                        organizationId: org.organization_id,
-                        userIds: [user.user_id],
-                        status: Status.INACTIVE,
-                    },
-                ]
-                const mut = new RemoveUsersFromOrganizations(input, permissions)
-                await expect(
-                    mut.authorize(input)
-                ).to.eventually.be.rejectedWith(
-                    new RegExp(`deactivate_user_40883.*${org.organization_id}`)
-                )
-            })
-            it('fails if user is missing delete permission', async () => {
-                const {
-                    user,
-                    org,
-                    permissions,
-                } = await makeUserWithPermissions([])
-                const input = [
-                    {
-                        organizationId: org.organization_id,
-                        userIds: [user.user_id],
-                        status: Status.DELETED,
-                    },
-                ]
-                const mut = new RemoveUsersFromOrganizations(input, permissions)
-                await expect(
-                    mut.authorize(input)
-                ).to.eventually.be.rejectedWith(
-                    new RegExp(`delete_users_40440.*${org.organization_id}`)
-                )
-            })
-        })
-
-        context.only('process', () => {
-            // no need to check active, schema doesn't allow that
-            for (const status of [Status.DELETED, Status.INACTIVE]) {
-                it(`replaces the status with ${status}`, async () => {
-                    const user = await createUser().save()
-                    const org = await createOrganization().save()
-                    await createOrganizationMembership({
-                        user,
-                        organization: org,
-                        roles: [],
-                    }).save()
-                    const permissions = new UserPermissions(userToPayload(user))
-                    const input = {
-                        organizationId: org.organization_id,
-                        userIds: [user.user_id],
-                        status: status,
-                    }
-
-                    const mut = new RemoveUsersFromOrganizations(
-                        [input],
-                        permissions
-                    )
-                    const ge = await mut.generateEntityMaps([input])
-                    const memberships = mut.process(input, ge, 0).others
-                    expect(memberships).to.have.length(1)
-                    expect(memberships[0].status).to.eq(status)
-                })
-            }
         })
 
         context(

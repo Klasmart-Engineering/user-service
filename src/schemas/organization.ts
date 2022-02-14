@@ -9,6 +9,8 @@ import { Model } from '../model'
 import {
     AddUsersToOrganizations,
     CreateOrganizations,
+    DeleteUsersFromOrganizations,
+    ReactivateUsersInOrganizations,
     RemoveUsersFromOrganizations,
 } from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
@@ -42,6 +44,12 @@ const typeDefs = gql`
         ): OrganizationsMutationResult
         removeUsersFromOrganizations(
             input: [RemoveUsersFromOrganizationInput!]!
+        ): OrganizationsMutationResult
+        reactivateUsersInOrganizations(
+            input: [ReactivateUsersInOrganizationInput!]!
+        ): OrganizationsMutationResult
+        deleteUsersFromOrganizations(
+            input: [DeleteUsersInOrganizationInput!]!
         ): OrganizationsMutationResult
         organization(
             organization_id: ID!
@@ -300,7 +308,16 @@ const typeDefs = gql`
     input RemoveUsersFromOrganizationInput {
         organizationId: ID!
         userIds: [ID!]!
-        status: Status
+    }
+
+    input DeleteUsersInOrganizationInput {
+        organizationId: ID!
+        userIds: [ID!]!
+    }
+
+    input ReactivateUsersInOrganizationInput {
+        organizationId: ID!
+        userIds: [ID!]!
     }
 
     type OrganizationsMutationResult {
@@ -567,6 +584,14 @@ export default function getDefault(
                     mutate(AddUsersToOrganizations, args, ctx.permissions),
                 removeUsersFromOrganizations: (_parent, args, ctx, _info) =>
                     mutate(RemoveUsersFromOrganizations, args, ctx.permissions),
+                reactivateUsersInOrganizations: (_parent, args, ctx, _info) =>
+                    mutate(
+                        ReactivateUsersInOrganizations,
+                        args,
+                        ctx.permissions
+                    ),
+                deletesUsersInOrganizations: (_parent, args, ctx, _info) =>
+                    mutate(DeleteUsersFromOrganizations, args, ctx.permissions),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>

@@ -27,7 +27,21 @@ export interface AddUsersToOrganizationInput {
 export interface RemoveUsersFromOrganizationInput {
     organizationId: string
     userIds: string[]
-    status?: Status
+}
+
+export interface ReactivateUsersInOrganizationInput {
+    organizationId: string
+    userIds: string[]
+}
+
+export interface DeleteUsersInOrganizationInput {
+    organizationId: string
+    userIds: string[]
+}
+
+export interface ActivateUsersInOrganizationInput {
+    organizationId: string
+    userIds: string[]
 }
 
 export interface OrganizationConnectionNode {

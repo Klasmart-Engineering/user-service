@@ -64,13 +64,14 @@ const membership = {
     organization: async (
         organizationIds: string[],
         userIds: string[],
-        relations?: string[]
+        relations?: string[],
+        statuses = [Status.ACTIVE]
     ): Promise<OrganizationMembershipMap> => {
         return OrganizationMembership.find({
             where: {
                 user_id: In(userIds),
                 organization_id: In(organizationIds),
-                status: Status.ACTIVE,
+                status: In(statuses),
             },
             relations,
         }).then((entities) => {
