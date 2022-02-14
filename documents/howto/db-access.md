@@ -14,7 +14,7 @@ aws sso login --profile kl-dev-alpha
 
 Then run the DB tunnelling command:
 ```
-ssh -f -NT -oExitOnForwardFailure=yes -L [local port]:[DB remote address]:[DB remote port] [SSH remote host name you've configured locally]
+ssh -NT -oExitOnForwardFailure=yes -L 8000:kidsloop-alpha-user-0.czsdpwfud5o8.ap-northeast-2.rds.amazonaws.com:5432 bastion
 ```
 Refer to the corresponding longer guide for the input values. With this open, open your DB client and login using the input values and the ECS task definition container settings.
 
@@ -89,7 +89,7 @@ aws sso login --profile kl-dev-alpha
 
 Then open the DB tunnel:
 ```
-ssh -f -NT -oExitOnForwardFailure=yes -L 3000:kidsloop-alpha-user-0.czsdpwfud5o8.ap-northeast-2.rds.amazonaws.com:5432 bastion
+ssh -NT -oExitOnForwardFailure=yes -L 8000:kidsloop-alpha-user-0.czsdpwfud5o8.ap-northeast-2.rds.amazonaws.com:5432 bastion
 ```
 
 ### 7 - Access the DB
@@ -97,7 +97,7 @@ ssh -f -NT -oExitOnForwardFailure=yes -L 3000:kidsloop-alpha-user-0.czsdpwfud5o8
 Lastly, open your DB client and enter the following settings:
 
 * Host: localhost
-* Port: 3000
+* Port: 8000
 * User: refer to the description below
 * Password: refer to the description below
 * Database: refer to the description below
