@@ -3798,6 +3798,116 @@ describe('organization', () => {
                     )
                 })
             })
+
+            context('and is a school admin user', () => {
+                let schoolAdmin: User
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                context('and it tries to create new grades', () => {
+                    it('fails to create grades in the organization', async () => {
+                        const gradeDetails = await gradeInfo(grade)
+
+                        await expect(
+                            createOrUpdateGrades(
+                                testClient,
+                                organization.organization_id,
+                                [gradeDetails],
+                                {
+                                    authorization: generateToken(
+                                        userToPayload(schoolAdmin)
+                                    ),
+                                }
+                            )
+                        ).to.be.rejected
+
+                        const dbGrades = await Grade.find({
+                            where: {
+                                organization: {
+                                    organization_id:
+                                        organization.organization_id,
+                                },
+                            },
+                        })
+                        const dGradesDetails = await Promise.all(
+                            dbGrades.map(gradeInfo)
+                        )
+                        expect(dGradesDetails).to.deep.eq([
+                            progressFromGradeDetails,
+                            progressToGradeDetails,
+                        ])
+                    })
+                })
+
+                context(
+                    'and it tries to update existing non system grades',
+                    () => {
+                        let gradeDetails: any
+                        let newGrade: any
+
+                        beforeEach(async () => {
+                            gradeDetails = await gradeInfo(grade)
+                            const gqlGrades = await createOrUpdateGrades(
+                                testClient,
+                                organization.organization_id,
+                                [gradeDetails],
+                                { authorization: getAdminAuthToken() }
+                            )
+
+                            newGrade = {
+                                ...gradeDetails,
+                                ...{
+                                    id: gqlGrades[0].id,
+                                    name: 'New Name',
+                                },
+                            }
+                        })
+
+                        it('fails to update grades in the organization', async () => {
+                            await expect(
+                                createOrUpdateGrades(
+                                    testClient,
+                                    organization.organization_id,
+                                    [newGrade],
+                                    {
+                                        authorization: generateToken(
+                                            userToPayload(schoolAdmin)
+                                        ),
+                                    }
+                                )
+                            ).to.be.rejected
+
+                            const dbGrades = await Grade.find({
+                                where: {
+                                    organization: {
+                                        organization_id:
+                                            organization.organization_id,
+                                    },
+                                },
+                            })
+                            const dGradesDetails = await Promise.all(
+                                dbGrades.map(gradeInfo)
+                            )
+                            expect(dGradesDetails).to.deep.eq([
+                                progressFromGradeDetails,
+                                progressToGradeDetails,
+                                gradeDetails,
+                            ])
+                        })
+                    }
+                )
+            })
         })
     })
 

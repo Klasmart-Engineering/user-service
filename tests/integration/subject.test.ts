@@ -6,8 +6,10 @@ import { getConnection } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 import { Category } from '../../src/entities/category'
 import { Organization } from '../../src/entities/organization'
+import { Role } from '../../src/entities/role'
 import { Status } from '../../src/entities/status'
 import { Subject } from '../../src/entities/subject'
+import { User } from '../../src/entities/user'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
@@ -308,6 +310,34 @@ describe('subject', () => {
                     permittedOrg,
                     notPermittedOrg,
                 ])
+            })
+
+            context('when caller has school admin role', () => {
+                let schoolAdmin: User
+                let organization: Organization
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    organization = await createOrganization().save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                it('rejects because has no longer permission for create', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(schoolAdmin)
+                    )
+
+                    const userCtx = { permissions }
+                    await expectPermissionError(userCtx, [organization])
+                })
             })
         })
 
@@ -762,6 +792,35 @@ describe('subject', () => {
                     notPermittedSubject,
                 ])
             })
+
+            context('when caller has school admin role', () => {
+                let schoolAdmin: User
+                let subject: Subject
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    const organization = await createOrganization().save()
+                    subject = await createSubject(organization).save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                it('rejects because has no longer permission for edit', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(schoolAdmin)
+                    )
+
+                    const userCtx = { permissions }
+                    await expectPermissionError(userCtx, [subject])
+                })
+            })
         })
 
         const buildEntityMap = async (
@@ -1173,6 +1232,35 @@ describe('subject', () => {
                     permittedSubject,
                     notPermittedSubject,
                 ])
+            })
+
+            context('when caller has school admin role', () => {
+                let schoolAdmin: User
+                let subject: Subject
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    const organization = await createOrganization().save()
+                    subject = await createSubject(organization).save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                it('rejects because has no longer permission for delete', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(schoolAdmin)
+                    )
+
+                    const userCtx = { permissions }
+                    await expectPermissionError(userCtx, [subject])
+                })
             })
         })
     })

@@ -12,7 +12,11 @@ import {
     createRole,
 } from '../../utils/operations/organizationOps'
 import { addRoleToOrganizationMembership } from '../../utils/operations/organizationMembershipOps'
-import { getNonAdminAuthToken, getAdminAuthToken } from '../../utils/testConfig'
+import {
+    getNonAdminAuthToken,
+    getAdminAuthToken,
+    generateToken,
+} from '../../utils/testConfig'
 import { createGrade } from '../../factories/grade.factory'
 import { createServer } from '../../../src/utils/createServer'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
@@ -25,6 +29,10 @@ import { Organization } from '../../../src/entities/organization'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
+import { createUser } from '../../factories/user.factory'
+import { Role } from '../../../src/entities/role'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { userToPayload } from '../../utils/operations/userOps'
 
 use(chaiAsPromised)
 
@@ -390,6 +398,45 @@ describe('Grade', () => {
                                     expect(dbGrade.deleted_at).not.to.be.null
                                 })
                             })
+                        })
+                    }
+                )
+            })
+
+            context('and the user is a school admin', () => {
+                let schoolAdmin: User
+                let gradeToDelete: Grade
+
+                beforeEach(async () => {
+                    const organization = await createOrganization().save()
+                    gradeToDelete = await createGrade(organization).save()
+                    schoolAdmin = await createUser().save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                context(
+                    'and tries to delete existing non system grades',
+                    () => {
+                        it('fails to delete grades in the organization', async () => {
+                            await expect(
+                                deleteGrade(testClient, gradeToDelete.id, {
+                                    authorization: generateToken(
+                                        userToPayload(schoolAdmin)
+                                    ),
+                                })
+                            ).to.be.rejected
+
+                            const dbGrade = await Grade.findOneOrFail(grade.id)
+                            expect(dbGrade.status).to.eq(Status.ACTIVE)
+                            expect(dbGrade.deleted_at).to.be.null
                         })
                     }
                 )
