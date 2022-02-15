@@ -18,6 +18,7 @@ export class RolesInitializer {
 
         await getManager().transaction(async (manager) => {
             roles = await this._createDefaultRoles(manager)
+            await this._removeInactivePermissionsFromCustomRoles(manager)
         })
 
         return roles.values()
@@ -118,6 +119,59 @@ export class RolesInitializer {
         }
 
         return manager.save(roles)
+    }
+
+    private async _assignPermissionsRoles(
+        manager: EntityManager,
+        role: Role,
+        permissions: string[]
+    ) {
+        role.permissions = Promise.resolve([])
+        await manager.save(role)
+
+        await manager
+            .createQueryBuilder()
+            .relation(Role, 'permissions')
+            .of(role)
+            .add(permissions)
+        return undefined
+    }
+
+    private async _removeInactivePermissionsFromCustomRoles(
+        manager: EntityManager
+    ) {
+        const roles = await manager
+            .createQueryBuilder(Role, 'role')
+            .innerJoin('role.permissions', 'permission')
+            .where('permission.allow = :allowed', { allowed: false })
+            .andWhere('role.system_role = :system_role', { system_role: false })
+            .getMany()
+
+        const permissionsArrayPromise: (
+            | Promise<Permission[]>
+            | undefined
+        )[] = []
+        for (const role of roles) {
+            permissionsArrayPromise.push(role.permissions)
+        }
+        const permissionsArray = await Promise.all(permissionsArrayPromise)
+        let index = 0
+        const assignmentsPromise: Promise<undefined>[] = []
+        for (const role of roles) {
+            const permissions = permissionsArray[index] || []
+            index++
+            const filteredPerms = permissions.filter(function (perm) {
+                return perm.allow === true
+            })
+            assignmentsPromise.push(
+                this._assignPermissionsRoles(
+                    manager,
+                    role,
+                    filteredPerms.map((p) => p.permission_name)
+                )
+            )
+        }
+        await Promise.all(assignmentsPromise)
     }
 }
 
