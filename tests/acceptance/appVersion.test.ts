@@ -1,9 +1,7 @@
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
-import { getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 import appPackage from '../../package.json'
-import { TestConnection } from '../utils/testConnection'
 
 use(chaiAsPromised)
 

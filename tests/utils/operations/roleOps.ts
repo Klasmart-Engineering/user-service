@@ -4,8 +4,6 @@ import { gqlTry } from '../gqlTry'
 import { Role } from '../../../src/entities/role'
 import { Permission } from '../../../src/entities/permission'
 import { gql } from 'graphql-tag'
-import { createRole } from '../../factories/role.factory'
-import { PermissionName } from '../../../src/permissions/permissionNames'
 
 const UPDATE_ROLE = `
     mutation myMutation(

@@ -1,6 +1,5 @@
 import { expect } from 'chai'
 import { CustomBaseEntity } from '../../src/entities/customBaseEntity'
-import { User } from '../../src/entities/user'
 
 /**
  *

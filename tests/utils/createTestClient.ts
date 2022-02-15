@@ -6,12 +6,10 @@
  * Credits to the original authors
  */
 
-import express from 'express'
 import { convertNodeHttpToRequest, runHttpQuery } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
 import { GraphQLResponse } from 'apollo-server-types'
 import { print, DocumentNode } from 'graphql'
-import { graphqlUploadExpress } from 'graphql-upload'
 import httpMocks, {
     RequestOptions,
     ResponseOptions,

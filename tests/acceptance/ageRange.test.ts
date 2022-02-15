@@ -26,7 +26,6 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createProgram } from '../factories/program.factory'
 import { makeRequest } from './utils'
-import { createClass } from '../factories/class.factory'
 
 interface IAgeRangeEdge {
     node: AgeRangeConnectionNode

@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import supertest from 'supertest'
-import { Connection, getConnection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Category } from '../../src/entities/category'
 import CategoriesInitializer from '../../src/initializers/categories'
 import {
@@ -23,7 +23,7 @@ import {
     CATEGORIES_CONNECTION,
 } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import {
     buildRemoveSubcategoriesFromCategoryInputArray,

@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection, createQueryBuilder, SelectQueryBuilder } from 'typeorm'
+import { Connection, createQueryBuilder } from 'typeorm'
 import { distinctMembers } from '../../../src/directives/isAdminUtils'
 import { User } from '../../../src/entities/user'
 import { createTestConnection } from '../../utils/testConnection'

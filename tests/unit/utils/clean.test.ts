@@ -1,5 +1,4 @@
 import { expect } from 'chai'
-import { valid } from 'joi'
 import clean from '../../../src/utils/clean'
 import { isPhone } from '../../../src/utils/validations'
 

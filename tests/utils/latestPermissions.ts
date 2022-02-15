@@ -1,4 +1,3 @@
-import axios from 'axios'
 import csvParser from 'csv-parser'
 import fs from 'fs'
 import path from 'path'

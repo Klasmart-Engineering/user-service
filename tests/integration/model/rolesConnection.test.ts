@@ -44,13 +44,8 @@ import {
 import { createEntityScope } from '../../../src/directives/isAdmin'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import { createSchool } from '../../factories/school.factory'
-import {
-    generateToken,
-    getAdminAuthToken,
-    getNonAdminAuthToken,
-} from '../../utils/testConfig'
-import { rolesConnection, runQuery } from '../../utils/operations/modelOps'
-import { userToPayload } from '../../utils/operations/userOps'
+import { getAdminAuthToken, getNonAdminAuthToken } from '../../utils/testConfig'
+import { runQuery } from '../../utils/operations/modelOps'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 
 use(chaiAsPromised)

@@ -105,7 +105,6 @@ import {
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateAttributeAPIError,
-    createDuplicateInputAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,

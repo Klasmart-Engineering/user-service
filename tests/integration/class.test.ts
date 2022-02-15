@@ -48,15 +48,10 @@ import {
     CreateClasses,
     EntityMapCreateClass,
     UpdateClasses,
-    UpdateClassEntityMap,
     AddStudentsToClasses,
-    AddStudentsClassesEntityMap,
     RemoveStudentsFromClasses,
     AddTeachersToClasses,
-    AddTeachersClassesEntityMap,
     RemoveTeachersFromClasses,
-    RemoveStudentsClassesEntityMap,
-    RemoveTeachersClassesEntityMap,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,

@@ -1,14 +1,8 @@
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
-import { Connection, getConnection } from 'typeorm'
 import { expect, use } from 'chai'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
-import {
-    generateToken,
-    getAdminAuthToken,
-    getAPIKeyAuth,
-} from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { createUser } from '../factories/user.factory'
 import { customErrors } from '../../src/types/errors/customError'
 import { stringInject } from '../../src/utils/stringUtils'

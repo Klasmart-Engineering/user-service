@@ -7,19 +7,13 @@ import { Subcategory } from '../../../src/entities/subcategory'
 import { User } from '../../../src/entities/user'
 import SubcategoriesInitializer from '../../../src/initializers/subcategories'
 import CategoriesInitializer from '../../../src/initializers/categories'
-import { Model } from '../../../src/model'
 import { SubcategoryConnectionNode } from '../../../src/types/graphQL/subcategory'
-import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createCategory } from '../../factories/category.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createSubcategory } from '../../factories/subcategory.factory'
 import { createAdminUser, createUser } from '../../factories/user.factory'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../../utils/createTestClient'
 import { userToPayload } from '../../utils/operations/userOps'
 import {
     isStringArraySortedAscending,
