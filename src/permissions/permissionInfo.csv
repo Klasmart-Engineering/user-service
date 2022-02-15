@@ -327,7 +327,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 20119,view_my_school_20119,View My School,Academic Profile,School Admin,Gives users access to view their school details,Schools,,,,,,,Y
 20115,view_subjects_20115,View Subjects,Academic Profile,School Admin,Gives users access to view subjects,Subjects,,,,,,,Y
 20116,view_class_roster_20116,View Class Roster,Academic Profile,School Admin,Gives users access to view class roster,Classes,,,,,,,
-20220,create_school_20220,Create School,Academic Profile,School Admin,Gives users access to create schools,Schools,,,,,,,Y
+20220,create_school_20220,Create School,Academic Profile,Org Admin,Gives users access to create schools,Schools,,,,,,,Y
 20221,create_program_20221,Create Program,Academic Profile,School Admin,Gives users access to create programs,Programs,,,,,,,Y
 20222,create_age_range_20222,Create Age Range,Academic Profile,School Admin,Gives users access to create age ranges,Age Range,,,,,,,Y
 20223,create_grade_20223,Create Grade,Academic Profile,School Admin,Gives users access to create grades,Grades,,,,,,,Y

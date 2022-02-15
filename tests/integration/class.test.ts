@@ -674,10 +674,12 @@ describe('class', () => {
                 expect(validInputs[1].input.name).to.eq(inputs[2].name)
                 expect(validInputs[1].index).to.eq(2)
 
-                const error = createDuplicateAttributeAPIError(
+                const error = createDuplicateInputAttributeAPIError(
                     1,
-                    ['name+organizationId'],
-                    'class'
+                    'organizationId',
+                    inputs[1].organizationId,
+                    'name',
+                    inputs[1].name
                 )
 
                 expect(apiErrors.length).to.eq(1)

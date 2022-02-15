@@ -1680,6 +1680,39 @@ describe('school', () => {
                 await expectSchools(1)
             })
 
+            context('but is school admin', () => {
+                let schoolAdmin: User
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    })
+
+                    input = [
+                        {
+                            organizationId: organization.organization_id,
+                            name: 'test',
+                        },
+                    ]
+                })
+
+                it('should not create schools', async () => {
+                    const operation = expectSchoolsCreated(schoolAdmin, input)
+                    await expect(operation).to.be.rejectedWith(
+                        permError(schoolAdmin, [organization])
+                    )
+
+                    await expectSchools(0)
+                })
+            })
+
             it('when caller does not have permissions to create schools for all organizations', async () => {
                 const operation = expectSchoolsCreated(
                     userWithPermission,

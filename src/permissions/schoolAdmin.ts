@@ -169,7 +169,6 @@ export const schoolAdminRole = {
         PermissionName.view_class_roster_20116,
         PermissionName.view_school_classes_20117,
         PermissionName.view_my_school_20119,
-        PermissionName.create_school_20220,
         PermissionName.create_program_20221,
         PermissionName.create_age_range_20222,
         PermissionName.create_grade_20223,
