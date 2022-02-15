@@ -565,9 +565,14 @@ export class CreateClasses extends CreateMutation<
     validationOverAllInputs(inputs: CreateClassInput[]) {
         const errors: APIError[] = []
 
-        const failedDuplicateNames = validateNoDuplicate(
-            inputs.map((i) => i.name),
-            'class',
+        const failedDuplicateNames = validateNoDuplicateAttribute(
+            inputs.map((i) => {
+                return {
+                    entityId: i.organizationId,
+                    attributeValue: i.name,
+                }
+            }),
+            'organizationId',
             'name'
         )
 
