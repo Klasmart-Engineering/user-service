@@ -1,6 +1,11 @@
 import { check } from 'k6';
 import http from 'k6/http';
+import { Options } from 'k6/options';
 import { meQueryReq1 } from '../queries/users';
+
+export const options:Options = {
+    vus: 1,
+};
 
 const params = {
     headers: {
@@ -10,8 +15,9 @@ const params = {
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
+       // operationName: 'me',
         variables: {},
-        query: meQueryReq1,
+        query: meQueryReq1
     });
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);

@@ -15,22 +15,23 @@ const params = {
 export default function (roleType?: string) {
     const userPayload = JSON.stringify(
         {
-            "view_type": "month",
-            "time_at": Math.round(new Date().getTime() / 1000),
-            "time_zone_offset": -10800,
-            "class_types": [],
-            "class_ids": [],
-            "subject_ids": [],
-            "program_ids": [],
-            "user_id": []
+            view_type: "full_view",
+            page: 1,
+            page_size: 20,
+            time_at: 0,
+            start_at_ge: 1644548400,
+            end_at_le: 1645844340,
+            time_zone_offset: -10800,
+            order_by: "start_at",
+            time_boundary: "union"
         }
     );
 
     const res = http.post(`${process.env.SCHEDULES_TIME_VIEW_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
 
     check(res, {
-        'SCHEDULES_TIME_VIEW - status is 200': () => res.status === 200,
-        'schedule time view endpoint returns data': (r) => JSON.parse(r.body as string).data,
+        'SCHEDULES_time_view FULL VIEW - status is 200': () => res.status === 200,
+        //'schedule time view FULL VIEW returns data': (r) => JSON.parse(r.body as string).data,
     }, {
         userRoleType: roleType
     });

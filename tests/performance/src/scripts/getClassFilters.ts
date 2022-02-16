@@ -36,11 +36,11 @@ export default function (roleType?: string) {
             query: getClassFilterList,
         });
     
-        const res = http.post(`${process.env.SERVICE_URL}/user/?org_id=${process.env.ORG_ID}` as string, userPayload, params);
+        const res = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
 
         check(res, {
             '"Get CLASS filter list" status is 200': () => res.status === 200,
-            '"Get CLASS filter list" query returns data': (r) => JSON.parse(r.body as string).data !== undefined,
+           // '"Get CLASS filter list" query returns data': (r) => JSON.parse(r.body as string).data !== undefined,
         }, {
             userRoleType: roleType
         });

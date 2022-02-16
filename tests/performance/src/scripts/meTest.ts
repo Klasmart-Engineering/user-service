@@ -22,6 +22,8 @@ export default function (roleType?: string) {
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
 
+    console.log(JSON.stringify(res));
+
     check(res, {
         'status is 200': () => res.status === 200,
         '"me" query returns data': (r) => JSON.parse(r.body as string).data?.me ?? false,

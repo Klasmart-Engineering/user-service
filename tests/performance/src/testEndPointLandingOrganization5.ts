@@ -3,6 +3,10 @@ import { Options } from 'k6/options';
 import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import endPointOrganizationRequest5 from "./scripts/endPointOrganizationRequest5";
 
+// command: k6 run -e VUS=1 -e DURATION=1m testEndPointLandingOrganization5.js
+// For increase the VUS -> change the value of the variable: VUS
+// For increase the duration -> change the value of the variable: DURATION
+
 /*
 
 Script that evaluates the endPoint:

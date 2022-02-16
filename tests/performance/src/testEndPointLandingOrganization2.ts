@@ -7,6 +7,10 @@ import endPointOrganizationRequest2 from "./scripts/endPointOrganizationRequest2
 
 /*
 
+// command: k6 run -e VUS=1 -e DURATION=1m testEndPointLandingOrganization2.js
+// For increase the VUS -> change the value of the variable: VUS
+// For increase the duration -> change the value of the variable: DURATION
+
 Script that evaluates the endPoint:
 https://api.loadtest.kidsloop.live/user/
     {
