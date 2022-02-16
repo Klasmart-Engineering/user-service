@@ -126,14 +126,12 @@ export class RolesInitializer {
         role: Role,
         permissions: string[]
     ) {
-        role.permissions = Promise.resolve([])
+        role.permissions = Promise.resolve(
+            permissions.map((p) => {
+                return { permission_name: p } as Permission
+            })
+        )
         await manager.save(role)
-
-        await manager
-            .createQueryBuilder()
-            .relation(Role, 'permissions')
-            .of(role)
-            .add(permissions)
     }
 
     private async _removeInactivePermissionsFromCustomRoles(
