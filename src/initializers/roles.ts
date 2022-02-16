@@ -124,14 +124,11 @@ export class RolesInitializer {
     private async _assignPermissionsRoles(
         manager: EntityManager,
         role: Role,
-        permissions: string[]
+        permissions: Permission[]
     ) {
-        role.permissions = Promise.resolve(
-            permissions.map((p) => {
-                return { permission_name: p } as Permission
-            })
-        )
+        role.permissions = Promise.resolve(permissions)
         await manager.save(role)
+        return
     }
 
     private async _removeInactivePermissionsFromCustomRoles(
@@ -161,11 +158,7 @@ export class RolesInitializer {
                 return perm.allow === true
             })
             assignmentsPromise.push(
-                this._assignPermissionsRoles(
-                    manager,
-                    role,
-                    filteredPerms.map((p) => p.permission_name)
-                )
+                this._assignPermissionsRoles(manager, role, filteredPerms)
             )
         }
         await Promise.all(assignmentsPromise)
