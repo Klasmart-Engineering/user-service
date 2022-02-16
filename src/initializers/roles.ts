@@ -144,10 +144,10 @@ export class RolesInitializer {
             | Promise<Permission[]>
             | undefined
         )[] = []
-        for (const role of roles) {
-            permissionsArrayPromise.push(role.permissions)
-        }
-        const permissionsArray = await Promise.all(permissionsArrayPromise)
+        const permissionsArray = await Promise.all(
+            roles.map((r) => r.permissions)
+        )
+
         let index = 0
         const assignmentsPromise: Promise<void>[] = []
         for (const role of roles) {
