@@ -134,7 +134,6 @@ export class RolesInitializer {
             .relation(Role, 'permissions')
             .of(role)
             .add(permissions)
-        return
     }
 
     private async _removeInactivePermissionsFromCustomRoles(
