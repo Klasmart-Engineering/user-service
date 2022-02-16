@@ -1,4 +1,4 @@
-import loginSetup from './loginSetup';
+import { loginSetupV2 as loginSetup } from './loginSetupV2';
 
 const prefixLimit: number = !isNaN(parseInt(__ENV.PREFIX_LIMIT, 10)) ? parseInt(__ENV.PREFIX_LIMIT) : 9;
 

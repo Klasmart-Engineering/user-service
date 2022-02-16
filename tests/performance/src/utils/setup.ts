@@ -57,7 +57,12 @@ if (
 
 export function getUserIDB2C(token: string) {
 
-  getAccessCookieB2C(token);
+  const accessCookie = getAccessCookieB2C(token);
+
+  const jar = http.cookieJar();
+  jar.set(process.env.COOKIE_URL as string, 'access', accessCookie, {
+      domain: process.env.COOKIE_DOMAIN,
+  });
 
   const response = http.post(`https://api.${process.env.APP_URL}/user/`, JSON.stringify({
     query: `{

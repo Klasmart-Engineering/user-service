@@ -21,11 +21,11 @@ const studyClassPayload = {
     attachment: {id: "", name: ""},
     attachment_path: "",
     class_id: process.env.CLASS_ID_STUDY_SETUP,
-    class_roster_student_ids: [process.env.STUDY_STUDENT_ID_1, process.env.STUDY_STUDENT_ID_2],
-    class_roster_teacher_ids: [process.env.STUDEY_TEACHER_ID_1, process.env.STUDEY_TEACHER_ID_2],
+    class_roster_student_ids: [process.env.STUDY_STUDENT_ID_1, process.env.STUDY_STUDENT_ID_2, process.env.CLASS_STUDENT_ID_1],
+    class_roster_teacher_ids: [process.env.STUDENT_TEACHER_ID_1, process.env.STUDEY_TEACHER_ID_2, process.env.ID_ORG_ADMIN_1],
     class_type: "Homework",
     description: "",
-    due_at: 0,
+    due_at: Math.round((new Date().getTime() + (7 * 60000)) / 1000),
     end_at: Math.round((new Date().getTime() + (7 * 60000)) / 1000),
     is_all_day: false,
     is_force: true,
@@ -68,6 +68,7 @@ export function setup() {
         domain: process.env.COOKIE_DOMAIN,
     });
 
+    // create class
     const res = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, JSON.stringify(studyClassPayload), params);
 
     data = {
@@ -79,12 +80,23 @@ export function setup() {
         headers: APIHeaders,
     });
 
-    console.log('re', JSON.stringify(refresh));
-
     data = {
         ...data,
         refreshId: JSON.parse(refresh.body as string)?.id,
     }
+
+    const studentLoginPayload = {
+        deviceId: "webpage",
+        deviceName: "k6",
+        email: 'edgardom+students07@bluetrailsoft.com', // `${process.env.STUDENT_USERNAME}07@${process.env.EMAIL_DOMAIN}`,
+        pw: 'Test123?' as string,
+    };
+
+    const studentLoginData = loginSetup(studentLoginPayload);
+    data = { 
+        ...data,
+        [`students07`]: studentLoginData
+    };
 
     return data;
 }
@@ -95,10 +107,10 @@ export default function(data: { [key: string]: { res: any, userId: string } }) {
     }
 
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.orgAdmin.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data.students07.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.orgAdmin.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students07.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
@@ -108,6 +120,6 @@ export default function(data: { [key: string]: { res: any, userId: string } }) {
         token,
         refreshId: data.refreshId as unknown as string,
         roomId: data.classId as unknown as string,
-        accessCookie: data.orgAdmin.res.cookies?.access[0].Value,
+        accessCookie: data.students07.res.cookies?.access[0].Value,
     });
 }
