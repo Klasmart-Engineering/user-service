@@ -134,7 +134,7 @@ export class RolesInitializer {
             .relation(Role, 'permissions')
             .of(role)
             .add(permissions)
-        return undefined
+        return
     }
 
     private async _removeInactivePermissionsFromCustomRoles(
@@ -156,7 +156,7 @@ export class RolesInitializer {
         }
         const permissionsArray = await Promise.all(permissionsArrayPromise)
         let index = 0
-        const assignmentsPromise: Promise<undefined>[] = []
+        const assignmentsPromise: Promise<void>[] = []
         for (const role of roles) {
             const permissions = permissionsArray[index] || []
             index++
