@@ -128,7 +128,6 @@ export class RolesInitializer {
     ) {
         role.permissions = Promise.resolve(permissions)
         await manager.save(role)
-        return
     }
 
     private async _removeInactivePermissionsFromCustomRoles(
