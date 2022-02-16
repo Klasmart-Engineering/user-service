@@ -11,3 +11,4 @@ dist
 newrelic_agent.log
 debug_user_service_secret
 .mocharc.js
+coverage_*

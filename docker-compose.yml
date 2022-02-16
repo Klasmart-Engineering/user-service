@@ -25,6 +25,11 @@ services:
         depends_on:
             - postgres1
             - localstack1
+        volumes:
+            # for exposing coverage results collected inside the container
+            - ./.nyc_output:/usr/src/app/.nyc_output
+            # for putting coverage instrumented code into the container
+            - ./dist/src:/usr/src/app/src
     postgres1:
         container_name: postgres1
         image: postgres

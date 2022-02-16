@@ -1,8 +1,3 @@
-# This is a sample build configuration for JavaScript.
-# Check our guides at https://confluence.atlassian.com/x/14UWN for more examples.
-# Only use spaces to indent your .yml configuration.
-# -----
-# You can specify a custom docker image from Docker Hub as your build environment.
 image: node:lts
 definitions:
   services:
@@ -29,14 +24,36 @@ definitions:
             - npm run prettier-check
             - npm run lint
             - if test $BITBUCKET_BRANCH -eq "master";  then npm run commitlint-check -- --from=HEAD~1; else npm run commitlint-check -- --from=origin/master; fi
-      - step: &tests
-          name: "Unit and integration tests"
+      - step: &unit
+          name: "Unit tests"
           services:
             - postgres
           caches:
             - node
           script:
-            - npm test
+            - npm run coverage:unit
+          artifacts:
+            - coverage_unit/**
+      - step: &migration
+          name: "Migration tests"
+          services:
+            - postgres
+          caches:
+            - node
+          script:
+            - npm run coverage:migrations
+          artifacts:
+            - coverage_migrations/**
+      - step: &integration
+          name: "Integration tests"
+          services:
+            - postgres
+          caches:
+            - node
+          script:
+            - npm run coverage:integration
+          artifacts:
+            - coverage_integration/**
       - step: &acceptance
           name: "Acceptance tests"
           services:
@@ -46,9 +63,21 @@ definitions:
           script:
             - curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             - chmod +x /usr/local/bin/docker-compose
+            - npm run build
+            - npx nyc instrument ./dist --in-place
             - docker-compose up -d && sleep 20
             - docker-compose ps
             - npm run test:acceptance
+            # to get code coverage we need to tell the container when our tests
+            # have finshed running - do that using SIGTERM
+            # you can't override handling of SIGKILL in node
+            # https://nodejs.org/api/process.html#process_signal_events
+            # so set a timeout thats high enough for our SIGTERM handling to
+            # finish before SIGKILL is sent
+            - docker stop -t 2 user-service
+            - npx nyc report --require ts-node/register --reporter=lcov --reporter=json-summary --reporter=text-summary --report-dir ./coverage_acceptance
+          artifacts:
+            - coverage_acceptance/**
       - step: &docker
           name: "Build and publish docker image"
           services:
@@ -82,7 +111,9 @@ definitions:
 pipelines:
   default:
     - step: *dependencies
-    - step: *tests
+    - step: *unit
+    - step: *migration
+    - step: *integration
     - step: *acceptance
 
   pull-requests:
@@ -101,14 +132,18 @@ pipelines:
   tags:
       v*:
         - step: *dependencies
-        - step: *tests
+        - step: *unit
+        - step: *migration
+        - step: *integration
         - step: *acceptance
         - step: *docker
   branches:
     master:
       - step: *dependencies
       - step: *checks
-      - step: *tests
+      - step: *unit
+      - step: *migration
+      - step: *integration
       - step: *acceptance
       - step: *docker
       - step:
