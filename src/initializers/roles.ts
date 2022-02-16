@@ -144,22 +144,20 @@ export class RolesInitializer {
             | Promise<Permission[]>
             | undefined
         )[] = []
-        const permissionsArray = await Promise.all(
-            roles.map((r) => r.permissions)
-        )
-        permissionsArray.reverse()
 
-        const assignmentsPromise: Promise<void>[] = []
+        const assignmentsPromise: (Promise<void> | undefined)[] = []
         for (const role of roles) {
-            const p = permissionsArray.pop() || []
-            const assignmentPromise = this._assignPermissionsRoles(
-                manager,
-                role,
-                p.filter(function (perm) {
-                    return perm.allow === true
+            assignmentsPromise.push(
+                role.permissions?.then((p) => {
+                    return this._assignPermissionsRoles(
+                        manager,
+                        role,
+                        p.filter(function (perm) {
+                            return perm.allow === true
+                        })
+                    )
                 })
             )
-            assignmentsPromise.push(assignmentPromise)
         }
         await Promise.all(assignmentsPromise)
     }
