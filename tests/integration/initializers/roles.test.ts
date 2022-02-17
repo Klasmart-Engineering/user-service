@@ -114,14 +114,14 @@ describe('RolesInitializer', () => {
                     )
                     permission = await createPermission().save()
 
-                    role = await createRole(
+                    role = createRole(
                         roleName,
                         organization,
                         {
                             permissions: [PermissionName.edit_school_20330],
                         },
                         false
-                    ).save()
+                    )
 
                     let perms = (await role.permissions) || []
                     perms.push(permission)
