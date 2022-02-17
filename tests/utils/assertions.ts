@@ -7,7 +7,7 @@ import { CustomBaseEntity } from '../../src/entities/customBaseEntity'
  *
  * `Chai.expect`, with additional Type narrowing to `SomeType` if the assertion passes
  */
-export function expectIsNonNullable<V extends unknown>(
+export function expectIsNonNullable<V>(
     value: V
 ): asserts value is NonNullable<V> {
     expect(value).to.exist

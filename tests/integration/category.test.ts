@@ -676,7 +676,7 @@ describe('category', () => {
                 expect(cdb.name).to.eq(
                     avoidNames ? categoryRelated?.name : inputRelated?.name
                 )
-                expect(cdb.subcategoryIds).to.deep.eq(
+                expect(cdb.subcategoryIds).to.deep.equalInAnyOrder(
                     avoidSubcategories
                         ? (await categoryRelated?.subcategories)?.map(
                               (s) => s.id

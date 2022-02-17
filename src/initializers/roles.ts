@@ -18,6 +18,7 @@ export class RolesInitializer {
 
         await getManager().transaction(async (manager) => {
             roles = await this._createDefaultRoles(manager)
+            await this._removeInactivePermissionsFromCustomRoles(manager)
         })
 
         return roles.values()
@@ -118,6 +119,42 @@ export class RolesInitializer {
         }
 
         return manager.save(roles)
+    }
+
+    private async _assignPermissionsRoles(
+        manager: EntityManager,
+        role: Role,
+        permissions: Permission[]
+    ) {
+        role.permissions = Promise.resolve(permissions)
+        await manager.save(role)
+    }
+
+    private async _removeInactivePermissionsFromCustomRoles(
+        manager: EntityManager
+    ) {
+        const roles = await manager
+            .createQueryBuilder(Role, 'role')
+            .innerJoin('role.permissions', 'permission')
+            .where('permission.allow = :allowed', { allowed: false })
+            .andWhere('role.system_role = :system_role', { system_role: false })
+            .getMany()
+
+        const assignmentsPromise: (Promise<void> | undefined)[] = []
+        for (const role of roles) {
+            assignmentsPromise.push(
+                role.permissions?.then((p) => {
+                    return this._assignPermissionsRoles(
+                        manager,
+                        role,
+                        p.filter(function (perm) {
+                            return perm.allow === true
+                        })
+                    )
+                })
+            )
+        }
+        await Promise.all(assignmentsPromise)
     }
 }
 
