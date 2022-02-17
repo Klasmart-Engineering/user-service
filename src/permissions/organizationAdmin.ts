@@ -277,6 +277,7 @@ export const organizationAdminRole = {
         PermissionName.download_users_40881,
         PermissionName.send_invitation_40882,
         PermissionName.deactivate_user_40883,
+        PermissionName.reactivate_user_40884,
         PermissionName.featured_programs_70000,
         PermissionName.view_any_featured_programs_70001,
         PermissionName.view_bada_rhyme_71000,
