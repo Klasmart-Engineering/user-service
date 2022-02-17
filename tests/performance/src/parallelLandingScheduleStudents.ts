@@ -182,35 +182,65 @@ export const options: Options = {
         students00: {
             executor: 'constant-vus',
             exec: 'students00',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students01: {
             executor: 'constant-vus',
             exec: 'students01',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students02: {
             executor: 'constant-vus',
             exec: 'students02',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students03: {
             executor: 'constant-vus',
             exec: 'students03',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students04: {
             executor: 'constant-vus',
             exec: 'students04',
-            vus: 100,
+            vus: 50,
+            duration: '10m',
+          },
+          students05: {
+            executor: 'constant-vus',
+            exec: 'students05',
+            vus: 50,
+            duration: '10m',
+          },
+          students06: {
+            executor: 'constant-vus',
+            exec: 'students06',
+            vus: 50,
+            duration: '10m',
+          },
+          students07: {
+            executor: 'constant-vus',
+            exec: 'students07',
+            vus: 50,
+            duration: '10m',
+          },
+          students08: {
+            executor: 'constant-vus',
+            exec: 'students08',
+            vus: 50,
+            duration: '10m',
+          },
+          students09: {
+            executor: 'constant-vus',
+            exec: 'students09',
+            vus: 50,
             duration: '10m',
           }, 
     }, 
@@ -218,7 +248,7 @@ export const options: Options = {
 
 export function setup() {
     let i = 0;
-    const l = 9;
+    const l = 10;
     let data = {};
 
     for (i; i < l; i++) {
@@ -249,8 +279,8 @@ export function students00(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data.students00);
-    sleep(2);
+    /* landingV3Students(data.students00);
+    sleep(2); */
     landingScheduleStudents();
 
 
@@ -265,8 +295,8 @@ export function students01(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data.students01);
-    sleep(2);
+    /* landingV3Students(data.students01);
+    sleep(2); */
     landingScheduleStudents();
 }
 
@@ -279,8 +309,8 @@ export function students02(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students02);
-    sleep(2);
+   /*  landingV3Students(data.students02);
+    sleep(2); */
     landingScheduleStudents();
 }
 
@@ -293,8 +323,8 @@ export function students03(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data.students03);
-    sleep(1);
+    /* landingV3Students(data.students03);
+    sleep(1); */
     landingScheduleStudents();
 }
 export function students04(data: { [key: string]: { res: any, userId: string }}) {
@@ -306,11 +336,11 @@ export function students04(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data.students04);
-    sleep(1);
+    /* landingV3Students(data.students04);
+    sleep(1); */
     landingScheduleStudents();
 }
-/* 
+
 
 export function students05(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -321,8 +351,8 @@ export function students05(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students05);
-    sleep(1);
+    /* landingV3Students(data.students05);
+    sleep(1); */
     landingScheduleStudents();
 }
 export function students06(data: { [key: string]: { res: any, userId: string }}) {
@@ -334,8 +364,8 @@ export function students06(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students06);
-    sleep(1);
+   /*  landingV3Students(data.students06);
+    sleep(1); */
     landingScheduleStudents();
 }
 export function students07(data: { [key: string]: { res: any, userId: string }}) {
@@ -347,8 +377,8 @@ export function students07(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data.students07);
-    sleep(1);
+    /* landingV3Students(data.students07);
+    sleep(1); */
     landingScheduleStudents();
 }
 export function students08(data: { [key: string]: { res: any, userId: string }}) {
@@ -360,8 +390,8 @@ export function students08(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students08);
-    sleep(1);
+   /*  landingV3Students(data.students08);
+    sleep(1); */
     landingScheduleStudents();
 }
 export function students09(data: { [key: string]: { res: any, userId: string }}) {
@@ -373,8 +403,7 @@ export function students09(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data.students09);
-    sleep(1);
+    /* landingV3Students(data.students09);
+    sleep(1); */
     landingScheduleStudents();
 } 
-  */
