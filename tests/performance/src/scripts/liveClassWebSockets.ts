@@ -4,8 +4,7 @@ import { Params } from 'k6/http';
 import { userAgent } from '../utils/common';
 
 export default function (data: { refreshId: string, accessCookie: string, token: string, roomId: string }) {
-	const url = "wss://live.loadtest.kidsloop.live/graphql";
-	// const cookie = `locale=en; privacy=true; roomUserId=${data.roomId}:${data.refreshId}; access=${data.accessCookie}`;
+	const url = process.env.WSS_URL as string;
 	const params: Params = { 
 		headers: {
 			"Accept-Encoding": "gzip, deflate, br",
@@ -31,15 +30,14 @@ export default function (data: { refreshId: string, accessCookie: string, token:
 					sessionId: process.env.MOCK_SESSION_ID,
 				},
 				type: 'connection_init'
-			}));	
-
+			}));
 		});
 
 		socket.on('message', (data) => console.log('Message received: ', data));
 
 		socket.setTimeout(function () {
 			socket.close();
-		}, 5000);
+		}, 2000);
 
 		socket.on('error', (e) => {
 			if (e.error() != 'websocket: close sent') {
