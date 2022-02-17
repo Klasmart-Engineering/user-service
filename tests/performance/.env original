@@ -28,27 +28,33 @@ EMAIL_USER_NAME_1K=ismaelp
 ID_ORG_ADMIN_1=1c27b63a-9815-4719-bf64-cad3ab783adf
 TEACHER_USERNAME=edgardom+teacher
 STUDENT_USERNAME=edgardom+students
+STUDENT00_USERNAME=edgardom+students00@bluetrailsoft.com
 SCHOOL_USERNAME=edgardom+schooladm
-
+ID_STUDENT_00=707fa3cd-28c7-4bdc-ba7a-bb9f05913aea
 
 # URL for the Schduele section
 SCHEDULES_TIME_VIEW_URL_ONLY=https://kl2.loadtest.kidsloop.live/v1/schedules_time_view
-SCHEDULES_TIME_VIEW_URL=https://kl2.loadtest.kidsloop.live/v1/schedules_time_view/list
-SCHEDULE_FILTER_PROGRAM_URL=https://kl2.loadtest.kidsloop.live/v1/schedules_filter/programs
+SCHEDULES_TIME_VIEW_URL_BK=https://kl2.loadtest.kidsloop.live/v1/schedules_time_view/list
+SCHEDULES_TIME_VIEW_URL=https://cms.loadtest.kidsloop.live/v1/schedules_time_view/list
+SCHEDULE_FILTER_PROGRAM_URL_BK=https://kl2.loadtest.kidsloop.live/v1/schedules_filter/programs
+SCHEDULE_FILTER_PROGRAM_URL=https://cms.loadtest.kidsloop.live/v1/schedules_filter/programs
 SCHEDULE_FILTER_CLASS_URL=https://kl2.loadtest.kidsloop.live/v1/schedules_filter/classes
 LIVE_URL=https://kl2.loadtest.kidsloop.live/v1/
 PUBLISHED_LEARNING_OUTCOMES=https://kl2.loadtest.kidsloop.live/v1/published_learning_outcomes
-ASSESSMENT_SUMMARY_URL=https://kl2.loadtest.kidsloop.live/v1/assessments_summary
 
+ASSESSMENT_SUMMARY_URL=https://cms.loadtest.kidsloop.live/v1/assessments_summary
+ASSESSMENT_SUMMARY_URL_BK=https://kl2.loadtest.kidsloop.live/v1/assessments_summary
+
+ASSESSMENT_STUDENT_URL=https://cms.loadtest.kidsloop.live/v1/assessments_for_student
 
 #CMS
 CMS_TIME_VIEW_URL=https://cms.loadtest.kidsloop.live/v1/schedules_time_view/list
 CMS_CONTENT_FOLDER_URL=https://cms.loadtest.kidsloop.live/v1/contents_folders
+
 # used in the Content Library section
 CMS_USER_SETTING_URL=https://cms.loadtest.kidsloop.live/v1/user_settings
 CMS_ORGANIZATIONS_PROPERTYS_URL=https://cms.loadtest.kidsloop.live/v1/organizations_propertys
 CMS_CONTENT_PENDING_URL=https://cms.loadtest.kidsloop.live/v1/contents_pending
-
 SCHEDULES_URL=https://cms.loadtest.kidsloop.live/v1/schedules
 CLASS_ID=05327233-bebe-4506-b87d-da50368cf75d
 LESSON_PLAN_ID=6193b6fe0d0935f062be64ad
@@ -57,24 +63,33 @@ SUBJECT_ID=36c4f793-9aa3-4fb8-84f0-68a2ab920d5a
 TEACHER_ID_1=ff960adb-f00c-437b-a912-1e0e4d1c4984
 CLASS_STUDENT_ID_1=496fb421-0a80-48d6-9cc2-588044d7b095
 CLASS_STUDENT_ID_2=537bc4bd-afd2-4a1d-88fb-170c0a11b1f1
-
 CMS_URL=https://cms.loadtest.kidsloop.live
 CMS_SCHEDULE_TIME_VIEW=https://cms.loadtest.kidsloop.live/v1/schedules_time_view/
 
+# used for create a STUDY classes
+CLASS_ID_STUDY=05327233-bebe-4506-b87d-da50368cf75d
+LESSON_PLAN_ID_STUDY=61f92f74b30b59970767de19
 
-CLASS_ID=05327233-bebe-4506-b87d-da50368cf75d
-LESSON_PLAN_ID=6193b6fe0d0935f062be64ad
-PROGRAM_ID=4d5b9056-5a6f-40bf-8602-7f8934aef045
-SUBJECT_ID=36c4f793-9aa3-4fb8-84f0-68a2ab920d5a
-TEACHER_ID_1=ff960adb-f00c-437b-a912-1e0e4d1c4984
-CLASS_STUDENT_ID_1=496fb421-0a80-48d6-9cc2-588044d7b095
-CLASS_STUDENT_ID_2=537bc4bd-afd2-4a1d-88fb-170c0a11b1f1
+# used for see a Study class pop-up in the Schedule section
+CMS_SCHEDULE_VIEW_URL=https://cms.loadtest.kidsloop.live/v1/schedules_view
 
+
+
+# user to create a Lesson Plan
+CMS_PLAN_VISIBILITY_SETTING_URL=https://cms.loadtest.kidsloop.live/v1/visibility_settings
+CMS_PLAN_CONTENTS_URL=https://cms.loadtest.kidsloop.live/v1/contents
+CMS_DEVELOPMENTALS_URL=https://cms.loadtest.kidsloop.live/v1/developmentals
+CMS_SKILLS_URL=https://cms.loadtest.kidsloop.live/v1/skills
 
 #COOKIE_URL=.loadtest.kidsloop.live
 COOKIE_URL=https://kl2.loadtest.kidsloop.live
 COOKIE_DOMAIN=.loadtest.kidsloop.live
+PW=Test123?
 
 
+MOCK_SESSION_ID=528ad885-2744-491c-be1e-8596d69ce6b5
 
-
+# User for add 200K users as students
+EMAIL_USER_NAME_200K=loadtestuser
+EMAIL_DOMAIN_200K=testdomain.com
+SCHOOL_ID_200K=e9c6b35d-5241-49c2-b7c5-b08bb7ff7d98

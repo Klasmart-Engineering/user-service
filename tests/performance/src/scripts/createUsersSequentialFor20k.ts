@@ -25,8 +25,8 @@ export default function(start: number, end: number) {
             gender: 'male',
             given_name: `LoadTest${prefix}`,
             organization_id: process.env.ORG_ID as string,
-            organization_role_ids: [process.env.ROLE_ID_ORG_ADMIN as string],
-            school_ids: [process.env.SCHOOL_ID_200K as string, process.env.SCHOOL_ID_200K1 as string, process.env.SCHOOL_ID_200K2 as string, process.env.SCHOOL_ID_200K3 as string, process.env.SCHOOL_ID_200K4 as string, process.env.SCHOOL_ID_200K5 as string, process.env.SCHOOL_ID_200K7 as string, process.env.SCHOOL_ID_200K7 as string],
+            organization_role_ids: [process.env.ROLE_ID_STUDENT as string],
+            school_ids: [process.env.SCHOOL_ID_200K as string],
             school_role_ids: [],
             shortcode: "", 
         };

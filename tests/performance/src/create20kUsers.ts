@@ -1,6 +1,6 @@
 import { sleep } from "k6";
 import { Options } from "k6/options";
-import createUsersSequentialFor200k from './scripts/createUsersSequentialFor20k';
+import createUsersSequentialFor20k from './scripts/createUsersSequentialFor20k';
 import switchUser from "./scripts/switchUser";
 import testLogin from "./scripts/testLogin";
 
@@ -12,5 +12,5 @@ export default function() {
     testLogin();
     switchUser();
     sleep(2);
-    createUsersSequentialFor200k(parseInt(__ENV.START, 10), parseInt(__ENV.END, 10));
+    createUsersSequentialFor20k(parseInt(__ENV.START, 10), parseInt(__ENV.END, 10));
 }
