@@ -69,7 +69,7 @@ export function students() {
 
     check(res, {
         'My users status is 200': r => r.status === 200,
-        'My users list has been received': r => JSON.parse(r.body as string).my_users?.length >= 1,
+        'My users list has been received': r => JSON.parse(r.body as string).data?.my_users?.length >= 1,
     });
     
     const myUsersData = JSON.parse(res?.body as string);
