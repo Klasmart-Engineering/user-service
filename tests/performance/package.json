@@ -44,7 +44,8 @@
       "test:landing:attendStudyClassParrallel": "k6 run ./dist/parallelAttendStudyClass.js",
       "test:landing:parallelLandingHomeStudents": "k6 run ./dist/parallelLandingHomeStudents.js",
       "test:landing:parallelLandingScheduleStudents": "k6 run ./dist/parallelLandingScheduleStudents.js",
-      "setup:create-200k-students": "k6 run ./dist/create20kUsers.js"
+      "setup:create-20k-students": "k6 run ./dist/create20kUsers.js",
+      "test:study-basic-students": "k6 run ./dist/joinLiveStudyClassStudent.js"
       
     
     },
