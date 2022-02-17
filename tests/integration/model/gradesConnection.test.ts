@@ -36,6 +36,7 @@ import {
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
+import { checkPageInfo } from '../../acceptance/utils'
 
 use(chaiAsPromised)
 
@@ -109,14 +110,7 @@ describe('model', () => {
                 { authorization: getAdminAuthToken() }
             )
 
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-            expect(result.edges.length).eq(10)
-            expect(result.totalCount).to.eq(
-                gradesCount * 2 + systemGrades.length
-            )
+            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
         })
     })
 
@@ -131,16 +125,7 @@ describe('model', () => {
                 { field: 'id', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(
-                gradesCount * 2 + systemGrades.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedAscending(ids)
@@ -157,17 +142,7 @@ describe('model', () => {
                 undefined,
                 { field: 'id', order: 'DESC' }
             )
-
-            expect(result.totalCount).to.eq(
-                gradesCount * 2 + systemGrades.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedDescending(ids)
@@ -185,16 +160,7 @@ describe('model', () => {
                 { field: 'name', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(
-                gradesCount * 2 + systemGrades.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
 
             const names = result.edges.map((edge) => edge.node.name) as string[]
             const isSorted = isStringArraySortedAscending(names)
@@ -212,16 +178,7 @@ describe('model', () => {
                 { field: 'name', order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(
-                gradesCount * 2 + systemGrades.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
 
             const names = result.edges.map((edge) => edge.node.name) as string[]
             const isSorted = isStringArraySortedDescending(names)
@@ -248,14 +205,7 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(gradesCount)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, gradesCount)
 
             const gradeIds = result.edges.map((edge) => edge.node.id)
             const org1GradeIds = org1Grades.map((grade) => grade.id)

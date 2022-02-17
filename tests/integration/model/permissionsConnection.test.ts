@@ -33,6 +33,7 @@ import {
     loadPermissionsForRole,
     permissionsChildConnectionResolver,
 } from '../../../src/schemas/roles'
+import { checkPageInfo } from '../../acceptance/utils'
 
 type PermissionConnectionNodeKey = keyof Pick<
     PermissionConnectionNode,
@@ -170,14 +171,7 @@ describe('model', () => {
                     }
                 )
 
-                expect(result.totalCount).to.eql(permissionsCount)
-
-                expect(result.pageInfo.hasNextPage).to.be.true
-                expect(result.pageInfo.hasPreviousPage).to.be.false
-                expect(result.pageInfo.startCursor).to.be.string
-                expect(result.pageInfo.endCursor).to.be.string
-
-                expect(result.edges.length).eq(10)
+                checkPageInfo(result, permissionsCount)
             })
         })
 
@@ -197,14 +191,7 @@ describe('model', () => {
                     }
                 )
 
-                expect(result.totalCount).to.eql(roleInvolvedPermissionsCount)
-
-                expect(result.pageInfo.hasNextPage).to.be.true
-                expect(result.pageInfo.hasPreviousPage).to.be.false
-                expect(result.pageInfo.startCursor).to.be.string
-                expect(result.pageInfo.endCursor).to.be.string
-
-                expect(result.edges.length).eq(10)
+                checkPageInfo(result, roleInvolvedPermissionsCount)
             })
         })
 
@@ -494,7 +481,7 @@ describe('model', () => {
         let permissions: Permission[]
         let permission1: Permission
         let permission2: Permission
-        let filter: IEntityFilter
+
         let user: User
 
         beforeEach(async () => {

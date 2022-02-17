@@ -57,6 +57,7 @@ import {
 } from '../../utils/testConfig'
 import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
+import { checkPageInfo } from '../../acceptance/utils'
 
 use(chaiAsPromised)
 
@@ -390,14 +391,7 @@ describe('classesConnection', () => {
                 { authorization: getAdminAuthToken() }
             )
 
-            expect(result.totalCount).to.eq(classesCount * 3)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, classesCount * 3)
         })
 
         it("returns the classes that belongs to user's organization", async () => {
@@ -409,14 +403,7 @@ describe('classesConnection', () => {
                 { authorization: token }
             )
 
-            expect(result.totalCount).to.eq(classesCount)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, classesCount)
 
             const classIds = result.edges.map((edge) => edge.node.id)
             const org3ClassIds = org3Classes.map((class_) => class_.class_id)
@@ -458,17 +445,7 @@ describe('classesConnection', () => {
                 { authorization: token }
             )
 
-            // OrgAdminClasses + schoolAdminClasses
-            expect(result.totalCount).to.eq(
-                classesCount + classesCount / schoolsCount
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, classesCount + classesCount / schoolsCount)
         })
 
         it('returns empty if the user has not organization neither school', async () => {
@@ -541,14 +518,7 @@ describe('classesConnection', () => {
                 { field: 'id', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(classesCount * 3)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, classesCount * 3)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedAscending(ids)
@@ -566,14 +536,7 @@ describe('classesConnection', () => {
                 { field: 'id', order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(classesCount * 3)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, classesCount * 3)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedDescending(ids)
@@ -591,14 +554,7 @@ describe('classesConnection', () => {
                 { field: 'name', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(classesCount * 3)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, classesCount * 3)
 
             const names = result.edges.map((edge) => edge.node.name || '')
             const isSorted = isStringArraySortedAscending(names)
@@ -616,14 +572,7 @@ describe('classesConnection', () => {
                 { field: 'name', order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(classesCount * 3)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, classesCount * 3)
 
             const names = result.edges.map((edge) => edge.node.name || '')
             const isSorted = isStringArraySortedDescending(names)
@@ -710,14 +659,7 @@ describe('classesConnection', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(org1Classes.length)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, org1Classes.length)
 
             const classIds = result.edges.map((edge) => edge.node.id)
             const org1ClassIds = org1Classes.map((class_) => class_.class_id)

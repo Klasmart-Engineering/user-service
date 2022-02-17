@@ -40,7 +40,7 @@ import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
-import { makeRequest } from './utils'
+import { failsValidation, makeRequest } from './utils'
 import { createClass } from '../factories/class.factory'
 import { Class } from '../../src/entities/class'
 import {
@@ -173,9 +173,7 @@ describe('acceptance.user', () => {
             myUser = await createUser().save()
             myOrg = await createOrganization().save()
             const mySchools = await School.save(
-                Array.from(Array(5), (v: unknown, i: number) =>
-                    createSchool(myOrg)
-                )
+                Array.from(Array(5), () => createSchool(myOrg))
             )
 
             for (let i = 0; i < 5; i++) {
@@ -187,11 +185,9 @@ describe('acceptance.user', () => {
 
             // create another user in different school to ensure they're not returned
             const otherUser = await createUser().save()
-            const otherOrg = await createOrganization().save()
+            await createOrganization().save()
             const otherSchools = await School.save(
-                Array.from(Array(5), (v: unknown, i: number) =>
-                    createSchool(myOrg)
-                )
+                Array.from(Array(5), () => createSchool(myOrg))
             )
             for (let i = 0; i < 5; i++) {
                 await createSchoolMembership({
@@ -226,7 +222,7 @@ describe('acceptance.user', () => {
     context('usersConnection', () => {
         context('using explicit count', async () => {
             async function makeQuery(pageSize: any) {
-                return await request
+                return request
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
@@ -254,20 +250,8 @@ describe('acceptance.user', () => {
             })
 
             it('fails validation', async () => {
-                const pageSize = 'not_a_number'
-
-                const response = await makeQuery(pageSize)
-
-                expect(response.status).to.eq(400)
-                expect(response.body.errors.length).to.equal(1)
-                const message = response.body.errors[0].message
-                expect(message)
-                    .to.be.a('string')
-                    .and.satisfy((msg: string) =>
-                        msg.startsWith(
-                            'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
-                        )
-                    )
+                const response = await makeQuery('not_a_number')
+                await failsValidation(response)
             })
         })
         it('queries paginated users without filter', async () => {

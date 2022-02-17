@@ -4,28 +4,28 @@ import { getConnection } from 'typeorm'
 import { Role } from '../../src/entities/role'
 import { createOrganization } from '../factories/organization.factory'
 import { loadFixtures } from '../utils/fixtures'
-import { ROLES_CONNECTION, ROLE_NODE } from '../utils/operations/modelOps'
+import { ROLE_NODE, ROLES_CONNECTION } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { createRole } from '../factories/role.factory'
 import {
-    UpdateRoleInput,
     CreateRoleInput,
     DeleteRoleInput,
     RoleConnectionNode,
+    UpdateRoleInput,
 } from '../../src/types/graphQL/role'
 import { NIL_UUID } from '../utils/database'
 import { print } from 'graphql'
 import { createUser } from '../factories/user.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { makeRequest } from './utils'
+import { failsValidation, makeRequest } from './utils'
 import { createPermission } from '../factories/permission.factory'
 import { userToPayload } from '../utils/operations/userOps'
 import { User } from '../../src/entities/user'
 import {
     CREATE_ROLES,
-    UPDATE_ROLES,
     DELETE_ROLES,
+    UPDATE_ROLES,
 } from '../utils/operations/roleOps'
 import { Organization } from '../../src/entities/organization'
 import { PermissionName } from '../../src/permissions/permissionNames'
@@ -47,7 +47,7 @@ describe('acceptance.role', () => {
     const rolesCount = 12
 
     async function makeConnectionQuery(pageSize: number) {
-        return await request
+        return request
             .post('/user')
             .set({
                 ContentType: 'application/json',
@@ -65,7 +65,7 @@ describe('acceptance.role', () => {
     }
 
     async function makeNodeQuery(id: string) {
-        return await request
+        return request
             .post('/user')
             .set({
                 ContentType: 'application/json',
@@ -145,19 +145,8 @@ describe('acceptance.role', () => {
             expect(rolesConnection.edges.length).to.equal(pageSize)
         })
         it('fails validation', async () => {
-            const pageSize = 'not_a_number'
-            const response = await makeConnectionQuery(pageSize as any)
-
-            expect(response.status).to.eq(400)
-            expect(response.body.errors.length).to.equal(1)
-            const message = response.body.errors[0].message
-            expect(message)
-                .to.be.a('string')
-                .and.satisfy((msg: string) =>
-                    msg.startsWith(
-                        'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
-                    )
-                )
+            const response = await makeConnectionQuery('not_a_number' as any)
+            await failsValidation(response)
         })
     })
 
@@ -186,8 +175,7 @@ describe('acceptance.role', () => {
 
         context('when requested role does not exists', () => {
             it('responds with errors', async () => {
-                const roleId = NIL_UUID
-                const response = await makeNodeQuery(roleId)
+                const response = await makeNodeQuery(NIL_UUID)
                 const roleNode = response.body.data.roleNode
                 const errors = response.body.errors
 
@@ -253,7 +241,7 @@ describe('acceptance.role', () => {
 
     context('createRoles', () => {
         const makeCreateRolesMutation = async (input: CreateRoleInput[]) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(CREATE_ROLES),
                 { input },
@@ -309,7 +297,7 @@ describe('acceptance.role', () => {
 
     context('updateRoles', () => {
         const makeUpdateRolesMutation = async (input: UpdateRoleInput[]) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(UPDATE_ROLES),
                 { input },
@@ -390,7 +378,7 @@ describe('acceptance.role', () => {
 
     context('deleteRoles', () => {
         const makeDeleteRolesMutation = async (input: DeleteRoleInput[]) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(DELETE_ROLES),
                 { input },

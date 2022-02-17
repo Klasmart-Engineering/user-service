@@ -31,7 +31,7 @@ import {
 import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
-import { makeRequest } from './utils'
+import { failsValidation, makeRequest } from './utils'
 import { createUser as createUserFactory } from './../factories/user.factory'
 import { createAgeRanges as createAgeRangesFactory } from './../factories/ageRange.factory'
 import { createGrades as createGradesFactory } from './../factories/grade.factory'
@@ -143,7 +143,7 @@ describe('acceptance.program', () => {
     context('programsConnection', () => {
         context('using explict count', async () => {
             async function makeQuery(pageSize: any) {
-                return await request
+                return request
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
@@ -171,20 +171,8 @@ describe('acceptance.program', () => {
             })
 
             it('fails validation', async () => {
-                const pageSize = 'not_a_number'
-
-                const response = await makeQuery(pageSize)
-
-                expect(response.status).to.eq(400)
-                expect(response.body.errors.length).to.equal(1)
-                const message = response.body.errors[0].message
-                expect(message)
-                    .to.be.a('string')
-                    .and.satisfy((msg: string) =>
-                        msg.startsWith(
-                            'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
-                        )
-                    )
+                const response = await makeQuery('not_a_number')
+                await failsValidation(response)
             })
         })
         it('queries paginated programs without filter', async () => {
@@ -379,7 +367,7 @@ describe('acceptance.program', () => {
             const org = await Organization.findOne(orgId)
             const program = await createProgram(org).save()
             const programGrade = await createGrade(org).save()
-            const otherProgramGrade = await createGrade(org).save()
+            await createGrade(org).save()
             program.grades = Promise.resolve([programGrade])
             await program.save()
 
@@ -438,7 +426,7 @@ describe('acceptance.program', () => {
         let subjectIds: string[]
 
         const makeCreateProgramsMutation = async (input: any, caller: User) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(CREATE_PROGRAMS),
                 { input },
@@ -516,7 +504,7 @@ describe('acceptance.program', () => {
         let programToEdit: Program
 
         const makeUpdateProgramsMutation = async (input: any, caller: User) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(UPDATE_PROGRAMS),
                 { input },
@@ -579,7 +567,7 @@ describe('acceptance.program', () => {
         let programToDelete: Program
 
         const makeDeleteProgramsMutation = async (input: any, caller: User) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(DELETE_PROGRAMS),
                 { input },

@@ -36,7 +36,7 @@ import {
 } from '../utils/operations/categoryOps'
 import { createCategory } from '../factories/category.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { makeRequest } from './utils'
+import { failsValidation, makeRequest } from './utils'
 import { User } from '../../src/entities/user'
 import { createOrganization } from '../factories/organization.factory'
 import { createUser } from '../factories/user.factory'
@@ -135,7 +135,7 @@ describe('acceptance.category', () => {
             )
         )
         const categories = await Category.save(
-            Array.from(new Array(categoriesCount), (_, i) =>
+            Array.from(new Array(categoriesCount), (_) =>
                 createCategory(org, subcategories)
             )
         )
@@ -162,19 +162,8 @@ describe('acceptance.category', () => {
         })
 
         it('fails validation', async () => {
-            const pageSize = 'not_a_number'
-            const response = await makeQuery(pageSize)
-
-            expect(response.status).to.eq(400)
-            expect(response.body.errors.length).to.equal(1)
-            const message = response.body.errors[0].message
-            expect(message)
-                .to.be.a('string')
-                .and.satisfy((msg: string) =>
-                    msg.startsWith(
-                        'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
-                    )
-                )
+            const response = await makeQuery('not_a_number')
+            await failsValidation(response)
         })
     })
 
@@ -217,7 +206,7 @@ describe('acceptance.category', () => {
         const makeCreateCategoriesMutation = async (
             input: CreateCategoryInput[]
         ) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(CREATE_CATEGORIES),
                 { input },
@@ -325,7 +314,7 @@ describe('acceptance.category', () => {
         const makeDeleteCategoriesMutation = async (
             input: DeleteCategoryInput[]
         ) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(DELETE_CATEGORIES),
                 { input },
