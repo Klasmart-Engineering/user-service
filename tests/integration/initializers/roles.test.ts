@@ -91,7 +91,7 @@ describe('RolesInitializer', () => {
 
                     expect(permissions).not.to.be.empty
                     resetPermissions.push(
-                        ...permissions?.map(permissionInfoFunc)
+                        ...permissions!.map(permissionInfoFunc)
                     )
                 }
 

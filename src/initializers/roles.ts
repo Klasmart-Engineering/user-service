@@ -140,11 +140,6 @@ export class RolesInitializer {
             .andWhere('role.system_role = :system_role', { system_role: false })
             .getMany()
 
-        const permissionsArrayPromise: (
-            | Promise<Permission[]>
-            | undefined
-        )[] = []
-
         const assignmentsPromise: (Promise<void> | undefined)[] = []
         for (const role of roles) {
             assignmentsPromise.push(
