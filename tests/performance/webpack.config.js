@@ -69,11 +69,10 @@ module.exports = env => ({
         parallelLandingHomeStudents:  `./parallelLandingHomeStudents.ts`,
         parallelLandingScheduleStudents:  `./parallelLandingScheduleStudents.ts`,
         create200kUsers: `./create20kUsers.ts`,
-        
-
         loginV2: `./loginV2.ts`,
         createStudyClass: `./createStudyClass.ts`,
         joinLiveStudyClass: `./joinLiveStudyClass.ts`,
+        b2cLogin: `./b2cLogin.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),
