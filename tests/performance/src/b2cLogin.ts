@@ -7,14 +7,20 @@ import { params } from "./utils/params";
 import { check } from 'k6';
 
 export const options: Options = {
+<<<<<<< HEAD
     
+=======
+>>>>>>> 03e372db9359d019b9aec870a425559d72f14935
     ext: {
         loadimpact: {
             projectID: 3560234,
             // projectID: 3559532,
         }
     },
+<<<<<<< HEAD
     
+=======
+>>>>>>> 03e372db9359d019b9aec870a425559d72f14935
     scenarios: {
         students: {
             executor: 'per-vu-iterations',
@@ -26,7 +32,7 @@ export const options: Options = {
     }
 };
 
-export function students() { 
+export function students() {
     const loginPayload = {
         deviceId: 'webpage',
         deviceName: 'k6',
@@ -56,6 +62,10 @@ export function students() {
 
 	res = http.post(`${process.env.AUTH_URL}transfer`, '', {
 		headers: Object.assign(APIHeaders, authHeader),
+        tags: {
+            name: `${process.env.AUTH_URL}transfer`,
+            url: `${process.env.AUTH_URL}transfer`,
+        }
 	});
 
     check(res, {
@@ -74,6 +84,10 @@ export function students() {
             'Accept': 'application/json'
         },
         credentials: `include`,
+        tags: {
+            name: process.env.SERVICE_URL as string,
+            url: process.env.SERVICE_URL as string,
+        }
     }
 
     check(res, {
@@ -86,7 +100,7 @@ export function students() {
 	
 	const switchPayload = JSON.stringify({
 		user_id: userId
-	})
+	});
 	
 	res = http.post(`${process.env.AUTH_URL}switch`, switchPayload, switchParams);
    

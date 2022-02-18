@@ -88,8 +88,8 @@ export function setup() {
     const studentLoginPayload = {
         deviceId: "webpage",
         deviceName: "k6",
-        email: 'edgardom+students07@bluetrailsoft.com', // `${process.env.STUDENT_USERNAME}07@${process.env.EMAIL_DOMAIN}`,
-        pw: 'Test123?' as string,
+        email: `${process.env.STUDENT_USERNAME}07@${process.env.EMAIL_DOMAIN}`,
+        pw: process.env.PW as string,
     };
 
     const studentLoginData = loginSetup(studentLoginPayload);
@@ -121,5 +121,6 @@ export default function(data: { [key: string]: { res: any, userId: string } }) {
         refreshId: data.refreshId as unknown as string,
         roomId: data.classId as unknown as string,
         accessCookie: data.students07.res.cookies?.access[0].Value,
+        userId: data.students07.userId,
     });
 }

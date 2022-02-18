@@ -146,7 +146,7 @@ export function setup() {
 
 }
 
-export function students07(data: { [key: string]: { res: any, userId: string } }) {
+/* export function students07(data: { [key: string]: { res: any, userId: string } }) {
     if (!data.classId) {
         throw new Error('Class ID not setup' + JSON.stringify(data));
     }
@@ -167,11 +167,11 @@ export function students07(data: { [key: string]: { res: any, userId: string } }
         roomId: data.classId as unknown as string,
         accessCookie: data.students07.res.cookies?.access[0].Value,
     });
-}
+} */
 
 // login el estuaniante 00
 
-export function students00(data: { [key: string]: { res: any, userId: string }}) {
+/* export function students00(data: { [key: string]: { res: any, userId: string }}) {
    
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data.students00.res.cookies?.access[0].Value, {
@@ -189,4 +189,4 @@ export function students00(data: { [key: string]: { res: any, userId: string }})
         roomId: data.classId as unknown as string,
         accessCookie: data.students00.res.cookies?.access[0].Value,
     });
-}
+} */
