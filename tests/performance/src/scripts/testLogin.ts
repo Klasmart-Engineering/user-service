@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check, fail, sleep } from 'k6';
 import { LoginPayload } from '../interfaces/login';
 
-const url = 'https://auth.dev.badanamu.net/v1/login';
+const url = 'https://ams-auth.badanamu.net/v1/login';
 const defaultPayload: LoginPayload = {
     deviceId: "webpage",
     deviceName: "k6",

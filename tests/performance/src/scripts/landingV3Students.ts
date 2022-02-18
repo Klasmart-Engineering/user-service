@@ -27,10 +27,6 @@ export function setup() {
 
 export default function(data: { res: any, userId: string }) {
     
-    // Order 1
-    // request #1 CMS service
-    schedulesTimeViewFullView();
-
     // Order 2
     // request #1 USER service
     meQueryBasic();
@@ -55,10 +51,6 @@ export default function(data: { res: any, userId: string }) {
     // Request #5 User service - Plural
     getMyUsers();
     sleep(0.5);
-    
-    // Order 7
-    // Request #2 CMS
-    endPointHomeRequest3();
 
     // Order 8
     // Request #6 User service
@@ -84,6 +76,14 @@ export default function(data: { res: any, userId: string }) {
     // Request #10 User service
     endPointOrganizationRequest2();
     sleep(0.5);
+
+    // Order 1
+    // request #1 CMS service
+    schedulesTimeViewFullView();
+    
+    // Order 7
+    // Request #2 CMS
+    endPointHomeRequest3();
 
     // Order 13
     // Request #3 CMS

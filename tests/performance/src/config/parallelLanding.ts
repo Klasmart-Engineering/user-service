@@ -13,13 +13,6 @@ export const config = (stages: number): Options => ({
         http_req_duration: [{ threshold: 'p(95)<5000', abortOnFail: true }],
     },
     scenarios: {
-        teacher00: {
-            executor: 'ramping-vus',
-            exec: 'teacher00',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: generateStages(stages),
-        },
         teacher01: {
             executor: 'ramping-vus',
             exec: 'teacher00',
@@ -34,16 +27,16 @@ export const config = (stages: number): Options => ({
             gracefulStop: '5s',
             stages: generateStages(stages),
         },
-        student00: {
+        teacher10: {
             executor: 'ramping-vus',
-            exec: 'students00',
+            exec: 'teacher10',
             startTime: '0s',
             gracefulStop: '5s',
             stages: generateStages(stages),
         },
-        student01: {
+        student1: {
             executor: 'ramping-vus',
-            exec: 'students01',
+            exec: 'students1',
             startTime: '0s',
             gracefulStop: '5s',
             stages:  generateStages(stages),
@@ -75,6 +68,13 @@ export const config = (stages: number): Options => ({
             startTime: '0s',
             gracefulStop: '5s',
             stages:  generateStages(stages),
+        },
+        student10: {
+            executor: 'ramping-vus',
+            exec: 'students10',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages: generateStages(stages),
         },
     }
 });

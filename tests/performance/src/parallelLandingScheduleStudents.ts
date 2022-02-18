@@ -173,19 +173,12 @@ export const options: Options = {
     
     ext: {
         loadimpact: {
-            projectID: 3560234,
+            projectID: 3571085,
             // projectID: 3559532,
         }
     },
 
     scenarios:{
-        students00: {
-            executor: 'constant-vus',
-            exec: 'students00',
-            vus: 50,
-            duration: '10m',
-          },
-
           students01: {
             executor: 'constant-vus',
             exec: 'students01',
@@ -193,73 +186,49 @@ export const options: Options = {
             duration: '10m',
           },
 
-          students02: {
-            executor: 'constant-vus',
-            exec: 'students02',
-            vus: 50,
-            duration: '10m',
-          },
+        //   students02: {
+        //     executor: 'constant-vus',
+        //     exec: 'students02',
+        //     vus: 100,
+        //     duration: '10m',
+        //   },
 
-          students03: {
-            executor: 'constant-vus',
-            exec: 'students03',
-            vus: 50,
-            duration: '10m',
-          },
+        //   students03: {
+        //     executor: 'constant-vus',
+        //     exec: 'students03',
+        //     vus: 100,
+        //     duration: '10m',
+        //   },
 
-          students04: {
-            executor: 'constant-vus',
-            exec: 'students04',
-            vus: 50,
-            duration: '10m',
-          },
-          students05: {
-            executor: 'constant-vus',
-            exec: 'students05',
-            vus: 50,
-            duration: '10m',
-          },
-          students06: {
-            executor: 'constant-vus',
-            exec: 'students06',
-            vus: 50,
-            duration: '10m',
-          },
-          students07: {
-            executor: 'constant-vus',
-            exec: 'students07',
-            vus: 50,
-            duration: '10m',
-          },
-          students08: {
-            executor: 'constant-vus',
-            exec: 'students08',
-            vus: 50,
-            duration: '10m',
-          },
-          students09: {
-            executor: 'constant-vus',
-            exec: 'students09',
-            vus: 50,
-            duration: '10m',
-          }, 
+        //   students04: {
+        //     executor: 'constant-vus',
+        //     exec: 'students04',
+        //     vus: 100,
+        //     duration: '10m',
+        //   }, 
+
+        //   students10: {
+        //     executor: 'constant-vus',
+        //     exec: 'students10',
+        //     vus: 100,
+        //     duration: '10m',
+        //   },
     }, 
 };
 
 export function setup() {
-    let i = 0;
+    let i = 1;
     const l = 10;
     let data = {};
 
-    for (i; i < l; i++) {
+    for (i; i <= l; i++) {
         const prefix = ('0' + i).slice(-2);
         const studentLoginPayload = {
             deviceId: "webpage",
             deviceName: "k6",
-            email: `${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
+            email: `${process.env.STUDENT_USERNAME}${i}@${process.env.EMAIL_DOMAIN}`,
             pw: process.env.PW as string,
         };
-        
         const studentLoginData = loginSetup(studentLoginPayload);
         data = { 
             ...data, 
@@ -270,12 +239,12 @@ export function setup() {
     return data;
 }
 
-export function students00(data: { [key: string]: { res: any, userId: string }}) {
+export function students10(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.students00.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data.students10.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students00.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students10.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
