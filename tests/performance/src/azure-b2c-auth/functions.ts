@@ -39,7 +39,11 @@ export function loginToB2C(loginPayload?: LoginPayload) {
   group('Load Login Page', function() {
     // Initial OpenID Config Check
     response = http.get(`${baseURL}/v2.0/.well-known/openid-configuration`, {
-      headers: defaultHeaders
+      headers: defaultHeaders,
+      tags: {
+        name: `${baseURL}/v2.0/.well-known/openid-configuration`,
+        url: `${baseURL}/v2.0/.well-known/openid-configuration`,
+      }
     });
     check(response, {
       'is openid-configuration status 200': r => r.status === 200,
@@ -58,7 +62,11 @@ export function loginToB2C(loginPayload?: LoginPayload) {
     ]);
 
     response = http.get(`${baseURL}/oauth2/v2.0/authorize?${params.toString()}`, {
-      headers: defaultHeaders
+      headers: defaultHeaders,
+      tags: {
+        name: `${baseURL}/oauth2/v2.0/authorize`,
+        url: `${baseURL}/oauth2/v2.0/authorize`,
+      }
     });
     check(response, {
       'is authorize status 200': r => r.status === 200,
@@ -91,7 +99,11 @@ export function loginToB2C(loginPayload?: LoginPayload) {
     };
 
     response = http.post(`${baseURL}/SelfAsserted?${params.toString()}`, selfAssertedFormData, {
-      headers: csrfHeaders
+      headers: csrfHeaders,
+      tags: {
+        name: `${baseURL}/SelfAsserted`,
+        url: `${baseURL}/SelfAsserted`,
+      }
     });
 
     check(response, {
@@ -102,7 +114,11 @@ export function loginToB2C(loginPayload?: LoginPayload) {
 
     response = http.get(`${baseURL}/api/CombinedSigninAndSignup/confirmed?${params.toString()}`, {
       headers: csrfHeaders,
-      redirects: 0
+      redirects: 0,
+      tags: {
+        name: `${baseURL}/api/CombinedSigninAndSignup/confirmed`,
+        url: `${baseURL}/api/CombinedSigninAndSignup/confirmed`,
+    }
     });
   
     isResponse429(response, count429);
@@ -125,7 +141,11 @@ export function loginToB2C(loginPayload?: LoginPayload) {
     };
 
     response = http.post(`${baseURL}/oauth2/v2.0/token`, tokenPayload, {
-      headers: defaultHeaders
+      headers: defaultHeaders,
+      tags: {
+        name: `$${baseURL}/oauth2/v2.0/token`,
+        url: `$${baseURL}/oauth2/v2.0/token`,
+      }
     });
 
     isResponse429(response, count429);
