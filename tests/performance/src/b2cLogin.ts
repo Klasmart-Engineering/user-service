@@ -7,6 +7,14 @@ import { params } from "./utils/params";
 import { check } from 'k6';
 
 export const options: Options = {
+    
+    ext: {
+        loadimpact: {
+            projectID: 3560234,
+            // projectID: 3559532,
+        }
+    },
+    
     scenarios: {
         students: {
             executor: 'per-vu-iterations',
@@ -14,7 +22,6 @@ export const options: Options = {
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students',
         },
-
         // create new methods for signing in different roles if needed and add scenarios here.
     }
 };
@@ -24,8 +31,10 @@ export function students() {
         deviceId: 'webpage',
         deviceName: 'k6',
         email: `${process.env.B2C_USERNAME}${__VU - 1}@${process.env.B2C_DOMAIN}`,
-        pw: process.env.B2C_PASSWORD as string,
+        pw: process.env.B2C_PASSWORD as string,        
+        
     };
+
     const loginResp = loginToB2C(loginPayload) as any;
 
     check(loginResp, {

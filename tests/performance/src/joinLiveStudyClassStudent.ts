@@ -21,19 +21,13 @@ export const options: Options = {
     },
 
     scenarios:{
-        students00: {
+        students07: {
             executor: 'constant-vus',
-            exec: 'students00',
+            exec: 'students07',
             vus: 1,
             duration: '1m',
           },
 
-        /*   students01: {
-            executor: 'constant-vus',
-            exec: 'students01',
-            vus: 1,
-            duration: '1m',
-          }, */
     }, 
 };
 
@@ -111,7 +105,7 @@ export function setup() {
         ...data,
         refreshId: JSON.parse(refresh.body as string)?.id,
     }
-
+/* 
     const studentLoginPayload = {
         deviceId: "webpage",
         deviceName: "k6",
@@ -123,12 +117,11 @@ export function setup() {
     data = { 
         ...data,
         [`students07`]: studentLoginData
-    };
+    }; */
 
     // Intento de loguear multiples usuarios
-    let i = 0;
-    const l = 2;
-    let data2 = {};
+    let i = 6;
+    const l = 7;
 
     for (i; i < l; i++) {
         const prefix = ('0' + i).slice(-2);
@@ -140,18 +133,17 @@ export function setup() {
         };
         
         const studentLoginData = loginSetup(studentLoginPayload);
-        data2 = { 
-            ...data2, 
+        data = { 
+            ...data, 
             [`students${prefix}`]: studentLoginData,
         };
 
-        return data2;
     }
 
     // hasta el bloque de estudiantes. Solo los primeros 2 estudiantes 00/01
 
     return data;
-    return data2;
+
 }
 
 export function students07(data: { [key: string]: { res: any, userId: string } }) {
@@ -179,13 +171,13 @@ export function students07(data: { [key: string]: { res: any, userId: string } }
 
 // login el estuaniante 00
 
-export function students00(data: { [key: string]: { res: any, userId: string } }, data2: { [key: string]: { res: any, userId: string }}) {
+export function students00(data: { [key: string]: { res: any, userId: string }}) {
    
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data2.students00.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data.students00.res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data2.students00.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students00.res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
@@ -195,6 +187,6 @@ export function students00(data: { [key: string]: { res: any, userId: string } }
         token,
         refreshId: data.refreshId as unknown as string,
         roomId: data.classId as unknown as string,
-        accessCookie: data2.students00.res.cookies?.access[0].Value,
+        accessCookie: data.students00.res.cookies?.access[0].Value,
     });
 }
