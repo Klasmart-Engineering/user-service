@@ -27,7 +27,7 @@ export const config = (stages: number): Options => ({
             gracefulStop: '5s',
             stages:  generateStages(stages),
         },
-        school: {
+        schoolAdmin: {
             executor: 'ramping-vus',
             exec: 'userSchoolAdminLogin',
             startTime: '0s',
@@ -41,7 +41,42 @@ export const config = (stages: number): Options => ({
             gracefulStop: '5s',
             stages:  generateStages(stages),
         },
-        ordadmin: {
+        ordAdmin: {
+            executor: 'ramping-vus',
+            exec: 'userOrgAdminLogin',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+        },
+        teacher1: {
+            executor: 'ramping-vus',
+            exec: 'userTeacherLogin',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages: generateStages(stages),
+        },
+        student1: {
+            executor: 'ramping-vus',
+            exec: 'userStudentLogin',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+        },
+        schoolAdmin1: {
+            executor: 'ramping-vus',
+            exec: 'userSchoolAdminLogin',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+        },
+        parent1: {
+            executor: 'ramping-vus',
+            exec: 'userParentLogin',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+        },
+        ordAdmin1: {
             executor: 'ramping-vus',
             exec: 'userOrgAdminLogin',
             startTime: '0s',

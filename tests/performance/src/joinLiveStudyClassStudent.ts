@@ -174,6 +174,7 @@ export function students07(data: { [key: string]: { res: any, userId: string } }
         refreshId: data.refreshId as unknown as string,
         roomId: data.classId as unknown as string,
         accessCookie: data.students07.res.cookies?.access[0].Value,
+        userId: data.students07.userId,
     });
 }
 
@@ -196,5 +197,6 @@ export function students00(data: { [key: string]: { res: any, userId: string } }
         refreshId: data.refreshId as unknown as string,
         roomId: data.classId as unknown as string,
         accessCookie: data2.students00.res.cookies?.access[0].Value,
+        userId: data.students07.userId,
     });
 }
