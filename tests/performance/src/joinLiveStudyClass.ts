@@ -7,8 +7,20 @@ import { Options } from 'k6/options';
 import { APIHeaders } from './utils/common';
 
 export const options: Options = {
-    vus: 1,
-    iterations: 1,
+    ext: {
+        loadimpact: {
+            projectID: 3560234,
+            // projectID: 3559532,
+        }
+    },
+    scenarios: {
+        students: {
+            executor: 'per-vu-iterations',
+            iterations: 1,
+            vus: parseInt(__ENV.VUS, 10),
+            exec: 'students',
+        },
+    }
 };
 
 const params = {
@@ -21,8 +33,8 @@ const studyClassPayload = {
     attachment: {id: "", name: ""},
     attachment_path: "",
     class_id: process.env.CLASS_ID_STUDY_SETUP,
-    class_roster_student_ids: [process.env.STUDY_STUDENT_ID_1, process.env.STUDY_STUDENT_ID_2, process.env.CLASS_STUDENT_ID_1],
-    class_roster_teacher_ids: [process.env.STUDENT_TEACHER_ID_1, process.env.STUDEY_TEACHER_ID_2, process.env.ID_ORG_ADMIN_1],
+    class_roster_student_ids: [],
+    class_roster_teacher_ids: [process.env.STUDY_TEACHER_ID_1, process.env.STUDY_TEACHER_ID_2, process.env.ID_ORG_ADMIN_1],
     class_type: "Homework",
     description: "",
     due_at: Math.round((new Date().getTime() + (7 * 60000)) / 1000),
@@ -68,8 +80,35 @@ export function setup() {
         domain: process.env.COOKIE_DOMAIN,
     });
 
+    let i = 0;
+    const l = 5;// parseInt(__ENV.VUS, 10) - 1;
+    let studentIds: string[] = [];
+
+    for (i; i < l; i++) {
+        const prefix = ('0' + i).slice(-2);
+        const loginPayload = {
+            deviceId: "webpage",
+            deviceName: "k6",
+            email: `${process.env.TEACHER_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
+            pw: process.env.PW as string,
+        };
+        
+        const loginData = loginSetup(loginPayload);
+        data = { 
+            ...data, 
+            [`students${prefix}`]: loginData,
+        };
+    
+        studentIds = [ ...studentIds, loginData.userId ];
+    };
+
     // create class
-    const res = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, JSON.stringify(studyClassPayload), params);
+    const classPayload = {
+        ...studyClassPayload,
+        class_roster_student_ids: studentIds,
+    };
+
+    const res = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, JSON.stringify(classPayload), params);
 
     data = {
         ...data,
@@ -85,32 +124,19 @@ export function setup() {
         refreshId: JSON.parse(refresh.body as string)?.id,
     }
 
-    const studentLoginPayload = {
-        deviceId: "webpage",
-        deviceName: "k6",
-        email: `${process.env.STUDENT_USERNAME}07@${process.env.EMAIL_DOMAIN}`,
-        pw: process.env.PW as string,
-    };
-
-    const studentLoginData = loginSetup(studentLoginPayload);
-    data = { 
-        ...data,
-        [`students07`]: studentLoginData
-    };
-
     return data;
 }
 
-export default function(data: { [key: string]: { res: any, userId: string } }) {
+export function students(data: { [key: string]: { res: any, userId: string } }) {
     if (!data.classId) {
         throw new Error('Class ID not setup' + JSON.stringify(data));
     }
 
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data.students07.res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data[`students0${__VU}`].res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data.students07.res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`students0${__VU}`].res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
@@ -120,7 +146,7 @@ export default function(data: { [key: string]: { res: any, userId: string } }) {
         token,
         refreshId: data.refreshId as unknown as string,
         roomId: data.classId as unknown as string,
-        accessCookie: data.students07.res.cookies?.access[0].Value,
-        userId: data.students07.userId,
+        accessCookie: data[`students0${__VU}`].res.cookies?.access[0].Value,
+        userId: data[`students0${__VU}`].userId,
     });
 }

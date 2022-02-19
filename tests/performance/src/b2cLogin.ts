@@ -7,20 +7,12 @@ import { params } from "./utils/params";
 import { check } from 'k6';
 
 export const options: Options = {
-<<<<<<< HEAD
-    
-=======
->>>>>>> 03e372db9359d019b9aec870a425559d72f14935
     ext: {
         loadimpact: {
             projectID: 3560234,
             // projectID: 3559532,
         }
     },
-<<<<<<< HEAD
-    
-=======
->>>>>>> 03e372db9359d019b9aec870a425559d72f14935
     scenarios: {
         students: {
             executor: 'per-vu-iterations',
