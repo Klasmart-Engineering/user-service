@@ -1,64 +1,146 @@
-# RFC-XXX
+# RFC-062-UPDATE_USER-MEMBERSHIP
 
 ## Synopsis
 
-Give a general overview about the covered content, aka. the "executive summary"
+This RFC describes proposed API solution for the FE batch updating several user memberships in one organization with the same additions to Schools Classes Studying, Classes Teaching, and or Roles, along with the same status on the user membership. 
 
 ## Background
 
-Add details: Briefly outline the problem domain, illustrate previews implementations, the status quo and/or what’s wrong.
+The FE have a requirement to be able to choose and assign the groups or user memberships in one operation with particular additions to Schools, Classes Studying, Classes Teaching and Roles.
 
-For documentation of discovery ticket’s findings, briefly illustrate what the task was.
+The purpose of this RFC is describe the API interface provided by the BE to implement this.
 
-Link related tickets if applicable.
+Issue https://calmisland.atlassian.net/browse/AD-2105
 
-## [ Implementation/ Analysis / Findings / Proposal* ]
+## Proposal
 
-*Pick the ones that fits best*
+We propose that there will be a new GraphQl endpoint
 
-For discovery ticket, describe what was explored and what was discovered. Draw conclusions and document the possible next steps.
+```graphql
+updateOrganizationUsers(
+    input: 
+    UpdateOrganizationUserInput!
+    ): UsersMutationResult
+```
 
-When documenting a workflow, include graphs / charts that visualise the textual description.
+The input data structure in this mutation is quite different from that of other batch mutations as in this case we are applying the same changes across the set of User/Memberships.
 
-When suggesting a new design, revisit the RFC when the decision for a specific design approach has been made.
+```graphql
+input UpdateOrganizationUserInput{ 
+   input:{
+     organizationId: ID!
+     status: enum
+     users:[ ID! ]!
+     roles: [ ID! ]
+     schools: [ ID! ]
+     classesTeaching: [ ID! ]
+     classesStudying: [ ID! ]
+    }
+}
+```
+
+Changes will be additive and if the user in the organization already has role X and we assign role X no error will be returned.
+
+The reason for a UsersMutationResult return type is that classesTeaching, classesStudying and Schools are relations on the User entity not the OrganizationMembership entity.
+
+For completeness here is the definition of a UsersMutationResult
+
+```graphql
+type UsersMutationResult {
+  users: [UserConnectionNode!]!
+}
+```
+
+And a UserConnectionNode
+
+```graphql
+type UserConnectionNode {
+  id: ID!
+  givenName: String
+  familyName: String
+  avatar: String
+  contactInfo: ContactInfo
+  alternateContactInfo: ContactInfo
+  status: Status!
+  dateOfBirth: String
+  username: String
+  gender: String
+  organizationMembershipsConnection(
+    count: PageSize
+    cursor: String
+    filter: OrganizationMembershipFilter
+    sort: OrganizationMembershipSortBy
+    direction: ConnectionDirection
+  ): OrganizationMembershipsConnectionResponse
+  schoolMembershipsConnection(
+    count: PageSize
+    cursor: String
+    direction: ConnectionDirection
+    filter: SchoolMembershipFilter
+    sort: SchoolMembershipSortInput
+  ): SchoolMembershipsConnectionResponse
+  classesStudyingConnection(
+    count: PageSize
+    cursor: String
+    direction: ConnectionDirection
+    filter: ClassFilter
+    sort: ClassSortInput
+  ): ClassesConnectionResponse
+  classesTeachingConnection(
+    count: PageSize
+    cursor: String
+    direction: ConnectionDirection
+    filter: ClassFilter
+    sort: ClassSortInput
+  ): ClassesConnectionResponse
+}
+```
+The Roles will be visible from the OrganizationMembershipConnectionResponse object
+
+```graphql
+type OrganizationMembershipsConnectionResponse implements iConnectionResponse {
+  totalCount: Int
+  pageInfo: ConnectionPageInfo
+  edges: [OrganizationMembershipsConnectionEdge]
+}
+
+type OrganizationMembershipsConnectionEdge implements iConnectionEdge {
+  cursor: String
+  node: OrganizationMembershipsConnectionNode
+}
+
+type OrganizationMembershipConnectionNode {
+  userId: String!
+  organizationId: String!
+  status: Status!
+  shortCode: String
+  joinTimestamp: String
+  user: UserConnectionNode
+  organization: OrganizationConnectionNode
+  rolesConnection(
+    count: PageSize
+    cursor: String
+    filter: RoleFilter
+    sort: RoleSortInput
+    direction: ConnectionDirection
+  ): RolesConnectionResponse
+}
+
+```
+
 
 ### Error handling
 
-Describe how the errors will be handled.
+If an error happens with any of the changes the whole change will be reverted.
 
-For example:
+An error value consisting of perhaps several APIError error reports will be returned that will contain the description and ids of the values that have the issue.
 
-* New errors with `code`, `message` and `variables` (if any)
-* When error happens, stop the operation or just move over to collect other errors before stop the operation
-* How we return errors to the client
-* If necessary, may involve/coordinate the client teams for their ideas
-* If need to send the error to New Relic for metrics/monitoring, please describe it as well
+The back end will attempt to find as many errors as possible in any error situation so that the job of fixing the errors can be done in as few a iterations as possible
 
-## Out of scope
-
-List anything that is explicitly outside of the scope of the RFC to help keep discussion focused and avoid scope creep.
-Consider giving reasons for why something was considered out of scope. For example:
-
-* X is/will be discussed in it's own RFC
-* X is owned by another team who will define it themselves
-* X is not required for an MVP
-
-## Appendix
-
-Optional link relevant information  (e.g API docs)
+The index value returned will refer the the index in the users array that is passed.
 
 ## Decision
 
-For each person involved, list their review status [pending/approved/rejected]. Require explicit status reviews from each person.
-e.g.
-
-|     Reviewer     |  Status  | Color |
-|------------------|----------|-------|
-| John Smith       | Approved |   🟢  |
-| Lisa Weaver      | Rejected |   🔴  |
-| Olivier Pacheco  | Pending  |   🟡  |
-
-Default reviewer list - deleted/add to as appropriate:
 
 |     Reviewer     |  Status  | Color  |
 |------------------|----------|-------:|
@@ -72,3 +154,8 @@ Default reviewer list - deleted/add to as appropriate:
 | Raphael          | Pending  |   🟡   |
 | Marlon           | Pending  |   🟡   |
 | Nicholas         | Pending  |   🟡   |
+| Malcolm          | Pending  |   🟡   |
+| Hendrick         | Pending  |   🟡   |
+| Ismael           | Pending  |   🟡   |
+
+
