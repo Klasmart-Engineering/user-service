@@ -830,8 +830,8 @@ export class AddClassesToSchools extends AddMutation<
         const { schoolId: itemId, classIds: subitemIds } = currentInput
         const mainEntityName = 'School'
         const subEntityName = 'Class'
-        const mainEntityKeyName = 'school_name'
-        const subEntityKeyName = 'class_name'
+        const mainEntityKeyName = 'school_id'
+        const subEntityKeyName = 'class_id'
 
         const schoolClasses = new Set(
             maps.schoolsClasses.get(itemId)?.map((p) => p.class_id)

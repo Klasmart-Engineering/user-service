@@ -1909,9 +1909,9 @@ describe('school', () => {
                         res,
                         {
                             entity: 'Class',
-                            entityName: classes[0].class_name || '',
+                            entityName: classes[0].class_id,
                             parentEntity: 'School',
-                            parentName: schools[0].school_name || '',
+                            parentName: schools[0].school_id,
                             index: 0,
                         },
                         [''],
