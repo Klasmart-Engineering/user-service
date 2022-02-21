@@ -8,6 +8,8 @@ import viewStudyClass from './scripts/viewStudyClass';
 //import loginSetup from './utils/uniqueUserCookies';
 import loginSetup from './utils/loginSetup';
 import landingV3Students from './scripts/landingV3Students';
+import generateStages from './utils/generateStages';
+const stages: number = !isNaN(parseInt(__ENV.STAGE_QTY, 10)) ? parseInt(__ENV.STAGE_QTY) : 1;
 
 // This script simulate the a student select a Study class from the calendar
 // click on the Go Study button
@@ -173,46 +175,85 @@ export const options: Options = {
     
     ext: {
         loadimpact: {
-            projectID: 3571085,
-            // projectID: 3559532,
+            // projectID: 3571085,
+            projectID: 3560234,
         }
     },
 
     scenarios:{
-          students01: {
-            executor: 'constant-vus',
+        students01: {
+            executor: 'ramping-vus',
             exec: 'students01',
-            vus: 50,
-            duration: '10m',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
+          
+          students02: {
+            executor: 'ramping-vus',
+            exec: 'students02',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
           },
 
-        //   students02: {
-        //     executor: 'constant-vus',
-        //     exec: 'students02',
-        //     vus: 100,
-        //     duration: '10m',
-        //   },
+          students03: {
+            executor: 'ramping-vus',
+            exec: 'students03',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
 
-        //   students03: {
-        //     executor: 'constant-vus',
-        //     exec: 'students03',
-        //     vus: 100,
-        //     duration: '10m',
-        //   },
-
-        //   students04: {
-        //     executor: 'constant-vus',
-        //     exec: 'students04',
-        //     vus: 100,
-        //     duration: '10m',
-        //   }, 
-
-        //   students10: {
-        //     executor: 'constant-vus',
-        //     exec: 'students10',
-        //     vus: 100,
-        //     duration: '10m',
-        //   },
+          students04: {
+            executor: 'ramping-vus',
+            exec: 'students04',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
+          students05: {
+            executor: 'ramping-vus',
+            exec: 'students05',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
+          students06: {
+            executor: 'ramping-vus',
+            exec: 'students06',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
+          students07: {
+            executor: 'ramping-vus',
+            exec: 'students07',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
+          students08: {
+            executor: 'ramping-vus',
+            exec: 'students08',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
+          students09: {
+            executor: 'ramping-vus',
+            exec: 'students09',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
+          students10: {
+            executor: 'ramping-vus',
+            exec: 'students10',
+            startTime: '0s',
+            gracefulStop: '5s',
+            stages:  generateStages(stages),
+          },
     }, 
 };
 

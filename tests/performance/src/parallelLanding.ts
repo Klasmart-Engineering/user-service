@@ -10,8 +10,8 @@ const stages: number = !isNaN(parseInt(__ENV.STAGE_QTY, 10)) ? parseInt(__ENV.ST
 export const options: Options = {
     ext: {
         loadimpact: {
-            projectID: 3571085,
-            // projectID: 3559532,
+            // projectID: 3571085,
+            projectID: 3560234,
         }
     },
     thresholds: {

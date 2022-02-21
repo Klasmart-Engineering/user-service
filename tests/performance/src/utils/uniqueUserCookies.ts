@@ -21,7 +21,7 @@ export default function() {
             email: `${process.env.STUDENT_USERNAME}${i}@${process.env.EMAIL_DOMAIN}`,
             pw: process.env.PW as string,
         };
-        console.log(JSON.stringify(studentLoginPayload));
+        // console.log(JSON.stringify(studentLoginPayload));
         // const teacherLoginData = loginSetup(teacherLoginPayload);
         const studentLoginData = loginSetup(studentLoginPayload);
         data = { 
