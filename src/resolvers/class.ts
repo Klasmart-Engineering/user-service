@@ -579,7 +579,7 @@ export class CreateClasses extends CreateMutation<
         errors.push(...failedDuplicateNames.values())
 
         const failedDuplicateShortcodes = validateNoDuplicate(
-            inputs.map((i) => i.shortcode!),
+            inputs.map((i) => [i.organizationId, i.shortcode!].toString()),
             'class',
             'shortcode'
         )

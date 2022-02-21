@@ -653,6 +653,7 @@ describe('class', () => {
                 expect(validInputs[2].index).to.eq(2)
                 expect(apiErrors.length).to.equal(0)
             })
+
             it('duplicate names', async () => {
                 const duplicateInput = inputs[1]
 
@@ -679,6 +680,27 @@ describe('class', () => {
 
                 expect(apiErrors.length).to.eq(1)
                 compareErrors(apiErrors[0], error)
+            })
+
+            it('duplicate shortcodes but in different orgs', async () => {
+                const duplicateInput = inputs[1]
+
+                duplicateInput.shortcode = inputs[0].shortcode
+                duplicateInput.organizationId = org2.organization_id
+
+                const {
+                    validInputs,
+                    apiErrors,
+                } = createClasses.validationOverAllInputs(inputs)
+
+                expect(validInputs.length).to.eq(3)
+                expect(validInputs[0].input.name).to.eq(inputs[0].name)
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].input.name).to.eq(inputs[1].name)
+                expect(validInputs[1].index).to.eq(1)
+                expect(validInputs[2].input.name).to.eq(inputs[2].name)
+                expect(validInputs[2].index).to.eq(2)
+                expect(apiErrors.length).to.equal(0)
             })
 
             it('duplicate shortcodes', async () => {
