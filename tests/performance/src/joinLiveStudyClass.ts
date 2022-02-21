@@ -89,7 +89,7 @@ export function setup() {
         const loginPayload = {
             deviceId: "webpage",
             deviceName: "k6",
-            email: `${process.env.TEACHER_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
+            email: `${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
             pw: process.env.PW as string,
         };
         
