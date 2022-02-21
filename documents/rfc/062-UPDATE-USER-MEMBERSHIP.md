@@ -137,7 +137,7 @@ An error value consisting of perhaps several APIError error reports will be retu
 
 The back end will attempt to find as many errors as possible in any error situation so that the job of fixing the errors can be done in as few a iterations as possible
 
-The index value returned will refer the the index in the users array that is passed.
+The index value returned in each APIError will refer to an index in the users array that is passed.
 
 ## Decision
 
