@@ -10,6 +10,7 @@ export const studentRole = {
         PermissionName.view_my_school_published_218,
         PermissionName.schedule_500,
         PermissionName.view_my_calendar_510,
+        PermissionName.reports_600,
         PermissionName.student_reports_605,
         PermissionName.report_learning_summary_student_649,
         PermissionName.learning_summary_report_653,
