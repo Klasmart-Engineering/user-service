@@ -144,13 +144,11 @@ The index value returned in each APIError will refer to an index in the users ar
 
 |     Reviewer     |  Status  | Color  |
 |------------------|----------|-------:|
-| Enrique          | Pending  |   🟡   |
+| Toghrul          | Pending  |   🟡   |
 | Oliver           | Pending  |   🟡   |
-| Max              | Pending  |   🟡
 | Matthew          | Pending  |   🟡   |
 | Richard          | Pending  |   🟡   |
 | Matt             | Pending  |   🟡   |
-| Sam              | Pending  |   🟡   |
 | Raphael          | Pending  |   🟡   |
 | Marlon           | Pending  |   🟡   |
 | Nicholas         | Pending  |   🟡   |
