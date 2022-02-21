@@ -153,7 +153,7 @@ The index value returned in each APIError will refer to an index in the users ar
 | Marlon           | Pending  |   🟡   |
 | Nicholas         | Pending  |   🟡   |
 | Malcolm          | Pending  |   🟡   |
-| Hendrick         | Pending  |   🟡   |
+| Henrick         | Pending  |   🟡   |
 | Ismael           | Pending  |   🟡   |
 
 
