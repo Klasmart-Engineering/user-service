@@ -201,6 +201,19 @@ export function createDuplicateChildEntityAttributeAPIError(
     })
 }
 
+export function createApplyingChangeToSelfAPIError(
+    userId: string,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.applying_change_to_self.code,
+        message: customErrors.applying_change_to_self.message,
+        variables: [],
+        entityName: userId,
+        index,
+    })
+}
+
 export function createEntityAPIError(
     errorType: entityErrorType,
     index: number,

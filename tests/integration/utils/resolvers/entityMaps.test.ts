@@ -27,6 +27,7 @@ import {
 import { SchoolMembership } from '../../../../src/entities/schoolMembership'
 import { createSchoolMembershipsInManySchools } from '../../../factories/schoolMembership.factory'
 import { getConnection } from 'typeorm'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -133,6 +134,29 @@ describe('entityMaps', () => {
                 )
                 expect(membershipMap.size).to.equal(memberships.length)
                 memberships.forEach((m) => {
+                    const membershipFromMap = membershipMap.get({
+                        organizationId: m.organization_id,
+                        userId: m.user_id,
+                    })
+                    expect(membershipFromMap).to.not.be.undefined
+                    if (membershipFromMap) compareEntities(membershipFromMap, m)
+                })
+            })
+
+            it('filters memberships by statuses', async () => {
+                memberships[0].status = Status.DELETED
+                await memberships[0].save()
+                memberships[1].status = Status.INACTIVE
+                await memberships[1].save()
+                const membershipMap = await getMap.membership.organization(
+                    orgs.map((o) => o.organization_id),
+                    users.map((u) => u.user_id),
+                    undefined,
+                    [Status.ACTIVE, Status.INACTIVE]
+                )
+                // -1 because one membership has the status of deleted
+                expect(membershipMap.size).to.equal(memberships.length - 1)
+                memberships.slice(1).forEach((m) => {
                     const membershipFromMap = membershipMap.get({
                         organizationId: m.organization_id,
                         userId: m.user_id,

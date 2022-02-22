@@ -9,6 +9,8 @@ import { Model } from '../model'
 import {
     AddUsersToOrganizations,
     CreateOrganizations,
+    DeleteUsersFromOrganizations,
+    ReactivateUsersFromOrganizations,
     RemoveUsersFromOrganizations,
 } from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
@@ -40,8 +42,27 @@ const typeDefs = gql`
         addUsersToOrganizations(
             input: [AddUsersToOrganizationInput!]!
         ): OrganizationsMutationResult
+        """
+        Inactivates users in an organization. Their membership data
+        will be maintained and can be restored with reactivateUsersFromOrganizations.
+        """
         removeUsersFromOrganizations(
             input: [RemoveUsersFromOrganizationInput!]!
+        ): OrganizationsMutationResult
+        """
+        Reactivates users for an organization who were inactivated via removeUsersFromOrganizations
+        They will have the same roles they had at the time of removal.
+        """
+        reactivateUsersFromOrganizations(
+            input: [ReactivateUsersFromOrganizationInput!]!
+        ): OrganizationsMutationResult
+        """
+        Deletes users from an organization. They will
+        be treated as if they had never been part of the organizaton.
+        Membership data may not be maintained.
+        """
+        deleteUsersFromOrganizations(
+            input: [DeleteUsersFromOrganizationInput!]!
         ): OrganizationsMutationResult
         organization(
             organization_id: ID!
@@ -298,6 +319,16 @@ const typeDefs = gql`
     }
 
     input RemoveUsersFromOrganizationInput {
+        organizationId: ID!
+        userIds: [ID!]!
+    }
+
+    input DeleteUsersFromOrganizationInput {
+        organizationId: ID!
+        userIds: [ID!]!
+    }
+
+    input ReactivateUsersFromOrganizationInput {
         organizationId: ID!
         userIds: [ID!]!
     }
@@ -564,8 +595,16 @@ export default function getDefault(
                     mutate(CreateOrganizations, args, ctx.permissions),
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
                     mutate(AddUsersToOrganizations, args, ctx.permissions),
-                removeUsersFromOrganizations: (_parent, args, ctx, _info) =>
+                removeUsersFromOrganizations: (_parent, args, ctx) =>
                     mutate(RemoveUsersFromOrganizations, args, ctx.permissions),
+                reactivateUsersFromOrganizations: (_parent, args, ctx) =>
+                    mutate(
+                        ReactivateUsersFromOrganizations,
+                        args,
+                        ctx.permissions
+                    ),
+                deleteUsersFromOrganizations: (_parent, args, ctx) =>
+                    mutate(DeleteUsersFromOrganizations, args, ctx.permissions),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>

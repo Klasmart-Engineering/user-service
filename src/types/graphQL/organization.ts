@@ -29,6 +29,21 @@ export interface RemoveUsersFromOrganizationInput {
     userIds: string[]
 }
 
+export interface ReactivateUsersFromOrganizationInput {
+    organizationId: string
+    userIds: string[]
+}
+
+export interface DeleteUsersFromOrganizationInput {
+    organizationId: string
+    userIds: string[]
+}
+
+export interface ActivateUsersInOrganizationInput {
+    organizationId: string
+    userIds: string[]
+}
+
 export interface OrganizationConnectionNode {
     id: string
     name?: string

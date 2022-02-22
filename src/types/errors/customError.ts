@@ -198,6 +198,10 @@ export const customErrors = {
         message:
             'User {entityName} already owns an Organization (${parentName}).',
     },
+    applying_change_to_self: {
+        code: 'ERR_USER_CANNOT_APPLY_CHANGE_TO_SELF',
+        message: 'user {userId} cannot apply this change to themselves.',
+    },
 
     // auth
     unauthorized: {
