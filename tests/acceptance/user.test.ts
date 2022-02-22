@@ -315,6 +315,7 @@ describe('acceptance.user', () => {
                             value: 'active',
                         },
                         classId: uuidFilter,
+                        gradeId: uuidFilter,
                     },
                 },
                 getAdminAuthToken()

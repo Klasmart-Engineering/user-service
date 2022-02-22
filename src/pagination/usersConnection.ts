@@ -80,6 +80,33 @@ export async function usersConnectionQuery(
     filter?: IEntityFilter
 ) {
     if (filter) {
+        //
+        // Check for invalid filter combinations
+        //
+        // organizationUserStatus requires organizationId to avoid duplicating users
+        // who are members of > 1 orgs
+        if (
+            filterHasProperty('organizationUserStatus', filter) &&
+            !filterHasProperty('organizationId', filter)
+        ) {
+            // TODO error to clients once all have migrated
+            logger.warn(
+                "User filter 'organizationUserStatus' requires 'organizationId'"
+            )
+        }
+
+        // classStudyingId & classTeachingId are internal filters for class students/teachers connections
+        // and not intended for use with additional class filtering
+        if (
+            filterHasProperty('classId', filter) &&
+            (filterHasProperty('classStudyingId', filter) ||
+                filterHasProperty('classTeachingId', filter))
+        ) {
+            throw new Error(
+                'Cannot filter by classId in combination with classStudyingId/classTeachingId.'
+            )
+        }
+
         if (
             (filterHasProperty('organizationId', filter) ||
                 filterHasProperty('organizationUserStatus', filter) ||
@@ -101,16 +128,16 @@ export async function usersConnectionQuery(
             scope.leftJoin('User.school_memberships', 'SchoolMembership')
         }
 
-        if (filterHasProperty('classId', filter)) {
+        if (
+            filterHasProperty('classId', filter) ||
+            filterHasProperty('gradeId', filter)
+        ) {
             scope.leftJoin('User.classesStudying', 'ClassStudying')
             scope.leftJoin('User.classesTeaching', 'ClassTeaching')
-            if (
-                filterHasProperty('classStudyingId', filter) ||
-                filterHasProperty('classTeachingId', filter)
-            ) {
-                throw new Error(
-                    'Cannot filter by classId in combination with classStudyingId/classTeachingId.'
-                )
+
+            if (filterHasProperty('gradeId', filter)) {
+                scope.leftJoin('ClassStudying.grades', 'ClassStudyingGrade')
+                scope.leftJoin('ClassTeaching.grades', 'ClassTeachingGrade')
             }
         } else {
             if (filterHasProperty('classStudyingId', filter)) {
@@ -119,18 +146,6 @@ export async function usersConnectionQuery(
             if (filterHasProperty('classTeachingId', filter)) {
                 scope.innerJoin('User.classesTeaching', 'ClassTeaching')
             }
-        }
-
-        // organizationUserStatus requires organizationId to avoid duplicating users
-        // who are members of > 1 orgs
-        if (
-            filterHasProperty('organizationUserStatus', filter) &&
-            !filterHasProperty('organizationId', filter)
-        ) {
-            // TODO error to clients once all have migrated
-            logger.warn(
-                "User filter 'organizationUserStatus' requires 'organizationId'"
-            )
         }
 
         scope.andWhere(
@@ -149,6 +164,10 @@ export async function usersConnectionQuery(
                         'ClassStudying.class_id',
                         'ClassTeaching.class_id',
                     ],
+                },
+                gradeId: {
+                    operator: 'OR',
+                    aliases: ['ClassStudyingGrade.id', 'ClassTeachingGrade.id'],
                 },
                 classStudyingId: 'ClassStudying.class_id',
                 classTeachingId: 'ClassTeaching.class_id',
