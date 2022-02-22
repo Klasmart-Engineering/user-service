@@ -29,4 +29,6 @@ export default function (organizationId: string, classId: string) {
         '"Get class roster" status is 200': () => res.status === 200,
         '"Get class roster" query returns data': (r) => JSON.parse(r.body as string).data ?? false,
     });
+
+    return JSON.parse(res.body as string).data
 }
