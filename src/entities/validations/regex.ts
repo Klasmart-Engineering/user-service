@@ -4,4 +4,5 @@ export const REGEX = {
     phone: /^\+[1-9]\d{1,14}$/,
     dob: /^(((0)[0-9])|((1)[0-2]))(-)\d{4}$/,
     alphanum_with_special_characters: /^[\p{L}\d .'&/,-]*$/u,
+    username: /^[\p{L}\d .'&/,-_]*$/u,
 }

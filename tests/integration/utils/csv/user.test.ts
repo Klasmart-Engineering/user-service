@@ -620,6 +620,32 @@ describe('processUserFromCSVRow', async () => {
             expect(err.max).to.eq(config.limits.USERNAME_MAX_LENGTH)
             expect(queryResultCache.validatedOrgs.size).to.equal(0)
         })
+        it('errors with ERR_INVALID_USERNAME when the regex fails', async () => {
+            ;(row as any).user_username = '🐮'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            err = rowErrors[0]
+            expect(rowErrors.length).to.eq(1)
+            expect(err.code).to.eq(customErrors.invalid_username.code)
+        })
+        it('allows underscores', async () => {
+            ;(row as any).user_username = 'p_user_name'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors).to.be.empty
+        })
     })
 
     context('user gender', () => {

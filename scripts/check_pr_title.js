@@ -17,7 +17,9 @@ axios(bitBucketRequestConfig).then(async (response) => {
     const title = response.data.title
     console.log(`Linting PR title: ${title}`)
     load(lintConfig).then((config) => {
-        lint(title, config.rules).then(result => {
+        lint(title, config.rules, {
+            parserOpts: config.parserPreset.parserOpts
+          }).then(result => {
             if (result.valid) {
                 console.log(`\nPASS: PR title matches the expected conventional commit format. `)
                 process.exit(0)

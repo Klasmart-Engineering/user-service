@@ -161,6 +161,11 @@ export const customErrors = {
         code: 'ERR_INVALID_PHONE',
         message: 'Invalid phone number.',
     },
+    invalid_username: {
+        code: 'ERR_INVALID_USERNAME',
+        message:
+            "Username must only contain letters, numbers, space and & / , - . ' _",
+    },
     invalid_date: {
         code: 'ERR_INVALID_DATE',
         message: '{entity} {attribute} does not match the format {format}.',

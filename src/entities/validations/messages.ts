@@ -127,6 +127,12 @@ export function getCustomConstraintDetails(
                             customErrors.invalid_alphanumeric_special.message,
                     }
                 }
+                case 'username': {
+                    return {
+                        code: customErrors.invalid_username.code,
+                        message: customErrors.invalid_username.message,
+                    }
+                }
                 default: {
                     reportError(
                         new Error(
