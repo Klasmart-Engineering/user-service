@@ -7881,7 +7881,7 @@ describe('organization', () => {
                 'TestChangeOrganizationMembershipStatusInput'
             readonly partialEntity = {
                 status: Status.ACTIVE,
-                deleted_at: new Date(),
+                status_updated_at: new Date(),
             }
 
             async authorize(): Promise<void> {

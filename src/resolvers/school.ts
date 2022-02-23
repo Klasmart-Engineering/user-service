@@ -742,6 +742,7 @@ export class ReactivateUsersFromSchools extends ChangeSchoolMembershipStatus {
     protected inputTypeName = 'reactivateUsersFromSchoolInput'
     protected readonly partialEntity = {
         status: Status.ACTIVE,
+        status_updated_at: new Date(),
     }
 
     authorize(
@@ -767,7 +768,7 @@ export class RemoveUsersFromSchools extends ChangeSchoolMembershipStatus {
     protected inputTypeName = 'removeUsersFromSchoolInput'
     protected readonly partialEntity = {
         status: Status.INACTIVE,
-        deleted_at: new Date(),
+        status_updated_at: new Date(),
     }
 
     authorize(
@@ -793,6 +794,7 @@ export class DeleteUsersFromSchools extends ChangeSchoolMembershipStatus {
     protected inputTypeName = 'deleteUsersFromSchoolInput'
     protected readonly partialEntity = {
         status: Status.DELETED,
+        status_updated_at: new Date(),
     }
 
     authorize(

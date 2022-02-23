@@ -703,9 +703,12 @@ export abstract class RemoveMembershipMutation<
     EntityMapType,
     MembershipType
 > {
-    protected readonly partialEntity: { status: Status; deleted_at?: Date } = {
+    protected readonly partialEntity: {
+        status: Status
+        status_updated_at: Date
+    } = {
         status: Status.INACTIVE,
-        deleted_at: new Date(),
+        status_updated_at: new Date(),
     }
     protected abstract readonly MembershipType: typeof CustomBaseEntity
 

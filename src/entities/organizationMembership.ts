@@ -7,6 +7,7 @@ import {
     ManyToMany,
     getRepository,
     getManager,
+    EntityManager,
 } from 'typeorm'
 import { User } from './user'
 import { Organization } from './organization'
@@ -47,6 +48,9 @@ export class OrganizationMembership extends CustomBaseEntity {
 
     @ManyToMany(() => Role, (role) => role.memberships)
     public roles?: Promise<Role[]>
+
+    @Column({ type: 'timestamp', nullable: true, precision: 3 })
+    public status_updated_at?: Date
 
     public async schoolMemberships(
         { permission_name }: { permission_name: string },
@@ -284,5 +288,14 @@ export class OrganizationMembership extends CustomBaseEntity {
             reportError(e)
         }
         return false
+    }
+
+    public async inactivate(manager?: EntityManager) {
+        if (this.status !== Status.ACTIVE) return
+
+        this.status = Status.INACTIVE
+        this.status_updated_at = new Date()
+
+        if (manager) await manager.save(this)
     }
 }

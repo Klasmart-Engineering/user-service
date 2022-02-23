@@ -131,7 +131,7 @@ describe('SchoolMembership', () => {
                 expect(role).to.be.null
                 expect(dbMembership).not.to.be.null
                 expect(dbRoles).to.be.empty
-                expect(dbMembership.deleted_at).to.not.be.null
+                expect(dbMembership.status_updated_at).to.not.be.null
                 expect(dbMembership.status).to.eq(Status.INACTIVE)
             })
         })
@@ -186,7 +186,7 @@ describe('SchoolMembership', () => {
                 expect(roles).to.be.null
                 expect(dbMembership).not.to.be.null
                 expect(dbRoles).to.be.empty
-                expect(dbMembership.deleted_at).to.not.be.null
+                expect(dbMembership.status_updated_at).to.not.be.null
                 expect(dbMembership.status).to.eq(Status.INACTIVE)
             })
         })
@@ -281,7 +281,7 @@ describe('SchoolMembership', () => {
                 expect(leftGql).to.be.true
                 expect(dbMembership).not.to.be.null
                 expect(dbMembership.status).to.eq(Status.INACTIVE)
-                expect(dbMembership.deleted_at).not.to.be.null
+                expect(dbMembership.status_updated_at).not.to.be.null
             })
         })
 
@@ -306,7 +306,7 @@ describe('SchoolMembership', () => {
                 expect(leftGql).to.be.null
                 expect(dbMembership).not.to.be.null
                 expect(dbMembership.status).to.eq(Status.INACTIVE)
-                expect(dbMembership.deleted_at).not.to.be.null
+                expect(dbMembership.status_updated_at).not.to.be.null
             })
         })
     })
