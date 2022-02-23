@@ -5,6 +5,7 @@ import liveClassWebSockets from './scripts/liveClassWebSockets';
 import previewLiveStudy from './scripts/previewLiveStudyClass';
 import { Options } from 'k6/options';
 import { APIHeaders } from './utils/common';
+import getClassRosterTest from './scripts/getClassRosterTest';
 
 export const options: Options = {
     ext: {
@@ -33,7 +34,7 @@ const studyClassPayload = {
     attachment: {id: "", name: ""},
     attachment_path: "",
     class_id: process.env.CLASS_ID_STUDY_SETUP,
-    class_roster_student_ids: [],
+    class_roster_student_ids: ["496fb421-0a80-48d6-9cc2-588044d7b095"],
     class_roster_teacher_ids: [process.env.STUDY_TEACHER_ID_1, process.env.STUDY_TEACHER_ID_2, process.env.ID_ORG_ADMIN_1],
     class_type: "Homework",
     description: "",
@@ -46,7 +47,7 @@ const studyClassPayload = {
     lesson_plan_id: process.env.LESSON_PLAN_ID,
     outcome_ids: [],
     participants_student_ids: [],
-    participants_teacher_ids: [process.env.STUDY_PARTICIPANT_TEACHER_ID_1],
+    participants_teacher_ids: [],
     program_id: process.env.PROGRAM_ID,
     repeat: {},
     start_at: Math.round((new Date().getTime() + (5 * 60000)) / 1000),
@@ -80,8 +81,18 @@ export function setup() {
         domain: process.env.COOKIE_DOMAIN,
     });
 
+    const classRosterData = getClassRosterTest(process.env.ORG_ID as string, process.env.CLASS_ID_STUDY_SETUP as string);
+
+    // create class
+    const classPayload = {
+        ...studyClassPayload,
+        class_roster_student_ids: classRosterData.class.students.map((student: any) => student.user_id),
+    };
+
+    const res = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, JSON.stringify(classPayload), params);
+
     let i = 0;
-    const l = 5;// parseInt(__ENV.VUS, 10) - 1;
+    const l = parseInt(__ENV.VUS, 10);
     let studentIds: string[] = [];
 
     for (i; i < l; i++) {
@@ -89,7 +100,7 @@ export function setup() {
         const loginPayload = {
             deviceId: "webpage",
             deviceName: "k6",
-            email: `${process.env.TEACHER_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
+            email: `${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
             pw: process.env.PW as string,
         };
         
@@ -102,14 +113,10 @@ export function setup() {
         studentIds = [ ...studentIds, loginData.userId ];
     };
 
-    // create class
-    const classPayload = {
-        ...studyClassPayload,
-        class_roster_student_ids: studentIds,
-    };
-
-    const res = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, JSON.stringify(classPayload), params);
-
+    if (res.status === 403) {
+        throw new Error('Class not setup. Permission error, status 403');
+    }
+    
     data = {
         ...data,
         classId: JSON.parse(res.body as string).data?.id,
@@ -133,20 +140,20 @@ export function students(data: { [key: string]: { res: any, userId: string } }) 
     }
 
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data[`students0${__VU}`].res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data[`students0${__VU - 1}`].res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`students0${__VU}`].res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`students0${__VU - 1}`].res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    const token = getLiveClassToken(data.classId as unknown as string)
-    previewLiveStudy(data.classId as unknown as string);
+    const token = getLiveClassToken(data.classId as unknown as string);
+    // previewLiveStudy(data.classId as unknown as string);
     liveClassWebSockets({
         token,
         refreshId: data.refreshId as unknown as string,
         roomId: data.classId as unknown as string,
-        accessCookie: data[`students0${__VU}`].res.cookies?.access[0].Value,
-        userId: data[`students0${__VU}`].userId,
+        accessCookie: data[`students0${__VU - 1}`].res.cookies?.access[0].Value,
+        userId: data[`students0${__VU - 1}`].userId,
     });
 }
