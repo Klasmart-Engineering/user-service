@@ -14,6 +14,7 @@ import { Model } from './model'
 import { validateToken } from './token'
 import { createServer } from './utils/createServer'
 import { getEnvVar } from './config/config'
+import { reportError } from './utils/resolvers/errors'
 
 interface AppOptions {
     routePrefix?: string
@@ -28,6 +29,9 @@ const domainRegex = new RegExp(
 )
 
 export const ROUTE_PREFIX = getEnvVar('ROUTE_PREFIX', '')!
+export const REQUEST_TIMEOUT_MS = parseInt(
+    getEnvVar('REQUEST_TIMEOUT_MS', '300000')!
+)
 
 const corsOptions: CorsOptions = {
     allowedHeaders: [
@@ -60,6 +64,15 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(express.static(viewsPath))
     app.set('views', viewsPath)
     app.set('view engine', 'pug')
+
+    app.use((req, res, next) => {
+        res.setTimeout(REQUEST_TIMEOUT_MS, function () {
+            reportError(new Error('Request timed out'), {
+                query: req.body.query,
+            })
+        })
+        next()
+    })
 
     // unauthenticated endpoints
     app.get(`${options.routePrefix}/version`, (_, res) => {

@@ -4,9 +4,15 @@ import { config } from '../../config/config'
 import logger from '../../logging'
 import newrelic from 'newrelic'
 
-export function reportError(e: Error) {
+export function reportError(
+    e: Error,
+    customAttributes?: { [key: string]: string | number | boolean }
+) {
     logger.error(e)
-    newrelic.noticeError(e)
+    if (customAttributes) {
+        logger.error(`Error attributes: ${JSON.stringify(customAttributes)}`)
+    }
+    newrelic.noticeError(e, customAttributes)
 }
 
 type entityErrorType =
