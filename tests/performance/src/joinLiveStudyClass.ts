@@ -6,6 +6,7 @@ import previewLiveStudy from './scripts/previewLiveStudyClass';
 import { Options } from 'k6/options';
 import { APIHeaders } from './utils/common';
 import getClassRosterTest from './scripts/getClassRosterTest';
+import { sleep } from 'k6';
 
 export const options: Options = {
     ext: {
@@ -68,6 +69,7 @@ export function setup() {
     };
     
     const orgAdminLoginData = loginSetup(orgAdminLoginPayload);
+    console.log('Org admin logged in, creating class...');
     data = { 
         ...data, 
         [`orgAdmin`]: orgAdminLoginData,
@@ -90,31 +92,11 @@ export function setup() {
     };
 
     const res = http.post(`${process.env.SCHEDULES_URL}?org_id=${process.env.ORG_ID}`, JSON.stringify(classPayload), params);
-
-    let i = 0;
-    const l = parseInt(__ENV.VUS, 10);
-    let studentIds: string[] = [];
-
-    for (i; i < l; i++) {
-        const prefix = ('0' + i).slice(-2);
-        const loginPayload = {
-            deviceId: "webpage",
-            deviceName: "k6",
-            email: `${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
-            pw: process.env.PW as string,
-        };
-        
-        const loginData = loginSetup(loginPayload);
-        data = { 
-            ...data, 
-            [`students${prefix}`]: loginData,
-        };
     
-        studentIds = [ ...studentIds, loginData.userId ];
-    };
-
-    if (res.status === 403) {
-        throw new Error('Class not setup. Permission error, status 403');
+    if (!JSON.parse(res.body as string).data?.id) {
+        throw new Error('Class ID not setup, aborting test!' + JSON.stringify(res));
+    } else {
+        console.log('Class created successfully with ID: ', JSON.parse(res.body as string).data?.id);
     }
     
     data = {
@@ -122,38 +104,49 @@ export function setup() {
         classId: JSON.parse(res.body as string).data?.id,
     }
 
-    const refresh = http.get(`${process.env.AUTH_URL}refresh`, {
-        headers: APIHeaders,
-    });
-
-    data = {
-        ...data,
-        refreshId: JSON.parse(refresh.body as string)?.id,
-    }
-
     return data;
 }
 
 export function students(data: { [key: string]: { res: any, userId: string } }) {
-    if (!data.classId) {
-        throw new Error('Class ID not setup' + JSON.stringify(data));
-    }
+    const prefix = ('0' + (__VU - 1)).slice(-2);
+    const loginPayload = {
+        deviceId: "webpage",
+        deviceName: "k6",
+        email: `${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
+        pw: process.env.PW as string,
+    };
+    const studentLoginData = loginSetup(loginPayload);
+    console.log(`Logged in student: ${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`);
 
+    const refresh = http.get(`${process.env.AUTH_URL}refresh`, {
+        headers: APIHeaders,
+    });
+    
+    const refreshId = JSON.parse(refresh.body as string)?.id;
+
+    console.log(`Refresh ID for ${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}: ${refreshId}`);
+    
+    const accessCookie = studentLoginData.res.cookies?.access[0].value;
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data[`students0${__VU - 1}`].res.cookies?.access[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', accessCookie, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`students0${__VU - 1}`].res.cookies?.refresh[0].Value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', studentLoginData.res.cookies?.refresh[0].value, {
         domain: process.env.COOKIE_DOMAIN,
     });
+    
+    sleep(__VU * 1.5);
 
     const token = getLiveClassToken(data.classId as unknown as string);
-    // previewLiveStudy(data.classId as unknown as string);
-    liveClassWebSockets({
+    console.log(`Token for ${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}: ${token}`);
+    previewLiveStudy(data.classId as unknown as string);
+    const liveClassPayload = {
         token,
-        refreshId: data.refreshId as unknown as string,
+        refreshId: refreshId as unknown as string,
         roomId: data.classId as unknown as string,
-        accessCookie: data[`students0${__VU - 1}`].res.cookies?.access[0].Value,
-        userId: data[`students0${__VU - 1}`].userId,
-    });
+        accessCookie: accessCookie,
+        userId: studentLoginData.userId,
+    };
+
+    liveClassWebSockets(liveClassPayload);
 }
