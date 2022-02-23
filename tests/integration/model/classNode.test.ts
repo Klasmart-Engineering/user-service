@@ -533,7 +533,7 @@ describe('classNode', () => {
 
             expect(conditions.length).to.eq(1)
             expect(conditions).to.deep.equalInAnyOrder([
-                '(Class.organization IN (:...classOrgs) OR Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id)',
+                '(Class.organization IN (:...classOrgs) OR (Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id))',
             ])
         })
 

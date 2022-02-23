@@ -654,7 +654,7 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
                     qb.where('Class.organization IN (:...classOrgs)', {
                         classOrgs,
                     }).orWhere(
-                        'Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id',
+                        '(Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id)',
                         {
                             user_id: userId,
                             schoolOrgs,
