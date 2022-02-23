@@ -3,6 +3,8 @@ import chaiAsPromised from 'chai-as-promised'
 import { Connection, getManager } from 'typeorm'
 import { AddTimestampColumns1630420895212 } from '../../migrations/1630420895212-AddTimestampColumns'
 import { CustomBaseEntity } from '../../src/entities/customBaseEntity'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { Status } from '../../src/entities/status'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createBranding } from '../factories/branding.factory'
@@ -33,6 +35,8 @@ describe('AddTimestampColumns1630420895212 migration', () => {
     let baseConnection: Connection
     let migrationsConnection: Connection
     let entities: CustomBaseEntity[]
+    let orgMemb: OrganizationMembership
+    let schoolMemb: SchoolMembership
 
     before(async () => {
         baseConnection = await createTestConnection()
@@ -56,6 +60,11 @@ describe('AddTimestampColumns1630420895212 migration', () => {
         const org = await createOrganization().save()
         const user = await createUser().save()
         const school = await createSchool(org).save()
+        orgMemb = await createOrganizationMembership({
+            user,
+            organization: org,
+        }).save()
+        schoolMemb = await createSchoolMembership({ user, school }).save()
 
         entities = [
             createAgeRange(org),
@@ -65,13 +74,13 @@ describe('AddTimestampColumns1630420895212 migration', () => {
             createClass([], org),
             createGrade(org),
             org,
-            createOrganizationMembership({ user, organization: org }),
+            orgMemb,
             createOrganizationOwnership({ user, organization: org }),
             createPermission(),
             createProgram(org),
             createRole(),
             createSchool(org),
-            createSchoolMembership({ user, school }),
+            schoolMemb,
             createSubcategory(org),
             createSubject(org),
             user,
@@ -97,6 +106,10 @@ describe('AddTimestampColumns1630420895212 migration', () => {
         }
     })
     it('manages deleted_at columns', async () => {
+        // filter out membership objects as their inactivate() method functions differently (status_updated_at)
+        entities = entities.filter((obj) => {
+            obj != orgMemb || obj != schoolMemb
+        })
         for (const entity of entities) {
             await entity.inactivate(getManager())
             expect(entity.deleted_at?.valueOf()).to.be.greaterThan(

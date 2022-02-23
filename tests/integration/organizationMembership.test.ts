@@ -470,7 +470,7 @@ describe('organizationMembership', () => {
                 expect(role).to.be.null
                 expect(dbMembership).not.to.be.null
                 expect(dbRoles.map(roleInfo)).not.to.deep.include(roleId)
-                expect(dbMembership.deleted_at).to.not.be.null
+                expect(dbMembership.status_updated_at).to.not.be.null
                 expect(dbMembership.status).to.eq(Status.INACTIVE)
             })
         })
@@ -549,7 +549,7 @@ describe('organizationMembership', () => {
                 expect(roles).to.be.null
                 expect(dbMembership).not.to.be.null
                 expect(dbRoles.map(roleInfo)).not.to.deep.include(roleId)
-                expect(dbMembership.deleted_at).to.not.be.null
+                expect(dbMembership.status_updated_at).to.not.be.null
                 expect(dbMembership.status).to.eq(Status.INACTIVE)
             })
         })
@@ -681,7 +681,7 @@ describe('organizationMembership', () => {
                 expect(leftGql).to.be.true
                 expect(dbMembership).not.to.be.null
                 expect(dbMembership.status).to.eq(Status.INACTIVE)
-                expect(dbMembership.deleted_at).not.to.be.null
+                expect(dbMembership.status_updated_at).not.to.be.null
             })
         })
 
@@ -711,7 +711,7 @@ describe('organizationMembership', () => {
                 expect(leftGql).to.be.null
                 expect(dbMembership).not.to.be.null
                 expect(dbMembership.status).to.eq(Status.INACTIVE)
-                expect(dbMembership.deleted_at).not.to.be.null
+                expect(dbMembership.status_updated_at).not.to.be.null
             })
         })
     })

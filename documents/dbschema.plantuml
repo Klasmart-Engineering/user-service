@@ -70,6 +70,7 @@ class OrganizationMembership {
     shortcode : string
     status : Status
     deleted_at : timestamp
+    status_updated_at : timestamp
     userUserId : uuid
     organizationOrganizationId : uuid
 }
@@ -112,6 +113,7 @@ class SchoolMembership {
     school_id : string
     join_timestamp : timestamp
     deleted_at : timestamp
+    status_updated_at : timestamp
     status : Status
     userUserId : uuid
     schoolSchoolId : uuid
