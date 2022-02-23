@@ -31,6 +31,7 @@ export class UserPermissions {
         'owen.delahoy@calmid.com',
         'toghrul.taghiyev@kidsloop.live',
         'emfg@calmid.com',
+        'pawel.luszczak@kidsloop.live',
     ]
 
     private _organizationPermissions?: Promise<Map<string, Set<string>>>
