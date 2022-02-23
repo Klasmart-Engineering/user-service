@@ -16,7 +16,7 @@ const PERMISSIONS_CSV_URL =
 
 const PERMISSION_FILE = path.join(__dirname, '../fixtures/permissions.csv')
 
-interface PermissionInfo {
+export interface PermissionInfo {
     name: string
     superAdmin: boolean
     orgAdmin: boolean
