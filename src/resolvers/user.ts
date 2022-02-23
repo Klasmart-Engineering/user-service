@@ -35,6 +35,8 @@ import {
 } from '../utils/mutations/validations/user'
 import clean from '../utils/clean'
 import {
+    createDuplicateAttributeAPIError,
+    createEntityAPIError,
     createInputLengthAPIError,
     createUnauthorizedAPIError,
 } from '../utils/resolvers/errors'
@@ -61,6 +63,7 @@ import {
 } from '../utils/resolvers/inputValidation'
 import { Organization } from '../entities/organization'
 
+type IdentifyingField = 'username' | 'email' | 'phone'
 export interface AddSchoolRolesToUsersEntityMap
     extends RemoveSchoolRolesFromUsersEntityMap {
     schoolOrg: Map<string, Organization>
@@ -75,10 +78,10 @@ function getUserIdentifier(
     return username ? username : email ? email : phone || ''
 }
 
-function getUserIdentifyingFieldName(
+export function getUserIdentifyingFieldName(
     username?: string | null,
     email?: string | null
-): string {
+): IdentifyingField {
     return username ? 'username' : email ? 'email' : 'phone'
 }
 
@@ -734,32 +737,27 @@ function buildListOfExistingUserErrors(
     const indices = getIndicesOfExistingUsers(inputs, existingUsers)
     for (const index of indices) {
         const input = inputs[index]
-        const key = makeLookupKey(
-            input.givenName,
-            input.familyName,
-            getUserIdentifier(
-                input.username,
-                input.contactInfo?.email,
-                input.contactInfo?.phone
-            )
+        const identifyingFieldName = getUserIdentifyingFieldName(
+            input.username,
+            input.contactInfo?.email
         )
+
+        const fieldValueRelation = {
+            username: input.username,
+            email: input.contactInfo?.email,
+            phone: input.contactInfo?.phone,
+        }
+
         errs.push(
-            new APIError({
-                code: customErrors.existent_entity.code,
-                message: customErrors.existent_entity.message,
-                variables: [
-                    'givenName',
-                    'familyName',
-                    `${getUserIdentifyingFieldName(
-                        input.username,
-                        input.contactInfo?.email
-                    )}`,
-                ],
-                entity: 'User',
-                attribute: '',
-                otherAttribute: `${keyToPrintableString(key)}`,
-                index: index,
-            })
+            createEntityAPIError(
+                'existent',
+                index,
+                'User',
+                `${input.givenName} ${input.familyName} with ${identifyingFieldName} ${fieldValueRelation[identifyingFieldName]}`,
+                undefined,
+                undefined,
+                ['givenName', 'familyName', `${identifyingFieldName}`]
+            )
         )
     }
     return errs
@@ -816,10 +814,9 @@ function checkCreateUserInput(inputs: CreateUserInput[]): APIError[] {
         )
         if (inputMap.has(key)) {
             errs.push(
-                new APIError({
-                    code: customErrors.duplicate_input_value.code,
-                    message: customErrors.duplicate_input_value.message,
-                    variables: [
+                createDuplicateAttributeAPIError(
+                    i,
+                    [
                         'givenName',
                         'familyName',
                         `${getUserIdentifyingFieldName(
@@ -827,11 +824,8 @@ function checkCreateUserInput(inputs: CreateUserInput[]): APIError[] {
                             createUserInput.contactInfo?.email
                         )}`,
                     ],
-                    entity: 'User',
-                    attribute: 'ID',
-                    otherAttribute: `${keyToPrintableString(key)}`,
-                    index: i,
-                })
+                    'User'
+                )
             )
         } else {
             inputMap.set(key, i)

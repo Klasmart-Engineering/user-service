@@ -96,6 +96,7 @@ import {
     AddSchoolRolesToUsers,
     AddSchoolRolesToUsersEntityMap,
     createUsers,
+    getUserIdentifyingFieldName,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
     updateUsers,
@@ -1751,8 +1752,27 @@ describe('user', () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                await expect(createUsersResolver(createUserInputs, adminUser))
-                    .to.be.rejected
+                const errors = await expect(
+                    createUsersResolver(createUserInputs, adminUser)
+                ).to.be.rejected
+
+                const expectedErrors = [
+                    createDuplicateAttributeAPIError(
+                        3,
+                        [
+                            'givenName',
+                            'familyName',
+                            `${getUserIdentifyingFieldName(
+                                createUserInputs[3].username,
+                                createUserInputs[3].contactInfo?.email
+                            )}`,
+                        ],
+                        'User'
+                    ),
+                ]
+
+                compareMultipleErrors(errors, expectedErrors)
+
                 const currentUsers = await connection
                     .getRepository(User)
                     .count()
@@ -1760,6 +1780,32 @@ describe('user', () => {
             })
         })
         context('when some matching records already exist on the db', () => {
+            const createExistentError = (
+                input: CreateUserInput,
+                index: number
+            ) => {
+                const identifyingFieldName = getUserIdentifyingFieldName(
+                    input.username,
+                    input.contactInfo?.email
+                )
+
+                const fieldValueRelation = {
+                    username: input.username,
+                    email: input.contactInfo?.email,
+                    phone: input.contactInfo?.phone,
+                }
+
+                return createEntityAPIError(
+                    'existent',
+                    index,
+                    'User',
+                    `${input.givenName} ${input.familyName} with ${identifyingFieldName} ${fieldValueRelation[identifyingFieldName]}`,
+                    undefined,
+                    undefined,
+                    ['givenName', 'familyName', `${identifyingFieldName}`]
+                )
+            }
+
             beforeEach(async () => {
                 const oldInputs: CreateUserInput[] = []
                 oldInputs.push(createUserInputs[5])
@@ -1770,8 +1816,18 @@ describe('user', () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                await expect(createUsersResolver(createUserInputs, adminUser))
-                    .to.be.rejected
+
+                const errors = await expect(
+                    createUsersResolver(createUserInputs, adminUser)
+                ).to.be.rejected
+
+                const expectedErrors = [
+                    createExistentError(createUserInputs[5], 5),
+                    createExistentError(createUserInputs[35], 35),
+                ]
+
+                compareMultipleErrors(errors, expectedErrors)
+
                 const currentUsers = await connection
                     .getRepository(User)
                     .count()
