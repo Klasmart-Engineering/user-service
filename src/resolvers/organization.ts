@@ -577,6 +577,7 @@ export class RemoveUsersFromOrganizations extends ChangeOrganizationMembershipSt
     protected inputTypeName = 'RemoveUsersFromOrganizationInput'
     protected readonly partialEntity = {
         status: Status.INACTIVE,
+        deleted_at: new Date(),
     }
     authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
@@ -595,7 +596,6 @@ export class DeleteUsersFromOrganizations extends ChangeOrganizationMembershipSt
     protected inputTypeName = 'deleteUsersFromOrganizationInput'
     protected readonly partialEntity = {
         status: Status.DELETED,
-        deleted_at: new Date(),
     }
     authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
