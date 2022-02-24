@@ -10,6 +10,7 @@ export const parentRole = {
         PermissionName.view_my_school_published_218,
         PermissionName.schedule_500,
         PermissionName.view_my_calendar_510,
+        PermissionName.reports_600,
         PermissionName.student_reports_605,
         PermissionName.my_student_achievements_report_629,
         PermissionName.report_learning_summary_student_649,
