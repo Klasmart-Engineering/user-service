@@ -242,7 +242,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 580,schedule_settings_580,Schedule Settings,Schedule,Teacher,Gives users access to schedule settings,Operational,,,,,,,
 581,schedule_quick_start_581,Schedule Quick Start,Schedule,Teacher,Gives users access to schedule quick starts,Create Schedule,,,,,,,
 582,schedule_search_582,Schedule Search,Schedule,School Admin,Gives users access to schedule searches,Operational,,,,,,,Y
-600,reports_600,Reports,Reports,Student,Gives users access to Reports (i.e. via icons/buttons),Access Reports,,,,,,,
+600,reports_600,Reports,Reports,Teacher,Gives users access to Reports (i.e. via icons/buttons),Access Reports,,,,,,,
 601,org_reports_601,Org Reports,Reports,Org Admin,Gives users access to view org reports,Operational,,,,,,,
 602,school_reports_602,School Reports,Reports,School Admin,Gives users access to view school reports,Operational,,,,,,,
 603,teacher_reports_603,Teacher Reports,Reports,Teacher,Gives users access to view teacher reports,Operational,,,,,,,Y
