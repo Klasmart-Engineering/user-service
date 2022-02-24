@@ -94,16 +94,16 @@ describe('child connections', () => {
         connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
+    })
+
+    beforeEach(async () => {
         const adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
-
         scopeArgs = { permissions: adminPermissions, entity: 'user' }
-    })
 
-    beforeEach(async () => {
         args = {
             count: pageSize,
         }

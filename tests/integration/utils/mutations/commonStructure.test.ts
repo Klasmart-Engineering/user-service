@@ -211,7 +211,7 @@ describe('commonStructure', () => {
                         index,
                     }
                 })
-                expect(validInputs).to.deep.equal(expectedValidInputs)
+                expect(validInputs).to.deep.equalInAnyOrder(expectedValidInputs)
                 expect(apiErrors).to.have.length(0)
             })
 
@@ -241,7 +241,9 @@ describe('commonStructure', () => {
                         }
                     })
                     expectedValidInputs.splice(1, 1)
-                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(validInputs).to.deep.equalInAnyOrder(
+                        expectedValidInputs
+                    )
                     expect(apiErrors).to.have.length(1)
                     const error = createDuplicateAttributeAPIError(
                         1,
@@ -282,7 +284,9 @@ describe('commonStructure', () => {
                             }
                         })
                         .slice(1)
-                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(validInputs).to.deep.equalInAnyOrder(
+                        expectedValidInputs
+                    )
                     expect(apiErrors).to.have.length(1)
                     const error = createEntityAPIError(
                         'nonExistent',
@@ -324,7 +328,9 @@ describe('commonStructure', () => {
                             }
                         })
                         .slice(2)
-                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(validInputs).to.deep.equalInAnyOrder(
+                        expectedValidInputs
+                    )
                     expect(apiErrors).to.have.length(2)
                     const inactiveError = createEntityAPIError(
                         'nonExistent',

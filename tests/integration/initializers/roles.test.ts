@@ -81,7 +81,7 @@ describe('RolesInitializer', () => {
                 const dbNewRoles = await organization.roles()
                 expect(dbNewRoles).not.to.be.empty
 
-                expect(dbRoles.map(roleInfoFunc)).to.deep.equal(
+                expect(dbRoles.map(roleInfoFunc)).to.deep.equalInAnyOrder(
                     dbNewRoles?.map(roleInfoFunc)
                 )
                 const resetPermissions = []

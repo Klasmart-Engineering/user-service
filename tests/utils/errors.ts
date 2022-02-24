@@ -12,11 +12,11 @@ export function buildPermissionError(
     let message = `User(${user.user_id}) `
     if (userDeleted) message += 'has been deleted, so '
     message += `does not have Permission(${permission})`
-    if (orgs) {
+    if (orgs?.length) {
         const orgIds = orgs.map((o) => o.organization_id)
         message += ` in Organizations(${orgIds})`
     }
-    if (schools) {
+    if (schools?.length) {
         const schoolIds = schools.map((s) => s.school_id)
         message += ` in Schools(${schoolIds})`
     }

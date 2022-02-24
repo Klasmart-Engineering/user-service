@@ -75,9 +75,9 @@ describe('AgeRangesInitializer', () => {
                 )
                 expect(gqlNewAgeRanges).not.to.be.empty
 
-                expect(gqlAgeRanges.map(ageRangeInfoFunc)).to.deep.equal(
-                    gqlNewAgeRanges.map(ageRangeInfoFunc)
-                )
+                expect(
+                    gqlAgeRanges.map(ageRangeInfoFunc)
+                ).to.deep.equalInAnyOrder(gqlNewAgeRanges.map(ageRangeInfoFunc))
             })
         })
     })

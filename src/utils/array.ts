@@ -10,3 +10,16 @@ export function isSubsetOf(
     const elements = new Set(superset)
     return subset.every(elements.has, elements)
 }
+
+export function sortObjectArray<T>(
+    array: T[],
+    sortOnProperty: keyof T,
+    ascending = true
+): T[] {
+    array.sort((a, b) => {
+        if (a[sortOnProperty] > b[sortOnProperty]) return ascending ? 1 : -1
+        if (a[sortOnProperty] < b[sortOnProperty]) return ascending ? -1 : 1
+        return 0
+    })
+    return array
+}

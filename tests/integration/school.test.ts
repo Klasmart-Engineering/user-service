@@ -1307,7 +1307,7 @@ describe('school', () => {
                     dbSchool = await School.findOneOrFail(school.school_id)
                     dbPrograms = (await dbSchool.programs) || []
                     expect(dbPrograms).not.to.be.empty
-                    expect(dbPrograms.map(programInfo)).to.deep.eq(
+                    expect(dbPrograms.map(programInfo)).to.deep.equalInAnyOrder(
                         gqlPrograms.map(programInfo)
                     )
 
@@ -3637,8 +3637,8 @@ describe('school', () => {
                     connection.logger.reset()
                     await getAddUsersToSchools().run()
                     expect(connection.logger.count).to.equal(
-                        10,
-                        'preload: 4, authorize: 1, save: 1 select for all memberships, 1 membership insert, 1 roles insert, 2 for transaction start/commit'
+                        8,
+                        'preload: 4, authorize: 1, save: 1 select for all memberships, 1 membership insert, 1 roles insert'
                     )
                 })
             })

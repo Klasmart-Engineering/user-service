@@ -36,6 +36,7 @@ import {
     loadSubcategoriesForOrganization,
     subcategoriesConnectionResolver as resolverForOrganization,
 } from '../../../src/schemas/organization'
+import { sortObjectArray } from '../../../src/utils/array'
 
 type SubcategoryConnectionNodeKey = keyof SubcategoryConnectionNode
 
@@ -337,26 +338,19 @@ describe('subcategoriesConnection', () => {
                 orgSubcategoriesCount / orgCategoriesCount
             )
 
-            const categorySubcategories =
-                (await categories1[0].subcategories) || []
-
-            categorySubcategories.sort((a, b) => {
-                if (a.id < b.id) {
-                    return -1
-                }
-
-                if (a.id > b.id) {
-                    return 1
-                }
-
-                return 0
-            })
-
-            result.edges.forEach((edge, i) => {
-                expect(edge.node.id).to.eql(categorySubcategories[i].id)
-                expect(edge.node.name).to.eql(categorySubcategories[i].name)
-                expect(edge.node.status).to.eql(categorySubcategories[i].status)
-                expect(edge.node.system).to.eql(categorySubcategories[i].system)
+            const categorySubcategories = sortObjectArray(
+                (await categories1[0].subcategories) || [],
+                'id'
+            )
+            const orderedResults = sortObjectArray(
+                result.edges.map((e) => e.node),
+                'id'
+            )
+            orderedResults.forEach((r, i) => {
+                expect(r.id).to.eql(categorySubcategories[i].id)
+                expect(r.name).to.eql(categorySubcategories[i].name)
+                expect(r.status).to.eql(categorySubcategories[i].status)
+                expect(r.system).to.eql(categorySubcategories[i].system)
             })
         })
     })

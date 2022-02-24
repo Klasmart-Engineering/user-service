@@ -305,7 +305,7 @@ describe('model', () => {
         })
 
         it('supports filtering by from grade ID', async () => {
-            const fromGradeId = systemGrades[4].id
+            const fromGradeId = GradesInitializer.SYSTEM_GRADES[4].id
             const filter: IEntityFilter = {
                 fromGradeId: {
                     operator: 'eq',
@@ -331,7 +331,7 @@ describe('model', () => {
         })
 
         it('supports filtering by to grade ID', async () => {
-            const toGradeId = systemGrades[5].id
+            const toGradeId = GradesInitializer.SYSTEM_GRADES[5].id
             const filter: IEntityFilter = {
                 toGradeId: {
                     operator: 'eq',

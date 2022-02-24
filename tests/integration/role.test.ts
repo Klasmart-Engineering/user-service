@@ -893,7 +893,9 @@ describe('role', () => {
                             [editRolePermission, nameOfPermission],
                             { authorization: getAdminAuthToken() }
                         )
-                        expect(gqlPermissions.map(permissionInfo)).to.deep.eq([
+                        expect(
+                            gqlPermissions.map(permissionInfo)
+                        ).to.deep.equalInAnyOrder([
                             editRolePermission,
                             nameOfPermission,
                         ])
@@ -1023,7 +1025,9 @@ describe('role', () => {
                             [editRolePermission, nameOfPermission],
                             { authorization: getNonAdminAuthToken() }
                         )
-                        expect(gqlPermissions.map(permissionInfo)).to.deep.eq([
+                        expect(
+                            gqlPermissions.map(permissionInfo)
+                        ).to.deep.equalInAnyOrder([
                             editRolePermission,
                             nameOfPermission,
                         ])

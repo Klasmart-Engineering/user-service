@@ -11,7 +11,10 @@ import { Upload } from '../../../../src/types/upload'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createServer } from '../../../../src/utils/createServer'
 import { Model } from '../../../../src/model'
-import { createTestClient } from '../../../utils/createTestClient'
+import {
+    ApolloServerTestClient,
+    createTestClient,
+} from '../../../utils/createTestClient'
 import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
@@ -21,12 +24,15 @@ describe('createEntityFromCsvWithRollBack', () => {
     let file: Upload
     let organizationCount: number
     let adminPermissions: UserPermissions
+    let testClient: ApolloServerTestClient
 
     before(async () => {
         connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
-        const testClient = await createTestClient(server)
+        testClient = await createTestClient(server)
+    })
 
+    beforeEach(async () => {
         const adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
             id: adminUser.user_id,

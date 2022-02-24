@@ -231,7 +231,7 @@ describe('program', () => {
                 )
 
                 expect(twoProgramsCount).to.be.eq(singleProgramCount)
-                expect(twoProgramsCount).to.be.equal(11)
+                expect(twoProgramsCount).to.be.equal(9)
             })
         })
 
@@ -843,10 +843,10 @@ describe('program', () => {
         })
 
         const buildDefaultInput = (programs: Program[]): UpdateProgramInput[] =>
-            Array.from(programs, ({ id }) => {
+            Array.from(programs, ({ id }, idx) => {
                 return {
                     id,
-                    name: faker.random.word(),
+                    name: `${faker.random.word()}_${idx}`,
                     ageRangeIds: ageRanges.map((ar) => ar.id),
                     gradeIds: grades.map((g) => g.id),
                     subjectIds: subjects.map((s) => s.id),
@@ -881,8 +881,8 @@ describe('program', () => {
             }
 
             it('db connections increase in one with number of input elements', async () => {
-                const singleProgramExpectedCalls = 12
-                await getDbCallCount(buildDefaultInput(programsToEdit)) // warm up permissions cache)
+                const singleProgramExpectedCalls = 10
+                await getDbCallCount(buildDefaultInput(programsToEdit)) // warm up permissions cache
 
                 const singleProgramCount = await getDbCallCount(
                     buildDefaultInput([programsToEdit[0]])

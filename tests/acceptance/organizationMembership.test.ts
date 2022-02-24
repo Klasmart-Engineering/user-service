@@ -103,13 +103,15 @@ describe('acceptance.OrganizationMembership', () => {
                     )
                 ).to.be.true
 
-                expect(memberships.map((m) => m.user_id)).to.deep.equal(
+                expect(
+                    memberships.map((m) => m.user_id)
+                ).to.deep.equalInAnyOrder(
                     await Promise.all(
                         memberships.map(async (m) => (await m?.user)?.user_id)
                     )
                 )
 
-                expect(memberships.map((m) => m?.user)).to.deep.equal(
+                expect(memberships.map((m) => m?.user)).to.deep.equalInAnyOrder(
                     users.map((user) =>
                         pick(
                             user,

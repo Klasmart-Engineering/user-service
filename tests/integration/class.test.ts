@@ -136,6 +136,7 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { mapClassToClassConnectionNode } from '../../src/pagination/classesConnection'
 import { config } from '../../src/config/config'
 import { compareMultipleEntities } from '../utils/assertions'
+import { sortObjectArray } from '../../src/utils/array'
 
 type ClassSpecs = {
     class: Class
@@ -240,7 +241,7 @@ describe('class', () => {
                     inputElement(),
                 ])
                 expect(twoClassCount).to.be.eq(singleClassCount)
-                expect(twoClassCount).to.be.equal(5)
+                expect(twoClassCount).to.be.equal(3)
             })
         })
 
@@ -256,18 +257,8 @@ describe('class', () => {
                             shortcode: generateShortCode(),
                         }
                     })
-
                     const normalized = createClasses.normalize(input)
-                    expect(normalized.length).to.eq(input.length)
-                    expect(
-                        normalized.map((n) => n.organizationId)
-                    ).to.deep.equal(input.map((i) => i.organizationId))
-                    expect(normalized.map((n) => n.name)).to.deep.equal(
-                        input.map((i) => i.name)
-                    )
-                    expect(normalized.map((n) => n.shortcode)).to.deep.equal(
-                        input.map((i) => i.shortcode)
-                    )
+                    compareMultipleEntities(input, normalized, 'organizationId')
                 }
             })
 
@@ -4336,7 +4327,7 @@ describe('class', () => {
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).not.to.be.empty
-                    expect(dbPrograms.map(programInfo)).to.deep.eq(
+                    expect(dbPrograms.map(programInfo)).to.deep.equalInAnyOrder(
                         gqlPrograms.map(programInfo)
                     )
 
@@ -4738,9 +4729,9 @@ describe('class', () => {
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).not.to.be.empty
-                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
-                        gqlAgeRanges.map(ageRangeInfo)
-                    )
+                    expect(
+                        dbAgeRanges.map(ageRangeInfo)
+                    ).to.deep.equalInAnyOrder(gqlAgeRanges.map(ageRangeInfo))
 
                     await editAgeRanges(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
@@ -4870,7 +4861,7 @@ describe('class', () => {
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).not.to.be.empty
-                    expect(dbGrades.map(gradeInfo)).to.deep.eq(
+                    expect(dbGrades.map(gradeInfo)).to.deep.equalInAnyOrder(
                         gqlGrades.map(gradeInfo)
                     )
 
@@ -5002,7 +4993,7 @@ describe('class', () => {
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).not.to.be.empty
-                    expect(dbSubjects.map(subjectInfo)).to.deep.eq(
+                    expect(dbSubjects.map(subjectInfo)).to.deep.equalInAnyOrder(
                         gqlSubjects.map(subjectInfo)
                     )
 
@@ -5081,18 +5072,8 @@ describe('class', () => {
                             shortcode: generateShortCode(),
                         }
                     })
-
                     const normalized = updateClasses().normalize(input)
-                    expect(normalized.length).to.eq(input.length)
-                    expect(normalized.map((n) => n.classId)).to.deep.equal(
-                        input.map((i) => i.classId)
-                    )
-                    expect(normalized.map((n) => n.className)).to.deep.equal(
-                        input.map((i) => i.className)
-                    )
-                    expect(normalized.map((n) => n.shortcode)).to.deep.equal(
-                        input.map((i) => i.shortcode)
-                    )
+                    compareMultipleEntities(normalized, input, 'classId')
                 }
             })
 
@@ -5485,9 +5466,10 @@ describe('class', () => {
                 const result = await updateClasses(inputs).run()
                 const dbClasses = await Class.findByIds(
                     inputs.map((i) => i.classId)
-                )
+                ).then((dbc) => sortObjectArray(dbc, 'class_name'))
 
                 expect(result.classes.length).to.eq(inputs.length)
+                expect(dbClasses.length).to.eq(inputs.length)
                 for (const [idx, i] of inputs.entries()) {
                     expect(result.classes[idx].id).to.eq(i.classId)
                     expect(result.classes[idx].name).to.eq(i.className)
@@ -5507,7 +5489,7 @@ describe('class', () => {
 
             it('makes 1 db connection per extra input element', async () => {
                 const countForOneClass = await getDbCallCount([inputs[0]])
-                expect(countForOneClass).to.be.equal(8)
+                expect(countForOneClass).to.be.equal(6)
 
                 const countForFourClasses = await getDbCallCount(
                     inputs.slice(1)
@@ -6478,7 +6460,8 @@ describe('class', () => {
                             if (cls.class_id == classes[1].class_id) {
                                 compareMultipleEntities(
                                     mapStudents,
-                                    studentsInClass
+                                    studentsInClass,
+                                    'user_id'
                                 )
                             } else {
                                 expect(mapStudents).to.be.empty
@@ -7347,7 +7330,8 @@ describe('class', () => {
                             if (cls.class_id == classes[1].class_id) {
                                 compareMultipleEntities(
                                     mapTeachers,
-                                    teachersInClass
+                                    teachersInClass,
+                                    'user_id'
                                 )
                             } else {
                                 expect(mapTeachers).to.be.empty

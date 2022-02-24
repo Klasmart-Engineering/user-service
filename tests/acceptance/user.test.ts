@@ -898,7 +898,7 @@ describe('acceptance.user', () => {
             const resUsers: UserConnectionNode[] =
                 response.body.data.addSchoolRolesToUsers.users
             expect(resUsers).to.have.length(users.length)
-            expect(resUsers).to.deep.equal(
+            expect(resUsers).to.deep.equalInAnyOrder(
                 users.map((user) => mapUserToUserConnectionNode(user))
             )
         })

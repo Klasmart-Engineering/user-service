@@ -213,7 +213,7 @@ describe('subject', () => {
                 )
 
                 expect(twoSubjectCount).to.be.eq(singleSubjectCount)
-                expect(twoSubjectCount).to.be.equal(7)
+                expect(twoSubjectCount).to.be.equal(5)
             })
         })
 
@@ -608,10 +608,10 @@ describe('subject', () => {
         })
 
         const buildDefaultInput = (subjects: Subject[]) =>
-            Array.from(subjects, ({ id }) => {
+            Array.from(subjects, ({ id }, idx) => {
                 return {
                     id,
-                    name: faker.random.word(),
+                    name: `${faker.random.word()}_${idx}`,
                     categoryIds: categories.map((c) => c.id),
                 }
             })
@@ -644,7 +644,7 @@ describe('subject', () => {
             }
 
             it('db connections increase in one with number of input elements', async () => {
-                const singleSubjectExpectedCalls = 8
+                const singleSubjectExpectedCalls = 6
                 await getDbCallCount(buildDefaultInput(subjectsToEdit)) // warm up permissions cache)
 
                 const singleSubjectCount = await getDbCallCount(

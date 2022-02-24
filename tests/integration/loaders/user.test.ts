@@ -127,7 +127,7 @@ context('User loaders', () => {
                 ])
             ).map(extractUserOrErrorData)
 
-            expect(loadedUsers).to.deep.equal(
+            expect(loadedUsers).to.deep.equalInAnyOrder(
                 [
                     users[0],
                     Error("User doesn't exist"),

@@ -3,8 +3,10 @@ import { createTestConnection, TestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { truncateTables } from '../utils/database'
+import TransactionalTestContext from '../utils/transactionalTestContext'
 
 let connection: TestConnection
+let transactionalContext: TransactionalTestContext
 let originalAdmins: string[]
 
 before(async () => {
@@ -12,6 +14,8 @@ before(async () => {
     await truncateTables(connection)
     originalAdmins = UserPermissions.ADMIN_EMAILS
     UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
+    faker.seed(123)
+    await RoleInitializer.run()
 })
 
 after(async () => {
@@ -20,10 +24,10 @@ after(async () => {
 })
 
 beforeEach(async () => {
-    faker.seed(123)
-    await RoleInitializer.run()
+    transactionalContext = new TransactionalTestContext(connection)
+    await transactionalContext.start()
 })
 
 afterEach(async () => {
-    await truncateTables(connection)
+    await transactionalContext.finish()
 })

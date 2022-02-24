@@ -1,5 +1,10 @@
 import { expect } from 'chai'
 import { CustomBaseEntity } from '../../src/entities/customBaseEntity'
+import {
+    CreateClassInput,
+    UpdateClassInput,
+} from '../../src/types/graphQL/class'
+import { sortObjectArray } from '../../src/utils/array'
 
 /**
  *
@@ -13,11 +18,13 @@ export function expectIsNonNullable<V>(
     expect(value).to.exist
 }
 
+type ComparableTypes = CustomBaseEntity | CreateClassInput | UpdateClassInput
+
 /**
  * Converts two entities to strings in order to compare them,
  * ignores property ordering
  */
-export function compareEntities<T extends CustomBaseEntity>(
+export function compareEntities<T extends ComparableTypes>(
     object: T,
     expectedObject: T
 ) {
@@ -29,11 +36,18 @@ export function compareEntities<T extends CustomBaseEntity>(
     expect(objectString).to.equal(xObjectString)
 }
 
-export function compareMultipleEntities<T extends CustomBaseEntity>(
+export function compareMultipleEntities<T extends ComparableTypes>(
     objects: T[],
-    expectedObjects: T[]
+    expectedObjects: T[],
+    sortOnProperty?: keyof T
 ) {
     expect(objects.length).to.equal(expectedObjects.length)
+
+    if (sortOnProperty) {
+        objects = sortObjectArray(objects, sortOnProperty)
+        expectedObjects = sortObjectArray(expectedObjects, sortOnProperty)
+    }
+
     for (let i = 0; i < objects.length; i++) {
         compareEntities(objects[i], expectedObjects[i])
     }

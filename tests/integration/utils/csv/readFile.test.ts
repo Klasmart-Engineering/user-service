@@ -29,6 +29,9 @@ describe('read file', () => {
         connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
+    })
+
+    beforeEach(async () => {
         const adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
             id: adminUser.user_id,

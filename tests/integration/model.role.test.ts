@@ -79,7 +79,7 @@ describe('model.role', () => {
                 })
 
                 const roles = res.data?.roles as Role[]
-                expect(roles.map(roleInfo)).to.deep.eq(
+                expect(roles.map(roleInfo)).to.deep.equalInAnyOrder(
                     systemRoles.map(roleInfo)
                 )
             })

@@ -1568,7 +1568,7 @@ describe('user', () => {
                     nonAdminUser
                 )
                 const userConNodes = createUsersResult.users
-                expect(connection.logger.count).to.equal(6)
+                expect(connection.logger.count).to.equal(4)
                 expect(userConNodes.length).to.equal(createUserInputs.length)
                 const currentUsers = await connection
                     .getRepository(User)
@@ -1895,7 +1895,7 @@ describe('user', () => {
                     initialRoles[idx],
                     roleIds
                 )
-                expect(expectedRoleIds).to.deep.equal(dbRoleIds)
+                expect(expectedRoleIds).to.deep.equalInAnyOrder(dbRoleIds)
             }
         }
 
@@ -2022,10 +2022,11 @@ describe('user', () => {
                     it('makes the expected number of queries to the database', async () => {
                         connection.logger.reset()
                         await addOrgRoles()
-                        expect(connection.logger.count).to.be.eq(10)
+                        expect(connection.logger.count).to.be.eq(8)
                         // 1 from permission check
                         // 4 from preloaded queries
-                        // 5 from saving OrganizationMembership[] (1 per)
+                        // 2 from org membership and role pre-save queries
+                        // 1 from membership insert
                     })
                 })
 
@@ -3096,7 +3097,7 @@ describe('user', () => {
                 it('makes the expected number of database calls', async () => {
                     connection.logger.reset()
                     await expect(runRemoveRoles(input)).to.be.fulfilled
-                    expect(connection.logger.count).to.equal(10) // preload: 4, authorize: 1, save: 5
+                    expect(connection.logger.count).to.equal(8) // preload: 2, authorize: 1, save: 5
                 })
             })
         })
@@ -3592,7 +3593,7 @@ describe('user', () => {
                 )
                 const userConNodes = updateUserResult.users
                 expect(userConNodes.length).to.equal(updateUserInputs.length)
-                expect(connection.logger.count).to.equal(56)
+                expect(connection.logger.count).to.equal(54)
                 const userIds = updateUserInputs.map((uui) => uui.id)
                 const currentUsers = await connection.manager
                     .createQueryBuilder(User, 'User')
@@ -3632,7 +3633,7 @@ describe('user', () => {
                 const userConNodes = updateUserResult.users
                 const outputAvatars = userConNodes.map((a) => a.avatar)
                 expect(userConNodes.length).to.equal(updateUserInputs.length)
-                expect(connection.logger.count).to.equal(56)
+                expect(connection.logger.count).to.equal(54)
                 const userIds = updateUserInputs.map((uui) => uui.id)
                 const currentUsers = await connection.manager
                     .createQueryBuilder(User, 'User')
@@ -3671,7 +3672,7 @@ describe('user', () => {
 
                 const userConNodes = updateUserResult.users
                 expect(userConNodes.length).to.equal(updateUserInputs.length)
-                expect(connection.logger.count).to.equal(56)
+                expect(connection.logger.count).to.equal(54)
                 const userIds = updateUserInputs.map((uui) => uui.id)
                 const currentUsers = await connection.manager
                     .createQueryBuilder(User, 'User')

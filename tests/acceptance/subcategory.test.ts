@@ -228,7 +228,9 @@ describe('acceptance.subcategory', () => {
 
                 const inputNames = input.map((i) => i.name)
 
-                expect(subcategoriesCreatedNames).to.deep.equal(inputNames)
+                expect(subcategoriesCreatedNames).to.deep.equalInAnyOrder(
+                    inputNames
+                )
             })
         })
 

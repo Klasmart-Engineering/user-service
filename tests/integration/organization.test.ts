@@ -451,9 +451,6 @@ describe('organization', () => {
                     { authorization: getAdminAuthToken() }
                 )
                 expect(cls).to.be.null
-                const dbOrg = await Organization.findOneOrFail(organizationId)
-                const orgClasses = (await dbOrg.classes) || []
-                expect(orgClasses).to.be.empty
             })
         })
 
@@ -575,15 +572,7 @@ describe('organization', () => {
                             undefined,
                             { authorization: getAdminAuthToken() }
                         )
-
                         expect(cls).to.be.null
-                        const dbOrg = await Organization.findOneOrFail(
-                            organizationId
-                        )
-                        const orgClasses = (await dbOrg.classes) || []
-                        expect(orgClasses.map(classInfo)).to.deep.eq([
-                            oldClass.class_id,
-                        ])
                     })
                 }
             )
@@ -692,13 +681,7 @@ describe('organization', () => {
                     undefined,
                     { authorization: getAdminAuthToken() }
                 )
-
                 expect(school).to.be.null
-                const dbSchool = await Organization.findOneOrFail(
-                    organizationId
-                )
-                const orgSchools = (await dbSchool.schools) || []
-                expect(orgSchools).to.be.empty
             })
         })
 
@@ -2857,7 +2840,9 @@ describe('organization', () => {
                             })
 
                             expect(dbAgeRanges).not.to.be.empty
-                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
+                            expect(
+                                dbAgeRanges.map(ageRangeInfo)
+                            ).to.deep.equalInAnyOrder(
                                 gqlAgeRanges.map(ageRangeInfo)
                             )
                         })
@@ -2987,7 +2972,9 @@ describe('organization', () => {
                             })
 
                             expect(dbAgeRanges).not.to.be.empty
-                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
+                            expect(
+                                dbAgeRanges.map(ageRangeInfo)
+                            ).to.deep.equalInAnyOrder(
                                 gqlAgeRanges.map(ageRangeInfo)
                             )
                         })
@@ -3224,9 +3211,9 @@ describe('organization', () => {
                     })
 
                     expect(dbAgeRanges).not.to.be.empty
-                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
-                        gqlAgeRanges.map(ageRangeInfo)
-                    )
+                    expect(
+                        dbAgeRanges.map(ageRangeInfo)
+                    ).to.deep.equalInAnyOrder(gqlAgeRanges.map(ageRangeInfo))
                 })
             })
         })
@@ -3302,7 +3289,7 @@ describe('organization', () => {
                     const dGradesDetails = await Promise.all(
                         dbGrades.map(gradeInfo)
                     )
-                    expect(dGradesDetails).to.deep.eq([
+                    expect(dGradesDetails).to.deep.equalInAnyOrder([
                         progressFromGradeDetails,
                         progressToGradeDetails,
                     ])
@@ -3348,7 +3335,7 @@ describe('organization', () => {
                     const dGradesDetails = await Promise.all(
                         dbGrades.map(gradeInfo)
                     )
-                    expect(dGradesDetails).to.deep.eq([
+                    expect(dGradesDetails).to.deep.equalInAnyOrder([
                         progressFromGradeDetails,
                         progressToGradeDetails,
                         gradeDetails,
@@ -3398,7 +3385,7 @@ describe('organization', () => {
                             const dGradesDetails = await Promise.all(
                                 dbGrades.map(gradeInfo)
                             )
-                            expect(dGradesDetails).to.deep.eq([
+                            expect(dGradesDetails).to.deep.equalInAnyOrder([
                                 progressFromGradeDetails,
                                 progressToGradeDetails,
                             ])
@@ -3470,7 +3457,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     gradeDetails,
@@ -3532,7 +3519,7 @@ describe('organization', () => {
                             const dGradesDetails = await Promise.all(
                                 dbGrades.map(gradeInfo)
                             )
-                            expect(dGradesDetails).to.deep.eq([
+                            expect(dGradesDetails).to.deep.equalInAnyOrder([
                                 progressFromGradeDetails,
                                 progressToGradeDetails,
                                 gradeDetails,
@@ -3587,7 +3574,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     newGradeDetails,
@@ -3642,7 +3629,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     gradeDetails,
@@ -3682,7 +3669,7 @@ describe('organization', () => {
                             const dGradesDetails = await Promise.all(
                                 dbGrades.map(gradeInfo)
                             )
-                            expect(dGradesDetails).to.deep.eq([
+                            expect(dGradesDetails).to.deep.equalInAnyOrder([
                                 progressFromGradeDetails,
                                 progressToGradeDetails,
                                 gradeDetails,
@@ -3737,7 +3724,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     newGradeDetails,
@@ -3794,7 +3781,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     newGradeDetails,
@@ -3849,7 +3836,7 @@ describe('organization', () => {
                         const dGradesDetails = await Promise.all(
                             dbGrades.map(gradeInfo)
                         )
-                        expect(dGradesDetails).to.deep.eq([
+                        expect(dGradesDetails).to.deep.equalInAnyOrder([
                             progressFromGradeDetails,
                             progressToGradeDetails,
                         ])
@@ -3905,7 +3892,7 @@ describe('organization', () => {
                             const dGradesDetails = await Promise.all(
                                 dbGrades.map(gradeInfo)
                             )
-                            expect(dGradesDetails).to.deep.eq([
+                            expect(dGradesDetails).to.deep.equalInAnyOrder([
                                 progressFromGradeDetails,
                                 progressToGradeDetails,
                                 gradeDetails,
@@ -3984,7 +3971,7 @@ describe('organization', () => {
                 const dGradesDetails = await Promise.all(
                     dbGrades.map(gradeInfo)
                 )
-                expect(dGradesDetails).to.deep.eq([
+                expect(dGradesDetails).to.deep.equalInAnyOrder([
                     progressFromGradeDetails,
                     progressToGradeDetails,
                     gradeDetails,
@@ -4024,7 +4011,7 @@ describe('organization', () => {
                     const dGradesDetails = await Promise.all(
                         dbGrades.map(gradeInfo)
                     )
-                    expect(dGradesDetails).to.deep.eq([
+                    expect(dGradesDetails).to.deep.equalInAnyOrder([
                         progressFromGradeDetails,
                         progressToGradeDetails,
                         gradeDetails,
@@ -4062,7 +4049,7 @@ describe('organization', () => {
                     const gqlGradesDetails = await Promise.all(
                         gqlGrades.map(gradeInfo)
                     )
-                    expect(gqlGradesDetails).to.deep.eq([
+                    expect(gqlGradesDetails).to.deep.equalInAnyOrder([
                         progressFromGradeDetails,
                         progressToGradeDetails,
                         gradeDetails,
@@ -4098,7 +4085,7 @@ describe('organization', () => {
                         const dGradesDetails = await Promise.all(
                             dbGrades.map(gradeInfo)
                         )
-                        expect(dGradesDetails).to.deep.eq([
+                        expect(dGradesDetails).to.deep.equalInAnyOrder([
                             progressFromGradeDetails,
                             progressToGradeDetails,
                             gradeDetails,
@@ -4364,7 +4351,9 @@ describe('organization', () => {
                             expect(dbSubcategories).not.to.be.empty
                             expect(
                                 dbSubcategories.map(subcategoryInfo)
-                            ).to.deep.eq(gqlSubcategories.map(subcategoryInfo))
+                            ).to.deep.equalInAnyOrder(
+                                gqlSubcategories.map(subcategoryInfo)
+                            )
                         })
                     })
 
@@ -4492,7 +4481,9 @@ describe('organization', () => {
                             expect(dbSubcategories).not.to.be.empty
                             expect(
                                 dbSubcategories.map(subcategoryInfo)
-                            ).to.deep.eq(gqlSubcategories.map(subcategoryInfo))
+                            ).to.deep.equalInAnyOrder(
+                                gqlSubcategories.map(subcategoryInfo)
+                            )
                         })
                     })
 
@@ -4722,7 +4713,9 @@ describe('organization', () => {
                     })
 
                     expect(dbSubcategories).not.to.be.empty
-                    expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(
+                    expect(
+                        dbSubcategories.map(subcategoryInfo)
+                    ).to.deep.equalInAnyOrder(
                         gqlSubcategories.map(subcategoryInfo)
                     )
                 })
@@ -5034,7 +5027,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlCategories.map(categoryInfo)
                             )
-                            expect(dbCategoryDetails).to.deep.eq(
+                            expect(dbCategoryDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -5115,9 +5108,9 @@ describe('organization', () => {
                                 const gqlCateryDetails = await Promise.all(
                                     gqlCategories.map(categoryInfo)
                                 )
-                                expect(dbCategoryDetails).to.deep.eq(
-                                    gqlCateryDetails
-                                )
+                                expect(
+                                    dbCategoryDetails
+                                ).to.deep.equalInAnyOrder(gqlCateryDetails)
                             })
                         }
                     )
@@ -5205,7 +5198,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlCategories.map(categoryInfo)
                             )
-                            expect(dbCategoryDetails).to.deep.eq(
+                            expect(dbCategoryDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -5462,7 +5455,9 @@ describe('organization', () => {
                     const gqlCateryDetails = await Promise.all(
                         gqlCategories.map(categoryInfo)
                     )
-                    expect(dbCategoryDetails).to.deep.eq(gqlCateryDetails)
+                    expect(dbCategoryDetails).to.deep.equalInAnyOrder(
+                        gqlCateryDetails
+                    )
                 })
             })
         })
@@ -5750,7 +5745,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlSubjects.map(subjectInfo)
                             )
-                            expect(dbSubjectDetails).to.deep.eq(
+                            expect(dbSubjectDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -5829,9 +5824,9 @@ describe('organization', () => {
                                 const gqlSubjectDetails = await Promise.all(
                                     gqlSubjects.map(subjectInfo)
                                 )
-                                expect(dbSubjectDetails).to.deep.eq(
-                                    gqlSubjectDetails
-                                )
+                                expect(
+                                    dbSubjectDetails
+                                ).to.deep.equalInAnyOrder(gqlSubjectDetails)
                             })
                         }
                     )
@@ -5919,7 +5914,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlSubjects.map(subjectInfo)
                             )
-                            expect(dbSubjectDetails).to.deep.eq(
+                            expect(dbSubjectDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -6176,7 +6171,9 @@ describe('organization', () => {
                     const gqlSubjectDetails = await Promise.all(
                         gqlSubjects.map(subjectInfo)
                     )
-                    expect(dbSubjectDetails).to.deep.eq(gqlSubjectDetails)
+                    expect(dbSubjectDetails).to.deep.equalInAnyOrder(
+                        gqlSubjectDetails
+                    )
                 })
             })
         })
@@ -6469,7 +6466,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlPrograms.map(programInfo)
                             )
-                            expect(dbProgramDetails).to.deep.eq(
+                            expect(dbProgramDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -6550,9 +6547,9 @@ describe('organization', () => {
                                 const gqlCateryDetails = await Promise.all(
                                     gqlPrograms.map(programInfo)
                                 )
-                                expect(dbProgramDetails).to.deep.eq(
-                                    gqlCateryDetails
-                                )
+                                expect(
+                                    dbProgramDetails
+                                ).to.deep.equalInAnyOrder(gqlCateryDetails)
                             })
                         }
                     )
@@ -6640,7 +6637,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlPrograms.map(programInfo)
                             )
-                            expect(dbProgramDetails).to.deep.eq(
+                            expect(dbProgramDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -7352,7 +7349,7 @@ describe('organization', () => {
                 const normalizedEmpty = getCreateOrganizations().normalize([])
                 expect(normalizedEmpty).to.be.empty
                 const normalized = getCreateOrganizations().normalize(input)
-                expect(normalized).to.deep.equal(input)
+                expect(normalized).to.deep.equalInAnyOrder(input)
             })
 
             context('shortcodes', () => {
@@ -7739,7 +7736,7 @@ describe('organization', () => {
                     it('makes the expected number of db calls', async () => {
                         connection.logger.reset()
                         await expect(addUsers()).to.be.fulfilled
-                        expect(connection.logger.count).to.equal(10) // preload: 4, authorize: 1, save: 1 per membership
+                        expect(connection.logger.count).to.equal(8) // preload: 4, authorize: 1, save: 3
                     })
                 })
 

@@ -60,6 +60,7 @@ import { compareErrors } from '../utils/apiError'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { permErrorMeta } from '../utils/errors'
 import { TestConnection } from '../utils/testConnection'
+import { permutations } from '../utils/permute'
 
 interface CategoryAndSubcategories {
     id: string
@@ -2170,7 +2171,7 @@ describe('category', () => {
             user: User,
             input: RemoveSubcategoriesFromCategoryInput[]
         ) => {
-            const subcategoriesKeeped = new Map()
+            const subcategoriesKept = new Map()
 
             for (const i of input) {
                 const category = await Category.findOne(i.categoryId)
@@ -2181,7 +2182,7 @@ describe('category', () => {
                     subcategories.splice(index, 1)
                 }
 
-                subcategoriesKeeped.set(i.categoryId, subcategories)
+                subcategoriesKept.set(i.categoryId, subcategories)
             }
 
             const { categories } = await removeSubcategoriesFromResolver(
@@ -2206,7 +2207,7 @@ describe('category', () => {
                 expect(cdb.system).to.eq(categoryRelated?.system)
 
                 const subcategories = await cdb?.subcategories
-                const subcategoriesRelated = subcategoriesKeeped.get(cdb.id)
+                const subcategoriesRelated = subcategoriesKept.get(cdb.id)
                 expect(subcategories).to.have.lengthOf(
                     subcategoriesRelated.length
                 )
@@ -2334,7 +2335,7 @@ describe('category', () => {
                         )
                     })
 
-                    context('and has not permission', () => {
+                    context('and does not have permission', () => {
                         context('but has membership', () => {
                             beforeEach(() => {
                                 user = userWithoutPermission
@@ -2371,28 +2372,25 @@ describe('category', () => {
                                 'and tries to remove subcategories from any category',
                                 () => {
                                     it('should throw a permission error', async () => {
+                                        const systemCat = systemCategories[0]
+                                        const systemCatSubcatId = (await systemCat.subcategories)![0]
+                                            .id
+                                        const orgSubcatId = subcategoriesToRemove.map(
+                                            (s) => s.id
+                                        )
                                         const catsToEdit = [
-                                            systemCategories[0],
+                                            systemCat,
                                             org1Categories[0],
                                             org2Categories[0],
                                         ]
 
-                                        const systemCat = systemCategories[0]
-                                        const systemCatSubcats = (await systemCat.subcategories) as Subcategory[]
-
-                                        const input = Array.from(
-                                            catsToEdit,
-                                            (c, i) =>
-                                                buildSingleRemoveSubcategoriesFromCategoryInput(
-                                                    c.id,
-                                                    i
-                                                        ? subcategoriesToRemove.map(
-                                                              (s) => s.id
-                                                          )
-                                                        : systemCatSubcats
-                                                              .slice(0, 1)
-                                                              .map((s) => s.id)
-                                                )
+                                        const input = catsToEdit.map((c) =>
+                                            buildSingleRemoveSubcategoriesFromCategoryInput(
+                                                c.id,
+                                                c.id === systemCat.id
+                                                    ? [systemCatSubcatId]
+                                                    : orgSubcatId
+                                            )
                                         )
 
                                         const operation = removeSubcategoriesFromResolver(
@@ -2400,10 +2398,15 @@ describe('category', () => {
                                             input
                                         )
 
-                                        await expect(
+                                        const err: Error = await expect(
                                             operation
-                                        ).to.be.rejectedWith(
-                                            permError(user, [org1, org2])
+                                        ).to.be.rejected
+                                        const possibleErrors = permutations([
+                                            org1,
+                                            org2,
+                                        ]).map((orgs) => permError(user, orgs))
+                                        expect(possibleErrors).to.include(
+                                            err.message
                                         )
 
                                         await expectNoRemoves(catsToEdit)
@@ -2702,7 +2705,7 @@ describe('category', () => {
             context(
                 'when the categories belong to the same organization',
                 () => {
-                    it('should do 9 DB calls', async () => {
+                    it('should do 7 DB calls', async () => {
                         const categories = org1Categories
 
                         connection.logger.reset()
@@ -2713,8 +2716,8 @@ describe('category', () => {
 
                         const callsToDB = connection.logger.count
                         expect(callsToDB).to.eq(
-                            9,
-                            '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 5 for save changes'
+                            7,
+                            '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 3 for save changes'
                         )
                     })
                 }
@@ -2723,7 +2726,7 @@ describe('category', () => {
             context(
                 'when the categories belong to different organizations',
                 () => {
-                    it('should do 9 DB calls', async () => {
+                    it('should do 7 DB calls', async () => {
                         const categories = [
                             ...org1Categories.slice(0, 3),
                             ...org2Categories.slice(0, 3),
@@ -2737,15 +2740,15 @@ describe('category', () => {
 
                         const callsToDB = connection.logger.count
                         expect(callsToDB).to.eq(
-                            9,
-                            '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 5 for save changes'
+                            7,
+                            '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 3 for save changes'
                         )
                     })
                 }
             )
 
             context('when the categories are system', () => {
-                it('should do 10 DB calls', async () => {
+                it('should do 8 DB calls', async () => {
                     const systemCat = systemCategories[0]
                     const systemCatSubcats = (await systemCat.subcategories) as Subcategory[]
 
@@ -2759,8 +2762,8 @@ describe('category', () => {
 
                     const callsToDB = connection.logger.count
                     expect(callsToDB).to.eq(
-                        10,
-                        '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 6 for save changes'
+                        8,
+                        '3 for get categories, subcategories and existentSubcategories; 1 for check permissions; and 4 for save changes'
                     )
                 })
             })

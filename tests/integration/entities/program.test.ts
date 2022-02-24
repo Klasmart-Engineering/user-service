@@ -637,7 +637,7 @@ describe('program', () => {
                     dbProgram = await Program.findOneOrFail(program.id)
                     dbGrades = (await dbProgram.grades) || []
                     expect(dbGrades).not.to.be.empty
-                    expect(dbGrades.map(gradeInfo)).to.deep.eq(
+                    expect(dbGrades.map(gradeInfo)).to.deep.equalInAnyOrder(
                         gqlGrades.map(gradeInfo)
                     )
 
@@ -748,7 +748,7 @@ describe('program', () => {
                     dbProgram = await Program.findOneOrFail(program.id)
                     dbSubjects = (await dbProgram.subjects) || []
                     expect(dbSubjects).not.to.be.empty
-                    expect(dbSubjects.map(subjectInfo)).to.deep.eq(
+                    expect(dbSubjects.map(subjectInfo)).to.deep.equalInAnyOrder(
                         gqlSubjects.map(subjectInfo)
                     )
 

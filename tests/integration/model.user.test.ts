@@ -118,7 +118,7 @@ describe('model.user', () => {
     describe('getUsers', () => {
         let user: User
 
-        before(async () => {
+        beforeEach(async () => {
             user = await createAdminUser(testClient)
         })
 
@@ -135,7 +135,7 @@ describe('model.user', () => {
     describe('getUser', () => {
         let user: User
 
-        before(async () => {
+        beforeEach(async () => {
             user = await createAdminUser(testClient)
         })
 

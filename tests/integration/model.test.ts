@@ -282,7 +282,7 @@ describe('model', () => {
                         authorization: getAdminAuthToken(),
                     })
 
-                    expect(gqlOrgs.map(orgInfo)).to.deep.eq([
+                    expect(gqlOrgs.map(orgInfo)).to.deep.equalInAnyOrder([
                         organization.organization_id,
                         otherOrganization.organization_id,
                     ])

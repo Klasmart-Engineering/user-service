@@ -518,7 +518,9 @@ describe('Category', () => {
                     dbCategory = await Category.findOneOrFail(category.id)
                     dbSubcategories = (await dbCategory.subcategories) || []
                     expect(dbSubcategories).not.to.be.empty
-                    expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(
+                    expect(
+                        dbSubcategories.map(subcategoryInfo)
+                    ).to.deep.equalInAnyOrder(
                         gqlSubcategories.map(subcategoryInfo)
                     )
 

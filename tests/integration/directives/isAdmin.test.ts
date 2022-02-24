@@ -146,7 +146,7 @@ describe('isAdmin', () => {
                         authorization: getAdminAuthToken(),
                     })
 
-                    expect(gqlOrgs.map(orgInfo)).to.deep.eq([
+                    expect(gqlOrgs.map(orgInfo)).to.deep.equalInAnyOrder([
                         organization.organization_id,
                         otherOrganization.organization_id,
                     ])
@@ -1694,7 +1694,7 @@ describe('isAdmin', () => {
                         const schools = await scope.select('School').getMany()
                         expect(
                             schools.map((school) => school.school_id)
-                        ).deep.equal(
+                        ).deep.equalInAnyOrder(
                             schoolMemberships
                                 .get(clientUser)!
                                 .map((school) => school.school_id)
