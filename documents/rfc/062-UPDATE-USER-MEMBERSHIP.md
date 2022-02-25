@@ -28,10 +28,11 @@ The input data structure in this mutation is slightly different as we are applyi
 ```graphql
 input UpdateOrganizationUserInputElement{
     userId: ID!
-    status: enum
+    status: Status
     roles: [ ID! ]
     schools: [ ID! ]
     classes: [ ID! ]
+    academicYear: ID
 }
 
 input UpdateOrganizationUserInput{ 
