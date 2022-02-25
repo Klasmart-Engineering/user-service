@@ -1,4 +1,5 @@
 import logger from '../logging'
+import dotenv from 'dotenv'
 
 export const config = {
     limits: {
@@ -29,6 +30,7 @@ export const getEnvVar = (
     name: string,
     defaultValue?: string
 ): string | undefined => {
+    dotenv.config()
     const val = process.env[name]
 
     if (val) {
