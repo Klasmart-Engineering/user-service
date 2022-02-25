@@ -1,11 +1,8 @@
 
-import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
-import { sleep } from 'k6';
-import landingSchedule from './scripts/landingSchedule';
 import http from 'k6/http';
 import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
-import landingScheduleStudents from './scripts/landingScheduleStudents';
+import landingV3Students from './scripts/landingV3Students';
 
 // Command:
 // k6 -e VUS=50 run parallelLandingScheduleUnique.js
@@ -73,10 +70,9 @@ export function students01() {
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    /* landingV2(studentLoginData);
-    sleep(5); 
-    landingSchedule();*/
-    landingScheduleStudents();
+   // landingV2(studentLoginData);
+   landingV3Students(studentLoginData);
+    
 }
 
 export function students02() {
@@ -98,10 +94,9 @@ export function students02() {
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    /* landingV2(studentLoginData);
-    sleep(5); 
-    landingSchedule();*/
-    landingScheduleStudents();
+    // landingV2(studentLoginData);
+    landingV3Students(studentLoginData);
+    
 }
 
 export function students03() {
@@ -123,10 +118,9 @@ export function students03() {
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    /* landingV2(studentLoginData);
-    sleep(5); 
-    landingSchedule();*/
-    landingScheduleStudents();
+    // landingV2(studentLoginData);
+    landingV3Students(studentLoginData);
+   
 }
 
 export function students04() {
@@ -148,9 +142,8 @@ export function students04() {
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    /* landingV2(studentLoginData);
-    sleep(5); 
-    landingSchedule();*/
-    landingScheduleStudents();
+    // landingV2(studentLoginData);
+    landingV3Students(studentLoginData);
+   
 }
 
