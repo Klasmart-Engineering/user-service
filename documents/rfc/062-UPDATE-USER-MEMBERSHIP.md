@@ -2,11 +2,11 @@
 
 ## Synopsis
 
-This RFC describes proposed API solution for the FE batch updating several user memberships in one organization with the same additions to Schools Classes Studying, Classes Teaching, and or Roles, along with the same status on the user membership. 
+This RFC describes proposed API solution for the FE batch updating several user memberships in one organization with changes to Schools Classes Studying, Classes Teaching, and or Roles, along with the the status on the user membership. 
 
 ## Background
 
-The FE have a requirement to be able to choose and assign the groups or user memberships in one operation with particular additions to Schools, Classes Studying, Classes Teaching and Roles.
+The FE have a requirement to be able to choose and assign the groups or user memberships in one operation with particular additions to Schools, Classes Studying, Classes Teaching and Roles. The will edit a set of users on the screen and submit it all at once to the BE.
 
 The purpose of this RFC is describe the API interface provided by the BE to implement this.
 
@@ -132,7 +132,7 @@ type OrganizationMembershipConnectionNode {
 }
 
 ```
-I intend to read the all parameter roles in the parameters and their linked permissions into memory as one operation to create a map to be used for each item in the array of members. The same will be done with the other parameters, so the number of databse reads to check things can be as limited as possible.
+I intend to read the all parameter roles in the parameters and their linked permissions into memory as one operation to create a map to be used for each item in the array of members. The same will be done with the other parameters, so the number of database reads to check things can be as limited as possible.
 
 ### Error handling
 
