@@ -6,7 +6,7 @@ This RFC describes proposed API solution for the FE batch updating several user 
 
 ## Background
 
-The FE have a requirement to be able to choose and assign the groups or user memberships in one operation with particular changes to Schools, Classes Studying, Classes Teaching and Roles. They will edit a set of users on the screen and submit it all at once to the BE.
+The FE have a requirement to be able to choose and assign groups of user memberships in one operation with particular changes to Schools, Classes Studying, Classes Teaching and Roles. They will edit a set of users on the screen and submit it all at once to the BE.
 
 The purpose of this RFC is describe the API interface provided by the BE to implement this.
 
