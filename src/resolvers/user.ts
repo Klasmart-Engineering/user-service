@@ -895,7 +895,7 @@ export async function createUsers(
                 context.permissions.getUserId()
             )
         )
-        throw errs
+        throw new APIErrorCollection(errs)
     }
 
     if (inputs.length === 0) errs.push(createInputLengthAPIError('User', 'min'))
@@ -903,7 +903,7 @@ export async function createUsers(
     if (inputs.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         errs.push(createInputLengthAPIError('User', 'max'))
 
-    if (errs.length > 0) throw errs
+    if (errs.length > 0) throw new APIErrorCollection(errs)
 
     const checkErrs = checkCreateUserInput(inputs)
     if (checkErrs.length > 0) errs.push(...checkErrs)
@@ -917,7 +917,7 @@ export async function createUsers(
         errs.push(...existingUserErrors)
     }
 
-    if (errs.length > 0) throw errs
+    if (errs.length > 0) throw new APIErrorCollection(errs)
 
     const newUsers = buildListOfNewUsers(normalizedInputs)
 
