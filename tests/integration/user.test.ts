@@ -1596,11 +1596,13 @@ describe('user', () => {
                             null,
                             'createUsers did not reject with an error'
                         )
-                    } catch (e) {
-                        expect(e).to.be.an('Array')
-                        expect(e).to.have.length(1)
-                        expect(e[0]).to.be.an('error')
-                        expect(e[0].message).to.equal(
+                    } catch (e: any) {
+                        const errs = e.errors
+
+                        expect(errs).to.be.an('Array')
+                        expect(errs).to.have.length(1)
+                        expect(errs[0]).to.be.an('error')
+                        expect(errs[0].message).to.equal(
                             'User username/contactInfo is required.'
                         )
                     }
@@ -1752,7 +1754,7 @@ describe('user', () => {
                 const previousUsers = await connection
                     .getRepository(User)
                     .count()
-                const errors = await expect(
+                const error = await expect(
                     createUsersResolver(createUserInputs, adminUser)
                 ).to.be.rejected
 
@@ -1771,7 +1773,7 @@ describe('user', () => {
                     ),
                 ]
 
-                compareMultipleErrors(errors, expectedErrors)
+                compareMultipleErrors(error.errors, expectedErrors)
 
                 const currentUsers = await connection
                     .getRepository(User)
@@ -1817,7 +1819,7 @@ describe('user', () => {
                     .getRepository(User)
                     .count()
 
-                const errors = await expect(
+                const error = await expect(
                     createUsersResolver(createUserInputs, adminUser)
                 ).to.be.rejected
 
@@ -1826,7 +1828,7 @@ describe('user', () => {
                     createExistentError(createUserInputs[35], 35),
                 ]
 
-                compareMultipleErrors(errors, expectedErrors)
+                compareMultipleErrors(error.errors, expectedErrors)
 
                 const currentUsers = await connection
                     .getRepository(User)
