@@ -23,21 +23,28 @@ updateOrganizationUsers(
     ): UsersMutationResult
 ```
 
-The input data structure in this mutation is quite different from that of other batch mutations as in this case we are applying the same changes across the set of User/Memberships.
+The input data structure in this mutation is slightly different as we are applying changes to only one organization and an array of that organizations User/Memberships.
 
 ```graphql
-input UpdateOrganizationUserInput{ 
-    organizationId: ID!
+input UpdateOrganizationUserInputElement{
+    userId: ID!
     status: enum
-    users:[ ID! ]!
     roles: [ ID! ]
     schools: [ ID! ]
-    classesTeaching: [ ID! ]
-    classesStudying: [ ID! ]
+    classes: [ ID! ]
+}
+
+input UpdateOrganizationUserInput{ 
+    organizationId: ID!
+    members: [ UpdateOrganizationUserInputElement ]   
 }
 ```
 
-Changes will be additive and if the user in the organization already has role X and we assign role X no error will be returned.
+The check will make sure all the users are in the organization, and all the passed classes and schools parameters are also in the organization. The roles parameter will check that these are either system roles or in the organization.
+
+Changes in the parameters will replace all the relations passed that previously existed. Empty arrays in the parameters will make no changes.
+
+We will either use the parameter array of roles or the existing roles if no roles are in the parameter to decide whether the classes parameter is classesTeaching or classesStudying or both. 
 
 The reason for a UsersMutationResult return type is that classesTeaching, classesStudying and Schools are relations on the User entity not the OrganizationMembership entity.
 
@@ -125,7 +132,7 @@ type OrganizationMembershipConnectionNode {
 }
 
 ```
-
+I intend to read the all parameter roles in the parameters and their linked permissions into memory as one operation to create a map to be used for each item in the array of members. The same will be done with the other parameters, so the number of databse reads to check things can be as limited as possible.
 
 ### Error handling
 
@@ -135,7 +142,7 @@ An error value consisting of perhaps several APIError error reports will be retu
 
 The back end will attempt to find as many errors as possible in any error situation so that the job of fixing the errors can be done in as few a iterations as possible
 
-The index value returned in each APIError will refer to an index in the users array that is passed.
+The index value returned in each APIError will refer to an index in the members array that is passed.
 
 ## Decision
 
@@ -151,7 +158,7 @@ The index value returned in each APIError will refer to an index in the users ar
 | Marlon           | Pending  |   🟡   |
 | Nicholas         | Pending  |   🟡   |
 | Malcolm          | Pending  |   🟡   |
-| Henrick         | Pending  |   🟡   |
+| Henrick          | Pending  |   🟡   |
 | Ismael           | Pending  |   🟡   |
 
 
