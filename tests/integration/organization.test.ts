@@ -130,6 +130,7 @@ import {
     RemoveUsersFromOrganizations,
     ChangeOrganizationMembershipStatusEntityMap,
     DeleteUsersFromOrganizations,
+    generateAddRemoveOrgUsersMap,
 } from '../../src/resolvers/organization'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { buildPermissionError } from '../utils/errors'
@@ -7896,13 +7897,74 @@ describe('organization', () => {
             }
 
             async authorize(): Promise<void> {
-                throw new Error('not implemented')
+                return
             }
 
-            async generateEntityMaps(): Promise<ChangeOrganizationMembershipStatusEntityMap> {
-                throw new Error('not implemented')
+            async generateEntityMaps(
+                input: { organizationId: string; userIds: string[] }[]
+            ): Promise<ChangeOrganizationMembershipStatusEntityMap> {
+                return generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [
+                    Status.INACTIVE,
+                ])
             }
         }
+
+        context('basic case', () => {
+            it('works as expect', async () => {
+                const clientUser = await createUser().save()
+                const member = await createUser().save()
+                const unaffectedUser = await createUser().save()
+                const organization = await createOrganization().save()
+                await createOrganizationMembership({
+                    user: unaffectedUser,
+                    organization,
+                    status: Status.INACTIVE,
+                }).save()
+                await createOrganizationMembership({
+                    user: member,
+                    organization,
+                    status: Status.INACTIVE,
+                }).save()
+
+                const result = await mutate(
+                    TestChangeOrganizationMembershipStatus,
+                    {
+                        input: [
+                            {
+                                userIds: [member.user_id],
+                                organizationId: organization.organization_id,
+                            },
+                        ],
+                    },
+                    new UserPermissions(userToPayload(clientUser))
+                )
+
+                expect(result.organizations).to.have.length(1)
+                expect(result.organizations[0].id).to.eq(
+                    organization.organization_id
+                )
+
+                const affectedUserFromDb = await OrganizationMembership.findOneOrFail(
+                    {
+                        where: {
+                            organization_id: organization.organization_id,
+                            user_id: member.user_id,
+                        },
+                    }
+                )
+                expect(affectedUserFromDb.status).to.eq(Status.ACTIVE)
+
+                const unaffectedUserFromDb = await OrganizationMembership.findOneOrFail(
+                    {
+                        where: {
+                            organization_id: organization.organization_id,
+                            user_id: unaffectedUser.user_id,
+                        },
+                    }
+                )
+                expect(unaffectedUserFromDb.status).to.eq(Status.INACTIVE)
+            })
+        })
 
         context('validationOverAllInputs', () => {
             it('reject duplicate organizationIds', async () => {
@@ -8193,15 +8255,15 @@ describe('organization', () => {
                     organizationId: organization.organization_id,
                     userIds: [user.user_id],
                 }
-                const { outputEntity, others } = mutation.process(
+                const { outputEntity, modifiedEntity } = mutation.process(
                     input,
                     maps,
                     0
                 )
                 expect(outputEntity).to.deep.eq(organization)
-                expect(others).to.have.length(1)
-                expect(others![0]).to.deep.eq(membership)
-                expect(others![0]).deep.include(mutation.partialEntity)
+                expect(modifiedEntity).to.have.length(1)
+                expect(modifiedEntity![0]).to.deep.eq(membership)
+                expect(modifiedEntity![0]).deep.include(mutation.partialEntity)
             })
         })
     })

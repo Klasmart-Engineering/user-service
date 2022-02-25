@@ -519,7 +519,10 @@ export abstract class ChangeOrganizationMembershipStatus extends RemoveMembershi
         currentInput: { organizationId: string; userIds: string[] },
         maps: ChangeOrganizationMembershipStatusEntityMap,
         index: number
-    ) {
+    ): {
+        outputEntity: Organization
+        modifiedEntity: OrganizationMembership[]
+    } {
         const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
         const { organizationId, userIds } = currentInput
         const memberships: OrganizationMembership[] = []
@@ -529,7 +532,7 @@ export abstract class ChangeOrganizationMembershipStatus extends RemoveMembershi
             memberships.push(membership)
         }
 
-        return { outputEntity: currentEntity, others: memberships }
+        return { outputEntity: currentEntity, modifiedEntity: memberships }
     }
 
     protected async applyToDatabase(
@@ -613,7 +616,7 @@ export class DeleteUsersFromOrganizations extends ChangeOrganizationMembershipSt
         ])
 }
 
-async function generateAddRemoveOrgUsersMap(
+export async function generateAddRemoveOrgUsersMap(
     organizationIds: string[],
     input: {
         userIds: string[]

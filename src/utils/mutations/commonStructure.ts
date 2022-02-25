@@ -11,6 +11,7 @@ import {
     createEntityAPIError,
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
+    reportError,
 } from '../resolvers/errors'
 import { objectToKey, ObjMap } from '../stringUtils'
 
@@ -715,11 +716,22 @@ export abstract class RemoveMembershipMutation<
     protected async applyToDatabase(
         results: ProcessedResult<EntityType, MembershipType>[]
     ): Promise<void> {
+        const entitiesToUpdate = results
+            .map((r) => r.modifiedEntity ?? [])
+            .flat()
+        if (entitiesToUpdate.length === 0) {
+            reportError(
+                new Error(
+                    `${this.input}: applyToDatabase called with no entities to modify`
+                )
+            )
+            return
+        }
         await getManager()
             .createQueryBuilder()
             .update(this.MembershipType)
             .set(this.partialEntity)
-            .whereInIds(results.map((r) => r.modifiedEntity ?? []).flat())
+            .whereInIds(entitiesToUpdate)
             .execute()
     }
 }

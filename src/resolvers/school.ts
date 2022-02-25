@@ -724,7 +724,10 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
         currentInput: RemoveUsersFromSchoolInput,
         maps: RemoveUsersFromSchoolsEntityMap,
         index: number
-    ) {
+    ): {
+        outputEntity: School
+        modifiedEntity: SchoolMembership[]
+    } {
         const { schoolId, userIds } = currentInput
         const memberships: SchoolMembership[] = []
 
@@ -739,7 +742,7 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
             memberships.push(membership)
         }
 
-        return { outputEntity: currentEntity, others: memberships }
+        return { outputEntity: currentEntity, modifiedEntity: memberships }
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
