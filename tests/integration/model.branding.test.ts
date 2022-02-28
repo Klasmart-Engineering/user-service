@@ -236,11 +236,12 @@ describe('model.branding', () => {
             context(
                 'and primaryColor is not provided and iconImage is provided',
                 () => {
-                    it('should set primaryColor as null and update iconImage', async () => {
+                    it('should leave primaryColor as its current colour and update iconImage', async () => {
                         const primaryColor = '#cd657b'
                         const iconImage = fs.createReadStream(
                             resolve(`tests/fixtures/${filename}`)
                         )
+
                         await setBranding(
                             testClient,
                             organizationId,
@@ -255,6 +256,7 @@ describe('model.branding', () => {
                         const newImage = fs.createReadStream(
                             resolve(`tests/fixtures/${filenameToUpdate}`)
                         )
+
                         const branding = await setBrandingWithoutPrimaryColor(
                             testClient,
                             organizationId,
@@ -264,9 +266,9 @@ describe('model.branding', () => {
                             encoding,
                             { authorization: arbitraryUserToken }
                         )
-                        expect(branding.iconImageURL).to.exist
 
-                        expect(branding.primaryColor).to.be.null
+                        expect(branding.iconImageURL).to.exist
+                        expect(branding.primaryColor).to.be.equal(primaryColor)
 
                         const brandings = await Branding.find({
                             where: {

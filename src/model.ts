@@ -1040,13 +1040,24 @@ export class Model {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const iconImage = await args.iconImage
+        let orgBranding: Branding | undefined
         const primaryColor = args.primaryColor
+        const iconImage = await args.iconImage
         const organizationId = args.organizationId
+        const preloadedBranding = Branding.createQueryBuilder('Branding')
+            .innerJoin('Branding.organization', 'Organization')
+            .leftJoinAndSelect('Branding.images', 'BrandingImage')
+            .where('Organization.organization_id = :organizationId', {
+                organizationId,
+            })
+            .andWhere('Branding.status = :active', { active: Status.ACTIVE })
+            .getOne()
+
+        if (!primaryColor || !iconImage) orgBranding = await preloadedBranding
 
         const result: BrandingResult = {
             iconImageURL: undefined,
-            primaryColor: primaryColor,
+            primaryColor: primaryColor ?? orgBranding?.primaryColor,
         }
 
         const brandingImagesInfo: BrandingImageInfo[] = []
@@ -1055,7 +1066,7 @@ export class Model {
         if (iconImage) {
             const file = iconImage.file
 
-            for (const tag of [BrandingImageTag.ICON]) {
+            for (const tag of Object.values(BrandingImageTag)) {
                 // Build path for image
                 const remoteFilePath = buildFilePath(
                     organizationId,
@@ -1080,9 +1091,26 @@ export class Model {
                 }
 
                 // Build the resolver output
-                const brandingKey = (tag.toLowerCase() +
-                    'ImageURL') as keyof BrandingResult
-                result[brandingKey] = remoteUrl
+                const brandingKey = tag.toLowerCase() + 'ImageURL'
+
+                if (Object.keys(result).includes(brandingKey)) {
+                    result[brandingKey as keyof BrandingResult] = remoteUrl
+                }
+            }
+        } else {
+            const images = orgBranding?.images?.filter((b) => b.tag) || []
+            const imagesMap = new Map<string, BrandingImage>(
+                images.map((b) => [b.tag!, b])
+            )
+
+            for (const tag of Object.values(BrandingImageTag)) {
+                const currentImage = imagesMap.get(tag)
+                const url = currentImage?.url
+                const brandingKey = tag?.toLowerCase() + 'ImageURL'
+
+                if (Object.keys(result).includes(brandingKey)) {
+                    result[brandingKey as keyof BrandingResult] = url
+                }
             }
         }
 
