@@ -493,7 +493,7 @@ describe('classNode', () => {
 
             expect(conditions.length).to.eq(1)
             expect(conditions).to.deep.equalInAnyOrder([
-                'Class.organization IN (:...classOrgs)',
+                '(Class.organization IN (:...classOrgs))',
             ])
         })
 
@@ -503,17 +503,12 @@ describe('classNode', () => {
             aliases = scope.expressionMap.aliases.map((a) => a.name)
             conditions = scope.expressionMap.wheres.map((w) => w.condition)
 
-            expect(aliases.length).to.eq(4)
-            expect(aliases).to.deep.equalInAnyOrder([
-                'Class',
-                'School',
-                'School_Class',
-                'SchoolMembership',
-            ])
+            expect(aliases.length).to.eq(1)
+            expect(aliases).to.deep.equalInAnyOrder(['Class'])
 
             expect(conditions.length).to.eq(1)
             expect(conditions).to.deep.equalInAnyOrder([
-                'Class.organization IN (:...schoolOrgs)',
+                '((Class.organization IN (:...schoolOrgs) AND "Class"."class_id" IN (SELECT "schoolClasses"."classClassId" AS "schoolClasses_classClassId" FROM "school_classes_class" "schoolClasses" WHERE "schoolClasses"."schoolSchoolId" IN (:...schoolIds))))',
             ])
         })
 
@@ -523,17 +518,12 @@ describe('classNode', () => {
             aliases = scope.expressionMap.aliases.map((a) => a.name)
             conditions = scope.expressionMap.wheres.map((w) => w.condition)
 
-            expect(aliases.length).to.eq(4)
-            expect(aliases).to.deep.equalInAnyOrder([
-                'Class',
-                'School',
-                'School_Class',
-                'SchoolMembership',
-            ])
+            expect(aliases.length).to.eq(1)
+            expect(aliases).to.deep.equalInAnyOrder(['Class'])
 
             expect(conditions.length).to.eq(1)
             expect(conditions).to.deep.equalInAnyOrder([
-                '(Class.organization IN (:...classOrgs) OR (Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id))',
+                '(Class.organization IN (:...classOrgs) OR (Class.organization IN (:...schoolOrgs) AND "Class"."class_id" IN (SELECT "schoolClasses"."classClassId" AS "schoolClasses_classClassId" FROM "school_classes_class" "schoolClasses" WHERE "schoolClasses"."schoolSchoolId" IN (:...schoolIds))))',
             ])
         })
 

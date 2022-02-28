@@ -49,13 +49,19 @@ import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createUser, createUsers } from '../../factories/user.factory'
-import { createClass } from '../../factories/class.factory'
+import { createClass, createClasses } from '../../factories/class.factory'
 import { Class } from '../../../src/entities/class'
 import { pick } from 'lodash'
-import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import {
+    createOrganizationMembership,
+    createOrganizationMemberships,
+} from '../../factories/organizationMembership.factory'
 import { ClassConnectionNode } from '../../../src/types/graphQL/class'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
-import { createSchoolMembership } from '../../factories/schoolMembership.factory'
+import {
+    createSchoolMembership,
+    createSchoolMemberships,
+} from '../../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Permission } from '../../../src/entities/permission'
 import {
@@ -83,6 +89,8 @@ import { Context } from '../../../src/main'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { TokenPayload } from '../../../src/token'
+import { classesTeachingConnection } from '../../../src/schemas/user'
+import { mapUserToUserConnectionNode } from '../../../src/pagination/usersConnection'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -1339,6 +1347,58 @@ describe('isAdmin', () => {
                     })
                 })
             })
+        })
+
+        // Ensures that the query does not perform joins and duplicate data,
+        // otherwise child connections will produce unexpected results as they
+        // work with raw SQL and do not benefit from typeorm's deduplication
+        it('does not produce duplicates and is compatible child connections', async () => {
+            const organization = organizations[0]
+
+            // setup client user with BOTH permissions checked by nonAdminClassScope
+            const nonAdmin = await createNonAdminUser(testClient)
+            const role = await createRole('role', organization, {
+                permissions: [
+                    PermissionName.view_users_40110,
+                    PermissionName.view_classes_20114,
+                    PermissionName.view_school_classes_20117,
+                ],
+            }).save()
+            await createOrganizationMembership({
+                user: nonAdmin,
+                organization,
+                roles: [role],
+            }).save()
+
+            // populate so we'd expect duplicates if left joining
+            const users = await User.save(createUsers(2))
+            const school = await createSchool(organization).save()
+            const classes = createClasses(2, organization)
+            classes.forEach((c) => {
+                c.teachers = Promise.resolve(users)
+                c.schools = Promise.resolve([school])
+            })
+
+            await Class.save(classes)
+            await SchoolMembership.save(
+                createSchoolMemberships([...users, nonAdmin], school)
+            )
+            await OrganizationMembership.save(
+                createOrganizationMemberships(users, organization)
+            )
+
+            const permissions = new UserPermissions({ id: nonAdmin.user_id })
+            const userNode = mapUserToUserConnectionNode(users[0])
+            const classesTeaching = await classesTeachingConnection(
+                userNode,
+                {
+                    count: 2,
+                },
+                createContextLazyLoaders(permissions),
+                true
+            )
+            expect(classesTeaching.totalCount).to.eq(classes.length)
+            expect(classesTeaching.edges).to.have.lengthOf(classes.length)
         })
     })
 
