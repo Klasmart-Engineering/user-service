@@ -321,10 +321,11 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
         this.mainEntityIds = input.map((val) => val.organizationId)
     }
 
-    generateEntityMaps = (
+    generateEntityMaps(
         input: AddUsersToOrganizationInput[]
-    ): Promise<AddUsersToOrganizationsEntityMap> =>
-        generateAddRemoveOrgUsersMap(this.mainEntityIds, input)
+    ): Promise<AddUsersToOrganizationsEntityMap> {
+        return generateAddRemoveOrgUsersMap(this.mainEntityIds, input)
+    }
 
     protected authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
@@ -550,9 +551,9 @@ export abstract class ChangeOrganizationMembershipStatus extends RemoveMembershi
         }
     }
 
-    protected buildOutput = async (
-        currentEntity: Organization
-    ): Promise<void> => addOrgToOutput(currentEntity, this.output)
+    protected async buildOutput(currentEntity: Organization): Promise<void> {
+        return addOrgToOutput(currentEntity, this.output)
+    }
 }
 
 export class ReactivateUsersFromOrganizations extends ChangeOrganizationMembershipStatus {
@@ -568,12 +569,13 @@ export class ReactivateUsersFromOrganizations extends ChangeOrganizationMembersh
         )
     }
 
-    generateEntityMaps = (
+    generateEntityMaps(
         input: { organizationId: string; userIds: string[] }[]
-    ): Promise<ChangeOrganizationMembershipStatusEntityMap> =>
-        generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [
+    ): Promise<ChangeOrganizationMembershipStatusEntityMap> {
+        return generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [
             Status.INACTIVE,
         ])
+    }
 }
 
 export class RemoveUsersFromOrganizations extends ChangeOrganizationMembershipStatus {
@@ -589,10 +591,13 @@ export class RemoveUsersFromOrganizations extends ChangeOrganizationMembershipSt
         )
     }
 
-    generateEntityMaps = (
+    generateEntityMaps(
         input: { organizationId: string; userIds: string[] }[]
-    ): Promise<ChangeOrganizationMembershipStatusEntityMap> =>
-        generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [Status.ACTIVE])
+    ): Promise<ChangeOrganizationMembershipStatusEntityMap> {
+        return generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [
+            Status.ACTIVE,
+        ])
+    }
 }
 
 export class DeleteUsersFromOrganizations extends ChangeOrganizationMembershipStatus {
@@ -607,13 +612,14 @@ export class DeleteUsersFromOrganizations extends ChangeOrganizationMembershipSt
         )
     }
 
-    generateEntityMaps = (
+    generateEntityMaps(
         input: { organizationId: string; userIds: string[] }[]
-    ): Promise<ChangeOrganizationMembershipStatusEntityMap> =>
-        generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [
+    ): Promise<ChangeOrganizationMembershipStatusEntityMap> {
+        return generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [
             Status.ACTIVE,
             Status.INACTIVE,
         ])
+    }
 }
 
 export async function generateAddRemoveOrgUsersMap(
