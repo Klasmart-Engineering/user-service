@@ -6,6 +6,10 @@ import { myUsersQuery } from './queries/users';
 import { params } from "./utils/params";
 import { check } from 'k6';
 
+
+// k6 -e VUS=2 run b2cLogin.js
+// For increase the VUs, change the number 2 for the desired number of VUs.
+
 export const options: Options = {
     ext: {
         loadimpact: {

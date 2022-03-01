@@ -78,6 +78,7 @@ module.exports = env => ({
         b2cLogin: `./b2cLogin.ts`,
         parallelLandingScheduleUnique: `./parallelLandingScheduleUnique.ts`,
         parallelLandingScheduleUniqueTeachers: `./parallelLandingScheduleUniqueTeachers.ts`,
+        parallelLandingHomeUnique: `./parallelLandingHomeUnique.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),
