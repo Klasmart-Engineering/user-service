@@ -28,7 +28,10 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
 import clean from './utils/clean'
-import { processUserFromCSVRow, validateUserCSVHeaders } from './utils/csv/user'
+import {
+    validateUserCSVHeaders,
+    processUserFromCSVRows,
+} from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
 import { processGradeFromCSVRow, setGradeFromToFields } from './utils/csv/grade'
@@ -92,6 +95,47 @@ import {
 } from './pagination/eligibleMembersConnection'
 import { getEnvVar } from './config/config'
 import { reportError } from './utils/resolvers/errors'
+import { CSVError } from './types/csv/csvError'
+import { UserPermissions } from './permissions/userPermissions'
+import { QueryResultCache } from './utils/csv/csvUtils'
+
+// this is a wrapper around legacy functions for
+// processing a CSV row
+// these legacy functions are inefficent as they don't
+// batch reading/writting to the DB
+// to allow batching where needed, the CSV framework
+// now requires a wrapper function like this
+export async function legacyCsvRowFunctionWrapper<RowType>(
+    manager: EntityManager,
+    rows: RowType[],
+    rowNumber: number,
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions,
+    queryResultCache: QueryResultCache,
+    rowFunction: (
+        manager: EntityManager,
+        row: RowType,
+        rowNumber: number,
+        fileErrors: CSVError[],
+        userPermissions: UserPermissions,
+        queryResultCache: QueryResultCache
+    ) => Promise<CSVError[]>
+) {
+    const allRowErrors = []
+
+    for (const [index, row] of rows.entries()) {
+        const rowErrors = await rowFunction(
+            manager,
+            row,
+            rowNumber + index,
+            fileErrors,
+            userPermissions,
+            queryResultCache
+        )
+        allRowErrors.push(...rowErrors)
+    }
+    return allRowErrors
+}
 
 export class Model {
     public static async create() {
@@ -748,7 +792,26 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             getConnection(),
             file,
-            [processOrganizationFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) => {
+                    return legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processOrganizationFromCSVRow
+                    )
+                },
+            ],
             context.permissions
         )
 
@@ -769,7 +832,7 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processUserFromCSVRow],
+            [processUserFromCSVRows],
             context.permissions,
             validateUserCSVHeaders,
             isDryRun
@@ -791,7 +854,26 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processClassFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) => {
+                    return legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processClassFromCSVRow
+                    )
+                },
+            ],
             context.permissions
         )
 
@@ -811,7 +893,26 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processSchoolFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) => {
+                    return legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processSchoolFromCSVRow
+                    )
+                },
+            ],
             context.permissions
         )
 
@@ -831,7 +932,44 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processGradeFromCSVRow, setGradeFromToFields],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) => {
+                    return legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processGradeFromCSVRow
+                    )
+                },
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) => {
+                    return legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        setGradeFromToFields
+                    )
+                },
+            ],
             context.permissions
         )
 
@@ -851,7 +989,25 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processSubCategoriesFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) =>
+                    legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processSubCategoriesFromCSVRow
+                    ),
+            ],
             context.permissions
         )
 
@@ -871,7 +1027,25 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processRoleFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) =>
+                    legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processRoleFromCSVRow
+                    ),
+            ],
             context.permissions
         )
 
@@ -891,7 +1065,25 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processCategoryFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) =>
+                    legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processCategoryFromCSVRow
+                    ),
+            ],
             context.permissions
         )
 
@@ -911,7 +1103,25 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processSubjectFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) =>
+                    legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processSubjectFromCSVRow
+                    ),
+            ],
             context.permissions
         )
 
@@ -931,7 +1141,25 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processProgramFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) =>
+                    legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processProgramFromCSVRow
+                    ),
+            ],
             context.permissions
         )
 
@@ -951,7 +1179,25 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processAgeRangeFromCSVRow],
+            [
+                (
+                    manager,
+                    rows,
+                    rowNumber,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                ) =>
+                    legacyCsvRowFunctionWrapper(
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache,
+                        processAgeRangeFromCSVRow
+                    ),
+            ],
             context.permissions
         )
 

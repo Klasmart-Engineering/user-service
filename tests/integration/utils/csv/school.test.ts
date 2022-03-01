@@ -25,7 +25,6 @@ import { TestConnection } from '../../../utils/testConnection'
 import { User } from '@sentry/node'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
-import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
 
@@ -37,7 +36,6 @@ describe('processSchoolFromCSVRow', () => {
     let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
-    let queryResultCache: QueryResultCache
     const sameShortcodeAnotherSchoolName = 'School One'
 
     before(async () => {
@@ -70,7 +68,6 @@ describe('processSchoolFromCSVRow', () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
-        queryResultCache = new QueryResultCache()
     })
 
     context('when the organization name is not provided', () => {
@@ -84,8 +81,7 @@ describe('processSchoolFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -118,8 +114,7 @@ describe('processSchoolFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -158,8 +153,7 @@ describe('processSchoolFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -193,8 +187,7 @@ describe('processSchoolFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -227,8 +220,7 @@ describe('processSchoolFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -265,8 +257,7 @@ describe('processSchoolFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -302,8 +293,7 @@ describe('processSchoolFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
 
             const school = await School.findOneOrFail({
@@ -336,8 +326,7 @@ describe('processSchoolFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -372,8 +361,7 @@ describe('processSchoolFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -422,8 +410,7 @@ describe('processSchoolFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -455,8 +442,7 @@ describe('processSchoolFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
 
             const school = await School.findOneOrFail({
@@ -517,8 +503,7 @@ describe('processSchoolFromCSVRow', () => {
                         row,
                         1,
                         fileErrors,
-                        adminPermissions,
-                        queryResultCache
+                        adminPermissions
                     )
 
                     const school = await School.findOneOrFail({

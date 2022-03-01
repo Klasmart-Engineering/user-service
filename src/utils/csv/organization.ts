@@ -11,7 +11,6 @@ import { Status } from '../../entities/status'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { normalizedLowercaseTrimmed } from '../../utils/clean'
 import { config } from '../../config/config'
@@ -118,7 +117,7 @@ async function createOrganization(
     await manager.save(organizationOwnership)
 }
 
-export const processOrganizationFromCSVRow: CreateEntityRowCallback<OrganizationRow> = async (
+export const processOrganizationFromCSVRow = async (
     manager: EntityManager,
     row: OrganizationRow,
     rowNumber: number,

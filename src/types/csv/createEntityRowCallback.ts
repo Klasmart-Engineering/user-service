@@ -6,7 +6,7 @@ import { QueryResultCache } from '../../utils/csv/csvUtils'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CreateEntityRowCallback<RowType = any> = (
     manager: EntityManager,
-    row: RowType,
+    rows: RowType[],
     rowCounter: number,
     fileErrors: CSVError[],
     userPermissions: UserPermissions,

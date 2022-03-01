@@ -6,10 +6,9 @@ import { SubjectRow } from '../../types/csv/subjectRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 
-export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = async (
+export const processSubjectFromCSVRow = async (
     manager: EntityManager,
     row: SubjectRow,
     rowNumber: number,

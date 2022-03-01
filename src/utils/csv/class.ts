@@ -13,13 +13,12 @@ import { ClassRow } from '../../types/csv/classRow'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
 import { REGEX } from '../../entities/validations/regex'
 import { customErrors } from '../../types/errors/customError'
 
-export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
+export const processClassFromCSVRow = async (
     manager: EntityManager,
     {
         organization_name,

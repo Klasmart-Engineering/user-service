@@ -5,7 +5,6 @@ import { Organization } from '../../entities/organization'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 
 function findGradeInDatabaseOrTransaction(
@@ -57,7 +56,7 @@ async function findOrFailGradeInDatabaseOrTransaction(
     return gradeFound
 }
 
-export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
+export const processGradeFromCSVRow = async (
     manager: EntityManager,
     row: GradeRow,
     rowNumber: number,
@@ -216,7 +215,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
     return rowErrors
 }
 
-export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
+export const setGradeFromToFields = async (
     manager: EntityManager,
     row: GradeRow,
     rowNumber: number,

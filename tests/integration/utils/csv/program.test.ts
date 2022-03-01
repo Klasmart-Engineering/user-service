@@ -24,7 +24,6 @@ import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
-import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
 
@@ -42,7 +41,6 @@ describe('processProgramFromCSVRow', () => {
     let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
-    let queryResultCache: QueryResultCache
     const rowModel: ProgramRow = {
         organization_name: 'Company 1',
         program_name: 'Program 1',
@@ -107,8 +105,6 @@ describe('processProgramFromCSVRow', () => {
         noneSpecifiedSubject.name = 'None Specified'
         noneSpecifiedSubject.system = true
         await connection.manager.save(noneSpecifiedSubject)
-
-        queryResultCache = new QueryResultCache()
     })
 
     context('when the organization name is not provided', () => {
@@ -122,8 +118,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -157,8 +152,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -192,8 +186,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -229,8 +222,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -264,8 +256,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -306,8 +297,7 @@ describe('processProgramFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -344,8 +334,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -379,8 +368,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -414,8 +402,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -451,8 +438,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -488,8 +474,7 @@ describe('processProgramFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -534,8 +519,7 @@ describe('processProgramFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -581,8 +565,7 @@ describe('processProgramFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -628,8 +611,7 @@ describe('processProgramFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -663,8 +645,7 @@ describe('processProgramFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
 
                 const program = await Program.findOneOrFail({
@@ -734,8 +715,7 @@ describe('processProgramFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
 
                 const program = await Program.findOneOrFail({
@@ -799,8 +779,7 @@ describe('processProgramFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
 
                 const program = await Program.findOneOrFail({
@@ -864,8 +843,7 @@ describe('processProgramFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
 
                 const program = await Program.findOneOrFail({
