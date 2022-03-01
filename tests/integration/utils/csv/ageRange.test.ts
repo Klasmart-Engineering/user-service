@@ -19,7 +19,6 @@ import { TestConnection } from '../../../utils/testConnection'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { User } from '../../../../src/entities/user'
 import { createAdminUser } from '../../../utils/testEntities'
-import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
 
@@ -31,7 +30,6 @@ describe('processAgeRangeFromCSVRow', () => {
     let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
-    let queryResultCache: QueryResultCache
     const rowModel: AgeRangeRow = {
         organization_name: 'Company 1',
         age_range_low_value: '6',
@@ -58,8 +56,6 @@ describe('processAgeRangeFromCSVRow', () => {
         organization = await createOrganization()
         organization.organization_name = rowModel.organization_name
         await connection.manager.save(organization)
-
-        queryResultCache = new QueryResultCache()
     })
 
     context('when the organization name is not provided', () => {
@@ -73,8 +69,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -112,8 +107,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -151,8 +145,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(3) // This is legacy behaviour and should be changed to only expect the below code+msg
 
@@ -190,8 +183,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(2) // This is legacy behaviour and should be changed to only expect the below code+msg
 
@@ -229,8 +221,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -268,8 +259,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -314,8 +304,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -356,8 +345,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -395,8 +383,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -441,8 +428,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -476,8 +462,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
 
             const ageRange = await AgeRange.findOneOrFail({

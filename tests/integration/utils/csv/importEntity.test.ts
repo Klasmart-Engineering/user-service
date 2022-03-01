@@ -10,7 +10,7 @@ import { Organization } from '../../../../src/entities/organization'
 import { Upload } from '../../../../src/types/upload'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createServer } from '../../../../src/utils/createServer'
-import { Model } from '../../../../src/model'
+import { legacyCsvRowFunctionWrapper, Model } from '../../../../src/model'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -61,7 +61,25 @@ describe('createEntityFromCsvWithRollBack', () => {
                 createEntityFromCsvWithRollBack(
                     connection,
                     file,
-                    [processOrganizationFromCSVRow],
+                    [
+                        (
+                            manager,
+                            rows,
+                            rowNumber,
+                            fileErrors,
+                            userPermissions,
+                            queryResultCache
+                        ) =>
+                            legacyCsvRowFunctionWrapper(
+                                manager,
+                                rows,
+                                rowNumber,
+                                fileErrors,
+                                userPermissions,
+                                queryResultCache,
+                                processOrganizationFromCSVRow
+                            ),
+                    ],
                     adminPermissions,
                     undefined
                 )
@@ -94,7 +112,25 @@ describe('createEntityFromCsvWithRollBack', () => {
             await createEntityFromCsvWithRollBack(
                 connection,
                 file,
-                [processOrganizationFromCSVRow],
+                [
+                    (
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache
+                    ) =>
+                        legacyCsvRowFunctionWrapper(
+                            manager,
+                            rows,
+                            rowNumber,
+                            fileErrors,
+                            userPermissions,
+                            queryResultCache,
+                            processOrganizationFromCSVRow
+                        ),
+                ],
                 adminPermissions,
                 undefined
             )
@@ -126,7 +162,25 @@ describe('createEntityFromCsvWithRollBack', () => {
             await createEntityFromCsvWithRollBack(
                 connection,
                 file,
-                [processOrganizationFromCSVRow],
+                [
+                    (
+                        manager,
+                        rows,
+                        rowNumber,
+                        fileErrors,
+                        userPermissions,
+                        queryResultCache
+                    ) =>
+                        legacyCsvRowFunctionWrapper(
+                            manager,
+                            rows,
+                            rowNumber,
+                            fileErrors,
+                            userPermissions,
+                            queryResultCache,
+                            processOrganizationFromCSVRow
+                        ),
+                ],
                 adminPermissions,
                 undefined,
                 isDryRun

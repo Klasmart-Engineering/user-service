@@ -16,7 +16,7 @@ import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { CreateEntityRowCallback } from '../../../../src/types/csv/createEntityRowCallback'
 import { CSVError } from '../../../../src/types/csv/csvError'
-import { processUserFromCSVRow } from '../../../../src/utils/csv/user'
+import { processUserFromCSVRows } from '../../../../src/utils/csv/user'
 
 use(chaiAsPromised)
 
@@ -90,7 +90,7 @@ describe('read file', () => {
                             )
                         },
                     },
-                    [processUserFromCSVRow],
+                    [processUserFromCSVRows],
                     adminPermissions
                 )
                 expect(false).to.eq(true) // should never reach here
@@ -184,4 +184,39 @@ describe('read file', () => {
             }
         })
     })
+
+    context(
+        'when there are more rows then MUTATION_MAX_INPUT_ARRAY_SIZE',
+        () => {
+            const filename = 'users_example_big.csv'
+            const mimetype = 'text/csv'
+            const encoding = '7bit'
+            const dummyFn: CreateEntityRowCallback = async (
+                manager: EntityManager,
+                row: any,
+                rowCount: number
+            ) => {
+                return []
+            }
+            it('should work', async () => {
+                const upload: Upload = {
+                    filename: filename,
+                    mimetype: mimetype,
+                    encoding: encoding,
+                    createReadStream: () => {
+                        return fs.createReadStream(
+                            resolve(`tests/fixtures/${filename}`)
+                        )
+                    },
+                }
+
+                await readCSVFile(
+                    connection.manager,
+                    upload,
+                    [dummyFn],
+                    adminPermissions
+                )
+            })
+        }
+    )
 })

@@ -6,11 +6,10 @@ import { AgeRangeRow } from '../../types/csv/ageRangeRow'
 import { addCsvError } from './csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
 
-export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = async (
+export const processAgeRangeFromCSVRow = async (
     manager: EntityManager,
     row: AgeRangeRow,
     rowNumber: number,

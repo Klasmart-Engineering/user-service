@@ -5,10 +5,9 @@ import { SubCategoryRow } from '../../types/csv/subCategoryRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 
-export const processSubCategoriesFromCSVRow: CreateEntityRowCallback<SubCategoryRow> = async (
+export const processSubCategoriesFromCSVRow = async (
     manager: EntityManager,
     { organization_name, subcategory_name }: SubCategoryRow,
     rowNumber: number,

@@ -31,7 +31,33 @@ export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     fileErrors.push(...UserRowRequirements.validate(headers, filename))
 }
 
-export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
+export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
+    manager: EntityManager,
+    rows: UserRow[],
+    rowNumber: number,
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions,
+    queryResultCache: QueryResultCache
+) => {
+    const allRowErrors = []
+    for (const [index, row] of rows.entries()) {
+        // TODO: return entities instead of saving them inside the function
+        // so that can be saved in bulk
+
+        const rowErrors = await processUserFromCSVRow(
+            manager,
+            row,
+            rowNumber + index,
+            fileErrors,
+            userPermissions,
+            queryResultCache
+        )
+        allRowErrors.push(...rowErrors)
+    }
+    return allRowErrors
+}
+
+export const processUserFromCSVRow = async (
     manager: EntityManager,
     row: UserRow,
     rowNumber: number,
