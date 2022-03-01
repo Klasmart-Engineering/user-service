@@ -16,6 +16,7 @@ import {
     createTestClient,
 } from '../../../utils/createTestClient'
 import { createAdminUser } from '../../../utils/testEntities'
+import { bletch } from '../../../../src/utils/csv/user'
 
 use(chaiAsPromised)
 
@@ -61,7 +62,8 @@ describe('createEntityFromCsvWithRollBack', () => {
                 createEntityFromCsvWithRollBack(
                     connection,
                     file,
-                    [processOrganizationFromCSVRow],
+                    // bletch is placeholder, redo
+                    [bletch], //[processOrganizationFromCSVRow],
                     adminPermissions,
                     undefined
                 )
@@ -94,7 +96,8 @@ describe('createEntityFromCsvWithRollBack', () => {
             await createEntityFromCsvWithRollBack(
                 connection,
                 file,
-                [processOrganizationFromCSVRow],
+                // bletch is placeholder, redo
+                [bletch], //[processOrganizationFromCSVRow],
                 adminPermissions,
                 undefined
             )
@@ -126,7 +129,8 @@ describe('createEntityFromCsvWithRollBack', () => {
             await createEntityFromCsvWithRollBack(
                 connection,
                 file,
-                [processOrganizationFromCSVRow],
+                // bletch is placeholder, redo
+                [bletch], //[processOrganizationFromCSVRow],
                 adminPermissions,
                 undefined,
                 isDryRun

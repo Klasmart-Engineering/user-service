@@ -14,7 +14,6 @@ import { addCsvError, QueryResultCache, validateRow } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import { userRowValidation } from './validations/user'
 import { customErrors } from '../../types/errors/customError'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
@@ -22,6 +21,7 @@ import clean from '../clean'
 import { Permission } from '../../entities/permission'
 import { config } from '../../config/config'
 import { objectToKey } from '../stringUtils'
+import stream, { TransformCallback } from 'stream'
 
 export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     headers: (keyof UserRow)[],
@@ -31,14 +31,82 @@ export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     fileErrors.push(...UserRowRequirements.validate(headers, filename))
 }
 
-export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
+async function save(
     manager: EntityManager,
-    row: UserRow,
-    rowNumber: number,
+    user?: User,
+    cls?: Class,
+    organizationMembership?: OrganizationMembership
+) {
+    if (cls) {
+        await manager.save(cls)
+    }
+
+    if (organizationMembership) {
+        await manager.save(organizationMembership)
+    }
+
+    if (user) {
+        await manager.save(user)
+    }
+}
+
+export function bletch(
+    manager: EntityManager,
     fileErrors: CSVError[],
     userPermissions: UserPermissions,
     queryResultCache: QueryResultCache
-) => {
+) {
+    return new stream.Transform({
+        transform: (
+            // todo: supply row number
+            row: UserRow,
+            _encoding: string,
+            callback: TransformCallback
+        ) => {
+            const rowNumber = 0
+
+            void processUserFromCSVRow(
+                manager,
+                row,
+                rowNumber,
+                fileErrors,
+                userPermissions,
+                queryResultCache
+            )
+                .then(({ rowErrors, user, cls, organizationMembership }) => {
+                    // todo: batch the saves
+                    return save(
+                        manager,
+                        user,
+                        cls,
+                        organizationMembership
+                    ).then(() => {
+                        return rowErrors
+                    })
+                })
+                .then((rowErrors) => {
+                    callback(undefined, rowErrors)
+                })
+                .catch((e) => callback(e, undefined))
+            return
+        },
+    })
+}
+
+export const processUserFromCSVRow = async (
+    manager: EntityManager,
+    row: UserRow,
+    rowNumber: number,
+    // todo: passing this is is silly, remove
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions,
+    queryResultCache: QueryResultCache
+): Promise<{
+    rowErrors: CSVError[]
+    user?: User
+    organizationMembership?: OrganizationMembership
+    cls?: Class
+}> => {
     const rowErrors: CSVError[] = []
     // First check static validation constraints
     const validationErrors = validateRow(row, rowNumber, userRowValidation)
@@ -46,7 +114,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
     if (rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
     // Now check dynamic constraints
@@ -81,7 +149,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     entityName: row.organization_name,
                 }
             )
-            return rowErrors
+            return { rowErrors }
         }
 
         // And is the user authorized to upload to this org?
@@ -103,7 +171,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 }
             )
             // AD-1721: Added because validation process should not reveal validity of other entities after this point if client user unauthorized. Discussed with Charlie (PM).
-            return rowErrors
+            return { rowErrors }
         }
 
         // Update the cache
@@ -275,7 +343,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     }
 
     if (rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
     const rawEmail = row.user_email
@@ -375,10 +443,10 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     // never save if there are any errors in the file
     if (fileErrors.length > 0 || rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
-    await manager.save(user)
+    // await manager.save(user)
 
     let organizationMembership = await manager.findOne(OrganizationMembership, {
         where: {
@@ -409,7 +477,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         }
     }
 
-    await manager.save(organizationMembership)
+    // await manager.save(organizationMembership)
 
     if (school) {
         let schoolMembership = await manager.findOne(SchoolMembership, {
@@ -425,11 +493,16 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             schoolMembership.school = Promise.resolve(school)
             schoolMembership.user_id = user.user_id
             schoolMembership.user = Promise.resolve(user)
+            // todo: return this
+            // this is breaking tests because it has to be saved
+            // after the user
             await manager.save(schoolMembership)
         }
     }
 
     if (cls) {
+        // this has to be run per user
+        // so caching will only help so much
         const perms = await manager
             .createQueryBuilder(Permission, 'Permission')
             .innerJoin('Permission.roles', 'Role')
@@ -486,9 +559,9 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 }
             )
         } else {
-            await manager.save(cls)
+            // await manager.save(cls)
         }
     }
 
-    return rowErrors
+    return { rowErrors, cls, user, organizationMembership }
 }

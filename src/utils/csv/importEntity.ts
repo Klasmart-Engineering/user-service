@@ -1,16 +1,26 @@
-import { Connection } from 'typeorm'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { Connection, EntityManager } from 'typeorm'
 import { Upload } from '../../types/upload'
 import { readCSVFile } from './readFile'
-import { CustomError, instanceOfCSVError } from '../../types/csv/csvError'
+import {
+    CSVError,
+    CustomError,
+    instanceOfCSVError,
+} from '../../types/csv/csvError'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import logger from '../../logging'
+import { Transform } from 'stream'
+import { QueryResultCache } from './csvUtils'
 
 export async function createEntityFromCsvWithRollBack(
     connection: Connection,
     file: Upload,
-    functionsToSaveEntityFromCsvRow: CreateEntityRowCallback[],
+    functionsToSaveEntityFromCsvRow: ((
+        manager: EntityManager,
+        fileErrors: CSVError[],
+        userPermissions: UserPermissions,
+        queryResultCache: QueryResultCache
+    ) => Transform)[], // functionsToSaveEntityFromCsvRow: CreateEntityRowCallback[],
     userPermissions: UserPermissions,
     functionToValidateCSVHeaders?: CreateEntityHeadersCallback,
     isDryRun = false

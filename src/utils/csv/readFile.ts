@@ -2,7 +2,6 @@ import csv = require('csv-parser')
 import { Upload } from '../../types/upload'
 import { ReReadable } from 'rereadable-stream'
 import { EntityManager } from 'typeorm'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { Transform } from 'stream'
 import { CSVError } from '../../types/csv/csvError'
 import { stringInject } from '../stringUtils'
@@ -32,7 +31,12 @@ function formatCSVRow(row: Record<string, unknown>) {
 
 function canFinish(
     index: number,
-    callbacks: CreateEntityRowCallback[],
+    callbacks: ((
+        manager: EntityManager,
+        fileErrors: CSVError[],
+        userPermissions: UserPermissions,
+        queryResultCache: QueryResultCache
+    ) => Transform)[], //CreateEntityRowCallback[],
     stream: Transform
 ) {
     return index === callbacks.length - 1 && !stream.readableLength
@@ -194,10 +198,28 @@ function decodeUtf8() {
     })
 }
 
+function formatCSVRowTransform() {
+    return new stream.Transform({
+        transform: (
+            chunk: Record<string, unknown>,
+            _encoding: string,
+            callback: Stream.TransformCallback
+        ) => {
+            return callback(undefined, formatCSVRow(chunk))
+        },
+    })
+}
+
 export async function readCSVFile(
     manager: EntityManager,
     file: Upload,
-    rowCallbacks: CreateEntityRowCallback[],
+    // todo: try to use TransformStream instead
+    rowCallbacks: ((
+        manager: EntityManager,
+        fileErrors: CSVError[],
+        userPermissions: UserPermissions,
+        queryResultCache: QueryResultCache
+    ) => Transform)[], //CreateEntityRowCallback[],
     userPermissions: UserPermissions,
     headersCallback: CreateEntityHeadersCallback | undefined = undefined
 ) {
@@ -230,19 +252,25 @@ export async function readCSVFile(
         csvStream = rereadableStream.rewind().pipe(csv())
         rowCounter = 0
 
-        for await (let chunk of csvStream) {
-            rowCounter += 1
+        // this needs to be called before hand
+        //formatCSVRow(chunk)
 
-            chunk = formatCSVRow(chunk)
-
-            const rowErrors = await rowCallbacks[i](
-                manager,
-                chunk,
-                rowCounter,
-                fileErrors,
-                userPermissions,
-                queryResultCache
+        csvStream
+            .pipe(formatCSVRowTransform())
+            .pipe(
+                rowCallbacks[i](
+                    manager,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                )
             )
+
+        // get rid of the warning with
+        // https://stackoverflow.com/a/49428486
+
+        for await (const rowErrors of csvStream) {
+            rowCounter += 1
 
             fileErrors.push(...rowErrors)
 

@@ -28,7 +28,11 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
 import clean from './utils/clean'
-import { processUserFromCSVRow, validateUserCSVHeaders } from './utils/csv/user'
+import {
+    bletch,
+    processUserFromCSVRow,
+    validateUserCSVHeaders,
+} from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
 import { processGradeFromCSVRow, setGradeFromToFields } from './utils/csv/grade'
@@ -748,7 +752,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             getConnection(),
             file,
-            [processOrganizationFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], //[processOrganizationFromCSVRow],
             context.permissions
         )
 
@@ -769,7 +774,7 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processUserFromCSVRow],
+            [bletch], //[processUserFromCSVRow],
             context.permissions,
             validateUserCSVHeaders,
             isDryRun
@@ -791,7 +796,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processClassFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], // [processClassFromCSVRow],
             context.permissions
         )
 
@@ -811,7 +817,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processSchoolFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], //[processSchoolFromCSVRow],
             context.permissions
         )
 
@@ -831,7 +838,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processGradeFromCSVRow, setGradeFromToFields],
+            // bletch is placeholder, redo
+            [bletch], //[processGradeFromCSVRow, setGradeFromToFields],
             context.permissions
         )
 
@@ -851,7 +859,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processSubCategoriesFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], //[processSubCategoriesFromCSVRow],
             context.permissions
         )
 
@@ -871,7 +880,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processRoleFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], // [processRoleFromCSVRow],
             context.permissions
         )
 
@@ -891,7 +901,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processCategoryFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], //[processCategoryFromCSVRow],
             context.permissions
         )
 
@@ -911,7 +922,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processSubjectFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], // [processSubjectFromCSVRow],
             context.permissions
         )
 
@@ -931,7 +943,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processProgramFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], // [processProgramFromCSVRow],
             context.permissions
         )
 
@@ -951,7 +964,8 @@ export class Model {
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            [processAgeRangeFromCSVRow],
+            // bletch is placeholder, redo
+            [bletch], //[processAgeRangeFromCSVRow],
             context.permissions
         )
 

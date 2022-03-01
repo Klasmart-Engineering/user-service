@@ -16,7 +16,7 @@ import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { CreateEntityRowCallback } from '../../../../src/types/csv/createEntityRowCallback'
 import { CSVError } from '../../../../src/types/csv/csvError'
-import { processUserFromCSVRow } from '../../../../src/utils/csv/user'
+import { bletch, processUserFromCSVRow } from '../../../../src/utils/csv/user'
 
 use(chaiAsPromised)
 
@@ -66,7 +66,8 @@ describe('read file', () => {
                 readCSVFile(
                     connection.manager,
                     upload,
-                    [dummyFn],
+                    // bletch is placeholder, redo
+                    [bletch], //[dummyFn],
                     adminPermissions
                 )
             ).to.eventually.be.rejectedWith(`The ${filename} file is empty`)
@@ -90,7 +91,8 @@ describe('read file', () => {
                             )
                         },
                     },
-                    [processUserFromCSVRow],
+                    // bletch is placeholder, redo
+                    [bletch], //[processUserFromCSVRow],
                     adminPermissions
                 )
                 expect(false).to.eq(true) // should never reach here
@@ -132,7 +134,8 @@ describe('read file', () => {
                 await readCSVFile(
                     connection.manager,
                     upload,
-                    [dummyFn],
+                    // bletch is placeholder, redo
+                    [bletch], //[dummyFn],
                     adminPermissions
                 )
 
@@ -172,7 +175,8 @@ describe('read file', () => {
                 await readCSVFile(
                     connection.manager,
                     upload,
-                    [dummyFn],
+                    // bletch is placeholder, redo
+                    [bletch], //[dummyFn],
                     adminPermissions
                 )
 
