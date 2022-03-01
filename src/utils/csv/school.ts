@@ -11,11 +11,10 @@ import {
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
 
-export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async (
+export const processSchoolFromCSVRow = async (
     manager: EntityManager,
     row: SchoolRow,
     rowNumber: number,

@@ -9,11 +9,10 @@ import { ProgramRow } from '../../types/csv/programRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
 
-export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = async (
+export const processProgramFromCSVRow = async (
     manager: EntityManager,
     row: ProgramRow,
     rowNumber: number,

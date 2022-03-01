@@ -204,7 +204,7 @@ export async function readCSVFile(
     // we don't respect the encoding the client claims and instead
     // always try to decode as UTF-8
     const { filename, mimetype, encoding } = file
-    let rowCounter = 0
+    let rowsAlreadyProcessed = 0
     let csvStream: Transform
     const fileErrors: CSVError[] = []
     const readStream = file.createReadStream().pipe(decodeUtf8())
@@ -228,42 +228,50 @@ export async function readCSVFile(
 
     for (let i = 0; i < rowCallbacks.length; i += 1) {
         csvStream = rereadableStream.rewind().pipe(csv())
-        rowCounter = 0
+        rowsAlreadyProcessed = 0
 
-        for await (let chunk of csvStream) {
-            rowCounter += 1
+        let rowBuffer = []
 
-            chunk = formatCSVRow(chunk)
+        for await (let row of csvStream) {
+            row = formatCSVRow(row)
+            rowBuffer.push(row)
+            if (
+                rowBuffer.length >=
+                    config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE ||
+                csvStream.readableLength === 0
+            ) {
+                const rowErrors = await rowCallbacks[i](
+                    manager,
+                    rowBuffer,
+                    rowsAlreadyProcessed + 1,
+                    fileErrors,
+                    userPermissions,
+                    queryResultCache
+                )
 
-            const rowErrors = await rowCallbacks[i](
-                manager,
-                chunk,
-                rowCounter,
-                fileErrors,
-                userPermissions,
-                queryResultCache
-            )
+                rowsAlreadyProcessed += rowBuffer.length
+                rowBuffer = []
+                fileErrors.push(...rowErrors)
 
-            fileErrors.push(...rowErrors)
+                if (canFinish(i, rowCallbacks, csvStream)) {
+                    if (fileErrors.length) {
+                        logger.warn(
+                            'These errors were found in the file: %o',
+                            fileErrors
+                        )
+                        throw fileErrors
+                    }
 
-            if (canFinish(i, rowCallbacks, csvStream)) {
-                if (fileErrors.length) {
-                    logger.warn(
-                        'These errors were found in the file: %o',
-                        fileErrors
-                    )
-                    throw fileErrors
-                }
-
-                return {
-                    mimetype,
-                    encoding,
-                    filename,
+                    return {
+                        mimetype,
+                        encoding,
+                        filename,
+                    }
                 }
             }
         }
     }
-    if (rowCounter === 0) {
+    if (rowsAlreadyProcessed === 0) {
         throw new Error(
             stringInject(constants.MSG_ERR_CSV_EMPTY_FILE, {
                 filename,

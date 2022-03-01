@@ -18,7 +18,6 @@ import { CSVError } from '../../../../src/types/csv/csvError'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
-import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
 
@@ -30,7 +29,6 @@ describe('processSubCategoriesFromCSVRow', () => {
     let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
-    let queryResultCache: QueryResultCache
 
     const orgName = 'my-org'
     before(async () => {
@@ -50,7 +48,6 @@ describe('processSubCategoriesFromCSVRow', () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
-        queryResultCache = new QueryResultCache()
     })
 
     it('should create a class with school and program when present', async () => {
@@ -60,8 +57,7 @@ describe('processSubCategoriesFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions,
-            queryResultCache
+            adminPermissions
         )
 
         await Subcategory.findOneOrFail({
@@ -76,8 +72,7 @@ describe('processSubCategoriesFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions,
-            queryResultCache
+            adminPermissions
         )
         expect(rowErrors).to.have.length(1)
 
@@ -98,8 +93,7 @@ describe('processSubCategoriesFromCSVRow', () => {
             row,
             1,
             fileErrors,
-            adminPermissions,
-            queryResultCache
+            adminPermissions
         )
         expect(rowErrors).to.have.length(1)
 

@@ -18,7 +18,6 @@ import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
-import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
 
@@ -30,7 +29,6 @@ describe('processRoleFromCSVRow', () => {
     let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
-    let queryResultCache: QueryResultCache
 
     before(async () => {
         connection = getConnection() as TestConnection
@@ -56,7 +54,6 @@ describe('processRoleFromCSVRow', () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
-        queryResultCache = new QueryResultCache()
     })
 
     context('when the organization name is not provided', () => {
@@ -70,8 +67,7 @@ describe('processRoleFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -105,8 +101,7 @@ describe('processRoleFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -140,8 +135,7 @@ describe('processRoleFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -175,8 +169,7 @@ describe('processRoleFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -210,8 +203,7 @@ describe('processRoleFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
             expect(rowErrors).to.have.length(1)
 
@@ -257,8 +249,7 @@ describe('processRoleFromCSVRow', () => {
                     row,
                     1,
                     fileErrors,
-                    adminPermissions,
-                    queryResultCache
+                    adminPermissions
                 )
                 expect(rowErrors).to.have.length(1)
 
@@ -291,8 +282,7 @@ describe('processRoleFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions,
-                queryResultCache
+                adminPermissions
             )
 
             const role = await Role.findOneOrFail({
