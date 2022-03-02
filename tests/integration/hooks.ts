@@ -14,7 +14,6 @@ before(async () => {
     await truncateTables(connection)
     originalAdmins = UserPermissions.ADMIN_EMAILS
     UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
-    faker.seed(123)
     await RoleInitializer.run()
 })
 
@@ -24,6 +23,7 @@ after(async () => {
 })
 
 beforeEach(async () => {
+    faker.seed(123)
     transactionalContext = new TransactionalTestContext(connection)
     await transactionalContext.start()
 })

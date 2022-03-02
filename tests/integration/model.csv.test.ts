@@ -31,7 +31,7 @@ import { createOrganization } from '../factories/organization.factory'
 import { createRole } from '../factories/role.factory'
 import { createSchool } from '../factories/school.factory'
 import { createSubcategory } from '../factories/subcategory.factory'
-import { createProgram } from '../factories/program.factory'
+import { createProgram, createPrograms } from '../factories/program.factory'
 import { createUser } from '../factories/user.factory'
 import {
     queryUploadGrades,
@@ -83,7 +83,7 @@ import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
-import { CSVError, CustomError } from '../../src/types/csv/csvError'
+import { CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
@@ -96,8 +96,12 @@ import { UserPermissions } from '../../src/permissions/userPermissions'
 import { Readable } from 'stream'
 import { Upload } from '../../src/types/upload'
 import iconv from 'iconv-lite'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { config } from '../../src/config/config'
+import { checkCSVErrorsMatch } from '../utils/csvError'
 
 use(chaiAsPromised)
+use(deepEqualInAnyOrder)
 
 describe('model.csv', () => {
     let connection: TestConnection
@@ -108,16 +112,6 @@ describe('model.csv', () => {
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
     })
-
-    function checkErrorsMatch(error: Error, expectedError: CSVError) {
-        expect(error)
-            .to.have.property('message')
-            .equal(customErrors.csv_bad_input.message)
-        expect(error).to.have.property('errors').to.have.length(1)
-        expect(error)
-            .to.have.property('errors')
-            .to.have.deep.members([expectedError])
-    }
 
     describe('file encoding', () => {
         let ctx: { permissions: UserPermissions }
@@ -353,7 +347,7 @@ describe('model.csv', () => {
                         arbitraryUserToken
                     )
                 ).to.be.rejected
-                checkErrorsMatch(e, expectedCSVError)
+                checkCSVErrorsMatch(e, [expectedCSVError])
 
                 const allOrganizations = await Organization.count()
                 expect(allOrganizations).eq(1) // pre created "Company 1" org
@@ -677,7 +671,7 @@ describe('model.csv', () => {
         let file: ReadStream
         const mimetype = 'text/csv'
         const encoding = '7bit'
-        let filename = 'classes-bad.csv'
+        let filename = 'classes.csv'
 
         let arbitraryUserToken: string
 
@@ -687,11 +681,13 @@ describe('model.csv', () => {
         })
 
         context('when operation is not a mutation', () => {
-            it('should throw an error', async () => {
+            beforeEach(async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+            })
 
+            it('should throw an error', async () => {
                 await expect(
                     queryUploadClasses(
                         testClient,
@@ -708,32 +704,373 @@ describe('model.csv', () => {
             })
         })
 
+        // TODO : functionality and tests to add: 1) missing column check; 2) duplicate column check
         context('when file data is not correct', () => {
-            it('should throw an error', async () => {
-                file = fs.createReadStream(
-                    resolve(`tests/fixtures/${filename}`)
-                )
-
-                await expect(
-                    uploadClasses(
-                        testClient,
-                        file,
-                        filename,
-                        mimetype,
-                        encoding,
-                        arbitraryUserToken
+            context('when required fields are missing', () => {
+                beforeEach(async () => {
+                    file = fs.createReadStream(
+                        resolve(
+                            `tests/fixtures/classesWithMissingReqFields.csv`
+                        )
                     )
-                ).to.be.rejected
+                })
+                it('should throw an error with correct code', async () => {
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+                            1,
+                            'organization_name',
+                            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+                            {
+                                entity: 'organization',
+                                attribute: 'name',
+                            }
+                        ),
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+                            1,
+                            'class_name',
+                            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+                            {
+                                entity: 'class',
+                                attribute: 'name',
+                            }
+                        ),
+                    ]
 
-                const classesreated = await Class.count()
-                expect(classesreated).eq(0)
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                    const classesCreated = await Class.count()
+                    expect(classesCreated).eq(0)
+                })
             })
+
+            context('when entities do not exist in the DB', () => {
+                beforeEach(async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+                })
+                it('should throw an error with correct code for non-existent organization', async () => {
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                            1,
+                            'organization_name',
+                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                            {
+                                entity: 'organization',
+                                name: 'my-org',
+                            }
+                        ),
+                    ]
+
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                    const classesCreated = await Class.count()
+                    expect(classesCreated).eq(0)
+                })
+
+                it('should throw an error with correct code for non-existent school', async () => {
+                    const expectedOrg = createOrganization()
+                    expectedOrg.organization_name = 'my-org'
+                    await connection.manager.save(expectedOrg)
+
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            1,
+                            'school_name',
+                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            {
+                                entity: 'school',
+                                name: 'test-school',
+                                parent_name: 'my-org',
+                                parent_entity: 'organization',
+                            }
+                        ),
+                    ]
+
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                    const classesCreated = await Class.count()
+                    expect(classesCreated).eq(0)
+                })
+
+                it('should throw an error with correct code for non-existent program', async () => {
+                    const expectedOrg = createOrganization()
+                    expectedOrg.organization_name = 'my-org'
+                    await connection.manager.save(expectedOrg)
+
+                    const expectedSchool = createSchool(
+                        expectedOrg,
+                        'test-school'
+                    )
+                    await connection.manager.save(expectedSchool)
+
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            1,
+                            'program_name',
+                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            {
+                                entity: 'program',
+                                name: 'outdoor activities',
+                                parent_name: 'my-org',
+                                parent_entity: 'organization',
+                            }
+                        ),
+                    ]
+
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                    const classesCreated = await Class.count()
+                    expect(classesCreated).eq(0)
+                })
+
+                it('should throw an error with correct code for non-existent grade', async () => {
+                    const expectedOrg = createOrganization()
+                    expectedOrg.organization_name = 'my-org'
+                    await connection.manager.save(expectedOrg)
+
+                    const expectedSchool = createSchool(
+                        expectedOrg,
+                        'test-school'
+                    )
+                    await connection.manager.save(expectedSchool)
+
+                    const expectedProg = createProgram(expectedOrg)
+                    expectedProg.name = 'outdoor activities'
+                    await connection.manager.save(expectedProg)
+
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            1,
+                            'grade_name',
+                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            {
+                                entity: 'grade',
+                                name: 'first grade',
+                                parent_name: 'my-org',
+                                parent_entity: 'organization',
+                            }
+                        ),
+                    ]
+
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                    const classesCreated = await Class.count()
+                    expect(classesCreated).eq(0)
+                })
+            })
+
+            context('when input has invalid formatting', () => {
+                beforeEach(async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/classesWithInvalidNames.csv`)
+                    )
+                })
+                it('should throw an error with correct code for invalid class names', async () => {
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            customErrors.invalid_alphanumeric_special.code,
+                            1,
+                            'class_name',
+                            customErrors.invalid_alphanumeric_special.message,
+                            {
+                                entity: 'class',
+                                attribute: 'name',
+                            }
+                        ),
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
+                            2,
+                            'class_name',
+                            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+                            {
+                                entity: 'class',
+                                attribute: 'name',
+                                max: config.limits.CLASS_NAME_MAX_LENGTH,
+                            }
+                        ),
+                    ]
+
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                    const classesCreated = await Class.count()
+                    expect(classesCreated).eq(0)
+                })
+            })
+
+            context(
+                'when class already exists in a parent entity in the DB',
+                () => {
+                    let expectedOrg: Organization
+                    let expectedSchool: School
+
+                    beforeEach(async () => {
+                        file = fs.createReadStream(
+                            resolve(`tests/fixtures/${filename}`)
+                        )
+
+                        expectedOrg = createOrganization()
+                        expectedOrg.organization_name = 'my-org'
+                        await connection.manager.save(expectedOrg)
+
+                        expectedSchool = createSchool(
+                            expectedOrg,
+                            'test-school'
+                        )
+                        await connection.manager.save(expectedSchool)
+                    })
+                    it('throws an error with correct code for organization parent entity', async () => {
+                        const existentClass = createClass(
+                            undefined,
+                            expectedOrg
+                        )
+                        existentClass.class_name = 'class1'
+                        await connection.manager.save(existentClass)
+
+                        const expectedCSVErrors = [
+                            buildCsvError(
+                                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                                1,
+                                'class_name',
+                                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+                                {
+                                    entity: 'class',
+                                    name: 'class1',
+                                }
+                            ),
+                        ]
+
+                        const e = await expect(
+                            uploadClasses(
+                                testClient,
+                                file,
+                                filename,
+                                mimetype,
+                                encoding,
+                                arbitraryUserToken
+                            )
+                        ).to.be.rejected
+                        checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                        const classesCreated = await Class.count()
+                        expect(classesCreated).eq(1) // For the class that already exists
+                    })
+
+                    it('throws an error with correct code for duplicate shortcode child entity in org', async () => {
+                        const existentClass = createClass(
+                            undefined,
+                            expectedOrg
+                        )
+                        existentClass.class_name = 'class1-differentname'
+                        existentClass.shortcode = 'CSCODE'
+                        await connection.manager.save(existentClass)
+
+                        const expectedCSVErrors = [
+                            buildCsvError(
+                                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                                1,
+                                'class_shortcode',
+                                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                                {
+                                    name: 'CSCODE',
+                                    entity: 'shortcode',
+                                    parent_name: 'class1-differentname',
+                                    parent_entity: 'class',
+                                }
+                            ),
+                        ]
+
+                        const e = await expect(
+                            uploadClasses(
+                                testClient,
+                                file,
+                                filename,
+                                mimetype,
+                                encoding,
+                                arbitraryUserToken
+                            )
+                        ).to.be.rejected
+                        checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                        const classesCreated = await Class.count()
+                        expect(classesCreated).eq(1) // For the class that already exists
+                    })
+                }
+            )
         })
 
         context('when file data is correct', () => {
             let expectedOrg: Organization
             let expectedProg: Program
+            let noneSpecifiedProg: Program
             let expectedSchool: School
+            let expectedGrade: Grade
 
             beforeEach(async () => {
                 filename = 'classes.csv'
@@ -748,8 +1085,16 @@ describe('model.csv', () => {
                 expectedProg.name = 'outdoor activities'
                 await connection.manager.save(expectedProg)
 
+                noneSpecifiedProg = createPrograms(1, expectedOrg)[0]
+                noneSpecifiedProg.name = 'None Specified'
+                await connection.manager.save(noneSpecifiedProg)
+
                 expectedSchool = createSchool(expectedOrg, 'test-school')
                 await connection.manager.save(expectedSchool)
+
+                expectedGrade = createGrade(expectedOrg)
+                expectedGrade.name = 'first grade'
+                await connection.manager.save(expectedGrade)
             })
 
             it('should create classes', async () => {
@@ -766,12 +1111,38 @@ describe('model.csv', () => {
                 })
                 const schools = (await dbClass.schools) || []
                 const programs = (await dbClass.programs) || []
+                const grades = (await dbClass.grades) || []
 
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
                 expect(result.encoding).eq(encoding)
                 expect(schools.length).to.equal(1)
                 expect(programs.length).to.equal(1)
+                expect(grades.length).to.equal(1)
+            })
+
+            it('should assign None Specified program but none for grade for unspecified program and grade fields ', async () => {
+                filename = 'classesEmptyNonReqFields.csv'
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+
+                const result = await uploadClasses(
+                    testClient,
+                    file,
+                    filename,
+                    mimetype,
+                    encoding,
+                    arbitraryUserToken
+                )
+                const dbClass = await Class.findOneOrFail({
+                    where: { class_name: 'class1', organization: expectedOrg },
+                })
+                const programs = (await dbClass.programs) || []
+                const grades = (await dbClass.grades) || []
+
+                expect(programs.length).to.equal(1)
+                expect(grades.length).to.equal(0)
             })
         })
     })
@@ -1039,7 +1410,7 @@ describe('model.csv', () => {
                         { authorization: arbitraryUserToken }
                     )
                 ).to.be.rejected
-                checkErrorsMatch(e, expectedCSVError)
+                checkCSVErrorsMatch(e, [expectedCSVError])
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -1078,7 +1449,7 @@ describe('model.csv', () => {
                         { authorization: arbitraryUserToken }
                     )
                 ).to.be.rejected
-                checkErrorsMatch(e, expectedCSVError)
+                checkCSVErrorsMatch(e, [expectedCSVError])
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -1116,7 +1487,7 @@ describe('model.csv', () => {
                         { authorization: arbitraryUserToken }
                     )
                 ).to.be.rejected
-                checkErrorsMatch(e, expectedCSVError)
+                checkCSVErrorsMatch(e, [expectedCSVError])
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -1150,7 +1521,7 @@ describe('model.csv', () => {
                         { authorization: arbitraryUserToken }
                     )
                 ).to.be.rejected
-                checkErrorsMatch(e, expectedCSVError)
+                checkCSVErrorsMatch(e, [expectedCSVError])
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -1184,7 +1555,7 @@ describe('model.csv', () => {
                         { authorization: arbitraryUserToken }
                     )
                 ).to.be.rejected
-                checkErrorsMatch(e, expectedCSVError)
+                checkCSVErrorsMatch(e, [expectedCSVError])
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -1517,7 +1888,7 @@ describe('model.csv', () => {
                         arbitraryUserToken
                     )
                 ).to.be.rejected
-                checkErrorsMatch(e, expectedCSVError)
+                checkCSVErrorsMatch(e, [expectedCSVError])
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(priorUserCount)
