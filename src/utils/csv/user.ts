@@ -40,11 +40,12 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
     queryResultCache: QueryResultCache
 ) => {
     const allRowErrors = []
+
     for (const [index, row] of rows.entries()) {
         // TODO: return entities instead of saving them inside the function
         // so that can be saved in bulk
 
-        const rowErrors = await processUserFromCSVRow(
+        const { rowErrors } = await processUserFromCSVRow(
             manager,
             row,
             rowNumber + index,
@@ -64,7 +65,9 @@ export const processUserFromCSVRow = async (
     fileErrors: CSVError[],
     userPermissions: UserPermissions,
     queryResultCache: QueryResultCache
-) => {
+): Promise<{
+    rowErrors: CSVError[]
+}> => {
     const rowErrors: CSVError[] = []
     // First check static validation constraints
     const validationErrors = validateRow(row, rowNumber, userRowValidation)
@@ -72,7 +75,7 @@ export const processUserFromCSVRow = async (
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
     if (rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
     // Now check dynamic constraints
@@ -107,7 +110,7 @@ export const processUserFromCSVRow = async (
                     entityName: row.organization_name,
                 }
             )
-            return rowErrors
+            return { rowErrors }
         }
 
         // And is the user authorized to upload to this org?
@@ -129,7 +132,7 @@ export const processUserFromCSVRow = async (
                 }
             )
             // AD-1721: Added because validation process should not reveal validity of other entities after this point if client user unauthorized. Discussed with Charlie (PM).
-            return rowErrors
+            return { rowErrors }
         }
 
         // Update the cache
@@ -301,7 +304,7 @@ export const processUserFromCSVRow = async (
     }
 
     if (rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
     const rawEmail = row.user_email
@@ -401,7 +404,7 @@ export const processUserFromCSVRow = async (
 
     // never save if there are any errors in the file
     if (fileErrors.length > 0 || rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
     await manager.save(user)
@@ -498,6 +501,7 @@ export const processUserFromCSVRow = async (
                 cls.students = Promise.resolve(students)
             }
         }
+
         if (!studentPerm && !teacherPerm) {
             addCsvError(
                 rowErrors,
@@ -511,10 +515,11 @@ export const processUserFromCSVRow = async (
                     parentName: row.class_name,
                 }
             )
+            return { rowErrors }
         } else {
             await manager.save(cls)
         }
     }
 
-    return rowErrors
+    return { rowErrors }
 }

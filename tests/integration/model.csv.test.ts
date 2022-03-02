@@ -251,7 +251,7 @@ describe('model.csv', () => {
         })
     })
 
-    describe('uploadOrganizationsFromCSV', () => {
+    describe.only('uploadOrganizationsFromCSV', () => {
         let file: ReadStream
         const mimetype = 'text/csv'
         const encoding = '7bit'
