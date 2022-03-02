@@ -1,12 +1,16 @@
 import { check } from 'k6';
 import http from 'k6/http';
 import { meClassesStudying } from '../queries/users';
+import { Counter, Trend } from 'k6/metrics';
 
 const params = {
     headers: {
         'Content-Type': `application/json`,
     },
 };
+
+const counter = new Counter('GetMeClassesStudying');
+const serverWaitingTime = new Trend('GetMeClassesStudyingWaiting', true);
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
@@ -24,4 +28,9 @@ export default function (roleType?: string) {
     }, {
         userRoleType: roleType
     });
+
+    if (res.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res.timings.waiting);
+    }
 }

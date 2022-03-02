@@ -1,5 +1,6 @@
 import { check } from 'k6';
 import http from 'k6/http';
+import { Counter, Trend } from 'k6/metrics';
 import { Options } from 'k6/options';
 import { meMembershipForStudent1, meMembershipForStudent2, meMembershipForStudent3, meMembershipForStudent4, meMembershipForStudent5, meMembershipForTeacher1, meMembershipForTeacher2, meMembershipForTeacher3,  meMembershipForTeacher4, meMembershipForTeacher5  } from '../queries/schools';
 import { meQueryReq1 } from '../queries/users';
@@ -12,6 +13,12 @@ const params = {
         'Content-Type': `application/json`,
     },
 };
+
+const counter = new Counter('MeMembershipStudents');
+const serverWaitingTime = new Trend('MeMembershipStudentsWaiting', true);
+
+const counterBasic = new Counter('MeQueryBasicInStudents');
+const serverWaitingTimeBasic = new Trend('MeQueryBasicInStudentsWaiting', true);
 
 export default function (roleType?: string) {
     
@@ -55,20 +62,49 @@ export default function (roleType?: string) {
     // request to verfiy the memershipPayload 1
     const res = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload1, params);
    
+    if (res.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res.timings.waiting);
+    }
+
     // request to verfiy the memershipPayload 2
     const res2 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload2, params);
+
+    if (res2.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res2.timings.waiting);
+    }
 
     // request to verfiy the memershipPayload 3
     const res3 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload3, params);
     
+    if (res3.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res3.timings.waiting);
+    }
+
     // request to verfiy the memershipPayload 4
     const res4 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload4, params);
 
-    const resBascic = http.post(process.env.SERVICE_URL as string, meQueryBasic, params);
+    if (res4.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res4.timings.waiting);
+    }
+
+    const resBasic = http.post(process.env.SERVICE_URL as string, meQueryBasic, params);
+
+    if (resBasic.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(resBasic.timings.waiting);
+    }
 
     // request to verfiy the memershipPayload 5
     const res5 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload5, params);
  
+    if (res5.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res5.timings.waiting);
+    }
 
     check(res, {
         '"Get me membership 1" status is 200': (r) => r.status === 200,
@@ -115,7 +151,7 @@ export default function (roleType?: string) {
         userRoleType: roleType
     });
 
-    check(resBascic, {
+    check(resBasic, {
         'status is 200 meQueryReq1': () => res.status === 200,
       //  '"meQueryReq1" query returns data': (r) => JSON.parse(r.body as string).data?.me ?? false,
 

@@ -1,5 +1,6 @@
 import { check } from 'k6';
 import http from 'k6/http';
+import { Counter, Trend } from 'k6/metrics';
 import { Options } from 'k6/options';
 import { getSchoolsFilterList } from '../queries/schools';
 
@@ -12,6 +13,9 @@ const params = {
         'Content-Type': `application/json`,
     },
 };
+
+const counter = new Counter('GetSchoolsFilter');
+const serverWaitingTime = new Trend('GetSchoolsFilterWaiting', true);
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
@@ -39,4 +43,9 @@ export default function (roleType?: string) {
     }, {
         userRoleType: roleType
     });
+
+    if (res.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res.timings.waiting);
+    }
 }

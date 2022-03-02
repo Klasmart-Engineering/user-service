@@ -1,5 +1,6 @@
 import { check } from 'k6';
 import http from 'k6/http';
+import { Counter, Trend } from 'k6/metrics';
 import { Options } from 'k6/options';
 
 export const options:Options = {
@@ -11,6 +12,9 @@ const params = {
         'Content-Type': `application/json`,
     },
 };
+
+const counter = new Counter('SchedulesTimeView');
+const serverWaitingTime = new Trend('SchedulesTimeViewWaiting', true);
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify(
@@ -34,4 +38,9 @@ export default function (roleType?: string) {
     }, {
         userRoleType: roleType
     });
+
+    if (res.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res.timings.waiting);
+    }
 }

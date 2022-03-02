@@ -43,7 +43,7 @@ LIVE_URL=https://kl2.loadtest.kidsloop.live/v1/
 PUBLISHED_LEARNING_OUTCOMES=https://kl2.loadtest.kidsloop.live/v1/published_learning_outcomes
 
 ASSESSMENT_SUMMARY_URL=https://cms.loadtest.kidsloop.live/v1/assessments_summary
-ASSESSMENT_SUMMARY_URL_BK=https://kl2.loadtest.kidsloop.live/v1/assessments_summary
+# ASSESSMENT_SUMMARY_URL_BK=https://kl2.loadtest.kidsloop.live/v1/assessments_summary
 
 ASSESSMENT_STUDENT_URL=https://cms.loadtest.kidsloop.live/v1/assessments_for_student
 

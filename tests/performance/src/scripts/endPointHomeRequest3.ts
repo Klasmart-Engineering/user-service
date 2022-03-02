@@ -1,11 +1,15 @@
 import { check } from 'k6';
 import http from 'k6/http';
+import { Counter, Trend } from 'k6/metrics';
 
 const params = {
     headers: {
         'Content-Type': `application/json`,
     },
 };
+
+const counter = new Counter('MeQueryOrganizationReq3');
+const serverWaitingTime = new Trend('meQueryOrganizationReq3Waiting', true);
 
 export default function (roleType?: string) {
     const res = http.get(`${process.env.ASSESSMENT_SUMMARY_URL}?org_id=${process.env.ORG_ID}` as string, params);
@@ -15,4 +19,9 @@ export default function (roleType?: string) {
     }, {
         userRoleType: roleType
     });
+
+    if (res.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res.timings.waiting);
+    }
 }

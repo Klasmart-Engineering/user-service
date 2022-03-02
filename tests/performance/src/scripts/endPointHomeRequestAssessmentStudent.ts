@@ -1,11 +1,15 @@
 import { check } from 'k6';
 import http from 'k6/http';
+import { Counter, Trend } from 'k6/metrics';
 
 const params = {
     headers: {
         'Content-Type': `application/json`,
     },
 };
+
+const counter = new Counter('endPointHomeRequestAssessmentStudent');
+const serverWaitingTime = new Trend('endPointHomeRequestAssessmentStudent', true);
 
 export default function (roleType?: string) {
 
@@ -17,4 +21,9 @@ export default function (roleType?: string) {
     }, {
         userRoleType: roleType
     });
+
+    if (res.status === 200) {
+        counter.add(1);
+        serverWaitingTime.add(res.timings.waiting);
+    }
 }

@@ -14,11 +14,9 @@ export default function() {
     // schedulesTimeViewDay(); // CMS service
     // sleep(5);
     // scheduleFilterClass();
-    sleep(0.5);
     getSchoolsFilter(); // User service
     getClassFilters(); //  User service
     
     //this function checks the permission for teachers. 
     meMembershipsForStudents(); // 6 Requests
-
 }
