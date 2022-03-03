@@ -284,6 +284,10 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
         }
     }
 
+    // avoid querying org users that have already been queried using
+    // less restrictive permissions
+    const orgsWithFullAccess: string[] = []
+
     // 1 - can we view org users?
     const userOrgs: string[] = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_users_40110,
@@ -299,12 +303,15 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
         userFilters.push({
             where: 'OrganizationMembership.user_id IS NOT NULL',
         })
+        orgsWithFullAccess.push(...userOrgs)
     }
 
     // 2 - can we view school users?
-    const userOrgsSchools = await permissions.orgMembershipsWithPermissions([
-        PermissionName.view_my_school_users_40111,
-    ]) // todo filter
+    const userOrgsSchools = (
+        await permissions.orgMembershipsWithPermissions([
+            PermissionName.view_my_school_users_40111,
+        ])
+    ).filter((org) => !orgsWithFullAccess.includes(org))
     if (userOrgsSchools.length) {
         // find a schools the user is a member of in these orgs
         const schoolIdsQuery = getRepository(SchoolMembership)
