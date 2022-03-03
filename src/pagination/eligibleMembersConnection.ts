@@ -86,7 +86,7 @@ function membersWithPermission(
         scope.innerJoin('User.memberships', 'OrganizationMembership')
     }
     if (!scopeHasJoin(scope, SchoolMembership)) {
-        scope.innerJoin('User.school_memberships', 'SchoolMembership')
+        scope.leftJoin('User.school_memberships', 'SchoolMembership')
     }
     return scope
         .innerJoin('OrganizationMembership.organization', 'Organization')
