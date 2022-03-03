@@ -284,46 +284,21 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
         }
     }
 
-    // left joins to a subquery that selects all users
-    // from common memberships (orgs, schools, classes)
-    const joinToDistinctMembers = (
-        membershipTable: string,
-        membershipEntityKeys: string[],
-        membershipEntityColumn: string
-    ) => {
-        const joinAlias = `${membershipTable}_join`
-        const uniqueId = uuid_v4()
-        scope.leftJoin(
-            (qb) =>
-                qb
-                    .select('membership_table.userUserId', 'user_id')
-                    .distinct(true)
-                    .from(membershipTable, 'membership_table')
-                    .andWhere(
-                        `membership_table.${membershipEntityColumn} IN (:...${uniqueId})`,
-                        {
-                            [uniqueId]: membershipEntityKeys,
-                        }
-                    ),
-            joinAlias,
-            `${joinAlias}.user_id = User.user_id`
-        )
-        userFilters.push({
-            where: `${joinAlias}.user_id IS NOT NULL`,
-        })
-    }
-
     // 1 - can we view org users?
     const userOrgs: string[] = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_users_40110,
     ])
 
     if (userOrgs.length) {
-        joinToDistinctMembers(
-            'organization_membership',
-            userOrgs,
-            'organizationOrganizationId'
+        scope.leftJoin(
+            'User.memberships',
+            'OrganizationMembership',
+            'OrganizationMembership.organization IN (:...organizations)',
+            { organizations: userOrgs }
         )
+        userFilters.push({
+            where: 'OrganizationMembership.user_id IS NOT NULL',
+        })
     }
 
     // 2 - can we view school users?
@@ -346,11 +321,17 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
         )
 
         if (schoolIds.length) {
-            joinToDistinctMembers(
-                'school_membership',
-                schoolIds,
-                'schoolSchoolId'
+            scope.leftJoin(
+                'User.school_memberships',
+                'SchoolMembership',
+                'SchoolMembership.school_id IN (:...schoolIds)',
+                {
+                    schoolIds,
+                }
             )
+            userFilters.push({
+                where: 'SchoolMembership.user_id IS NOT NULL',
+            })
         }
     }
 
@@ -361,17 +342,34 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     if (orgsWithClasses.length) {
         const classesTaught = await user.classesTeaching
         if (classesTaught?.length) {
-            const classIds = classesTaught.map(({ class_id }) => class_id)
-            joinToDistinctMembers(
-                'user_classes_studying_class',
-                classIds,
-                'classClassId'
+            const distinctMembers = (
+                membershipTable: string,
+                qb: SelectQueryBuilder<User>
+            ) => {
+                return qb
+                    .select('membership_table.userUserId', 'user_id')
+                    .distinct(true)
+                    .from(membershipTable, 'membership_table')
+                    .andWhere('membership_table.classClassId IN (:...ids)', {
+                        ids: classesTaught.map(({ class_id }) => class_id),
+                    })
+            }
+            scope.leftJoin(
+                (qb) => distinctMembers('user_classes_studying_class', qb),
+                'class_studying_membership',
+                'class_studying_membership.user_id = User.user_id'
             )
-            joinToDistinctMembers(
-                'user_classes_teaching_class',
-                classIds,
-                'classClassId'
+            scope.leftJoin(
+                (qb) => distinctMembers('user_classes_teaching_class', qb),
+                'class_teaching_membership',
+                'class_teaching_membership.user_id = User.user_id'
             )
+            userFilters.push({
+                where: 'class_studying_membership.user_id IS NOT NULL',
+            })
+            userFilters.push({
+                where: 'class_teaching_membership.user_id IS NOT NULL',
+            })
         }
     }
 
