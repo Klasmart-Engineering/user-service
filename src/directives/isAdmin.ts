@@ -254,6 +254,10 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     // then do a WHERE user_id IN on each query to find all visible users
     const visibleUserQueries: SelectQueryBuilder<unknown>[] = []
 
+    // avoid querying org users that have already been queried using
+    // less restrictive permissions
+    const orgsWithFullAccess: string[] = []
+
     // 1 - can we view org users?
     const userOrgs: string[] = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_users_40110,
@@ -267,11 +271,14 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
                 userOrgs
             )!
         )
+        orgsWithFullAccess.push(...userOrgs)
     }
     // 2 - can we view school users?
-    const userSchoolOrgs = await permissions.orgMembershipsWithPermissions([
-        PermissionName.view_my_school_users_40111,
-    ])
+    const userSchoolOrgs = (
+        await permissions.orgMembershipsWithPermissions([
+            PermissionName.view_my_school_users_40111,
+        ])
+    ).filter((org) => !orgsWithFullAccess.includes(org))
 
     if (userSchoolOrgs.length) {
         // find a schools the user is a member of in these orgs
@@ -301,28 +308,28 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     }
 
     // 3 - can we view class users?
-    const [classesTaught, orgsWithClasses] = await Promise.all([
-        user.classesTeaching,
-        permissions.orgMembershipsWithPermissions([
-            PermissionName.view_my_class_users_40112,
-        ]),
+    const orgsWithClasses = await permissions.orgMembershipsWithPermissions([
+        PermissionName.view_my_class_users_40112,
     ])
 
-    if (orgsWithClasses.length && classesTaught && classesTaught.length > 0) {
-        visibleUserQueries.push(
-            distinctMembers(
-                'user_classes_studying_class',
-                'classClassId',
-                classesTaught.map(({ class_id }) => class_id)
-            )!
-        )
-        visibleUserQueries.push(
-            distinctMembers(
-                'user_classes_teaching_class',
-                'classClassId',
-                classesTaught.map(({ class_id }) => class_id)
-            )!
-        )
+    if (orgsWithClasses.length) {
+        const classesTaught = await user.classesTeaching
+        if (classesTaught?.length) {
+            visibleUserQueries.push(
+                distinctMembers(
+                    'user_classes_studying_class',
+                    'classClassId',
+                    classesTaught.map(({ class_id }) => class_id)
+                )!
+            )
+            visibleUserQueries.push(
+                distinctMembers(
+                    'user_classes_teaching_class',
+                    'classClassId',
+                    classesTaught.map(({ class_id }) => class_id)
+                )!
+            )
+        }
     }
 
     scope.where(

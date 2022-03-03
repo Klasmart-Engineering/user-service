@@ -343,20 +343,16 @@ describe('isAdmin', () => {
                 let scope: SelectQueryBuilder<User>
                 let token: TokenPayload
                 let user: User
+                let userPermissions: UserPermissions
 
                 beforeEach(async () => {
                     scope = getRepository(User).createQueryBuilder()
                     user = await createUser().save()
                     token = userToPayload(user, true)
+                    userPermissions = new UserPermissions(token)
                 })
 
                 context('when username is set', () => {
-                    let userPermissions: UserPermissions
-
-                    beforeEach(() => {
-                        userPermissions = new UserPermissions(token)
-                    })
-
                     context(
                         'when there is more then one user with the same username',
                         () => {
@@ -389,7 +385,7 @@ describe('isAdmin', () => {
 
                 it('errors if no user_id is set', async () => {
                     token.id = undefined
-                    const userPermissions = new UserPermissions(token)
+                    userPermissions = new UserPermissions(token)
 
                     await expect(
                         nonAdminUserScope(scope, userPermissions)
@@ -397,6 +393,125 @@ describe('isAdmin', () => {
                         'User is required for authorization'
                     )
                 })
+
+                context(
+                    'permission precedence performance optimization',
+                    () => {
+                        let organization: Organization
+                        beforeEach(async () => {
+                            organization = await createOrganization().save()
+                        })
+                        it("doesn't query view_my_school_users_40111 if view_users_40110 is granted in the same org", async () => {
+                            const role = await createRole(
+                                'role',
+                                organization,
+                                {
+                                    permissions: [
+                                        // view_users_40110 gives full access
+                                        PermissionName.view_users_40110,
+                                        // so don't need to check this
+                                        PermissionName.view_my_school_users_40111,
+                                    ],
+                                }
+                            ).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization,
+                                roles: [role],
+                            }).save()
+
+                            await nonAdminUserScope(scope, userPermissions)
+                            const query = scope.getQuery()
+                            expect(query).to.include('organization_membership')
+                            expect(query).to.not.include('school')
+                        })
+                        it('will always query class users if granted the permissions AND teacher of at least one class', async () => {
+                            // classes may not have a school, and therefore not a subset of view_my_school_users_40111
+                            const role = await createRole(
+                                'role',
+                                organization,
+                                {
+                                    permissions: [
+                                        PermissionName.view_my_school_users_40111,
+                                        PermissionName.view_my_class_users_40112,
+                                    ],
+                                }
+                            ).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization,
+                                roles: [role],
+                            }).save()
+
+                            const school = await createSchool(
+                                organization
+                            ).save()
+                            await createSchoolMembership({
+                                user,
+                                school,
+                            }).save()
+
+                            const class_ = await createClass(
+                                undefined,
+                                undefined,
+                                {
+                                    teachers: [user],
+                                }
+                            ).save()
+
+                            await nonAdminUserScope(scope, userPermissions)
+                            const query = scope.getQuery()
+                            expect(query).to.not.include(
+                                'organization_membership'
+                            )
+                            expect(query).to.include('school')
+                            expect(query).to.include('class')
+                        })
+                        it('queries both view_users_40110 & view_my_school_users_40111 if they are from different orgs', async () => {
+                            const org1Role = await createRole(
+                                'role',
+                                organization,
+                                {
+                                    permissions: [
+                                        PermissionName.view_users_40110,
+                                    ],
+                                }
+                            ).save()
+
+                            const org2 = await createOrganization().save()
+                            const org2Role = await createRole(
+                                'role',
+                                organization,
+                                {
+                                    permissions: [
+                                        PermissionName.view_my_school_users_40111,
+                                    ],
+                                }
+                            ).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization,
+                                roles: [org1Role],
+                            }).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization: org2,
+                                roles: [org2Role],
+                            }).save()
+                            const school = await createSchool(org2).save()
+                            await createSchoolMembership({
+                                user,
+                                school,
+                            }).save()
+
+                            await nonAdminUserScope(scope, userPermissions)
+                            const query = scope.getQuery()
+                            expect(query).to.include('organization_membership')
+                            expect(query).to.include('school')
+                            expect(query).to.not.include('class')
+                        })
+                    }
+                )
             })
 
             it('no permission needed to view my users', async () => {
