@@ -25,7 +25,6 @@ import { School } from '../entities/school'
 import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
-import { v4 as uuid_v4 } from 'uuid'
 
 //
 // changing permission rules? update the docs: permissions.md
@@ -250,6 +249,8 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     const email = permissions.getEmail()
     const phone = permissions.getPhone()
 
+    // for each condition generate a WHERE clause, then OR
+    // them all together
     const userFilters: {
         where: string
         params?: Record<string, unknown>
