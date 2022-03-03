@@ -1470,20 +1470,22 @@ export class AddTeachersToClasses extends AddMutation<
         )
         errors.push(...classes.errors)
 
-        const currentClassTeachers = new Map(
-            maps.classesTeachers.get(classId)?.map((u) => [u.user_id, u])
+        const currentClassTeachers = new Set(
+            maps.classesTeachers.get(classId)?.map((u) => u.user_id)
         )
 
         const teachers = flagNonExistent(User, index, teacherIds, maps.teachers)
         errors.push(...teachers.errors)
 
-        const alreadyAdded = flagExistent(
+        const alreadyAddedErrors = flagExistentChild(
+            Class,
             User,
             index,
-            teachers.values.map((u) => u.user_id),
+            classId,
+            teacherIds,
             currentClassTeachers
         )
-        errors.push(...alreadyAdded.errors)
+        errors.push(...alreadyAddedErrors)
 
         if (currentEntity) {
             const classOrgId = (currentEntity as ClassAndOrg).__organization__
