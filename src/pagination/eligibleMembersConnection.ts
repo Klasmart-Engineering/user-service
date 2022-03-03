@@ -1,6 +1,8 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Brackets, SelectQueryBuilder } from 'typeorm'
 import { distinctMembers } from '../directives/isAdminUtils'
+import { OrganizationMembership } from '../entities/organizationMembership'
+import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import { PermissionName } from '../permissions/permissionNames'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
@@ -14,6 +16,7 @@ import {
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { scopeHasJoin } from '../utils/typeorm'
 
 import {
     CoreUserConnectionNode,
@@ -79,13 +82,17 @@ function membersWithPermission(
     classId: string,
     scope: SelectQueryBuilder<User>
 ): SelectQueryBuilder<User> {
+    if (!scopeHasJoin(scope, OrganizationMembership)) {
+        scope.innerJoin('User.memberships', 'OrganizationMembership')
+    }
+    if (!scopeHasJoin(scope, SchoolMembership)) {
+        scope.innerJoin('User.school_memberships', 'SchoolMembership')
+    }
     return scope
-        .innerJoin('User.memberships', 'OrganizationMembership')
         .innerJoin('OrganizationMembership.organization', 'Organization')
         .leftJoin('OrganizationMembership.roles', 'Role')
         .leftJoin('Role.permissions', 'Permission')
         .innerJoin('Organization.classes', 'Class')
-        .leftJoin('User.school_memberships', 'SchoolMembership')
         .leftJoin('SchoolMembership.roles', 'SchoolRole')
         .leftJoin('SchoolRole.permissions', 'SchoolPermission')
         .leftJoin('Class.schools', 'School')
