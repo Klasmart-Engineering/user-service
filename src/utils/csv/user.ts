@@ -472,6 +472,12 @@ export const processUserFromCSVRow = async (
                     organization_id: organizationMembership.organization_id,
                 }
             )
+            .andWhere('Permission.permission_name IN (:...permission_ids)', {
+                permission_ids: [
+                    PermissionName.attend_live_class_as_a_teacher_186.valueOf(),
+                    PermissionName.attend_live_class_as_a_student_187.valueOf(),
+                ],
+            })
             .getMany()
 
         const teacherPerm =

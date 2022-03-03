@@ -1,177 +1,177 @@
 {
     "SAVEPOINT nested_transaction": {
-        "total": 3,
-        "mean": 3,
+        "total": 2,
+        "mean": 2,
         "instances": 1,
-        "min": 3,
-        "max": 3
+        "min": 2,
+        "max": 2
     },
     "SELECT \"Organization\".\"created_at\" AS \"Organization_created_at\", \"Organization\".\"updated_at\" AS \"Organization_updated_at\", \"Organization\".\"deleted_at\" AS \"Organization_deleted_at\", \"Organization\".\"status\" AS \"Organization_status\", \"Organization\".\"organization_id\" AS \"Organization_organization_id\", \"Organization\".\"organization_name\" AS \"Organization_organization_name\", \"Organization\".\"address1\" AS \"Organization_address1\", \"Organization\".\"address2\" AS \"Organization_address2\", \"Organization\".\"phone\" AS \"Organization_phone\", \"Organization\".\"shortCode\" AS \"Organization_shortCode\", \"Organization\".\"primaryContactUserId\" AS \"Organization_primaryContactUserId\" FROM \"organization\" \"Organization\" INNER JOIN \"organization_membership\" \"OrganizationMembership\" ON \"OrganizationMembership\".\"organizationOrganizationId\"=\"Organization\".\"organization_id\" WHERE \"OrganizationMembership\".\"user_id\" = $1 AND \"Organization\".\"organization_name\" = $2": {
-        "total": 3,
-        "mean": 3,
-        "instances": 1,
-        "min": 3,
-        "max": 3
-    },
-    "SELECT \"User\".\"created_at\" AS \"User_created_at\", \"User\".\"updated_at\" AS \"User_updated_at\", \"User\".\"deleted_at\" AS \"User_deleted_at\", \"User\".\"status\" AS \"User_status\", \"User\".\"user_id\" AS \"User_user_id\", \"User\".\"given_name\" AS \"User_given_name\", \"User\".\"family_name\" AS \"User_family_name\", \"User\".\"username\" AS \"User_username\", \"User\".\"email\" AS \"User_email\", \"User\".\"phone\" AS \"User_phone\", \"User\".\"date_of_birth\" AS \"User_date_of_birth\", \"User\".\"gender\" AS \"User_gender\", \"User\".\"avatar\" AS \"User_avatar\", \"User\".\"primary\" AS \"User_primary\", \"User\".\"alternate_email\" AS \"User_alternate_email\", \"User\".\"alternate_phone\" AS \"User_alternate_phone\", \"User\".\"myOrganizationOrganizationId\" AS \"User_myOrganizationOrganizationId\" FROM \"user\" \"User\" WHERE \"User\".\"user_id\" IN ($1)": {
-        "total": 125,
-        "mean": 2.5,
-        "instances": 50,
-        "min": 2,
-        "max": 4
-    },
-    "SELECT DISTINCT \"OrganizationMembership\".\"organization_id\", \"Permission\".\"permission_id\" FROM \"organization_membership\" \"OrganizationMembership\" LEFT JOIN \"role_memberships_organization_membership\" \"Role_OrganizationMembership\" ON \"Role_OrganizationMembership\".\"organizationMembershipUserId\"=\"OrganizationMembership\".\"user_id\" AND \"Role_OrganizationMembership\".\"organizationMembershipOrganizationId\"=\"OrganizationMembership\".\"organization_id\" LEFT JOIN \"role\" \"Role\" ON \"Role\".\"role_id\"=\"Role_OrganizationMembership\".\"roleRoleId\" AND (\"Role\".\"status\" = $1)  LEFT JOIN \"permission_roles_role\" \"Permission_Role\" ON \"Permission_Role\".\"roleRoleId\"=\"Role\".\"role_id\" LEFT JOIN \"permission\" \"Permission\" ON \"Permission\".\"permission_id\"=\"Permission_Role\".\"permissionPermissionId\" AND (\"Permission\".\"allow\" = $2) WHERE \"OrganizationMembership\".\"user_id\" = $3": {
-        "total": 7,
-        "mean": 7,
-        "instances": 1,
-        "min": 7,
-        "max": 7
-    },
-    "SELECT \"Role\".\"created_at\" AS \"Role_created_at\", \"Role\".\"updated_at\" AS \"Role_updated_at\", \"Role\".\"deleted_at\" AS \"Role_deleted_at\", \"Role\".\"status\" AS \"Role_status\", \"Role\".\"role_id\" AS \"Role_role_id\", \"Role\".\"role_name\" AS \"Role_role_name\", \"Role\".\"role_description\" AS \"Role_role_description\", \"Role\".\"system_role\" AS \"Role_system_role\", \"Role\".\"organizationOrganizationId\" AS \"Role_organizationOrganizationId\" FROM \"role\" \"Role\" WHERE (\"Role\".\"role_name\" = $1 AND \"Role\".\"system_role\" = $2 AND \"Role\".\"organizationOrganizationId\" IS NULL) OR (\"Role\".\"role_name\" = $3 AND \"Role\".\"organizationOrganizationId\" = $4) LIMIT 1": {
         "total": 4,
         "mean": 4,
         "instances": 1,
         "min": 4,
         "max": 4
     },
-    "SELECT \"School\".\"created_at\" AS \"School_created_at\", \"School\".\"updated_at\" AS \"School_updated_at\", \"School\".\"deleted_at\" AS \"School_deleted_at\", \"School\".\"status\" AS \"School_status\", \"School\".\"school_id\" AS \"School_school_id\", \"School\".\"school_name\" AS \"School_school_name\", \"School\".\"shortcode\" AS \"School_shortcode\", \"School\".\"organizationOrganizationId\" AS \"School_organizationOrganizationId\" FROM \"school\" \"School\" WHERE \"School\".\"school_name\" = $1 AND \"School\".\"organizationOrganizationId\" = $2 LIMIT 1": {
-        "total": 2,
-        "mean": 2,
-        "instances": 1,
+    "SELECT \"User\".\"created_at\" AS \"User_created_at\", \"User\".\"updated_at\" AS \"User_updated_at\", \"User\".\"deleted_at\" AS \"User_deleted_at\", \"User\".\"status\" AS \"User_status\", \"User\".\"user_id\" AS \"User_user_id\", \"User\".\"given_name\" AS \"User_given_name\", \"User\".\"family_name\" AS \"User_family_name\", \"User\".\"username\" AS \"User_username\", \"User\".\"email\" AS \"User_email\", \"User\".\"phone\" AS \"User_phone\", \"User\".\"date_of_birth\" AS \"User_date_of_birth\", \"User\".\"gender\" AS \"User_gender\", \"User\".\"avatar\" AS \"User_avatar\", \"User\".\"primary\" AS \"User_primary\", \"User\".\"alternate_email\" AS \"User_alternate_email\", \"User\".\"alternate_phone\" AS \"User_alternate_phone\", \"User\".\"myOrganizationOrganizationId\" AS \"User_myOrganizationOrganizationId\" FROM \"user\" \"User\" WHERE \"User\".\"user_id\" IN ($1)": {
+        "total": 133,
+        "mean": 2.66,
+        "instances": 50,
         "min": 2,
-        "max": 2
+        "max": 4
     },
-    "SELECT \"Class\".\"created_at\" AS \"Class_created_at\", \"Class\".\"updated_at\" AS \"Class_updated_at\", \"Class\".\"deleted_at\" AS \"Class_deleted_at\", \"Class\".\"status\" AS \"Class_status\", \"Class\".\"class_id\" AS \"Class_class_id\", \"Class\".\"class_name\" AS \"Class_class_name\", \"Class\".\"shortcode\" AS \"Class_shortcode\", \"Class\".\"organizationOrganizationId\" AS \"Class_organizationOrganizationId\" FROM \"class\" \"Class\" WHERE \"Class\".\"class_name\" = $1 AND \"Class\".\"organizationOrganizationId\" = $2 LIMIT 1": {
-        "total": 2,
-        "mean": 2,
+    "SELECT DISTINCT \"OrganizationMembership\".\"organization_id\", \"Permission\".\"permission_id\" FROM \"organization_membership\" \"OrganizationMembership\" LEFT JOIN \"role_memberships_organization_membership\" \"Role_OrganizationMembership\" ON \"Role_OrganizationMembership\".\"organizationMembershipUserId\"=\"OrganizationMembership\".\"user_id\" AND \"Role_OrganizationMembership\".\"organizationMembershipOrganizationId\"=\"OrganizationMembership\".\"organization_id\" LEFT JOIN \"role\" \"Role\" ON \"Role\".\"role_id\"=\"Role_OrganizationMembership\".\"roleRoleId\" AND (\"Role\".\"status\" = $1)  LEFT JOIN \"permission_roles_role\" \"Permission_Role\" ON \"Permission_Role\".\"roleRoleId\"=\"Role\".\"role_id\" LEFT JOIN \"permission\" \"Permission\" ON \"Permission\".\"permission_id\"=\"Permission_Role\".\"permissionPermissionId\" AND (\"Permission\".\"allow\" = $2) WHERE \"OrganizationMembership\".\"user_id\" = $3": {
+        "total": 4,
+        "mean": 4,
         "instances": 1,
-        "min": 2,
-        "max": 2
+        "min": 4,
+        "max": 4
     },
-    "SELECT \"schools\".\"created_at\" AS \"schools_created_at\", \"schools\".\"updated_at\" AS \"schools_updated_at\", \"schools\".\"deleted_at\" AS \"schools_deleted_at\", \"schools\".\"status\" AS \"schools_status\", \"schools\".\"school_id\" AS \"schools_school_id\", \"schools\".\"school_name\" AS \"schools_school_name\", \"schools\".\"shortcode\" AS \"schools_shortcode\", \"schools\".\"organizationOrganizationId\" AS \"schools_organizationOrganizationId\" FROM \"school\" \"schools\" INNER JOIN \"school_classes_class\" \"school_classes_class\" ON \"school_classes_class\".\"schoolSchoolId\" = \"schools\".\"school_id\" AND \"school_classes_class\".\"classClassId\" IN ($1)": {
+    "SELECT \"Role\".\"created_at\" AS \"Role_created_at\", \"Role\".\"updated_at\" AS \"Role_updated_at\", \"Role\".\"deleted_at\" AS \"Role_deleted_at\", \"Role\".\"status\" AS \"Role_status\", \"Role\".\"role_id\" AS \"Role_role_id\", \"Role\".\"role_name\" AS \"Role_role_name\", \"Role\".\"role_description\" AS \"Role_role_description\", \"Role\".\"system_role\" AS \"Role_system_role\", \"Role\".\"organizationOrganizationId\" AS \"Role_organizationOrganizationId\" FROM \"role\" \"Role\" WHERE (\"Role\".\"role_name\" = $1 AND \"Role\".\"system_role\" = $2 AND \"Role\".\"organizationOrganizationId\" IS NULL) OR (\"Role\".\"role_name\" = $3 AND \"Role\".\"organizationOrganizationId\" = $4) LIMIT 1": {
         "total": 3,
         "mean": 3,
         "instances": 1,
         "min": 3,
         "max": 3
     },
+    "SELECT \"School\".\"created_at\" AS \"School_created_at\", \"School\".\"updated_at\" AS \"School_updated_at\", \"School\".\"deleted_at\" AS \"School_deleted_at\", \"School\".\"status\" AS \"School_status\", \"School\".\"school_id\" AS \"School_school_id\", \"School\".\"school_name\" AS \"School_school_name\", \"School\".\"shortcode\" AS \"School_shortcode\", \"School\".\"organizationOrganizationId\" AS \"School_organizationOrganizationId\" FROM \"school\" \"School\" WHERE \"School\".\"school_name\" = $1 AND \"School\".\"organizationOrganizationId\" = $2 LIMIT 1": {
+        "total": 3,
+        "mean": 3,
+        "instances": 1,
+        "min": 3,
+        "max": 3
+    },
+    "SELECT \"Class\".\"created_at\" AS \"Class_created_at\", \"Class\".\"updated_at\" AS \"Class_updated_at\", \"Class\".\"deleted_at\" AS \"Class_deleted_at\", \"Class\".\"status\" AS \"Class_status\", \"Class\".\"class_id\" AS \"Class_class_id\", \"Class\".\"class_name\" AS \"Class_class_name\", \"Class\".\"shortcode\" AS \"Class_shortcode\", \"Class\".\"organizationOrganizationId\" AS \"Class_organizationOrganizationId\" FROM \"class\" \"Class\" WHERE \"Class\".\"class_name\" = $1 AND \"Class\".\"organizationOrganizationId\" = $2 LIMIT 1": {
+        "total": 3,
+        "mean": 3,
+        "instances": 1,
+        "min": 3,
+        "max": 3
+    },
+    "SELECT \"schools\".\"created_at\" AS \"schools_created_at\", \"schools\".\"updated_at\" AS \"schools_updated_at\", \"schools\".\"deleted_at\" AS \"schools_deleted_at\", \"schools\".\"status\" AS \"schools_status\", \"schools\".\"school_id\" AS \"schools_school_id\", \"schools\".\"school_name\" AS \"schools_school_name\", \"schools\".\"shortcode\" AS \"schools_shortcode\", \"schools\".\"organizationOrganizationId\" AS \"schools_organizationOrganizationId\" FROM \"school\" \"schools\" INNER JOIN \"school_classes_class\" \"school_classes_class\" ON \"school_classes_class\".\"schoolSchoolId\" = \"schools\".\"school_id\" AND \"school_classes_class\".\"classClassId\" IN ($1)": {
+        "total": 2,
+        "mean": 2,
+        "instances": 1,
+        "min": 2,
+        "max": 2
+    },
     "SELECT \"User\".\"created_at\" AS \"User_created_at\", \"User\".\"updated_at\" AS \"User_updated_at\", \"User\".\"deleted_at\" AS \"User_deleted_at\", \"User\".\"status\" AS \"User_status\", \"User\".\"user_id\" AS \"User_user_id\", \"User\".\"given_name\" AS \"User_given_name\", \"User\".\"family_name\" AS \"User_family_name\", \"User\".\"username\" AS \"User_username\", \"User\".\"email\" AS \"User_email\", \"User\".\"phone\" AS \"User_phone\", \"User\".\"date_of_birth\" AS \"User_date_of_birth\", \"User\".\"gender\" AS \"User_gender\", \"User\".\"avatar\" AS \"User_avatar\", \"User\".\"primary\" AS \"User_primary\", \"User\".\"alternate_email\" AS \"User_alternate_email\", \"User\".\"alternate_phone\" AS \"User_alternate_phone\", \"User\".\"myOrganizationOrganizationId\" AS \"User_myOrganizationOrganizationId\" FROM \"user\" \"User\" WHERE (\"User\".\"email\" IN ($1, $2) AND \"User\".\"given_name\" = $3 AND \"User\".\"family_name\" = $4) OR (\"User\".\"phone\" = $5 AND \"User\".\"given_name\" = $6 AND \"User\".\"family_name\" = $7) OR (\"User\".\"username\" = $8 AND \"User\".\"given_name\" = $9 AND \"User\".\"family_name\" = $10) LIMIT 1": {
-        "total": 138,
-        "mean": 2.816326530612245,
+        "total": 154,
+        "mean": 3.142857142857143,
         "instances": 49,
         "min": 2,
         "max": 5
     },
     "INSERT INTO \"user\"(\"created_at\", \"updated_at\", \"deleted_at\", \"status\", \"user_id\", \"given_name\", \"family_name\", \"username\", \"email\", \"phone\", \"date_of_birth\", \"gender\", \"avatar\", \"primary\", \"alternate_email\", \"alternate_phone\", \"myOrganizationOrganizationId\") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, DEFAULT, $4, DEFAULT, DEFAULT, $5, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT) RETURNING \"created_at\", \"updated_at\", \"status\", \"user_id\", \"primary\"": {
-        "total": 123,
-        "mean": 2.510204081632653,
-        "instances": 49,
-        "min": 2,
-        "max": 5
-    },
-    "SELECT \"OrganizationMembership\".\"created_at\" AS \"OrganizationMembership_created_at\", \"OrganizationMembership\".\"updated_at\" AS \"OrganizationMembership_updated_at\", \"OrganizationMembership\".\"deleted_at\" AS \"OrganizationMembership_deleted_at\", \"OrganizationMembership\".\"status\" AS \"OrganizationMembership_status\", \"OrganizationMembership\".\"user_id\" AS \"OrganizationMembership_user_id\", \"OrganizationMembership\".\"organization_id\" AS \"OrganizationMembership_organization_id\", \"OrganizationMembership\".\"join_timestamp\" AS \"OrganizationMembership_join_timestamp\", \"OrganizationMembership\".\"shortcode\" AS \"OrganizationMembership_shortcode\", \"OrganizationMembership\".\"userUserId\" AS \"OrganizationMembership_userUserId\", \"OrganizationMembership\".\"organizationOrganizationId\" AS \"OrganizationMembership_organizationOrganizationId\" FROM \"organization_membership\" \"OrganizationMembership\" WHERE \"OrganizationMembership\".\"organization_id\" = $1 AND \"OrganizationMembership\".\"user_id\" = $2 LIMIT 1": {
-        "total": 120,
-        "mean": 2.4489795918367347,
-        "instances": 49,
-        "min": 2,
-        "max": 4
-    },
-    "SELECT \"roles\".\"created_at\" AS \"roles_created_at\", \"roles\".\"updated_at\" AS \"roles_updated_at\", \"roles\".\"deleted_at\" AS \"roles_deleted_at\", \"roles\".\"status\" AS \"roles_status\", \"roles\".\"role_id\" AS \"roles_role_id\", \"roles\".\"role_name\" AS \"roles_role_name\", \"roles\".\"role_description\" AS \"roles_role_description\", \"roles\".\"system_role\" AS \"roles_system_role\", \"roles\".\"organizationOrganizationId\" AS \"roles_organizationOrganizationId\" FROM \"role\" \"roles\" INNER JOIN \"role_memberships_organization_membership\" \"role_memberships_organization_membership\" ON \"role_memberships_organization_membership\".\"roleRoleId\" = \"roles\".\"role_id\" AND \"role_memberships_organization_membership\".\"organizationMembershipUserId\" IN ($1) AND \"role_memberships_organization_membership\".\"organizationMembershipOrganizationId\" IN ($2)": {
-        "total": 122,
-        "mean": 2.489795918367347,
-        "instances": 49,
-        "min": 2,
-        "max": 4
-    },
-    "SELECT \"OrganizationMembership\".\"created_at\" AS \"OrganizationMembership_created_at\", \"OrganizationMembership\".\"updated_at\" AS \"OrganizationMembership_updated_at\", \"OrganizationMembership\".\"deleted_at\" AS \"OrganizationMembership_deleted_at\", \"OrganizationMembership\".\"status\" AS \"OrganizationMembership_status\", \"OrganizationMembership\".\"user_id\" AS \"OrganizationMembership_user_id\", \"OrganizationMembership\".\"organization_id\" AS \"OrganizationMembership_organization_id\", \"OrganizationMembership\".\"join_timestamp\" AS \"OrganizationMembership_join_timestamp\", \"OrganizationMembership\".\"shortcode\" AS \"OrganizationMembership_shortcode\", \"OrganizationMembership\".\"userUserId\" AS \"OrganizationMembership_userUserId\", \"OrganizationMembership\".\"organizationOrganizationId\" AS \"OrganizationMembership_organizationOrganizationId\" FROM \"organization_membership\" \"OrganizationMembership\" WHERE \"OrganizationMembership\".\"user_id\" = $1 AND \"OrganizationMembership\".\"organization_id\" = $2": {
-        "total": 125,
-        "mean": 2.5510204081632653,
-        "instances": 49,
-        "min": 2,
-        "max": 3
-    },
-    "INSERT INTO \"organization_membership\"(\"created_at\", \"updated_at\", \"deleted_at\", \"status\", \"user_id\", \"organization_id\", \"join_timestamp\", \"shortcode\", \"userUserId\", \"organizationOrganizationId\") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, DEFAULT, $3, $4, $5) RETURNING \"created_at\", \"updated_at\", \"status\", \"join_timestamp\"": {
-        "total": 127,
-        "mean": 2.5918367346938775,
-        "instances": 49,
-        "min": 2,
-        "max": 3
-    },
-    "INSERT INTO \"role_memberships_organization_membership\"(\"roleRoleId\", \"organizationMembershipUserId\", \"organizationMembershipOrganizationId\") VALUES ($1, $2, $3)": {
-        "total": 118,
-        "mean": 2.4583333333333335,
-        "instances": 48,
-        "min": 2,
-        "max": 3
-    },
-    "SELECT \"SchoolMembership\".\"created_at\" AS \"SchoolMembership_created_at\", \"SchoolMembership\".\"updated_at\" AS \"SchoolMembership_updated_at\", \"SchoolMembership\".\"deleted_at\" AS \"SchoolMembership_deleted_at\", \"SchoolMembership\".\"status\" AS \"SchoolMembership_status\", \"SchoolMembership\".\"user_id\" AS \"SchoolMembership_user_id\", \"SchoolMembership\".\"school_id\" AS \"SchoolMembership_school_id\", \"SchoolMembership\".\"join_timestamp\" AS \"SchoolMembership_join_timestamp\", \"SchoolMembership\".\"userUserId\" AS \"SchoolMembership_userUserId\", \"SchoolMembership\".\"schoolSchoolId\" AS \"SchoolMembership_schoolSchoolId\" FROM \"school_membership\" \"SchoolMembership\" WHERE \"SchoolMembership\".\"school_id\" = $1 AND \"SchoolMembership\".\"user_id\" = $2 LIMIT 1": {
-        "total": 118,
-        "mean": 2.4081632653061225,
-        "instances": 49,
-        "min": 2,
-        "max": 3
-    },
-    "SELECT \"SchoolMembership\".\"created_at\" AS \"SchoolMembership_created_at\", \"SchoolMembership\".\"updated_at\" AS \"SchoolMembership_updated_at\", \"SchoolMembership\".\"deleted_at\" AS \"SchoolMembership_deleted_at\", \"SchoolMembership\".\"status\" AS \"SchoolMembership_status\", \"SchoolMembership\".\"user_id\" AS \"SchoolMembership_user_id\", \"SchoolMembership\".\"school_id\" AS \"SchoolMembership_school_id\", \"SchoolMembership\".\"join_timestamp\" AS \"SchoolMembership_join_timestamp\", \"SchoolMembership\".\"userUserId\" AS \"SchoolMembership_userUserId\", \"SchoolMembership\".\"schoolSchoolId\" AS \"SchoolMembership_schoolSchoolId\" FROM \"school_membership\" \"SchoolMembership\" WHERE \"SchoolMembership\".\"user_id\" = $1 AND \"SchoolMembership\".\"school_id\" = $2": {
-        "total": 120,
-        "mean": 2.4489795918367347,
-        "instances": 49,
-        "min": 2,
-        "max": 3
-    },
-    "INSERT INTO \"school_membership\"(\"created_at\", \"updated_at\", \"deleted_at\", \"status\", \"user_id\", \"school_id\", \"join_timestamp\", \"userUserId\", \"schoolSchoolId\") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, DEFAULT, $3, $4) RETURNING \"created_at\", \"updated_at\", \"status\", \"join_timestamp\"": {
-        "total": 128,
-        "mean": 2.6122448979591835,
-        "instances": 49,
-        "min": 2,
-        "max": 4
-    },
-    "SELECT \"Permission\".\"created_at\" AS \"Permission_created_at\", \"Permission\".\"updated_at\" AS \"Permission_updated_at\", \"Permission\".\"deleted_at\" AS \"Permission_deleted_at\", \"Permission\".\"status\" AS \"Permission_status\", \"Permission\".\"permission_id\" AS \"Permission_permission_id\", \"Permission\".\"permission_name\" AS \"Permission_permission_name\", \"Permission\".\"allow\" AS \"Permission_allow\", \"Permission\".\"permission_category\" AS \"Permission_permission_category\", \"Permission\".\"permission_group\" AS \"Permission_permission_group\", \"Permission\".\"permission_level\" AS \"Permission_permission_level\", \"Permission\".\"permission_description\" AS \"Permission_permission_description\" FROM \"permission\" \"Permission\" INNER JOIN \"permission_roles_role\" \"Permission_Role\" ON \"Permission_Role\".\"permissionPermissionId\"=\"Permission\".\"permission_id\" INNER JOIN \"role\" \"Role\" ON \"Role\".\"role_id\"=\"Permission_Role\".\"roleRoleId\"  INNER JOIN \"role_memberships_organization_membership\" \"Role_OrganizationMembership\" ON \"Role_OrganizationMembership\".\"roleRoleId\"=\"Role\".\"role_id\" INNER JOIN \"organization_membership\" \"OrganizationMembership\" ON \"OrganizationMembership\".\"user_id\"=\"Role_OrganizationMembership\".\"organizationMembershipUserId\" AND \"OrganizationMembership\".\"organization_id\"=\"Role_OrganizationMembership\".\"organizationMembershipOrganizationId\" WHERE \"OrganizationMembership\".\"user_id\" = $1 AND \"OrganizationMembership\".\"organization_id\" = $2": {
-        "total": 342,
-        "mean": 6.979591836734694,
-        "instances": 49,
-        "min": 5,
-        "max": 9
-    },
-    "SELECT \"teachers\".\"created_at\" AS \"teachers_created_at\", \"teachers\".\"updated_at\" AS \"teachers_updated_at\", \"teachers\".\"deleted_at\" AS \"teachers_deleted_at\", \"teachers\".\"status\" AS \"teachers_status\", \"teachers\".\"user_id\" AS \"teachers_user_id\", \"teachers\".\"given_name\" AS \"teachers_given_name\", \"teachers\".\"family_name\" AS \"teachers_family_name\", \"teachers\".\"username\" AS \"teachers_username\", \"teachers\".\"email\" AS \"teachers_email\", \"teachers\".\"phone\" AS \"teachers_phone\", \"teachers\".\"date_of_birth\" AS \"teachers_date_of_birth\", \"teachers\".\"gender\" AS \"teachers_gender\", \"teachers\".\"avatar\" AS \"teachers_avatar\", \"teachers\".\"primary\" AS \"teachers_primary\", \"teachers\".\"alternate_email\" AS \"teachers_alternate_email\", \"teachers\".\"alternate_phone\" AS \"teachers_alternate_phone\", \"teachers\".\"myOrganizationOrganizationId\" AS \"teachers_myOrganizationOrganizationId\" FROM \"user\" \"teachers\" INNER JOIN \"user_classes_teaching_class\" \"user_classes_teaching_class\" ON \"user_classes_teaching_class\".\"userUserId\" = \"teachers\".\"user_id\" AND \"user_classes_teaching_class\".\"classClassId\" IN ($1)": {
-        "total": 2,
-        "mean": 2,
-        "instances": 1,
-        "min": 2,
-        "max": 2
-    },
-    "SELECT \"Class\".\"created_at\" AS \"Class_created_at\", \"Class\".\"updated_at\" AS \"Class_updated_at\", \"Class\".\"deleted_at\" AS \"Class_deleted_at\", \"Class\".\"status\" AS \"Class_status\", \"Class\".\"class_id\" AS \"Class_class_id\", \"Class\".\"class_name\" AS \"Class_class_name\", \"Class\".\"shortcode\" AS \"Class_shortcode\", \"Class\".\"organizationOrganizationId\" AS \"Class_organizationOrganizationId\" FROM \"class\" \"Class\" WHERE \"Class\".\"class_id\" IN ($1)": {
-        "total": 124,
-        "mean": 2.5306122448979593,
-        "instances": 49,
-        "min": 2,
-        "max": 4
-    },
-    "SELECT \"Class_schools_rid\".\"schoolSchoolId\" AS \"schoolSchoolId\", \"Class_schools_rid\".\"classClassId\" AS \"classClassId\" FROM \"school\" \"school\" INNER JOIN \"school_classes_class\" \"Class_schools_rid\" ON (\"Class_schools_rid\".\"classClassId\" = $1 AND \"Class_schools_rid\".\"schoolSchoolId\" = \"school\".\"school_id\")  ORDER BY \"Class_schools_rid\".\"schoolSchoolId\" ASC, \"Class_schools_rid\".\"classClassId\" ASC": {
         "total": 136,
         "mean": 2.7755102040816326,
         "instances": 49,
         "min": 2,
-        "max": 5
+        "max": 4
     },
-    "SELECT \"Class_teachers_rid\".\"userUserId\" AS \"userUserId\", \"Class_teachers_rid\".\"classClassId\" AS \"classClassId\" FROM \"user\" \"user\" INNER JOIN \"user_classes_teaching_class\" \"Class_teachers_rid\" ON (\"Class_teachers_rid\".\"classClassId\" = $1 AND \"Class_teachers_rid\".\"userUserId\" = \"user\".\"user_id\")  ORDER BY \"Class_teachers_rid\".\"userUserId\" ASC, \"Class_teachers_rid\".\"classClassId\" ASC": {
-        "total": 222,
-        "mean": 4.530612244897959,
+    "SELECT \"OrganizationMembership\".\"created_at\" AS \"OrganizationMembership_created_at\", \"OrganizationMembership\".\"updated_at\" AS \"OrganizationMembership_updated_at\", \"OrganizationMembership\".\"deleted_at\" AS \"OrganizationMembership_deleted_at\", \"OrganizationMembership\".\"status\" AS \"OrganizationMembership_status\", \"OrganizationMembership\".\"user_id\" AS \"OrganizationMembership_user_id\", \"OrganizationMembership\".\"organization_id\" AS \"OrganizationMembership_organization_id\", \"OrganizationMembership\".\"join_timestamp\" AS \"OrganizationMembership_join_timestamp\", \"OrganizationMembership\".\"shortcode\" AS \"OrganizationMembership_shortcode\", \"OrganizationMembership\".\"userUserId\" AS \"OrganizationMembership_userUserId\", \"OrganizationMembership\".\"organizationOrganizationId\" AS \"OrganizationMembership_organizationOrganizationId\" FROM \"organization_membership\" \"OrganizationMembership\" WHERE \"OrganizationMembership\".\"organization_id\" = $1 AND \"OrganizationMembership\".\"user_id\" = $2 LIMIT 1": {
+        "total": 132,
+        "mean": 2.693877551020408,
         "instances": 49,
-        "min": 3,
+        "min": 2,
         "max": 8
     },
-    "INSERT INTO \"user_classes_teaching_class\"(\"userUserId\", \"classClassId\") VALUES ($1, $2)": {
-        "total": 129,
-        "mean": 2.6875,
-        "instances": 48,
+    "SELECT \"roles\".\"created_at\" AS \"roles_created_at\", \"roles\".\"updated_at\" AS \"roles_updated_at\", \"roles\".\"deleted_at\" AS \"roles_deleted_at\", \"roles\".\"status\" AS \"roles_status\", \"roles\".\"role_id\" AS \"roles_role_id\", \"roles\".\"role_name\" AS \"roles_role_name\", \"roles\".\"role_description\" AS \"roles_role_description\", \"roles\".\"system_role\" AS \"roles_system_role\", \"roles\".\"organizationOrganizationId\" AS \"roles_organizationOrganizationId\" FROM \"role\" \"roles\" INNER JOIN \"role_memberships_organization_membership\" \"role_memberships_organization_membership\" ON \"role_memberships_organization_membership\".\"roleRoleId\" = \"roles\".\"role_id\" AND \"role_memberships_organization_membership\".\"organizationMembershipUserId\" IN ($1) AND \"role_memberships_organization_membership\".\"organizationMembershipOrganizationId\" IN ($2)": {
+        "total": 141,
+        "mean": 2.877551020408163,
+        "instances": 49,
+        "min": 2,
+        "max": 5
+    },
+    "SELECT \"OrganizationMembership\".\"created_at\" AS \"OrganizationMembership_created_at\", \"OrganizationMembership\".\"updated_at\" AS \"OrganizationMembership_updated_at\", \"OrganizationMembership\".\"deleted_at\" AS \"OrganizationMembership_deleted_at\", \"OrganizationMembership\".\"status\" AS \"OrganizationMembership_status\", \"OrganizationMembership\".\"user_id\" AS \"OrganizationMembership_user_id\", \"OrganizationMembership\".\"organization_id\" AS \"OrganizationMembership_organization_id\", \"OrganizationMembership\".\"join_timestamp\" AS \"OrganizationMembership_join_timestamp\", \"OrganizationMembership\".\"shortcode\" AS \"OrganizationMembership_shortcode\", \"OrganizationMembership\".\"userUserId\" AS \"OrganizationMembership_userUserId\", \"OrganizationMembership\".\"organizationOrganizationId\" AS \"OrganizationMembership_organizationOrganizationId\" FROM \"organization_membership\" \"OrganizationMembership\" WHERE \"OrganizationMembership\".\"user_id\" = $1 AND \"OrganizationMembership\".\"organization_id\" = $2": {
+        "total": 142,
+        "mean": 2.8979591836734695,
+        "instances": 49,
+        "min": 2,
+        "max": 5
+    },
+    "INSERT INTO \"organization_membership\"(\"created_at\", \"updated_at\", \"deleted_at\", \"status\", \"user_id\", \"organization_id\", \"join_timestamp\", \"shortcode\", \"userUserId\", \"organizationOrganizationId\") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, DEFAULT, $3, $4, $5) RETURNING \"created_at\", \"updated_at\", \"status\", \"join_timestamp\"": {
+        "total": 136,
+        "mean": 2.7755102040816326,
+        "instances": 49,
         "min": 2,
         "max": 4
     },
-    "RELEASE SAVEPOINT nested_transaction": {
-        "total": 2,
-        "mean": 2,
-        "instances": 1,
+    "INSERT INTO \"role_memberships_organization_membership\"(\"roleRoleId\", \"organizationMembershipUserId\", \"organizationMembershipOrganizationId\") VALUES ($1, $2, $3)": {
+        "total": 131,
+        "mean": 2.673469387755102,
+        "instances": 49,
         "min": 2,
-        "max": 2
+        "max": 4
+    },
+    "SELECT \"SchoolMembership\".\"created_at\" AS \"SchoolMembership_created_at\", \"SchoolMembership\".\"updated_at\" AS \"SchoolMembership_updated_at\", \"SchoolMembership\".\"deleted_at\" AS \"SchoolMembership_deleted_at\", \"SchoolMembership\".\"status\" AS \"SchoolMembership_status\", \"SchoolMembership\".\"user_id\" AS \"SchoolMembership_user_id\", \"SchoolMembership\".\"school_id\" AS \"SchoolMembership_school_id\", \"SchoolMembership\".\"join_timestamp\" AS \"SchoolMembership_join_timestamp\", \"SchoolMembership\".\"userUserId\" AS \"SchoolMembership_userUserId\", \"SchoolMembership\".\"schoolSchoolId\" AS \"SchoolMembership_schoolSchoolId\" FROM \"school_membership\" \"SchoolMembership\" WHERE \"SchoolMembership\".\"school_id\" = $1 AND \"SchoolMembership\".\"user_id\" = $2 LIMIT 1": {
+        "total": 132,
+        "mean": 2.693877551020408,
+        "instances": 49,
+        "min": 2,
+        "max": 5
+    },
+    "SELECT \"SchoolMembership\".\"created_at\" AS \"SchoolMembership_created_at\", \"SchoolMembership\".\"updated_at\" AS \"SchoolMembership_updated_at\", \"SchoolMembership\".\"deleted_at\" AS \"SchoolMembership_deleted_at\", \"SchoolMembership\".\"status\" AS \"SchoolMembership_status\", \"SchoolMembership\".\"user_id\" AS \"SchoolMembership_user_id\", \"SchoolMembership\".\"school_id\" AS \"SchoolMembership_school_id\", \"SchoolMembership\".\"join_timestamp\" AS \"SchoolMembership_join_timestamp\", \"SchoolMembership\".\"userUserId\" AS \"SchoolMembership_userUserId\", \"SchoolMembership\".\"schoolSchoolId\" AS \"SchoolMembership_schoolSchoolId\" FROM \"school_membership\" \"SchoolMembership\" WHERE \"SchoolMembership\".\"user_id\" = $1 AND \"SchoolMembership\".\"school_id\" = $2": {
+        "total": 134,
+        "mean": 2.7346938775510203,
+        "instances": 49,
+        "min": 2,
+        "max": 5
+    },
+    "INSERT INTO \"school_membership\"(\"created_at\", \"updated_at\", \"deleted_at\", \"status\", \"user_id\", \"school_id\", \"join_timestamp\", \"userUserId\", \"schoolSchoolId\") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, DEFAULT, $3, $4) RETURNING \"created_at\", \"updated_at\", \"status\", \"join_timestamp\"": {
+        "total": 135,
+        "mean": 2.7551020408163267,
+        "instances": 49,
+        "min": 2,
+        "max": 4
+    },
+    "SELECT \"Permission\".\"created_at\" AS \"Permission_created_at\", \"Permission\".\"updated_at\" AS \"Permission_updated_at\", \"Permission\".\"deleted_at\" AS \"Permission_deleted_at\", \"Permission\".\"status\" AS \"Permission_status\", \"Permission\".\"permission_id\" AS \"Permission_permission_id\", \"Permission\".\"permission_name\" AS \"Permission_permission_name\", \"Permission\".\"allow\" AS \"Permission_allow\", \"Permission\".\"permission_category\" AS \"Permission_permission_category\", \"Permission\".\"permission_group\" AS \"Permission_permission_group\", \"Permission\".\"permission_level\" AS \"Permission_permission_level\", \"Permission\".\"permission_description\" AS \"Permission_permission_description\" FROM \"permission\" \"Permission\" INNER JOIN \"permission_roles_role\" \"Permission_Role\" ON \"Permission_Role\".\"permissionPermissionId\"=\"Permission\".\"permission_id\" INNER JOIN \"role\" \"Role\" ON \"Role\".\"role_id\"=\"Permission_Role\".\"roleRoleId\"  INNER JOIN \"role_memberships_organization_membership\" \"Role_OrganizationMembership\" ON \"Role_OrganizationMembership\".\"roleRoleId\"=\"Role\".\"role_id\" INNER JOIN \"organization_membership\" \"OrganizationMembership\" ON \"OrganizationMembership\".\"user_id\"=\"Role_OrganizationMembership\".\"organizationMembershipUserId\" AND \"OrganizationMembership\".\"organization_id\"=\"Role_OrganizationMembership\".\"organizationMembershipOrganizationId\" WHERE \"OrganizationMembership\".\"user_id\" = $1 AND \"OrganizationMembership\".\"organization_id\" = $2 AND \"Permission\".\"permission_id\" IN ($3, $4)": {
+        "total": 208,
+        "mean": 4.244897959183674,
+        "instances": 49,
+        "min": 3,
+        "max": 6
+    },
+    "SELECT \"teachers\".\"created_at\" AS \"teachers_created_at\", \"teachers\".\"updated_at\" AS \"teachers_updated_at\", \"teachers\".\"deleted_at\" AS \"teachers_deleted_at\", \"teachers\".\"status\" AS \"teachers_status\", \"teachers\".\"user_id\" AS \"teachers_user_id\", \"teachers\".\"given_name\" AS \"teachers_given_name\", \"teachers\".\"family_name\" AS \"teachers_family_name\", \"teachers\".\"username\" AS \"teachers_username\", \"teachers\".\"email\" AS \"teachers_email\", \"teachers\".\"phone\" AS \"teachers_phone\", \"teachers\".\"date_of_birth\" AS \"teachers_date_of_birth\", \"teachers\".\"gender\" AS \"teachers_gender\", \"teachers\".\"avatar\" AS \"teachers_avatar\", \"teachers\".\"primary\" AS \"teachers_primary\", \"teachers\".\"alternate_email\" AS \"teachers_alternate_email\", \"teachers\".\"alternate_phone\" AS \"teachers_alternate_phone\", \"teachers\".\"myOrganizationOrganizationId\" AS \"teachers_myOrganizationOrganizationId\" FROM \"user\" \"teachers\" INNER JOIN \"user_classes_teaching_class\" \"user_classes_teaching_class\" ON \"user_classes_teaching_class\".\"userUserId\" = \"teachers\".\"user_id\" AND \"user_classes_teaching_class\".\"classClassId\" IN ($1)": {
+        "total": 3,
+        "mean": 3,
+        "instances": 1,
+        "min": 3,
+        "max": 3
+    },
+    "SELECT \"Class\".\"created_at\" AS \"Class_created_at\", \"Class\".\"updated_at\" AS \"Class_updated_at\", \"Class\".\"deleted_at\" AS \"Class_deleted_at\", \"Class\".\"status\" AS \"Class_status\", \"Class\".\"class_id\" AS \"Class_class_id\", \"Class\".\"class_name\" AS \"Class_class_name\", \"Class\".\"shortcode\" AS \"Class_shortcode\", \"Class\".\"organizationOrganizationId\" AS \"Class_organizationOrganizationId\" FROM \"class\" \"Class\" WHERE \"Class\".\"class_id\" IN ($1)": {
+        "total": 137,
+        "mean": 2.795918367346939,
+        "instances": 49,
+        "min": 2,
+        "max": 5
+    },
+    "SELECT \"Class_schools_rid\".\"schoolSchoolId\" AS \"schoolSchoolId\", \"Class_schools_rid\".\"classClassId\" AS \"classClassId\" FROM \"school\" \"school\" INNER JOIN \"school_classes_class\" \"Class_schools_rid\" ON (\"Class_schools_rid\".\"classClassId\" = $1 AND \"Class_schools_rid\".\"schoolSchoolId\" = \"school\".\"school_id\")  ORDER BY \"Class_schools_rid\".\"schoolSchoolId\" ASC, \"Class_schools_rid\".\"classClassId\" ASC": {
+        "total": 158,
+        "mean": 3.2244897959183674,
+        "instances": 49,
+        "min": 2,
+        "max": 7
+    },
+    "SELECT \"Class_teachers_rid\".\"userUserId\" AS \"userUserId\", \"Class_teachers_rid\".\"classClassId\" AS \"classClassId\" FROM \"user\" \"user\" INNER JOIN \"user_classes_teaching_class\" \"Class_teachers_rid\" ON (\"Class_teachers_rid\".\"classClassId\" = $1 AND \"Class_teachers_rid\".\"userUserId\" = \"user\".\"user_id\")  ORDER BY \"Class_teachers_rid\".\"userUserId\" ASC, \"Class_teachers_rid\".\"classClassId\" ASC": {
+        "total": 244,
+        "mean": 4.979591836734694,
+        "instances": 49,
+        "min": 3,
+        "max": 9
+    },
+    "INSERT INTO \"user_classes_teaching_class\"(\"userUserId\", \"classClassId\") VALUES ($1, $2)": {
+        "total": 137,
+        "mean": 2.795918367346939,
+        "instances": 49,
+        "min": 2,
+        "max": 5
+    },
+    "RELEASE SAVEPOINT nested_transaction": {
+        "total": 4,
+        "mean": 4,
+        "instances": 1,
+        "min": 4,
+        "max": 4
     }
 }
