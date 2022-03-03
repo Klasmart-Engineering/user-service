@@ -251,6 +251,7 @@ export const processUserFromCSVRow = async (
                     class_name: row.class_name,
                     organization: { organization_id: org.organization_id },
                 },
+                relations: ['teachers', 'students', 'schools'],
             })
 
             const classSchools = (await cls?.schools) || []
