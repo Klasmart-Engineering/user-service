@@ -307,19 +307,21 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     }
 
     // 2 - can we view school users?
-    const userOrgsSchools = (
+    const orgsWithSchools = (
         await permissions.orgMembershipsWithPermissions([
             PermissionName.view_my_school_users_40111,
         ])
     ).filter((org) => !orgsWithFullAccess.includes(org))
-    if (userOrgsSchools.length) {
+
+    if (orgsWithSchools.length) {
         // find a schools the user is a member of in these orgs
         const schoolIdsQuery = getRepository(SchoolMembership)
             .createQueryBuilder()
             .select('SchoolMembership.school_id')
             .innerJoin('SchoolMembership.school', 'School')
-            .where('School.organizationOrganizationId in (:...ids)', {
-                ids: userOrgsSchools,
+            .innerJoin('School.organization', 'Organization')
+            .where('Organization.organization_id in (:...orgsWithSchools)', {
+                orgsWithSchools,
             })
             .andWhere('SchoolMembership.userUserId = :user_id', { user_id })
 
