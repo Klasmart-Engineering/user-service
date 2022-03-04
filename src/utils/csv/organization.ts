@@ -244,7 +244,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
             'owner_email',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
             {
-                name: owner_email,
+                name: 'Owner',
                 entity: 'user',
                 parent_entity: 'organization',
                 parent_name: organization_name,

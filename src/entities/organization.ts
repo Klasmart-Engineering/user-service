@@ -650,14 +650,9 @@ export class Organization extends CustomBaseEntity {
                         new APIError({
                             code: customErrors.existent_child_entity.code,
                             message: customErrors.existent_child_entity.message,
-                            variables: [
-                                'email',
-                                'phone',
-                                'given_name',
-                                'family_name',
-                            ],
+                            variables: ['email', 'phone', 'user_id'],
                             entity: 'User',
-                            entityName: existingUser.full_name(),
+                            entityName: existingUser.user_id,
                             parentEntity: 'Organization',
                             parentName: this.organization_name,
                         })
@@ -850,7 +845,7 @@ export class Organization extends CustomBaseEntity {
                         message: customErrors.nonexistent_child.message,
                         variables: ['user_id', 'organization_id'],
                         entity: 'User',
-                        entityName: user.full_name(),
+                        entityName: user.user_id,
                         parentEntity: 'Organization',
                         parentName: this.organization_name,
                     })
@@ -883,7 +878,7 @@ export class Organization extends CustomBaseEntity {
                         message: customErrors.existent_entity.message,
                         variables: ['given_name', 'family_name'],
                         entity: 'User',
-                        entityName: `${given_name} ${family_name}`,
+                        entityName: duplicateUser.user_id,
                     })
                 )
             }
