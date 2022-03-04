@@ -10,15 +10,28 @@ import { OrganizationMembership } from '../src/entities/organizationMembership'
 import { Role } from '../src/entities/role'
 import { SchoolMembership } from '../src/entities/schoolMembership'
 import logger from '../src/logging'
+import { organizationAdminRole } from '../src/permissions/organizationAdmin'
+import { parentRole } from '../src/permissions/parent'
+import { schoolAdminRole } from '../src/permissions/schoolAdmin'
+import { studentRole } from '../src/permissions/student'
+import { teacherRole } from '../src/permissions/teacher'
 
 // Since this migration is just for remove duplications in an specific environment
-// we are removing the exact roles that has not the correct permissions
+// we are removing the exact roles that does not match with the rest of environments
 export const rolesToDeleteIds = [
-    '23d899cd-862e-4bb6-8e57-761d701bc9fb' /* Organization Admin */,
-    'f70038dd-0361-4f19-8d50-5e42997a6280' /* School Admin */,
-    'f1a2083a-7f77-4ec8-b64a-def6952bf807' /* Parent */,
-    'fd37310d-5ced-4dda-9968-c6cb084a542b' /* Student */,
-    '893f28d2-69f1-4dc5-aa37-a04b9a8d90b9' /* Teacher */,
+    '9e76e8dc-33b9-45af-a446-2d1b71b65bd6' /* Organization Admin */,
+    '3230d93b-c904-41b6-8124-db8b34eaf6fd' /* School Admin */,
+    '4d2f692c-4af0-4c62-bc69-3456f4194b13' /* Teacher */,
+    '62e3c6aa-c65c-4638-a543-164a1258e740' /* Parent */,
+    '56d95fe5-491b-4568-b453-df4d255c19f3' /* Student */,
+]
+
+const systemRoleNames = [
+    organizationAdminRole.role_name,
+    schoolAdminRole.role_name,
+    teacherRole.role_name,
+    parentRole.role_name,
+    studentRole.role_name,
 ]
 
 export class DeletingDuplicatedSystemRoles1644427897509
@@ -91,10 +104,8 @@ export class DeletingDuplicatedSystemRoles1644427897509
         const preloadedRolesToDelete = manager.find(Role, {
             where: {
                 role_id: operator === 'in' ? In(ids) : Not(In(ids)),
+                role_name: In(systemRoleNames),
                 system_role: true,
-            },
-            order: {
-                created_at: 'ASC',
             },
         })
 
