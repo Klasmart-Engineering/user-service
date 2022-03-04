@@ -8,6 +8,7 @@ import {
     ManyToOne,
     getRepository,
     Brackets,
+    RelationId,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -39,6 +40,9 @@ export class Role extends CustomBaseEntity {
 
     @ManyToOne(() => Organization, (organization) => organization.roles)
     public organization?: Promise<Organization>
+
+    @RelationId((role: Role) => role.organization)
+    public organizationId?: string
 
     @ManyToMany(() => OrganizationMembership, (membership) => membership.roles)
     @JoinTable()

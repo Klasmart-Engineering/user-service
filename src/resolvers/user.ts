@@ -22,6 +22,8 @@ import {
     AddSchoolRolesToUserInput,
     RemoveOrganizationRolesFromUserInput,
     RemoveSchoolRolesFromUserInput,
+    UpdateOrganizationUserInput,
+    UpdateOrganizationUserInputElement,
     UpdateUserInput,
     UserContactInfo,
     UsersMutationResult,
@@ -38,9 +40,14 @@ import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
+    createNonExistentOrInactiveEntityAPIError,
     createUnauthorizedAPIError,
 } from '../utils/resolvers/errors'
-import { getMap, SchoolMembershipMap } from '../utils/resolvers/entityMaps'
+import {
+    getMap,
+    OrganizationMembershipMap,
+    SchoolMembershipMap,
+} from '../utils/resolvers/entityMaps'
 import { config } from '../config/config'
 import {
     AddMutation,
@@ -62,6 +69,7 @@ import {
     flagNonExistentSchoolMembership,
 } from '../utils/resolvers/inputValidation'
 import { Organization } from '../entities/organization'
+import { Class } from '../entities/class'
 
 export interface AddSchoolRolesToUsersEntityMap
     extends RemoveSchoolRolesFromUsersEntityMap {
@@ -1285,4 +1293,486 @@ export async function updateUsers(
     const resultValue: UsersMutationResult = { users: results }
 
     return resultValue
+}
+export interface UpdateUserMembershipEntityMap extends EntityMap<User> {
+    mainEntity: Map<string, User>
+    classesTeaching: Map<string, Class[]>
+    classesStudying: Map<string, Class[]>
+    allClasses: Map<string, Class>
+    school: Map<string, School[]>
+    allSchools: Map<string, School>
+    teacherRoles: Map<string, Role>
+    studentRoles: Map<string, Role>
+    membership: OrganizationMembershipMap
+    schoolMembership: SchoolMembershipMap
+    allRoles: Map<string, Role>
+}
+
+// Returns the list of roles that contain the perm permission.
+async function queryRolesForPermission(
+    manager: EntityManager,
+    organizationId: string,
+    perm: PermissionName
+): Promise<Role[]> {
+    return await manager
+        .createQueryBuilder()
+        .select()
+        .from(Role, 'role')
+        .innerJoin('Permissions.roles', 'Role')
+        .where('Permission.permission_id = :perm', {
+            perm: perm,
+        })
+        .andWhere(
+            new Brackets((qb) => {
+                new Brackets((qb) =>
+                    qb
+                        .where('Role.organization = :organization_id', {
+                            organization_id: organizationId,
+                        })
+                        .orWhere('Role.system_role IS TRUE')
+                )
+            })
+        )
+        .getMany()
+}
+/*
+async function getMemberRoleIds(
+    manager: EntityManager,
+    userId: string,
+    organizationId: string
+): Promise<{ role_id: string }[]> {
+    return await manager
+        .createQueryBuilder()
+        .select('role.role_id AS role_id')
+        .from('role', 'role')
+        .innerJoin('OrganizationMembership.roles', 'role')
+        .where('OrganizationMembership.user_id = :user_id', {
+            user_id: userId,
+        })
+        .andWhere('OrganizationMembership.organization_id = :orgId', {
+            orgId: organizationId,
+        })
+        .getRawMany()
+}
+*/
+
+function generateParameterStr(len: number): string {
+    let result = ''
+    for (let i = 1; i <= len; i++) {
+        if (i > 1) {
+            result += ','
+        }
+        result += '$' + i
+    }
+    return result
+}
+
+async function getExistingRoleIds(
+    manager: EntityManager,
+    userIds: string[],
+    organizationId: string
+): Promise<Map<string, string[]>> {
+    const parameterStr = generateParameterStr(userIds.length)
+    const lastParameterStr = '$' + (userIds.length + 2)
+
+    const results = (await manager.query(
+        `select 
+    "organizationMembershipUserId" as "userId", 
+    "roleRoleId" as "roleId", 
+    "organizationMembershipOrganizationId" as "organizationId" 
+    from role_memberships_organization_membership 
+    WHERE "organizationMembershipUserId" IN (${parameterStr}) 
+    AND "organizationMembershipOrganizationId" = ${lastParameterStr}`,
+        [...userIds, organizationId]
+    )) as { userId: string; roleId: string; organizationId: string }[]
+    const resultMap = new Map<string, string[]>()
+    if (results) {
+        for (const res of results) {
+            if (resultMap.has(res.userId)) {
+                const item = resultMap.get(res.userId) || []
+                item.push(res.roleId)
+            } else {
+                resultMap.set(res.userId, [res.roleId])
+            }
+        }
+    }
+    return resultMap
+}
+
+async function buildUpdateUserMembershipEntityMap(
+    manager: EntityManager,
+    input: UpdateOrganizationUserInput
+): Promise<UpdateUserMembershipEntityMap> {
+    const userIds: string[] = []
+    const schoolIdsSet = new Set<string>()
+    const roleIdsSet = new Set<string>()
+    const classesTeachingSet = new Set<string>()
+    const classesStudyingSet = new Set<string>()
+    const allClassesSet = new Set<string>()
+
+    const teachingPromise = queryRolesForPermission(
+        manager,
+        input.organizationId,
+        PermissionName.attend_live_class_as_a_teacher_186
+    )
+    const studyingPromise = queryRolesForPermission(
+        manager,
+        input.organizationId,
+        PermissionName.attend_live_class_as_a_student_187
+    )
+    const [teachingRoles, studentRoles] =
+        (await Promise.all([teachingPromise, studyingPromise])) || []
+
+    const teachingRoleMap = new Map(
+        teachingRoles.map((role) => [role.role_id, role])
+    )
+    const studentRoleMap = new Map(
+        studentRoles.map((role) => [role.role_id, role])
+    )
+
+    const usersWithEmptyRoles: string[] = []
+    for (const member of input.members) {
+        const rids = member.roleIds || []
+        if (rids.length === 0) {
+            usersWithEmptyRoles.push(member.userId)
+        }
+    }
+    const roleIdMap = await getExistingRoleIds(
+        manager,
+        usersWithEmptyRoles,
+        input.organizationId
+    )
+
+    const classesTeachingIdMap = new Map<string, string[]>()
+    const classesStudyingIdMap = new Map<string, string[]>()
+    const classesTeachingMap = new Map<string, Class[]>()
+    const classesStudyingMap = new Map<string, Class[]>()
+
+    const schoolIdMap = new Map<string, string[]>()
+
+    for (const member of input.members) {
+        let isTeacher = false
+        let isStudent = false
+        userIds.push(member.userId)
+        const sids = member.schoolIds || []
+
+        sids.reduce((s, e) => s.add(e), schoolIdsSet)
+        schoolIdMap.set(member.userId, sids)
+
+        let rids = member.roleIds || []
+        if (rids.length === 0) {
+            rids = roleIdMap.get(member.userId) || []
+            member.roleIds = rids
+        } else {
+            roleIdMap.set(member.userId, rids)
+        }
+        rids.reduce((s, e) => s.add(e), roleIdsSet)
+        for (const rid of rids) {
+            if (teachingRoleMap.has(rid)) {
+                isTeacher = true
+            }
+            if (studentRoleMap.has(rid)) {
+                isStudent = true
+            }
+        }
+
+        const cids = member.classIds || []
+        if (isTeacher) {
+            classesTeachingIdMap.set(member.userId, cids)
+            cids.reduce((s, e) => s.add(e), classesTeachingSet)
+        }
+        if (isStudent) {
+            classesStudyingIdMap.set(member.userId, cids)
+            cids.reduce((s, e) => s.add(e), classesStudyingSet)
+        }
+        cids.reduce((s, e) => s.add(e), allClassesSet)
+    }
+    const allClasses =
+        (await manager
+            .createQueryBuilder(Class, 'class')
+            .where('class.class_id IN (allClassesSet)', {
+                allClasseSet: allClassesSet,
+            })
+            .andWhere('class.organizationId = : orgId', {
+                orgId: input.organizationId,
+            })
+            .getMany()) || []
+
+    const classesLookup = new Map(allClasses.map((c) => [c.class_id, c]))
+
+    const allSchools =
+        (await manager
+            .createQueryBuilder(School, 'school')
+            .where('school.school_id IN (schoolIdsSet)', {
+                schoolIdsSet: schoolIdsSet,
+            })
+            .andWhere('school.organization_id = :orgId', {
+                orgId: input.organizationId,
+            })
+            .getMany()) || []
+
+    const schoolsMap = new Map<string, School[]>()
+    const schoolsLookup = new Map(allSchools.map((s) => [s.school_id, s]))
+    for (const [id, schoolIds] of schoolIdMap) {
+        const schools: School[] = []
+        for (const s of schoolIds) {
+            if (schoolsLookup.has(s)) {
+                schools.push(schoolsLookup.get(s)!)
+            }
+            schoolsMap.set(id, schools)
+        }
+    }
+
+    for (const [id, classIds] of classesStudyingIdMap) {
+        const classes: Class[] = []
+        for (const c of classIds) {
+            if (classesLookup.has(c)) {
+                classes.push(classesLookup.get(c)!)
+            }
+        }
+        classesStudyingMap.set(id, classes)
+    }
+
+    for (const [id, classIds] of classesTeachingIdMap) {
+        const classes: Class[] = []
+        for (const c of classIds) {
+            if (classesLookup.has(c)) {
+                classes.push(classesLookup.get(c)!)
+            }
+        }
+        classesTeachingMap.set(id, classes)
+    }
+
+    const allRoles =
+        (await manager
+            .createQueryBuilder(Role, 'role')
+            .where('role.role_id IN (roleIdsSet)', {
+                roleIdsSet: roleIdsSet,
+            })
+            .andWhere(
+                new Brackets((qb) => {
+                    qb.where('Role.organizationId = :organization_id', {
+                        organization_id: input.organizationId,
+                    }).orWhere('Role.system_role IS TRUE')
+                })
+            )
+            .getMany()) || []
+
+    const rolesLookup = new Map(allRoles.map((r) => [r.role_id, r]))
+
+    const userMap = await getMap.user(
+        input.members.map((i) => i.userId),
+        [
+            'memberships',
+            'school_memberships',
+            'classesStudying',
+            'classesTeaching',
+        ]
+    )
+
+    const membershipMap = await getMap.membership.organization(
+        [input.organizationId],
+        userIds,
+        ['roles']
+    )
+    const schoolMembershipMap = await getMap.membership.school(
+        Array.from(schoolIdsSet.values()),
+        userIds
+    )
+
+    const maps: UpdateUserMembershipEntityMap = {
+        mainEntity: userMap,
+        teacherRoles: teachingRoleMap,
+        studentRoles: studentRoleMap,
+        classesTeaching: classesTeachingMap,
+        classesStudying: classesStudyingMap,
+        allClasses: classesLookup,
+        school: schoolsMap,
+        allSchools: schoolsLookup,
+        membership: membershipMap,
+        schoolMembership: schoolMembershipMap,
+        allRoles: rolesLookup,
+    }
+
+    return maps
+}
+
+export async function updateOrganizationUsers(
+    args: { input: UpdateOrganizationUserInput },
+    context: Pick<Context, 'permissions'>
+): Promise<UsersMutationResult> {
+    const connection = getConnection()
+    const results: UserConnectionNode[] = []
+    const theInput = args.input
+    const errs: APIError[] = []
+    const manager = connection.manager
+    let updateOrganizationUserPerm = false
+    try {
+        context.permissions.rejectIfNotAdmin()
+        updateOrganizationUserPerm = true
+    } catch {
+        const orgs = await context.permissions.orgMembershipsWithPermissions([
+            PermissionName.edit_users_40330,
+        ])
+        updateOrganizationUserPerm = orgs.length > 0
+    }
+    if (!updateOrganizationUserPerm) {
+        errs.push(
+            createUnauthorizedAPIError(
+                'User',
+                'userId',
+                context.permissions.getUserId()
+            )
+        )
+        throw errs
+    }
+
+    const inputValidation = validationOverAllUpdateOrganizationInput(theInput)
+    const maps = await buildUpdateUserMembershipEntityMap(manager, theInput)
+
+    const organization = await manager.findOne(
+        Organization,
+        theInput.organizationId
+    )
+
+    const validationErrs: APIError[] = []
+
+    for (const { index, input } of inputValidation.validInputs) {
+        validationErrs.push(
+            ...validateUpdateOrganization(index, organization, input, maps)
+        )
+    }
+}
+
+function validationOverAllUpdateOrganizationInput(
+    input: UpdateOrganizationUserInput
+): {
+    validInputs: { index: number; input: UpdateOrganizationUserInputElement }[]
+    apiErrors: APIError[]
+} {
+    const failedRoles = validateSubItemsLengthAndNoDuplicates(
+        input.members,
+        'User',
+        'roleIds'
+    )
+    const failedClasses = validateSubItemsLengthAndNoDuplicates(
+        input.members,
+        'User',
+        'classIds'
+    )
+
+    const failedSchools = validateSubItemsLengthAndNoDuplicates(
+        input.members,
+        'User',
+        'schoolIds'
+    )
+    return filterInvalidInputs(input.members, [
+        ...failedRoles,
+        ...failedClasses,
+        ...failedSchools,
+    ])
+}
+
+function validateUpdateOrganization(
+    index: number,
+    organization: Organization | undefined,
+    currentInput: UpdateOrganizationUserInputElement,
+    maps: UpdateUserMembershipEntityMap
+): APIError[] {
+    const errors: APIError[] = []
+    if (organization === undefined || organization.status != Status.ACTIVE) {
+        errors.push(
+            createNonExistentOrInactiveEntityAPIError(
+                index,
+                ['Organization'],
+                '',
+                'Organization',
+                ''
+            )
+        )
+    } else {
+        const classIds = currentInput.classIds || []
+        for (const c of classIds) {
+            if (!maps.allClasses.has(c)) {
+                errors.push(
+                    createNonExistentOrInactiveEntityAPIError(
+                        index,
+                        ['User'],
+                        currentInput.userId,
+                        'classes',
+                        c
+                    )
+                )
+            } else {
+                const cl = maps.allClasses.get(c)!
+                if (cl.status != Status.ACTIVE) {
+                    errors.push(
+                        createNonExistentOrInactiveEntityAPIError(
+                            index,
+                            ['User'],
+                            currentInput.userId,
+                            'classes',
+                            c
+                        )
+                    )
+                }
+            }
+        }
+        const schoolIds = currentInput.schoolIds || []
+        for (const s of schoolIds) {
+            if (!maps.allSchools.has(s)) {
+                errors.push(
+                    createNonExistentOrInactiveEntityAPIError(
+                        index,
+                        ['User'],
+                        currentInput.userId,
+                        'schools',
+                        s
+                    )
+                )
+            } else {
+                const sl = maps.allSchools.get(s)
+                if (sl!.status != Status.ACTIVE) {
+                    errors.push(
+                        createNonExistentOrInactiveEntityAPIError(
+                            index,
+                            ['User'],
+                            currentInput.userId,
+                            'schools',
+                            s
+                        )
+                    )
+                }
+            }
+        }
+        const roleIds = currentInput.roleIds || []
+        for (const r of roleIds) {
+            if (!maps.allRoles.has(r)) {
+                errors.push(
+                    createNonExistentOrInactiveEntityAPIError(
+                        index,
+                        ['User'],
+                        currentInput.userId,
+                        'roles',
+                        r
+                    )
+                )
+            } else {
+                const rl = maps.allRoles.get(r)
+                if (rl!.status != Status.ACTIVE) {
+                    errors.push(
+                        createNonExistentOrInactiveEntityAPIError(
+                            index,
+                            ['User'],
+                            currentInput.userId,
+                            'roles',
+                            r
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    return errors
 }

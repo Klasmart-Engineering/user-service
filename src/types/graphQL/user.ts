@@ -81,3 +81,17 @@ export interface UpdateUserInput {
     alternatePhone?: string
     primaryUser?: boolean
 }
+
+export interface UpdateOrganizationUserInput {
+    organizationId: string
+    members: UpdateOrganizationUserInputElement[]
+}
+
+export interface UpdateOrganizationUserInputElement {
+    status: Status
+    userId: string
+    roleIds?: string[]
+    schoolIds?: string[]
+    classIds?: string[]
+    academicYear: string
+}

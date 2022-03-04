@@ -81,6 +81,9 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         createUsers(input: [CreateUserInput!]!): UsersMutationResult
         updateUsers(input: [UpdateUserInput!]!): UsersMutationResult
+        updateOrganizationUsers(
+            input: UpdateOrganizationUserInput!
+        ): UsersMutationResult
     }
 
     input UpdateUserInput {
@@ -152,6 +155,20 @@ const typeDefs = gql`
     input ContactInfoInput {
         email: String
         phone: String
+    }
+
+    input UpdateOrganizationUserInputElement {
+        userId: ID!
+        status: Status
+        roles: [ID!]
+        schools: [ID!]
+        classes: [ID!]
+        academicYear: ID
+    }
+
+    input UpdateOrganizationUserInput {
+        organizationId: ID!
+        members: [UpdateOrganizationUserInputElement]
     }
 
     # Mutation outputs
