@@ -1620,15 +1620,15 @@ describe('organization', () => {
                 })
 
                 it('swaps a valid email in the `phone` field to `email`', async () => {
-                    const email = 'bob.dylan@nowhere.com'
+                    const phone = 'bob.dylan@nowhere.com'
 
                     const { user } = await inviteUserWithDefaults({
-                        phone: email,
+                        phone: phone,
                         email: undefined,
                     })
 
                     expect(user).to.exist
-                    expect(user.email).to.eq(email)
+                    expect(user.email).to.eq(phone)
                     expect(user.phone).to.be.null
                 })
             })
@@ -1820,16 +1820,10 @@ describe('organization', () => {
                             expectToBeAPIErrorCollection(e, [
                                 {
                                     code: 'ERR_DUPLICATE_CHILD_ENTITY',
-                                    message:
-                                        'User Joe Bloggs already exists for Organization My Organization.',
-                                    variables: [
-                                        'email',
-                                        'phone',
-                                        'given_name',
-                                        'family_name',
-                                    ],
+                                    message: `User ${existingUser.user_id} already exists for Organization My Organization.`,
+                                    variables: ['email', 'phone', 'user_id'],
                                     entity: 'User',
-                                    entityName: 'Joe Bloggs',
+                                    entityName: existingUser.user_id,
                                     parentEntity: 'Organization',
                                     parentName: 'My Organization',
                                 },
@@ -1853,16 +1847,10 @@ describe('organization', () => {
                             expectToBeAPIErrorCollection(e, [
                                 {
                                     code: 'ERR_DUPLICATE_CHILD_ENTITY',
-                                    message:
-                                        'User Joe Bloggs already exists for Organization My Organization.',
-                                    variables: [
-                                        'email',
-                                        'phone',
-                                        'given_name',
-                                        'family_name',
-                                    ],
+                                    message: `User ${existingUser.user_id} already exists for Organization My Organization.`,
+                                    variables: ['email', 'phone', 'user_id'],
                                     entity: 'User',
-                                    entityName: 'Joe Bloggs',
+                                    entityName: existingUser.user_id,
                                     parentEntity: 'Organization',
                                     parentName: 'My Organization',
                                 },
@@ -2198,7 +2186,7 @@ describe('organization', () => {
                         e,
                         {
                             entity: 'User',
-                            entityName: existingUser.full_name(),
+                            entityName: existingUser.user_id,
                             parentEntity: 'Organization',
                             parentName: organization.organization_name!,
                         },

@@ -63,7 +63,6 @@ import {
 } from '../utils/resolvers/inputValidation'
 import { Organization } from '../entities/organization'
 
-type IdentifyingField = 'username' | 'email' | 'phone'
 export interface AddSchoolRolesToUsersEntityMap
     extends RemoveSchoolRolesFromUsersEntityMap {
     schoolOrg: Map<string, Organization>
@@ -76,13 +75,6 @@ function getUserIdentifier(
     phone?: string | null
 ): string {
     return username ? username : email ? email : phone || ''
-}
-
-function getUserIdentifyingFieldName(
-    username?: string | null,
-    email?: string | null
-): IdentifyingField {
-    return username ? 'username' : email ? 'email' : 'phone'
 }
 
 export class AddSchoolRolesToUsers extends AddMutation<
@@ -683,14 +675,14 @@ async function checkForExistingUsers(
     return existingUserErrors
 }
 
-// The search has returned a list of User records that the database has found that already exist.
-// We create a map of the normalized inputs, and look up keys from those User records to find where in the
-// input array they occur. We sort the resulting list as there is no guarentee that it will be in any order
-// from the db, and ascending order will make more sense to the consumer of the error list rather than unordered.
-function getIndicesOfExistingUsers(
+// Build a list of existing user errors that say in which index in the input
+// the existing user is referenced.
+function buildListOfExistingUserErrors(
     inputs: CreateUserInput[],
-    users: User[]
-): number[] {
+    existingUsers: User[]
+): APIError[] {
+    const errs: APIError[] = []
+    if (existingUsers.length === 0) return errs
     const inputMap = new Map(
         inputs.map((v, i) => [
             makeLookupKey(
@@ -705,60 +697,26 @@ function getIndicesOfExistingUsers(
             i,
         ])
     )
-
-    const results: number[] = []
-    for (const user of users) {
+    for (const user of existingUsers) {
         const userKey = makeLookupKey(
             user.given_name,
             user.family_name,
             getUserIdentifier(user.username, user.email, user.phone)
         )
         const index = inputMap.get(userKey)
-        if (index != undefined) {
-            results.push(index)
-        }
-    }
-    results.sort(function (a, b) {
-        return a - b
-    })
-    return results
-}
-
-// Build a list of existing user errors that say in which index in the input
-// the existing user is referenced.
-function buildListOfExistingUserErrors(
-    inputs: CreateUserInput[],
-    existingUsers: User[]
-): APIError[] {
-    const errs: APIError[] = []
-    if (existingUsers.length === 0) {
-        return errs
-    }
-    const indices = getIndicesOfExistingUsers(inputs, existingUsers)
-    for (const index of indices) {
-        const input = inputs[index]
-        const identifyingFieldName = getUserIdentifyingFieldName(
-            input.username,
-            input.contactInfo?.email
-        )
-
-        const fieldValueRelation = {
-            username: input.username,
-            email: input.contactInfo?.email,
-            phone: input.contactInfo?.phone,
-        }
-
-        errs.push(
-            createEntityAPIError(
-                'existent',
-                index,
-                'User',
-                `${input.givenName} ${input.familyName} with ${identifyingFieldName} ${fieldValueRelation[identifyingFieldName]}`,
-                undefined,
-                undefined,
-                ['givenName', 'familyName', `${identifyingFieldName}`]
+        if (index) {
+            errs.push(
+                createEntityAPIError(
+                    'existent',
+                    index,
+                    'User',
+                    user.user_id,
+                    undefined,
+                    undefined,
+                    ['user_id']
+                )
             )
-        )
+        }
     }
     return errs
 }
@@ -816,14 +774,7 @@ function checkCreateUserInput(inputs: CreateUserInput[]): APIError[] {
             errs.push(
                 createDuplicateAttributeAPIError(
                     i,
-                    [
-                        'givenName',
-                        'familyName',
-                        `${getUserIdentifyingFieldName(
-                            createUserInput.username,
-                            createUserInput.contactInfo?.email
-                        )}`,
-                    ],
+                    ['givenName', 'familyName', 'username', 'phone', 'email'],
                     'User'
                 )
             )
@@ -1130,18 +1081,10 @@ function checkUpdateUserInputs(inputs: UpdateUserInput[]): APIError[] {
                     new APIError({
                         code: customErrors.duplicate_input_value.code,
                         message: customErrors.duplicate_input_value.message,
-                        variables: [
-                            'givenName',
-                            'familyName',
-                            `${getUserIdentifyingFieldName(
-                                updateUserInput.username,
-                                updateUserInput.email
-                            )}`,
-                        ],
+                        variables: ['givenName', 'familyName'],
                         entity: 'User',
                         attribute: 'ID',
                         entityName: updateUserInput.id,
-                        otherAttribute: `${keyToPrintableString(key)}`,
                         index: i,
                     })
                 )
@@ -1186,19 +1129,12 @@ function buildConflictsErrors(conflictcheck: ConflictCheck): APIError[] {
         if (conflictsMap.has(ukey)) {
             const index = conflictsMap.get(ukey)
             if (index != undefined) {
-                const contactInfo = getUserIdentifyingFieldName(
-                    conflictcheck.checklist[index].username,
-                    conflictcheck.checklist[index].email
-                )
-
                 const e = new APIError({
                     code: customErrors.existent_entity.code,
                     message: customErrors.existent_entity.message,
-                    variables: ['givenName', 'familyName', `${contactInfo}`],
+                    variables: ['givenName', 'familyName', 'username', 'email'],
                     entity: 'User',
-                    attribute: '',
                     entityName: u.user_id,
-                    otherAttribute: `${keyToPrintableString(ukey)}`,
                     index: index,
                 })
                 conflictErrs.push(e)

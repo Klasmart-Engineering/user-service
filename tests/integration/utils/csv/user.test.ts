@@ -343,6 +343,7 @@ describe('processUserFromCSVRow', async () => {
 
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
             expect(err.max).to.eq(config.limits.ORGANIZATION_NAME_MAX_LENGTH)
+            expect((err as any).value).to.eq(row.organization_name)
             expect(queryResultCache.validatedOrgs.size).to.equal(0)
         })
         it("errors when doesn't exist", async () => {
@@ -436,6 +437,19 @@ describe('processUserFromCSVRow', async () => {
                 customErrors.invalid_alphanumeric_special.code
             )
         })
+        it('omits given_name in error properties', async () => {
+            ;(row as any).user_given_name = '🐮'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors.length).to.eq(1)
+            expect((rowErrors[0] as any).value).to.be.undefined
+        })
     })
 
     context('user family name', () => {
@@ -511,6 +525,19 @@ describe('processUserFromCSVRow', async () => {
                 customErrors.invalid_alphanumeric_special.code
             )
         })
+        it('omits family_name in error properties', async () => {
+            ;(row as any).user_family_name = '🐮'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors.length).to.eq(1)
+            expect((rowErrors[0] as any).value).to.be.undefined
+        })
     })
 
     context('user date of birth', () => {
@@ -538,6 +565,7 @@ describe('processUserFromCSVRow', async () => {
                 expect(err.attribute).to.eq('date of birth')
                 expect(err.format).to.eq('MM-YYYY')
                 expect(err.code).to.eq(customErrors.invalid_date.code)
+                expect((err as any).value).to.eq(row.user_date_of_birth)
                 for (const v of getCustomErrorMessageVariables(err.message)) {
                     expect(err[v]).to.exist
                 }
@@ -646,6 +674,19 @@ describe('processUserFromCSVRow', async () => {
             )
             expect(rowErrors).to.be.empty
         })
+        it('omits username in error properties', async () => {
+            ;(row as any).user_username = '🐮'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors.length).to.eq(1)
+            expect((rowErrors[0] as any).value).to.be.undefined
+        })
     })
 
     context('user gender', () => {
@@ -731,6 +772,7 @@ describe('processUserFromCSVRow', async () => {
             expect(err.code).to.eq(
                 customErrors.invalid_alphanumeric_special.code
             )
+            expect((err as any).value).to.eq(row.user_gender)
         })
     })
 
@@ -853,6 +895,19 @@ describe('processUserFromCSVRow', async () => {
             })
             expect(dbUsers.length).to.eq(1)
         })
+        it('omits user_email in error properties', async () => {
+            ;(row as any).user_email = '🐮'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors.length).to.eq(1)
+            expect((rowErrors[0] as any).value).to.be.undefined
+        })
     })
 
     context('user phone', () => {
@@ -881,6 +936,19 @@ describe('processUserFromCSVRow', async () => {
                     expect(err[v]).to.exist
                 }
             }
+        })
+        it('omits user_phone in error properties', async () => {
+            ;(row as any).user_phone = '🐮'
+            const rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors.length).to.eq(1)
+            expect((rowErrors[0] as any).value).to.be.undefined
         })
     })
 
@@ -957,6 +1025,19 @@ describe('processUserFromCSVRow', async () => {
             })
             expect(dbUser.alternate_email).to.eq(processedEmail)
         })
+        it('omits alternate_email in error properties', async () => {
+            ;(row as any).user_alternate_email = '🐮'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors.length).to.eq(1)
+            expect((rowErrors[0] as any).value).to.be.undefined
+        })
     })
 
     context('user alternate phone', () => {
@@ -985,6 +1066,19 @@ describe('processUserFromCSVRow', async () => {
                     expect(err[v]).to.exist
                 }
             }
+        })
+        it('omits alternate_phone in error properties', async () => {
+            ;(row as any).user_alternate_phone = '🐮'
+            const rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions,
+                queryResultCache
+            )
+            expect(rowErrors.length).to.eq(1)
+            expect((rowErrors[0] as any).value).to.be.undefined
         })
     })
 
@@ -1017,7 +1111,7 @@ describe('processUserFromCSVRow', async () => {
             expect(err.entity).to.eq('User')
             expect(err.attribute).to.eq('Short Code')
         })
-        it('errors when not alphanumberic', async () => {
+        it('errors when not alphanumeric', async () => {
             for (const shortcode of ['de/f', '$abc', '@1234']) {
                 rowErrors = []
                 row.user_shortcode = shortcode
@@ -1033,6 +1127,7 @@ describe('processUserFromCSVRow', async () => {
                 expect(err.code).to.eq(customErrors.invalid_alphanumeric.code)
                 expect(err.entity).to.eq('User')
                 expect(err.attribute).to.eq('Short Code')
+                expect((err as any).value).to.eq(row.user_shortcode)
                 for (const v of getCustomErrorMessageVariables(err.message)) {
                     expect(err[v]).to.exist
                 }
@@ -1135,6 +1230,7 @@ describe('processUserFromCSVRow', async () => {
             expect(err.max).to.eq(config.limits.ROLE_NAME_MAX_LENGTH)
             expect(err.entity).to.eq('Organization')
             expect(err.attribute).to.eq('Role')
+            expect((err as any).value).to.eq(row.organization_role_name)
             expect(queryResultCache.validatedOrgRoles.size).to.equal(0)
         })
         it('errors when nonexistent', async () => {
@@ -1188,6 +1284,7 @@ describe('processUserFromCSVRow', async () => {
                 expect(err.max).to.eq(config.limits.SCHOOL_NAME_MAX_LENGTH)
                 expect(err.entity).to.eq('School')
                 expect(err.attribute).to.eq('Name')
+                expect((err as any).value).to.eq(row.school_name)
                 expect(queryResultCache.validatedSchools.size).to.equal(0)
             })
             it('errors when doesnt exist', async () => {
@@ -1346,6 +1443,7 @@ describe('processUserFromCSVRow', async () => {
                 expect(err.max).to.eq(config.limits.CLASS_NAME_MAX_LENGTH)
                 expect(err.entity).to.eq('Class')
                 expect(err.attribute).to.eq('Name')
+                expect((err as any).value).to.eq(row.class_name)
                 expect(queryResultCache.validatedClasses.size).to.equal(0)
             })
             it('errors when doesnt exist', async () => {
