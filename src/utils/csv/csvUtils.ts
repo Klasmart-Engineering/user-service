@@ -84,6 +84,14 @@ export function joiResultToCSVErrors(
     for (const error of result?.error?.details || []) {
         const prop = error.context?.key || ''
         const propDetails = schema[prop]
+        // Remove PII
+        if (
+            error.context?.key?.match(
+                /username|given_name|family_name|email|phone/g
+            )
+        ) {
+            delete error.context.value
+        }
         const details = getCustomConstraintDetails(error)
         const csvError = buildCsvError(
             details.code,

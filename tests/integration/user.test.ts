@@ -96,7 +96,6 @@ import {
     AddSchoolRolesToUsers,
     AddSchoolRolesToUsersEntityMap,
     createUsers,
-    keyToPrintableString,
     makeLookupKey,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
@@ -1764,7 +1763,13 @@ describe('user', () => {
                 const expectedErrors = [
                     createDuplicateAttributeAPIError(
                         3,
-                        ['givenName', 'familyName', 'username'],
+                        [
+                            'givenName',
+                            'familyName',
+                            'username',
+                            'phone',
+                            'email',
+                        ],
                         'User'
                     ),
                 ]
@@ -1778,15 +1783,14 @@ describe('user', () => {
             })
         })
         context('when some matching records already exist on the db', () => {
-            const createExistentError = (
-                input: CreateUserInput,
-                index: number
-            ) => {
+            let duplicateUsers: User[]
+
+            const createExistentError = (user: User, index: number) => {
                 return createEntityAPIError(
                     'existent',
                     index,
                     'User',
-                    `${input.givenName} ${input.familyName} with username ${input.username}`,
+                    user.user_id,
                     undefined,
                     undefined,
                     ['givenName', 'familyName', 'username']
@@ -1794,11 +1798,11 @@ describe('user', () => {
             }
 
             beforeEach(async () => {
-                const oldInputs: CreateUserInput[] = []
-                oldInputs.push(createUserInputs[5])
-                oldInputs.push(createUserInputs[35])
-                await createUsersResolver(oldInputs, adminUser)
+                duplicateUsers = await User.save(userFactory(2))
+                createUserInputs[5] = userToCreateUserInput(duplicateUsers[0])
+                createUserInputs[35] = userToCreateUserInput(duplicateUsers[1])
             })
+
             it('it fails to create users', async () => {
                 const previousUsers = await connection
                     .getRepository(User)
@@ -1809,8 +1813,8 @@ describe('user', () => {
                 ).to.be.rejected
 
                 const expectedErrors = [
-                    createExistentError(createUserInputs[5], 5),
-                    createExistentError(createUserInputs[35], 35),
+                    createExistentError(duplicateUsers[0], 5),
+                    createExistentError(duplicateUsers[1], 35),
                 ]
 
                 compareMultipleErrors(error.errors, expectedErrors)
@@ -3833,11 +3837,10 @@ describe('user', () => {
                         new APIError({
                             code: customErrors.duplicate_input_value.code,
                             message: customErrors.duplicate_input_value.message,
-                            variables: ['givenName', 'familyName', 'username'],
+                            variables: ['givenName', 'familyName'],
                             entity: 'User',
                             attribute: 'ID',
                             entityName: inputToFail.id,
-                            otherAttribute: `${keyToPrintableString(key)}`,
                             index: 3,
                         }),
                     ]
@@ -3859,17 +3862,14 @@ describe('user', () => {
                     return new APIError({
                         code: customErrors.existent_entity.code,
                         message: customErrors.existent_entity.message,
-                        variables: ['givenName', 'familyName', 'username'],
+                        variables: [
+                            'givenName',
+                            'familyName',
+                            'username',
+                            'email',
+                        ],
                         entity: 'User',
-                        attribute: '',
                         entityName: user.user_id,
-                        otherAttribute: `${keyToPrintableString(
-                            makeLookupKey(
-                                user.given_name,
-                                user.family_name,
-                                user.username
-                            )
-                        )}`,
                         index,
                     })
                 }

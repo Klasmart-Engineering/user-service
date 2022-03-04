@@ -330,7 +330,7 @@ describe('model.csv', () => {
                     'owner_email',
                     csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                     {
-                        name: owner.email,
+                        name: 'Owner',
                         entity: 'user',
                         parent_entity: 'organization',
                         parent_name: 'Company 2', // Should read company 1, requires fix
@@ -1432,7 +1432,6 @@ describe('model.csv', () => {
                         attribute: 'Email',
                         name: 'email',
                         regex: {},
-                        value: 'invalid@email',
                         label: 'user_email',
                         key: 'user_email',
                     }
@@ -1470,7 +1469,6 @@ describe('model.csv', () => {
                         entity: 'User',
                         attribute: 'Phone',
                         name: 'phone',
-                        value: 'invalid_phone',
                         label: 'user_phone',
                         key: 'user_phone',
                     }
