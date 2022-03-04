@@ -37,9 +37,9 @@ context('Organization', () => {
                 'message',
                 'variables',
                 'entity',
-                'entityName',
+                'entityId',
                 'parentEntity',
-                'parentName',
+                'parentId',
             ])
         }
 
@@ -50,12 +50,12 @@ context('Organization', () => {
         ): IAPIError {
             return {
                 code: customErrors.nonexistent_child.code,
-                message: `${childEntity} ${id} doesn't exist for Organization ${organization.organization_name}.`,
+                message: `${childEntity} ${id} doesn't exist for Organization ${organization.organization_id}.`,
                 variables: [variable],
                 entity: childEntity,
-                entityName: id,
+                entityId: id,
                 parentEntity: 'Organization',
-                parentName: organization.organization_name,
+                parentId: organization.organization_id,
             }
         }
 

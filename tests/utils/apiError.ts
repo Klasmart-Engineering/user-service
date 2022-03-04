@@ -72,12 +72,12 @@ type ExpectAPIErrors = Implements<
     {
         existent_entity: ExpectAPIError<'entity' | 'entityName'>
         existent_child_entity: ExpectAPIError<
-            'entity' | 'entityName' | 'parentEntity' | 'parentName'
+            'entity' | 'entityId' | 'parentEntity' | 'parentId'
         >
         duplicate_attribute_values: ExpectAPIError<'entity' | 'attribute'>
         nonexistent_entity: ExpectAPIError<'entity' | 'entityName'>
         nonexistent_child: ExpectAPIError<
-            'entity' | 'entityName' | 'parentEntity' | 'parentName'
+            'entity' | 'entityId' | 'parentEntity' | 'parentId'
         >
         missing_required_entity_attribute: ExpectAPIError<
             'entity' | 'attribute'

@@ -5804,9 +5804,9 @@ describe('class', () => {
                             res,
                             {
                                 entity: 'Program',
-                                entityName: programs[0].id,
+                                entityId: programs[0].id,
                                 parentEntity: 'Class',
-                                parentName: classes[0].class_id,
+                                parentId: classes[0].class_id,
                                 index: 0,
                             },
                             [''],

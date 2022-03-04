@@ -79,7 +79,7 @@ export const customErrors = {
     existent_child_entity: {
         code: 'ERR_DUPLICATE_CHILD_ENTITY',
         message:
-            '{entity} {entityName} already exists for {parentEntity} {parentName}.',
+            '{entity} {entityId} already exists for {parentEntity} {parentId}.',
     },
     existent_entity_attribute: {
         code: 'ERR_DUPLICATE_ENTITY_ATTRIBUTE',
@@ -111,7 +111,7 @@ export const customErrors = {
     nonexistent_child: {
         code: 'ERR_NON_EXISTENT_CHILD_ENTITY',
         message:
-            "{entity} {entityName} doesn't exist for {parentEntity} {parentName}.",
+            "{entity} {entityId} doesn't exist for {parentEntity} {parentId}.",
     },
     missing_required_entity_attribute: {
         code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',

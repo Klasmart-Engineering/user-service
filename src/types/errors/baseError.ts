@@ -23,8 +23,10 @@ export interface ErrorParams {
     otherAttribute?: string
     organizationName?: string
     entityName?: string
+    entityId?: string
     parentEntity?: string
     parentName?: string
+    parentId?: string
     min?: number
     max?: number
     format?: string

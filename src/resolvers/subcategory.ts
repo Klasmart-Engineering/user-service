@@ -114,9 +114,9 @@ export async function createSubcategories(
                     message: customErrors.existent_child_entity.message,
                     variables: ['organization_id', 'name'],
                     entity: 'Subcategory',
-                    entityName: name,
+                    entityId: name,
                     parentEntity: 'Organization',
-                    parentName: organization.organization_name,
+                    parentId: organization.organization_id,
                     index,
                 })
             )

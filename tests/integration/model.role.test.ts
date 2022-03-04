@@ -349,10 +349,9 @@ describe('model.role', () => {
                                 await expect(runReplaceRole()).to.be.rejected,
                                 {
                                     entity: 'Role',
-                                    entityName: newRole.role_name || '',
+                                    entityId: newRole.role_id,
                                     parentEntity: 'Organization',
-                                    parentName:
-                                        organization.organization_name || '',
+                                    parentId: organization.organization_id,
                                 },
                                 ['role_id', 'organization_id']
                             )
