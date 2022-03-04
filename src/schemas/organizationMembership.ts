@@ -53,7 +53,7 @@ const typeDefs = gql`
         organizationId: String!
         status: Status!
         shortCode: String
-        joinTimestamp: String
+        joinTimestamp: Date
         user: UserConnectionNode @isAdmin(entity: "user")
         organization: OrganizationConnectionNode
             @isAdmin(entity: "organization")

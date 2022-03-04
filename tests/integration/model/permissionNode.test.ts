@@ -18,12 +18,10 @@ import {
 } from '../../utils/createTestClient'
 import { PERMISSION_NODE_FIELDS } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { gqlTry } from '../../utils/gqlTry'
 import { getAdminAuthToken } from '../../utils/testConfig'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
@@ -59,13 +57,9 @@ describe('roleNode', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

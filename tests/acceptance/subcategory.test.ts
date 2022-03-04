@@ -1,5 +1,5 @@
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Subcategory } from '../../src/entities/subcategory'
 import {
     CREATE_SUBCATEGORIES,
@@ -9,7 +9,7 @@ import {
     UPDATE_SUBCATEGORIES,
 } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
@@ -36,8 +36,6 @@ import { buildUpdateSubcategoryInputArray } from '../utils/operations/subcategor
 import { createSubcategory } from '../factories/subcategory.factory'
 import { Organization } from '../../src/entities/organization'
 import { loadFixtures } from '../utils/fixtures'
-import { Category } from '../../src/entities/category'
-import { createCategory } from '../factories/category.factory'
 import CategoriesInitializer from '../../src/initializers/categories'
 
 const url = 'http://localhost:8080'
@@ -77,13 +75,10 @@ const makeNodeQuery = async (id: string) => {
 }
 
 describe('acceptance.subcategory', () => {
-    let connection: Connection
-    before(async () => {
-        connection = await createTestConnection()
-    })
+    let connection: TestConnection
 
-    after(async () => {
-        await connection?.close()
+    before(async () => {
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {
@@ -233,7 +228,9 @@ describe('acceptance.subcategory', () => {
 
                 const inputNames = input.map((i) => i.name)
 
-                expect(subcategoriesCreatedNames).to.deep.equal(inputNames)
+                expect(subcategoriesCreatedNames).to.deep.equalInAnyOrder(
+                    inputNames
+                )
             })
         })
 

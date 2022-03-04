@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { nonAdminAgeRangeScope } from '../../../src/directives/isAdmin'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Context } from '../../../src/main'
@@ -11,10 +11,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRange'
 import gql from 'graphql-tag'
 import { gqlTry } from '../../utils/gqlTry'
@@ -99,13 +96,9 @@ describe('ageRangeNode', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

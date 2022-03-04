@@ -1,7 +1,7 @@
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Model } from '../../src/model'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Class } from '../../src/entities/class'
 import { createClass } from '../utils/operations/organizationOps'
@@ -33,18 +33,13 @@ const GET_CLASS = `
 `
 
 describe('model.class', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
-    let originalAdmins: string[]
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     let arbitraryUserToken: string

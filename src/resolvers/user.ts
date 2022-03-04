@@ -35,6 +35,8 @@ import {
 } from '../utils/mutations/validations/user'
 import clean from '../utils/clean'
 import {
+    createDuplicateAttributeAPIError,
+    createEntityAPIError,
     createInputLengthAPIError,
     createUnauthorizedAPIError,
 } from '../utils/resolvers/errors'
@@ -61,6 +63,7 @@ import {
 } from '../utils/resolvers/inputValidation'
 import { Organization } from '../entities/organization'
 
+type IdentifyingField = 'username' | 'email' | 'phone'
 export interface AddSchoolRolesToUsersEntityMap
     extends RemoveSchoolRolesFromUsersEntityMap {
     schoolOrg: Map<string, Organization>
@@ -78,7 +81,7 @@ function getUserIdentifier(
 function getUserIdentifyingFieldName(
     username?: string | null,
     email?: string | null
-): string {
+): IdentifyingField {
     return username ? 'username' : email ? 'email' : 'phone'
 }
 
@@ -734,32 +737,27 @@ function buildListOfExistingUserErrors(
     const indices = getIndicesOfExistingUsers(inputs, existingUsers)
     for (const index of indices) {
         const input = inputs[index]
-        const key = makeLookupKey(
-            input.givenName,
-            input.familyName,
-            getUserIdentifier(
-                input.username,
-                input.contactInfo?.email,
-                input.contactInfo?.phone
-            )
+        const identifyingFieldName = getUserIdentifyingFieldName(
+            input.username,
+            input.contactInfo?.email
         )
+
+        const fieldValueRelation = {
+            username: input.username,
+            email: input.contactInfo?.email,
+            phone: input.contactInfo?.phone,
+        }
+
         errs.push(
-            new APIError({
-                code: customErrors.existent_entity.code,
-                message: customErrors.existent_entity.message,
-                variables: [
-                    'givenName',
-                    'familyName',
-                    `${getUserIdentifyingFieldName(
-                        input.username,
-                        input.contactInfo?.email
-                    )}`,
-                ],
-                entity: 'User',
-                attribute: '',
-                otherAttribute: `${keyToPrintableString(key)}`,
-                index: index,
-            })
+            createEntityAPIError(
+                'existent',
+                index,
+                'User',
+                `${input.givenName} ${input.familyName} with ${identifyingFieldName} ${fieldValueRelation[identifyingFieldName]}`,
+                undefined,
+                undefined,
+                ['givenName', 'familyName', `${identifyingFieldName}`]
+            )
         )
     }
     return errs
@@ -767,7 +765,7 @@ function buildListOfExistingUserErrors(
 
 // We build a key for a map, I am using maps to reduce the looping through arrays to
 // a minimum when looking up values
-function makeLookupKey(
+export function makeLookupKey(
     given: string | undefined | null,
     family: string | undefined | null,
     contact: string | undefined | null
@@ -780,7 +778,7 @@ function makeLookupKey(
     return JSON.stringify(jsonKey)
 }
 
-function keyToPrintableString(key: string): string {
+export function keyToPrintableString(key: string): string {
     const jsonKey = JSON.parse(key)
     const given = jsonKey['givenName']
     const family = jsonKey['familyName']
@@ -816,10 +814,9 @@ function checkCreateUserInput(inputs: CreateUserInput[]): APIError[] {
         )
         if (inputMap.has(key)) {
             errs.push(
-                new APIError({
-                    code: customErrors.duplicate_input_value.code,
-                    message: customErrors.duplicate_input_value.message,
-                    variables: [
+                createDuplicateAttributeAPIError(
+                    i,
+                    [
                         'givenName',
                         'familyName',
                         `${getUserIdentifyingFieldName(
@@ -827,11 +824,8 @@ function checkCreateUserInput(inputs: CreateUserInput[]): APIError[] {
                             createUserInput.contactInfo?.email
                         )}`,
                     ],
-                    entity: 'User',
-                    attribute: 'ID',
-                    otherAttribute: `${keyToPrintableString(key)}`,
-                    index: i,
-                })
+                    'User'
+                )
             )
         } else {
             inputMap.set(key, i)
@@ -901,7 +895,8 @@ export async function createUsers(
                 context.permissions.getUserId()
             )
         )
-        throw errs
+
+        throw new APIErrorCollection(errs)
     }
 
     if (inputs.length === 0) errs.push(createInputLengthAPIError('User', 'min'))
@@ -909,7 +904,7 @@ export async function createUsers(
     if (inputs.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         errs.push(createInputLengthAPIError('User', 'max'))
 
-    if (errs.length > 0) throw errs
+    if (errs.length > 0) throw new APIErrorCollection(errs)
 
     const checkErrs = checkCreateUserInput(inputs)
     if (checkErrs.length > 0) errs.push(...checkErrs)
@@ -923,7 +918,7 @@ export async function createUsers(
         errs.push(...existingUserErrors)
     }
 
-    if (errs.length > 0) throw errs
+    if (errs.length > 0) throw new APIErrorCollection(errs)
 
     const newUsers = buildListOfNewUsers(normalizedInputs)
 
@@ -1112,6 +1107,7 @@ function checkUpdateUserInputs(inputs: UpdateUserInput[]): APIError[] {
                     variables: ['givenName', 'familyName', `${'id'}`],
                     entity: 'User',
                     attribute: 'ID',
+                    entityName: updateUserInput.id,
                     otherAttribute: `${updateUserInput.id}`,
                     index: i,
                 })
@@ -1144,6 +1140,7 @@ function checkUpdateUserInputs(inputs: UpdateUserInput[]): APIError[] {
                         ],
                         entity: 'User',
                         attribute: 'ID',
+                        entityName: updateUserInput.id,
                         otherAttribute: `${keyToPrintableString(key)}`,
                         index: i,
                     })
@@ -1193,12 +1190,14 @@ function buildConflictsErrors(conflictcheck: ConflictCheck): APIError[] {
                     conflictcheck.checklist[index].username,
                     conflictcheck.checklist[index].email
                 )
+
                 const e = new APIError({
                     code: customErrors.existent_entity.code,
                     message: customErrors.existent_entity.message,
                     variables: ['givenName', 'familyName', `${contactInfo}`],
                     entity: 'User',
                     attribute: '',
+                    entityName: u.user_id,
                     otherAttribute: `${keyToPrintableString(ukey)}`,
                     index: index,
                 })
@@ -1222,6 +1221,7 @@ function buildListOfUpdateMissingUserErrors(
             variables: ['id'],
             entity: 'User',
             attribute: 'user_id',
+            entityName: inputs[index].id,
             otherAttribute: `${inputs[index].id}`,
             index,
         })
@@ -1279,18 +1279,27 @@ export async function updateUsers(
                 context.permissions.getUserId()
             )
         )
-        throw errs
+
+        throw new APIErrorCollection(errs)
     }
     if (inputs.length === 0) errs.push(createInputLengthAPIError('User', 'min'))
 
     if (inputs.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         errs.push(createInputLengthAPIError('User', 'max'))
 
-    if (errs.length > 0) throw errs
+    if (errs.length > 0) throw new APIErrorCollection(errs)
 
     const checkErrs = checkUpdateUserInputs(inputs)
     if (checkErrs.length > 0) {
         errs.push(...checkErrs)
+
+        // Removing failing inputs,
+        // because these could produce unexpected errors in next validations
+        checkErrs.forEach((userError) => {
+            if (userError.index) {
+                inputs.splice(userError.index, 1)
+            }
+        })
     }
 
     const normalizedInputs = inputs.map((val) => cleanUpdateUserInput(val))
@@ -1306,6 +1315,14 @@ export async function updateUsers(
     )
     if (missingUserErrors.length > 0) {
         errs.push(...missingUserErrors)
+
+        // Removing inputs related to non existent users,
+        // because these could produce unexpected errors in next validations
+        missingUserErrors.forEach((userError) => {
+            if (userError.index) {
+                normalizedInputs.splice(userError.index, 1)
+            }
+        })
     }
 
     const conflictErrs = await checkForGivenNameFamilyNameContactInfoCollisions(
@@ -1317,7 +1334,7 @@ export async function updateUsers(
         errs.push(...conflictErrs)
     }
 
-    if (errs.length > 0) throw errs
+    if (errs.length > 0) throw new APIErrorCollection(errs)
 
     const updatedUsers = buildListOfUpdatedUsers(
         normalizedInputs,

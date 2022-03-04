@@ -2,12 +2,14 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
+import { getConnection } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 import { Category } from '../../src/entities/category'
 import { Organization } from '../../src/entities/organization'
+import { Role } from '../../src/entities/role'
 import { Status } from '../../src/entities/status'
 import { Subject } from '../../src/entities/subject'
-import { Model } from '../../src/model'
+import { User } from '../../src/entities/user'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
@@ -24,7 +26,6 @@ import {
     SubjectConnectionNode,
     UpdateSubjectInput,
 } from '../../src/types/graphQL/subject'
-import { createServer } from '../../src/utils/createServer'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import {
     createDuplicateAttributeAPIError,
@@ -42,28 +43,17 @@ import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
 import { compareErrors } from '../utils/apiError'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../utils/createTestClient'
 import { userToPayload } from '../utils/operations/userOps'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
 
 describe('subject', () => {
     let connection: TestConnection
-    let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     const createInitialData = async (permissionNames: PermissionName[]) => {
@@ -223,7 +213,7 @@ describe('subject', () => {
                 )
 
                 expect(twoSubjectCount).to.be.eq(singleSubjectCount)
-                expect(twoSubjectCount).to.be.equal(7)
+                expect(twoSubjectCount).to.be.equal(5)
             })
         })
 
@@ -320,6 +310,34 @@ describe('subject', () => {
                     permittedOrg,
                     notPermittedOrg,
                 ])
+            })
+
+            context('when caller has school admin role', () => {
+                let schoolAdmin: User
+                let organization: Organization
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    organization = await createOrganization().save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                it('rejects because has no longer permission for create', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(schoolAdmin)
+                    )
+
+                    const userCtx = { permissions }
+                    await expectPermissionError(userCtx, [organization])
+                })
             })
         })
 
@@ -590,10 +608,10 @@ describe('subject', () => {
         })
 
         const buildDefaultInput = (subjects: Subject[]) =>
-            Array.from(subjects, ({ id }) => {
+            Array.from(subjects, ({ id }, idx) => {
                 return {
                     id,
-                    name: faker.random.word(),
+                    name: `${faker.random.word()}_${idx}`,
                     categoryIds: categories.map((c) => c.id),
                 }
             })
@@ -626,7 +644,7 @@ describe('subject', () => {
             }
 
             it('db connections increase in one with number of input elements', async () => {
-                const singleSubjectExpectedCalls = 8
+                const singleSubjectExpectedCalls = 6
                 await getDbCallCount(buildDefaultInput(subjectsToEdit)) // warm up permissions cache)
 
                 const singleSubjectCount = await getDbCallCount(
@@ -773,6 +791,35 @@ describe('subject', () => {
                     permittedSubject,
                     notPermittedSubject,
                 ])
+            })
+
+            context('when caller has school admin role', () => {
+                let schoolAdmin: User
+                let subject: Subject
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    const organization = await createOrganization().save()
+                    subject = await createSubject(organization).save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                it('rejects because has no longer permission for edit', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(schoolAdmin)
+                    )
+
+                    const userCtx = { permissions }
+                    await expectPermissionError(userCtx, [subject])
+                })
             })
         })
 
@@ -1185,6 +1232,35 @@ describe('subject', () => {
                     permittedSubject,
                     notPermittedSubject,
                 ])
+            })
+
+            context('when caller has school admin role', () => {
+                let schoolAdmin: User
+                let subject: Subject
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    const organization = await createOrganization().save()
+                    subject = await createSubject(organization).save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                it('rejects because has no longer permission for delete', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(schoolAdmin)
+                    )
+
+                    const userCtx = { permissions }
+                    await expectPermissionError(userCtx, [subject])
+                })
             })
         })
     })

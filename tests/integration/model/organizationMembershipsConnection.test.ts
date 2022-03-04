@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { createEntityScope } from '../../../src/directives/isAdmin'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
@@ -29,23 +29,17 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 
 describe('organizationMembershipsConnection', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
+
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     let org1: Organization

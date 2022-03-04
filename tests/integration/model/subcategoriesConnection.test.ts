@@ -7,32 +7,23 @@ import { Subcategory } from '../../../src/entities/subcategory'
 import { User } from '../../../src/entities/user'
 import SubcategoriesInitializer from '../../../src/initializers/subcategories'
 import CategoriesInitializer from '../../../src/initializers/categories'
-import { Model } from '../../../src/model'
 import { SubcategoryConnectionNode } from '../../../src/types/graphQL/subcategory'
-import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createCategory } from '../../factories/category.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createSubcategory } from '../../factories/subcategory.factory'
 import { createAdminUser, createUser } from '../../factories/user.factory'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../../utils/createTestClient'
 import { userToPayload } from '../../utils/operations/userOps'
 import {
     isStringArraySortedAscending,
     isStringArraySortedDescending,
 } from '../../utils/sorting'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { GraphQLResolveInfo } from 'graphql'
 import { Context } from '../../../src/main'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
-import { SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { nonAdminSubcategoryScope } from '../../../src/directives/isAdmin'
 import { subcategoriesConnectionResolver } from '../../../src/pagination/subcategoriesConnection'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
@@ -45,6 +36,7 @@ import {
     loadSubcategoriesForOrganization,
     subcategoriesConnectionResolver as resolverForOrganization,
 } from '../../../src/schemas/organization'
+import { sortObjectArray } from '../../../src/utils/array'
 
 type SubcategoryConnectionNodeKey = keyof SubcategoryConnectionNode
 
@@ -52,7 +44,6 @@ use(deepEqualInAnyOrder)
 
 describe('subcategoriesConnection', () => {
     let connection: TestConnection
-    let testClient: ApolloServerTestClient
     let adminUser: User
     let organizationMember1: User
     let organizationMember2: User
@@ -114,13 +105,7 @@ describe('subcategoriesConnection', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {
@@ -353,26 +338,19 @@ describe('subcategoriesConnection', () => {
                 orgSubcategoriesCount / orgCategoriesCount
             )
 
-            const categorySubcategories =
-                (await categories1[0].subcategories) || []
-
-            categorySubcategories.sort((a, b) => {
-                if (a.id < b.id) {
-                    return -1
-                }
-
-                if (a.id > b.id) {
-                    return 1
-                }
-
-                return 0
-            })
-
-            result.edges.forEach((edge, i) => {
-                expect(edge.node.id).to.eql(categorySubcategories[i].id)
-                expect(edge.node.name).to.eql(categorySubcategories[i].name)
-                expect(edge.node.status).to.eql(categorySubcategories[i].status)
-                expect(edge.node.system).to.eql(categorySubcategories[i].system)
+            const categorySubcategories = sortObjectArray(
+                (await categories1[0].subcategories) || [],
+                'id'
+            )
+            const orderedResults = sortObjectArray(
+                result.edges.map((e) => e.node),
+                'id'
+            )
+            orderedResults.forEach((r, i) => {
+                expect(r.id).to.eql(categorySubcategories[i].id)
+                expect(r.name).to.eql(categorySubcategories[i].name)
+                expect(r.status).to.eql(categorySubcategories[i].status)
+                expect(r.system).to.eql(categorySubcategories[i].system)
             })
         })
     })

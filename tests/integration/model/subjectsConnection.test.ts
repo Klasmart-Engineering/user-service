@@ -16,8 +16,14 @@ import {
 import { Model } from '../../../src/model'
 import { CoreSubjectConnectionNode } from '../../../src/pagination/subjectsConnection'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
-import { loadSubjectsForCategory } from '../../../src/schemas/category'
-import { loadSubjectsForClass } from '../../../src/schemas/class'
+import {
+    loadSubjectsForCategory,
+    subjectsChildConnectionResolver as categorySubjectsResolver,
+} from '../../../src/schemas/category'
+import {
+    loadSubjectsForClass,
+    subjectsChildConnectionResolver as classSubjectsResolver,
+} from '../../../src/schemas/class'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import {
@@ -49,17 +55,14 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { generateToken, getAdminAuthToken } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
-import { subjectsChildConnectionResolver as categorySubjectsResolver } from '../../../src/schemas/category'
-import { subjectsChildConnectionResolver as classSubjectsResolver } from '../../../src/schemas/class'
 import {
     loadSubjectsForProgram,
     subjectsChildConnectionResolver as programSubjectsResolver,
 } from '../../../src/schemas/program'
+import { getConnection } from 'typeorm'
+import { checkPageInfo } from '../../acceptance/utils'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -83,13 +86,9 @@ describe('subjectsConnection', () => {
     const subjectsCount = 8
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {
@@ -198,14 +197,7 @@ describe('subjectsConnection', () => {
                 { authorization: getAdminAuthToken() }
             )
 
-            expect(result.totalCount).to.eq(subjectsCount * 2)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, subjectsCount * 2)
         })
 
         it("returns the subjects that belongs to user's organization", async () => {
@@ -249,7 +241,6 @@ describe('subjectsConnection', () => {
         context('linked data', () => {
             beforeEach(async () => {
                 const categories = []
-                const subjects = []
 
                 for (let i = 0; i < 60; i++) {
                     const category = createCategory(org2)
@@ -681,14 +672,12 @@ describe('subjectsConnection', () => {
                 Array.from(new Array(programsCount), (_, i) => {
                     const start = i ? subjectsCount / 2 - 1 : 0
                     const end = i ? undefined : subjectsCount / 2
-                    const program = createProgram(
+                    return createProgram(
                         org1,
                         undefined,
                         undefined,
                         org1Subjects.slice(start, end)
                     )
-
-                    return program
                 })
             )
 

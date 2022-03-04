@@ -591,12 +591,11 @@ export async function removeSubcategoriesFromCategories(
         categoriesWithExistentSubcategories,
     } = await getCategoriesAndSubcategoriesData(args.input)
 
-    const organizationIds = new Set(
-        categories.map((c) => c.__organization__?.organization_id || '')
+    const organization_ids = categories.map(
+        (c) => c.__organization__?.organization_id || ''
     )
-
     await context.permissions.rejectIfNotAllowed(
-        { organization_ids: [...organizationIds] },
+        { organization_ids },
         PermissionName.edit_subjects_20337
     )
 

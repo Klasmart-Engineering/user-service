@@ -242,7 +242,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 580,schedule_settings_580,Schedule Settings,Schedule,Teacher,Gives users access to schedule settings,Operational,,,,,,,
 581,schedule_quick_start_581,Schedule Quick Start,Schedule,Teacher,Gives users access to schedule quick starts,Create Schedule,,,,,,,
 582,schedule_search_582,Schedule Search,Schedule,School Admin,Gives users access to schedule searches,Operational,,,,,,,Y
-600,reports_600,Reports,Reports,Teacher,Gives users access to Reports (i.e. via icons/buttons),Access Reports,,,,,,,
+600,reports_600,Reports,Reports,Student,Gives users access to Reports (i.e. via icons/buttons),Access Reports,,,,,,,
 601,org_reports_601,Org Reports,Reports,Org Admin,Gives users access to view org reports,Operational,,,,,,,
 602,school_reports_602,School Reports,Reports,School Admin,Gives users access to view school reports,Operational,,,,,,,
 603,teacher_reports_603,Teacher Reports,Reports,Teacher,Gives users access to view teacher reports,Operational,,,,,,,Y
@@ -264,7 +264,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 623,a_teachers_detailed_time_load_report_623,A Teachers Detailed Time Load Report,Reports,Teacher,Give users access to detailed time assessing report for teacher(s),Report - Teaching Load,,,,,,,
 624,a_teachers_schedule_load_report_624,A Teachers Schedule Load Report,Reports,Teacher,Give users access to schedule load report for teacher(s),Report - Teaching Load,,,,,,,
 625,a_teachers_detailed_schedule_load_report_625,A Teachers Detailed Schedule Load Report,Reports,Teacher,Give users access to detailed schedule load report for teacher(s),Report - Teaching Load,,,,,,,
-626,organization_class_achievements_report_626,Organization Class Achievements Report,Reports,Org Admin,Give users access to class achievement report for org admin,Report - Class Achievement,,,,,,,
+626,organization_class_achievements_report_626,Organization Class Achievements Report,Reports,Teacher,Give users access to class achievement report for org admin,Report - Class Achievement,,,,,,,
 627,school_class_achievements_report_627,School Class Achievements Report,Reports,School Admin,Give users access to class achievement report for schol admin,Report - Class Achievement,,,,,,,
 628,my_class_achievements_report_628,My Class Achievements Report,Reports,Teacher,Give users access to class achievement report for teacher,Report - Class Achievement,,,,,,,
 629,my_student_achievements_report_629,My Student Achievements Report,Reports,Parent,Give users access to student achievement report for parent,Report - Class Achievement,,,,,,,
@@ -327,33 +327,33 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 20119,view_my_school_20119,View My School,Academic Profile,School Admin,Gives users access to view their school details,Schools,,,,,,,Y
 20115,view_subjects_20115,View Subjects,Academic Profile,School Admin,Gives users access to view subjects,Subjects,,,,,,,Y
 20116,view_class_roster_20116,View Class Roster,Academic Profile,School Admin,Gives users access to view class roster,Classes,,,,,,,
-20220,create_school_20220,Create School,Academic Profile,School Admin,Gives users access to create schools,Schools,,,,,,,Y
+20220,create_school_20220,Create School,Academic Profile,Org Admin,Gives users access to create schools,Schools,,,,,,,Y
 20221,create_program_20221,Create Program,Academic Profile,School Admin,Gives users access to create programs,Programs,,,,,,,Y
 20222,create_age_range_20222,Create Age Range,Academic Profile,School Admin,Gives users access to create age ranges,Age Range,,,,,,,Y
-20223,create_grade_20223,Create Grade,Academic Profile,School Admin,Gives users access to create grades,Grades,,,,,,,Y
+20223,create_grade_20223,Create Grade,Academic Profile,Org Admin,Gives users access to create grades,Grades,,,,,,,Y
 20224,create_class_20224,Create Class,Academic Profile,Org Admin,Gives users access to create classes within the Organization,Classes,,,,,,,Y
 20225,add_students_to_class_20225,Add Students to Class,Academic Profile,School Admin,Gives users access to add students to class,Classes,,,,,,,Y
 20226,add_teachers_to_class_20226,Add Teachers to Class,Academic Profile,School Admin,Gives users access to add teachers to class,Classes,,,,,,,Y
-20227,create_subjects_20227,Create Subjects,Academic Profile,School Admin,Gives users access to create subjects,Subjects,,,,,,,Y
+20227,create_subjects_20227,Create Subjects,Academic Profile,Org Admin,Gives users access to create subjects,Subjects,,,,,,,Y
 20228,create_school_classes_20228,Create School Classes,Academic Profile,School Admin,Gives users access to create classes within the associated School,Classes,,,,,,,
 20330,edit_school_20330,Edit School,Academic Profile,School Admin,Gives users access to edit school,Schools,,,,,,,Y
 20331,edit_program_20331,Edit Program,Academic Profile,School Admin,Gives users access to edit programs,Programs,,,,,,,Y
 20332,edit_age_range_20332,Edit Age Range,Academic Profile,School Admin,Gives users access to edit age range,Age Range,,,,,,,Y
-20333,edit_grade_20333,Edit Grade,Academic Profile,School Admin,Gives users access to edit grades,Grades,,,,,,,Y
+20333,edit_grade_20333,Edit Grade,Academic Profile,Org Admin,Gives users access to edit grades,Grades,,,,,,,Y
 20334,edit_class_20334,Edit Class,Academic Profile,Org Admin,Gives users access to edit classes within the Organization,Classes,,,,,,,Y
 20335,move_students_to_another_class_20335,Move Students to Another Class,Academic Profile,School Admin,Gives users access to move students to another class,Classes,,,,,,,
 20336,edit_teacher_in_class_20336,Edit Teacher in Class,Academic Profile,School Admin,Gives users access to edit teacher in class,Classes,,,,,,,
-20337,edit_subjects_20337,Edit Subjects,Academic Profile,School Admin,Gives users access to edit subjects,Subjects,,,,,,,Y
+20337,edit_subjects_20337,Edit Subjects,Academic Profile,Org Admin,Gives users access to edit subjects,Subjects,,,,,,,Y
 20338,edit_students_in_class_20338,Edit Students in Class,Academic Profile,School Admin,Gives users access to edit students in class,Classes,,,,,,,
 20339,edit_school_class_20339,Edit School Classes,Academic Profile,School Admin,Gives users access to edit classes within the associated School,Classes,,,,,,,
 20440,delete_school_20440,Delete School,Academic Profile,School Admin,Gives users access to delete schools,Schools,,,,,,,Y
 20441,delete_program_20441,Delete Program,Academic Profile,School Admin,Gives users access to delete programs,Programs,,,,,,,Y
 20442,delete_age_range_20442,Delete Age Range,Academic Profile,School Admin,Gives users access to delete age ranges,Age Range,,,,,,,Y
-20443,delete_grade_20443,Delete Grade,Academic Profile,School Admin,Gives users access to delete grades,Grades,,,,,,,Y
+20443,delete_grade_20443,Delete Grade,Academic Profile,Org Admin,Gives users access to delete grades,Grades,,,,,,,Y
 20444,delete_class_20444,Delete Class,Academic Profile,Org Admin,Gives users access to delete classes within the Organization,Classes,,,,,,,Y
 20445,delete_student_from_class_roster_20445,Delete Student from Class Roster,Academic Profile,School Admin,Gives users access to delete students from class rosters,Classes,,,,,,,Y
 20446,delete_teacher_from_class_20446,Delete Teacher from Class,Academic Profile,School Admin,Gives users access to delete teachers from class,Classes,,,,,,,Y
-20447,delete_subjects_20447,Delete Subjects,Academic Profile,School Admin,Gives users access to delete subjects,Subjects,,,,,,,Y
+20447,delete_subjects_20447,Delete Subjects,Academic Profile,Org Admin,Gives users access to delete subjects,Subjects,,,,,,,Y
 20448,delete_school_class_20448,Delete School Classes,Academic Profile,School Admin,Gives users access to delete classes within the associated School,Classes,,,,,,,
 20880,upload_schools_20880,Upload Schools,Academic Profile,Org Admin,Gives users access to upload schools,Schools,,,,,,,
 20881,download_schools_20881,Download Schools,Academic Profile,Org Admin,Gives users access to download schools,Schools,,,,,,,
@@ -405,24 +405,27 @@ Note: It shouldn't be necessary for this user to be associated with SCHOOL A to 
 Note: If this user is associated with ALL SCHOOLS created within the organization, the only user they won't be able to edit is a user without being associated to a school.","40100, and 40221",,,
 40332,edit_my_class_users_40332,Edit My Class Users,Accounts,Teacher,Gives users access to edit users in taught classes,Users,deprecate,,,,,,
 40333,edit_my_users_40333,Edit My Users,Accounts,Parent,Gives users access to edit users under their account,Users,"As a user with this permission, I can use the app to edit a user that is associated to my email or phone account. If I don't have this permission (a) I cannot edit a user that is associated with my email or phone account.",User,,"40100, and 40223",,,
-40440,delete_users_40440,Delete Users,Accounts,Org Admin,Gives users access to delete users,Users,"As a user with this permission, I can click ""Delete"" user to delete: (a) a user within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can delete any user required within the organization.  If I don't have this permission I cannot delete all types of users within the organization and the organization schools.
+40440,delete_users_40440,Delete Users,Accounts,Org Admin,Gives users access to delete users at the organization level,User Activation,"As a user with this permission, I can click ""Delete"" user to delete: (a) a user within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can delete any user required within the organization.  If I don't have this permission I cannot delete all types of users within the organization and the organization schools.
 Note: Deleting a user is one of the ways the system complys with GDPR and COPPA.  A user that has been deleted cannot be reactivated by the Org Admin.  In this case, to rejoin the organization, this user would need to be readded to the organization as a new user.  After a user is deleted from an organization, it is possible for a user to rejoin the organization. 
 Note: Deleting a user prevents the user from many operations.  The user cannot sign into the organization, the user cannot create content, the user cannot be added to a class roster, the user cannot be scheduled for any scheduled event, and the user cannot attend a Live class (via a link) within that organization.",User,"User A should be able to delete (a) users that are associated with any school within the organization, and (b) users who are not associated with any school.  
 Note: It shouldn't be necessary for this user to be associated with SCHOOL A to delete a user for SCHOOL A if they have this permission.  If this is the case currently, we should update accordingly. ","40100, and 40220",,,Y
-40441,delete_my_school_users_40441,Delete My School Users,Accounts,School Admin,Gives users access to delete users in specific schools,Users,"As a user with this permission, I can click ""Delete"" user to delete a user within my visibility-range: (a) specifically, a user within my associated school(s).  If I don't have this permission I cannot delete users within my school(s).",User,"User A should be able to delete (a) users that are associated with User A's schools, only.  
-Note: If this user is associated with ALL SCHOOLS created within the organization, the only user they won't be able to delete is a user without being associated to a school.","40100, and 40221",,,
-40442,delete_my_class_users_40442,Delete My Class Users,Accounts,Teacher,Gives users access to delete users in taught classes,Users,deprecate,,,,,,
-40443,delete_my_users_40443,Delete My Users,Accounts,Parent,Gives users access to delete users under their account,Users,"As a user with this permission, I can use the app to delete a user that is associated to my email or phone account. If I don't have this permission (a) I cannot delete a user that is associated with my email or phone account.  If I delete my user, I am making a request to delete the user within the indicated organization.  The user is deleted (or deactivated) within the organization automatically, or manually.",User,,"40100, and 40223",,,
+40441,delete_my_school_users_40441,Delete My School Users,Accounts,School Admin,Gives users access to delete users in specific schools,User Activation,"As a user with this permission, I can click ""Delete"" user to delete a user within my visibility-range: (a) specifically, a user within my associated school(s).  If I don't have this permission I cannot delete users within my school(s).",User,"User A should be able to delete (a) users that are associated with User A's schools, only.  
+Note: If this user is associated with ALL SCHOOLS created within the organization, the only user they won't be able to delete is a user without being associated to a school.","40100, and 40221",,,Y
+40442,delete_my_class_users_40442,Delete My Class Users,Accounts,Teacher,Gives users access to delete users in taught classes,User Activation,deprecate,,,,,,
+40443,delete_my_users_40443,Delete My Users,Accounts,Parent,Gives users access to delete users under their account,User Activation,"As a user with this permission, I can use the app to delete a user that is associated to my email or phone account. If I don't have this permission (a) I cannot delete a user that is associated with my email or phone account.  If I delete my user, I am making a request to delete the user within the indicated organization.  The user is deleted (or deactivated) within the organization automatically, or manually.",User,,"40100, and 40223",,,
 40880,upload_users_40880,Upload Users,Accounts,Org Admin,Gives users access to upload users,Users,"As a user with this permission, I can use a .csv file to create (a) users within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can create any user required within the organization using a .csv file.  If I don't have this permission I cannot create all types of users within the organization and the organization school(s) using a .csv.",User,"User A should be able to create (a) users that are associated with any school within the organization, and (b) users who are not associated with any school using a .csv file.  
 Note: It shouldn't be necessary for this user to be associated with SCHOOL A to create a user for SCHOOL A if they have this permission.  If this is the case currently, we should update accordingly. ",40100 and 40220 | 40221,,,Y
 40881,download_users_40881,Download Users,Accounts,Org Admin,Gives users access to download users,Users,"As a user with this permission, I can download a .csv file of (a) users within any school(s), and/or (b) users that's not a part of any school.  Essentially, I can download all users within the organization into a .csv file.  If I don't have this permission I cannot download all types of users within the organization and the organization school(s) into a .csv.",User,"User A should be able to download (a) users that are associated with any school within the organization, and (b) users who are not associated with any school into a .csv file.  
 Note: It shouldn't be necessary for this user to be associated with SCHOOL A to create a user for SCHOOL A if they have this permission.  If this is the case currently, we should update accordingly. ",40100 and 40220 | 40221,,,
 40882,send_invitation_40882,Send Invitation,Accounts,Org Admin,Gives users access to send invitations,Users,"As a user with this permission, I can see a button/trigger to click that will manually send an invitation to users to join my organization. 
 Note: When a user is added to an organization, an invitation to join my organization is automatically sent to this user ",,,40100 and 40220 | 40221,,,Y
-40883,deactivate_user_40883,Deactivate User,Accounts,Org Admin,Gives users access to deactivate users,Users,"As a user with this permission, I can click ""Delete"" user to first ""Deactive"": (a) a user within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can ""deactivate"" then delete any user required within the organization.  If I don't have this permission I cannot delete all types of users within the organization and the organization schools.
+40883,deactivate_user_40883,Deactivate User,Accounts,Org Admin,Gives users access to deactivate users at the organization level,User Activation,"As a user with this permission, I can click ""Delete"" user to first ""Deactive"": (a) a user within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can ""deactivate"" then delete any user required within the organization.  If I don't have this permission I cannot delete all types of users within the organization and the organization schools.
 Note: Deactivating a user keeps a user within the system giving a user with 'create_users_40220' permission 30 days to reactivate the user.  A user who has been deactivated for more than 30 days, cannot be reactivated, and is automatically deleted from the organization.
 Note: Deactivating a user prevents the user from many operations.  The user cannot sign into the organization, the user cannot create content, the user cannot be added to a class roster, the user cannot be scheduled for any scheduled event, and the user cannot attend a Live class (via a link) within that organization.
-Note: Deactivating a user is the first step to ""Deleting"" a user.",,,40100 and 40220 | 40221,,,
+Note: Deactivating a user is the first step to ""Deleting"" a user.",,,40100 and 40220 | 40221,,,Y
+40884,reactivate_user_40884,Reactivate User,Accounts,Org Admin,Gives users access to reactivate users at the organization level,User Activation,,,,,,,Y
+40885,deactivate_my_school_user_40885,Deactivate My School User,Accounts,School Admin,Gives users access to deactivate users at the school level,User Activation,,,,,,,Y
+40886,reactivate_my_school_user_40886,Reactivate My School User,Accounts,School Admin,Gives users access to reactivate users at the school level,User Activation,,,,,,,Y
 50100,billing_50100,Billing,Accounts,Org Admin,Gives users access to Billing Page (i.e. via icons/buttons),Billing,,,,,,,
 50101,view_payment_details_and_make_payment_50101,View Payment Details and Make Payment,Accounts,Org Admin,Gives users access to view payment details and make payments,Billing,,,,,,,
 50110,view_billing_details_50110,View Billing Details,Accounts,Org Admin,Gives users access to view billing details,Billing,,,,,,,

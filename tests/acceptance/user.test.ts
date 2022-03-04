@@ -1,9 +1,8 @@
-/* eslint-disable no-await-in-loop */
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
 import { expect, use } from 'chai'
 import { before } from 'mocha'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
@@ -41,7 +40,7 @@ import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
-import { makeRequest } from './utils'
+import { failsValidation, makeRequest } from './utils'
 import { createClass } from '../factories/class.factory'
 import { Class } from '../../src/entities/class'
 import {
@@ -62,8 +61,8 @@ import {
 import { config } from '../../src/config/config'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
-import { NIL_UUID } from '../utils/database'
 import { v4 } from 'uuid'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
@@ -93,16 +92,12 @@ const ME = `
 `
 
 describe('acceptance.user', () => {
-    let connection: TestConnection
     let memberships: OrganizationMembership[]
     let schoolMemberships: SchoolMembership[]
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {
@@ -178,9 +173,7 @@ describe('acceptance.user', () => {
             myUser = await createUser().save()
             myOrg = await createOrganization().save()
             const mySchools = await School.save(
-                Array.from(Array(5), (v: unknown, i: number) =>
-                    createSchool(myOrg)
-                )
+                Array.from(Array(5), () => createSchool(myOrg))
             )
 
             for (let i = 0; i < 5; i++) {
@@ -192,11 +185,9 @@ describe('acceptance.user', () => {
 
             // create another user in different school to ensure they're not returned
             const otherUser = await createUser().save()
-            const otherOrg = await createOrganization().save()
+            await createOrganization().save()
             const otherSchools = await School.save(
-                Array.from(Array(5), (v: unknown, i: number) =>
-                    createSchool(myOrg)
-                )
+                Array.from(Array(5), () => createSchool(myOrg))
             )
             for (let i = 0; i < 5; i++) {
                 await createSchoolMembership({
@@ -231,7 +222,7 @@ describe('acceptance.user', () => {
     context('usersConnection', () => {
         context('using explicit count', async () => {
             async function makeQuery(pageSize: any) {
-                return await request
+                return request
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
@@ -259,20 +250,8 @@ describe('acceptance.user', () => {
             })
 
             it('fails validation', async () => {
-                const pageSize = 'not_a_number'
-
-                const response = await makeQuery(pageSize)
-
-                expect(response.status).to.eq(400)
-                expect(response.body.errors.length).to.equal(1)
-                const message = response.body.errors[0].message
-                expect(message)
-                    .to.be.a('string')
-                    .and.satisfy((msg: string) =>
-                        msg.startsWith(
-                            'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
-                        )
-                    )
+                const response = await makeQuery('not_a_number')
+                await failsValidation(response)
             })
         })
         it('queries paginated users without filter', async () => {
@@ -336,6 +315,7 @@ describe('acceptance.user', () => {
                             value: 'active',
                         },
                         classId: uuidFilter,
+                        gradeId: uuidFilter,
                     },
                 },
                 getAdminAuthToken()
@@ -918,7 +898,7 @@ describe('acceptance.user', () => {
             const resUsers: UserConnectionNode[] =
                 response.body.data.addSchoolRolesToUsers.users
             expect(resUsers).to.have.length(users.length)
-            expect(resUsers).to.deep.equal(
+            expect(resUsers).to.deep.equalInAnyOrder(
                 users.map((user) => mapUserToUserConnectionNode(user))
             )
         })

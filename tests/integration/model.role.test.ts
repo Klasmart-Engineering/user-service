@@ -1,8 +1,8 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Model } from '../../src/model'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Role } from '../../src/entities/role'
 import { createRole } from '../factories/role.factory'
@@ -24,9 +24,7 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { replaceRole } from '../utils/operations/modelOps'
-import { customErrors } from '../../src/types/errors/customError'
 import { expectAPIError } from '../utils/apiError'
-import { APIError } from '../../src/types/errors/apiError'
 import { Status } from '../../src/entities/status'
 
 use(chaiAsPromised)
@@ -50,21 +48,16 @@ const GET_ROLE = `
 `
 
 describe('model.role', () => {
-    let connection: Connection
-    let originalAdmins: string[]
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     const roleInfo = (role: Role) => {
         return role.role_id
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('#getRoles', () => {
@@ -86,7 +79,7 @@ describe('model.role', () => {
                 })
 
                 const roles = res.data?.roles as Role[]
-                expect(roles.map(roleInfo)).to.deep.eq(
+                expect(roles.map(roleInfo)).to.deep.equalInAnyOrder(
                     systemRoles.map(roleInfo)
                 )
             })

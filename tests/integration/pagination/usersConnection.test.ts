@@ -5,22 +5,8 @@ import { User } from '../../../src/entities/user'
 import { usersConnectionQuery } from '../../../src/pagination/usersConnection'
 import { createClass } from '../../factories/class.factory'
 import { createUser } from '../../factories/user.factory'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
 
 describe('usersConnection', () => {
-    let connection: TestConnection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     context('usersConnectionQuery', () => {
         let scope: SelectQueryBuilder<User>
         let expectedUser: User

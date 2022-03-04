@@ -19,7 +19,7 @@ export interface deleteBrandingImageInput {
 }
 
 export interface BrandingInput {
-    primaryColor: string
+    primaryColor: string | undefined
     iconImage: Promise<Uploader>
 }
 

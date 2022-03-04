@@ -1,4 +1,3 @@
-import axios from 'axios'
 import csvParser from 'csv-parser'
 import fs from 'fs'
 import path from 'path'
@@ -17,7 +16,7 @@ const PERMISSIONS_CSV_URL =
 
 const PERMISSION_FILE = path.join(__dirname, '../fixtures/permissions.csv')
 
-interface PermissionInfo {
+export interface PermissionInfo {
     name: string
     superAdmin: boolean
     orgAdmin: boolean

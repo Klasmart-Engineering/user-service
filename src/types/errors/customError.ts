@@ -161,6 +161,11 @@ export const customErrors = {
         code: 'ERR_INVALID_PHONE',
         message: 'Invalid phone number.',
     },
+    invalid_username: {
+        code: 'ERR_INVALID_USERNAME',
+        message:
+            "Username must only contain letters, numbers, space and & / , - . ' _",
+    },
     invalid_date: {
         code: 'ERR_INVALID_DATE',
         message: '{entity} {attribute} does not match the format {format}.',
@@ -192,6 +197,10 @@ export const customErrors = {
         code: 'ERR_USER_CAN_ONLY_OWN_ONE_ORGANIZATION',
         message:
             'User {entityName} already owns an Organization (${parentName}).',
+    },
+    applying_change_to_self: {
+        code: 'ERR_USER_CANNOT_APPLY_CHANGE_TO_SELF',
+        message: 'user {userId} cannot apply this change to themselves.',
     },
 
     // auth

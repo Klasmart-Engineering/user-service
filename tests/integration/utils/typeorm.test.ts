@@ -1,20 +1,10 @@
 import { expect } from 'chai'
-import { Connection, createQueryBuilder } from 'typeorm'
+import { createQueryBuilder } from 'typeorm'
 import { User } from '../../../src/entities/user'
 import { convertRawToEntities } from '../../../src/utils/typeorm'
 import { createUser } from '../../factories/user.factory'
-import { createTestConnection } from '../../utils/testConnection'
 
 describe('convertRawToEntities', () => {
-    let connection: Connection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
     it('converts a raw SQL result to typeorm entities', async () => {
         await createUser().save()
         const userQuery = createQueryBuilder(User)

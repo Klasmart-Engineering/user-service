@@ -1,11 +1,8 @@
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
 import { sign } from 'jsonwebtoken'
 import { Request } from 'express'
-import { generateToken, getNonAdminAuthToken } from '../../utils/testConfig'
-import { createTestConnection } from '../../utils/testConnection'
-import { createResponse, createRequest } from 'node-mocks-http'
+import { generateToken } from '../../utils/testConfig'
 import { checkAPIKey, checkToken } from '../../../src/token'
 
 use(chaiAsPromised)

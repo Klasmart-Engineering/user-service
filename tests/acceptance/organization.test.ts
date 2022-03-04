@@ -1,14 +1,14 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
 import { v4 as uuid_v4 } from 'uuid'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Organization } from '../../src/entities/organization'
 import { User } from '../../src/entities/user'
 import { createUser, createUsers } from '../factories/user.factory'
 import { ORGANIZATION_NODE } from '../utils/operations/modelOps'
 import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Branding } from '../../src/entities/branding'
 import { BrandingImage } from '../../src/entities/brandingImage'
@@ -17,10 +17,15 @@ import { createBranding } from '../factories/branding.factory'
 import {
     AddUsersToOrganizationInput,
     CreateOrganizationInput,
+    DeleteUsersFromOrganizationInput,
     OrganizationConnectionNode,
+    ReactivateUsersFromOrganizationInput,
     RemoveUsersFromOrganizationInput,
 } from '../../src/types/graphQL/organization'
-import { createOrganization } from '../factories/organization.factory'
+import {
+    createOrganization,
+    createOrganizations,
+} from '../factories/organization.factory'
 import {
     createRole,
     createRole as roleFactory,
@@ -31,7 +36,10 @@ import {
     REMOVE_USERS_FROM_ORGANIZATIONS,
 } from '../utils/operations/organizationOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import {
+    createOrganizationMembership,
+    createOrgMembershipsInManyOrgs,
+} from '../factories/organizationMembership.factory'
 import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
 import { makeRequest } from './utils'
 import { School } from '../../src/entities/school'
@@ -43,24 +51,21 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { Role } from '../../src/entities/role'
 import faker from 'faker'
 import { generateShortCode } from '../../src/utils/shortcode'
+import { Status } from '../../src/entities/status'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
 
 describe('acceptance.organization', () => {
-    let connection: Connection
     let user: User
     let organization: Organization
     let branding: Branding
     let school: School
     let class_: Class
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {
@@ -192,16 +197,10 @@ describe('acceptance.organization', () => {
             const users = createUsers(userCount)
             await User.save(users)
 
-            const orgs: Organization[] = Array(orgCount)
-                .fill(undefined)
-                .map(createOrganization)
+            const orgs = createOrganizations(orgCount)
             await Organization.save(orgs)
 
-            const memberships: OrganizationMembership[] = orgs.flatMap((o) => {
-                return users.map((u) =>
-                    createOrganizationMembership({ user: u, organization: o })
-                )
-            })
+            const memberships = createOrgMembershipsInManyOrgs(users, orgs)
             await OrganizationMembership.save(memberships)
 
             input = orgs.map((o) => {
@@ -226,6 +225,168 @@ describe('acceptance.organization', () => {
                 expect(response.status).to.eq(200)
                 expect(resOrgs.length).to.equal(orgCount)
             })
+        })
+    })
+
+    context('reactivateUsersFromOrganizations', () => {
+        let clientUser: User
+        let input: ReactivateUsersFromOrganizationInput[]
+        const userCount = 2
+        const orgCount = 2
+
+        beforeEach(async () => {
+            clientUser = await createUser().save()
+            const users = createUsers(userCount)
+            await User.save(users)
+
+            const orgs = createOrganizations(orgCount)
+            await Organization.save(orgs)
+            for (const org of orgs) {
+                await createRole(undefined, org, {
+                    permissions: [PermissionName.reactivate_user_40884],
+                })
+                    .save()
+                    .then((role) => {
+                        return createOrganizationMembership({
+                            user: clientUser,
+                            organization: org,
+                            roles: [role],
+                        }).save()
+                    })
+            }
+
+            const memberships = createOrgMembershipsInManyOrgs(users, orgs)
+            for (const membership of memberships) {
+                membership.status = Status.INACTIVE
+            }
+            await OrganizationMembership.save(memberships)
+
+            input = orgs.map((o) => {
+                return {
+                    organizationId: o.organization_id,
+                    userIds: users.map((v) => v.user_id),
+                }
+            })
+        })
+
+        const REACTIVATE_USERS_FROM_ORGANIZATION = `
+            mutation myMutation($input: [ReactivateUsersFromOrganizationInput!]!, $me: UUID!) {
+                reactivateUsersFromOrganizations(input: $input) {
+                    organizations{
+                        id,
+                        organizationMembershipsConnection(filter: {userId: {operator: neq, value: $me}}){
+                            edges{
+                                node {
+                                    status
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `
+
+        it('should respond with status 200', async () => {
+            const response = await makeRequest(
+                request,
+                REACTIVATE_USERS_FROM_ORGANIZATION,
+                { input, me: clientUser.user_id },
+                generateToken(userToPayload(clientUser))
+            )
+            const resOrgs: OrganizationConnectionNode[] =
+                response.body.data.reactivateUsersFromOrganizations
+                    .organizations
+            expect(response.status).to.eq(200)
+            expect(resOrgs.length).to.equal(orgCount)
+            for (const org of resOrgs) {
+                expect(
+                    org.organizationMembershipsConnection?.edges
+                ).to.have.length(userCount)
+                for (const node of org.organizationMembershipsConnection!.edges.map(
+                    (e) => e.node
+                )) {
+                    expect(node.status).to.eq(Status.ACTIVE)
+                }
+            }
+        })
+    })
+
+    context('deleteUsersFromOrganizations', () => {
+        let clientUser: User
+        let input: DeleteUsersFromOrganizationInput[]
+        const userCount = 2
+        const orgCount = 2
+
+        beforeEach(async () => {
+            clientUser = await createUser().save()
+            const users = createUsers(userCount)
+            await User.save(users)
+
+            const orgs = createOrganizations(orgCount)
+            await Organization.save(orgs)
+            for (const org of orgs) {
+                await createRole(undefined, org, {
+                    permissions: [PermissionName.delete_users_40440],
+                })
+                    .save()
+                    .then((role) => {
+                        return createOrganizationMembership({
+                            user: clientUser,
+                            organization: org,
+                            roles: [role],
+                        }).save()
+                    })
+            }
+
+            const memberships = createOrgMembershipsInManyOrgs(users, orgs)
+            await OrganizationMembership.save(memberships)
+
+            input = orgs.map((o) => {
+                return {
+                    organizationId: o.organization_id,
+                    userIds: users.map((v) => v.user_id),
+                }
+            })
+        })
+
+        const DELETE_USERS_FROM_ORGANIZATION = `
+            mutation myMutation($input: [DeleteUsersFromOrganizationInput!]!, $me: UUID!) {
+                deleteUsersFromOrganizations(input: $input) {
+                    organizations{
+                        id,
+                        organizationMembershipsConnection(filter: {userId: {operator: neq, value: $me}}){
+                            edges{
+                                node {
+                                    status
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `
+
+        it('should respond with status 200', async () => {
+            const response = await makeRequest(
+                request,
+                DELETE_USERS_FROM_ORGANIZATION,
+                { input, me: clientUser.user_id },
+                generateToken(userToPayload(clientUser))
+            )
+            const resOrgs: OrganizationConnectionNode[] =
+                response.body.data.deleteUsersFromOrganizations.organizations
+            expect(response.status).to.eq(200)
+            expect(resOrgs.length).to.equal(orgCount)
+            for (const org of resOrgs) {
+                expect(
+                    org.organizationMembershipsConnection?.edges
+                ).to.have.length(userCount)
+                for (const node of org.organizationMembershipsConnection!.edges.map(
+                    (e) => e.node
+                )) {
+                    expect(node.status).to.eq(Status.DELETED)
+                }
+            }
         })
     })
 

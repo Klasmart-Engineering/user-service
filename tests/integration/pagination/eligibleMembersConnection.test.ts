@@ -9,22 +9,8 @@ import { createOrganization } from '../../factories/organization.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createRole } from '../../factories/role.factory'
 import { createUser } from '../../factories/user.factory'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
 
 describe('eligibleMembersConnection', () => {
-    let connection: TestConnection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     context('eligibleMemberConnectionQuery', () => {
         let scope: SelectQueryBuilder<User>
 

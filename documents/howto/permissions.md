@@ -16,6 +16,7 @@
 ## How to update permissions
 
 - Overwrite `src/permissions/permissionInfo.csv` & `tests/fixtures/permissions.csv` by manually exporting new CSVs from the google sheet using the URLs in `tests/utils/latestPermissions.ts`
-- Manually update predefined roles with changes
+- Update predefined roles with changes using `npm run update-role-permissions`
+  - check the result manually
 - Manually update `src/permissions/permissionNames.ts` with changes
 - Run `npm run test` to validate changes against `tests/fixtures/permissions.csv`

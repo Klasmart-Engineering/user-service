@@ -9,6 +9,7 @@ import logger from './logging'
 import { TokenPayload } from './token'
 import { getEnvVar } from './config/config'
 import { reportError } from './utils/resolvers/errors'
+import { saveCodeCoverage } from './utils/fileUtils'
 
 const port = getEnvVar('PORT', '8080')
 
@@ -27,6 +28,17 @@ Sentry.init({
     environment: getEnvVar('NODE_ENV', 'not-specified'),
     release: 'kidsloop-users-gql@' + getEnvVar('npm_package_version'),
 })
+
+process.on('SIGINT', gracefulExit)
+process.on('SIGTERM', gracefulExit)
+
+function gracefulExit(code: string) {
+    logger.info(`${code} received..., exiting`)
+    // We need this for acceptance tests
+    // using the signal as an indicator that they have finished running
+    saveCodeCoverage()
+    process.exit()
+}
 
 initApp()
     .then((app) => {

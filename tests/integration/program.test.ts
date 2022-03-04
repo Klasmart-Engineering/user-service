@@ -33,7 +33,7 @@ import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
 import { userToPayload } from '../utils/operations/userOps'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { PermissionName } from './../../src/permissions/permissionNames'
 import { v4 as uuid_v4 } from 'uuid'
 import { APIError } from '../../src/types/errors/apiError'
@@ -46,6 +46,7 @@ import {
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
 } from '../../src/utils/resolvers/errors'
+import { getConnection } from 'typeorm'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -54,11 +55,7 @@ describe('program', () => {
     let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     const createInitialData = async (permissionNames: PermissionName[]) => {
@@ -234,7 +231,7 @@ describe('program', () => {
                 )
 
                 expect(twoProgramsCount).to.be.eq(singleProgramCount)
-                expect(twoProgramsCount).to.be.equal(11)
+                expect(twoProgramsCount).to.be.equal(9)
             })
         })
 
@@ -846,10 +843,10 @@ describe('program', () => {
         })
 
         const buildDefaultInput = (programs: Program[]): UpdateProgramInput[] =>
-            Array.from(programs, ({ id }) => {
+            Array.from(programs, ({ id }, idx) => {
                 return {
                     id,
-                    name: faker.random.word(),
+                    name: `${faker.random.word()}_${idx}`,
                     ageRangeIds: ageRanges.map((ar) => ar.id),
                     gradeIds: grades.map((g) => g.id),
                     subjectIds: subjects.map((s) => s.id),
@@ -884,8 +881,8 @@ describe('program', () => {
             }
 
             it('db connections increase in one with number of input elements', async () => {
-                const singleProgramExpectedCalls = 12
-                await getDbCallCount(buildDefaultInput(programsToEdit)) // warm up permissions cache)
+                const singleProgramExpectedCalls = 10
+                await getDbCallCount(buildDefaultInput(programsToEdit)) // warm up permissions cache
 
                 const singleProgramCount = await getDbCallCount(
                     buildDefaultInput([programsToEdit[0]])

@@ -26,11 +26,12 @@ type PermissionCheckOutput = {
 
 export class UserPermissions {
     static ADMIN_EMAILS = [
-        'sandy@calmid.com',
-        'pj.williams@calmid.com',
-        'owen.delahoy@calmid.com',
+        'sandy@kidsloop.live',
+        'pj.williams@kidsloop.live',
+        'owen.delahoy@kidsloop.live',
         'toghrul.taghiyev@kidsloop.live',
-        'emfg@calmid.com',
+        'emfg@kidsloop.live',
+        'pawel.luszczak@kidsloop.live',
     ]
 
     private _organizationPermissions?: Promise<Map<string, Set<string>>>

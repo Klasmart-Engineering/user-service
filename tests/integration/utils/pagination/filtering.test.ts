@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, getRepository, SelectQueryBuilder } from 'typeorm'
+import { getRepository, SelectQueryBuilder, getConnection } from 'typeorm'
 import { expect, use } from 'chai'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import {
     IEntityFilter,
@@ -167,16 +167,12 @@ async function getPrograms() {
 }
 
 describe('filtering', () => {
-    let connection: Connection
+    let connection: TestConnection
     let scope: SelectQueryBuilder<any>
     let programScope: SelectQueryBuilder<any>
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

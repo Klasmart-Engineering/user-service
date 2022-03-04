@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { nonAdminGradeScope } from '../../../src/directives/isAdmin'
 import { Grade } from '../../../src/entities/grade'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
@@ -12,10 +12,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import GradesInitializer from '../../../src/initializers/grades'
 import {
     GradeConnectionNode,
@@ -112,13 +109,9 @@ describe('gradeNode', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

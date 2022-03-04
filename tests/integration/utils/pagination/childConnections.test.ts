@@ -1,10 +1,12 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { ICreateScopeArgs } from '../../../../src/directives/isAdmin'
 import { AgeRange } from '../../../../src/entities/ageRange'
 import { Class } from '../../../../src/entities/class'
 import { Organization } from '../../../../src/entities/organization'
+import { OrganizationMembership } from '../../../../src/entities/organizationMembership'
+import { Role } from '../../../../src/entities/role'
 import { User } from '../../../../src/entities/user'
 import { AgeRangesInitializer } from '../../../../src/initializers/ageRanges'
 import {
@@ -34,17 +36,20 @@ import { ISortingConfig } from '../../../../src/utils/pagination/sorting'
 import { createAgeRange } from '../../../factories/ageRange.factory'
 import { createClass } from '../../../factories/class.factory'
 import { createOrganization } from '../../../factories/organization.factory'
-import { createOrganizationMembership } from '../../../factories/organizationMembership.factory'
-import { createRole } from '../../../factories/role.factory'
+import {
+    createOrganizationMembership,
+    createOrganizationMemberships,
+} from '../../../factories/organizationMembership.factory'
+import { createRole, createRoles } from '../../../factories/role.factory'
 import { createSchool } from '../../../factories/school.factory'
 import { createSchoolMembership } from '../../../factories/schoolMembership.factory'
-import { createUser } from '../../../factories/user.factory'
+import { createUser, createUsers } from '../../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
 import { isStringArraySortedAscending } from '../../../utils/sorting'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import {
     createAdminUser,
     createNonAdminUser,
@@ -74,7 +79,7 @@ function getDataloaderKeys(
 }
 
 describe('child connections', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let orgs: Organization[] = []
 
@@ -91,23 +96,19 @@ describe('child connections', () => {
     let scopeArgs: ICreateScopeArgs
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
+    })
+
+    beforeEach(async () => {
         const adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
-
         scopeArgs = { permissions: adminPermissions, entity: 'user' }
-    })
 
-    after(async () => {
-        await connection?.close()
-    })
-
-    beforeEach(async () => {
         args = {
             count: pageSize,
         }
@@ -319,6 +320,45 @@ describe('child connections', () => {
                 scopeArgs
             )
             expect(response).to.have.lengthOf(2)
+        })
+
+        it('de-duplicates source queries', async () => {
+            const numDupeUsers = 2
+            const dupeUsers = await User.save(createUsers(numDupeUsers))
+
+            const multipleRoles = await Role.save(createRoles(2))
+            await OrganizationMembership.save(
+                createOrganizationMemberships(dupeUsers, orgs[0], multipleRoles)
+            )
+
+            const queryWithDupes = async () => {
+                return (
+                    User.createQueryBuilder()
+                        .leftJoin('User.memberships', 'OrganizationMembership')
+                        // each user has two roles, so will be returned twice per org membership
+                        .leftJoin(
+                            'OrganizationMembership.roles',
+                            'OrganizationRole'
+                        )
+                )
+            }
+
+            const response = await childConnectionLoader(
+                getDataloaderKeys([orgs[0]], {
+                    count: numDupeUsers + usersPerOrg,
+                }),
+                queryWithDupes,
+                mapFunc,
+                sort,
+                scopeArgs
+            )
+
+            expect(response).to.have.lengthOf(1)
+            expect(response[0].totalCount).to.eq(numDupeUsers + usersPerOrg)
+            expect(response[0].pageInfo.hasNextPage).to.eq(false)
+            expect(response[0].edges).to.have.lengthOf(
+                numDupeUsers + usersPerOrg
+            )
         })
 
         it('deduplicates per parent', async () => {

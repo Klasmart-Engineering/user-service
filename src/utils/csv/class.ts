@@ -3,6 +3,7 @@ import { Organization } from '../../entities/organization'
 import { Class } from '../../entities/class'
 import { School } from '../../entities/school'
 import { Program } from '../../entities/program'
+import { Grade } from '../../entities/grade'
 import {
     generateShortCode,
     SHORTCODE_DEFAULT_MAXLEN,
@@ -26,6 +27,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
         class_shortcode,
         school_name,
         program_name,
+        grade_name,
     }: ClassRow,
     rowNumber: number,
     fileErrors: CSVError[],
@@ -75,7 +77,10 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
         )
     }
 
-    if (!class_name.match(REGEX.alphanum_with_special_characters)) {
+    if (
+        class_name &&
+        !class_name.match(REGEX.alphanum_with_special_characters)
+    ) {
         addCsvError(
             rowErrors,
             customErrors.invalid_alphanumeric_special.code,
@@ -305,12 +310,68 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
         }
     }
 
+    c.programs = Promise.resolve(existingPrograms)
+
+    const existingGrades = (await c.grades) || []
+    let gradeToAdd
+    if (grade_name) {
+        // does the grade belong to organisation or a system program
+        gradeToAdd = await Grade.findOne({
+            where: [
+                { name: grade_name, organization: org },
+                { name: grade_name, organization: null, system: true },
+            ],
+        })
+
+        if (!gradeToAdd) {
+            addCsvError(
+                rowErrors,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                rowNumber,
+                'grade_name',
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                {
+                    name: grade_name,
+                    entity: 'grade',
+                    parent_name: organization_name,
+                    parent_entity: 'organization',
+                }
+            )
+
+            return rowErrors
+        }
+
+        const existingGradeNames = existingGrades.map((grade) => grade.name)
+
+        if (existingGradeNames.includes(grade_name)) {
+            addCsvError(
+                rowErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                rowNumber,
+                'grade_name',
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    name: grade_name,
+                    entity: 'grade',
+                    parent_name: class_name,
+                    parent_entity: 'class',
+                }
+            )
+            return rowErrors
+        }
+
+        existingGrades.push(gradeToAdd)
+    }
+
     // never save if there are any errors in the file
     if (fileErrors.length > 0 || rowErrors.length > 0) {
         return rowErrors
     }
 
-    c.programs = Promise.resolve(existingPrograms)
+    if (existingGrades.length) {
+        c.grades = Promise.resolve(existingGrades)
+    }
+
     await manager.save(c)
 
     return rowErrors

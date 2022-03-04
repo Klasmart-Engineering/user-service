@@ -2,8 +2,9 @@ import { expect, use } from 'chai'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
 import { sortBy } from 'lodash'
-import { Like } from 'typeorm'
+import { Like, getConnection } from 'typeorm'
 import { Class } from '../../../src/entities/class'
+import { Grade } from '../../../src/entities/grade'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { Role } from '../../../src/entities/role'
@@ -18,6 +19,7 @@ import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { convertDataToCursor } from '../../../src/utils/pagination/paginate'
 import { createClass } from '../../factories/class.factory'
+import { createGrade } from '../../factories/grade.factory'
 import {
     createOrganization,
     createOrganizations,
@@ -52,10 +54,7 @@ import {
     getAdminAuthToken,
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 import { expectUserConnectionNode } from '../../utils/userConnectionNode'
 
@@ -68,13 +67,9 @@ describe('usersConnection', () => {
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     context('data', () => {
@@ -1463,6 +1458,53 @@ describe('usersConnection', () => {
                 filter
             )
             expect(usersConnection.totalCount).to.eql(2) // new user + super admin
+        })
+    })
+
+    context('gradeId filter', () => {
+        let class1Grade: Grade
+        let class2Grade: Grade
+        let class1Users: User[]
+        let class2Users: User[]
+        beforeEach(async () => {
+            class1Grade = await createGrade().save()
+            class2Grade = await createGrade().save()
+            class1Users = createUsers(6)
+            class2Users = createUsers(6)
+            await User.save([...class1Users, ...class2Users])
+            const class1 = createClass(undefined, undefined, {
+                students: class1Users.slice(0, 3),
+                teachers: class1Users.slice(3),
+            })
+            const class2 = createClass(undefined, undefined, {
+                students: class2Users.slice(0, 3),
+                teachers: class2Users.slice(3),
+            })
+            class1.grades = Promise.resolve([class1Grade])
+            class2.grades = Promise.resolve([class2Grade])
+            await Class.save([class1, class2])
+        })
+
+        it('supports `eq` operator', async () => {
+            const usersConnectionResponse = await usersConnectionNodes(
+                testClient,
+                { authorization: getAdminAuthToken() },
+                { gradeId: { operator: 'eq', value: class1Grade.id } }
+            )
+            expect(
+                usersConnectionResponse.edges.map((edge) => edge.node.id)
+            ).to.have.same.members(class1Users.map((user) => user.user_id))
+        })
+
+        it('supports `neq` operator', async () => {
+            const usersConnectionResponse = await usersConnectionNodes(
+                testClient,
+                { authorization: getAdminAuthToken() },
+                { gradeId: { operator: 'neq', value: class1Grade.id } }
+            )
+            expect(
+                usersConnectionResponse.edges.map((edge) => edge.node.id)
+            ).to.have.same.members(class2Users.map((user) => user.user_id))
         })
     })
 

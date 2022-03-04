@@ -4,25 +4,11 @@ import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
 import { Organization } from '../../../src/entities/organization'
 import { organizationsConnectionQuery } from '../../../src/pagination/organizationsConnection'
 import { createOrganization } from '../../factories/organization.factory'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
 import faker from 'faker'
 import { User } from '../../../src/entities/user'
 import { createUser } from '../../factories/user.factory'
 
 describe('organizationConnection', () => {
-    let connection: TestConnection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     context('organizationConnectionQuery', () => {
         let scope: SelectQueryBuilder<Organization>
         let org: Organization

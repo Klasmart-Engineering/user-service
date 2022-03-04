@@ -1,9 +1,5 @@
 # Admin Service
 
-| Statements                                                            | Branches                                                            | Functions                                                            | Lines                                                           |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------- |
-| ![Statements](https://img.shields.io/badge/statements-92.98%25-brightgreen.svg) | ![Branches](https://img.shields.io/badge/branches-82.1%25-yellow.svg) | ![Functions](https://img.shields.io/badge/functions-91.79%25-brightgreen.svg) | ![Lines](https://img.shields.io/badge/lines-92.85%25-brightgreen.svg) |
-
 Welcome to the admin service (formerly user service)!
 
 - Getting started? Follow installation & running instructions below.
@@ -43,11 +39,6 @@ Getting started for the first time? Following the [onboarding doc](./documents/h
 <br>
 
 ## Testing
-
-### **Update the README coverage badges**
-
-1. `npm run coverage`
-2. `npm run make-badges`
 
 ### **Running tests unit and integration during development**
 

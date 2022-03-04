@@ -30,7 +30,10 @@ export const userValidations = {
         name: 'date_mm_yyy',
     }),
 
-    username: sharedValidations.alphanum_with_special_characters
+    username: Joi.string()
+        .regex(REGEX.username, {
+            name: 'username',
+        })
         .allow('', null)
         .optional()
         .max(config.limits.USERNAME_MAX_LENGTH),

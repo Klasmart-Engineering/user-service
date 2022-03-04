@@ -53,7 +53,6 @@ import {
     OrganizationMembershipMap,
 } from '../utils/resolvers/entityMaps'
 import {
-    flagExistent,
     flagExistentChild,
     flagNonExistent,
     flagNonExistentChild,
@@ -565,16 +564,21 @@ export class CreateClasses extends CreateMutation<
     validationOverAllInputs(inputs: CreateClassInput[]) {
         const errors: APIError[] = []
 
-        const failedDuplicateNames = validateNoDuplicate(
-            inputs.map((i) => i.name),
-            'class',
+        const failedDuplicateNames = validateNoDuplicateAttribute(
+            inputs.map((i) => {
+                return {
+                    entityId: i.organizationId,
+                    attributeValue: i.name,
+                }
+            }),
+            'organizationId',
             'name'
         )
 
         errors.push(...failedDuplicateNames.values())
 
         const failedDuplicateShortcodes = validateNoDuplicate(
-            inputs.map((i) => i.shortcode!),
+            inputs.map((i) => [i.organizationId, i.shortcode!].toString()),
             'class',
             'shortcode'
         )
@@ -1115,20 +1119,23 @@ export class AddStudentsToClasses extends AddMutation<
         )
         errors.push(...classes.errors)
 
-        const currentClassStudents = new Map(
-            maps.classesStudents.get(classId)?.map((u) => [u.user_id, u])
+        const currentClassStudents = new Set(
+            maps.classesStudents.get(classId)?.map((u) => u.user_id)
         )
 
         const students = flagNonExistent(User, index, studentIds, maps.students)
         errors.push(...students.errors)
 
-        const alreadyAdded = flagExistent(
+        const alreadyAddedErrors = flagExistentChild(
+            Class,
             User,
             index,
-            students.values.map((u) => u.user_id),
+            classId,
+            studentIds,
             currentClassStudents
         )
-        errors.push(...alreadyAdded.errors)
+
+        errors.push(...alreadyAddedErrors)
 
         if (currentEntity) {
             const classOrgId = (currentEntity as ClassAndOrg).__organization__
@@ -1465,20 +1472,22 @@ export class AddTeachersToClasses extends AddMutation<
         )
         errors.push(...classes.errors)
 
-        const currentClassTeachers = new Map(
-            maps.classesTeachers.get(classId)?.map((u) => [u.user_id, u])
+        const currentClassTeachers = new Set(
+            maps.classesTeachers.get(classId)?.map((u) => u.user_id)
         )
 
         const teachers = flagNonExistent(User, index, teacherIds, maps.teachers)
         errors.push(...teachers.errors)
 
-        const alreadyAdded = flagExistent(
+        const alreadyAddedErrors = flagExistentChild(
+            Class,
             User,
             index,
-            teachers.values.map((u) => u.user_id),
+            classId,
+            teacherIds,
             currentClassTeachers
         )
-        errors.push(...alreadyAdded.errors)
+        errors.push(...alreadyAddedErrors)
 
         if (currentEntity) {
             const classOrgId = (currentEntity as ClassAndOrg).__organization__

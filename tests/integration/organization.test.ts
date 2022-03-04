@@ -1,10 +1,16 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
 import { v4 as uuid_v4 } from 'uuid'
-import { createQueryBuilder, getManager, getRepository, In } from 'typeorm'
+import {
+    createQueryBuilder,
+    getManager,
+    getRepository,
+    In,
+    getConnection,
+} from 'typeorm'
 import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
 import { Model } from '../../src/model'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
@@ -104,6 +110,7 @@ import {
 } from '../../src/operations/organization'
 import { Headers } from 'node-mocks-http'
 import {
+    compareErrors,
     compareMultipleErrors,
     expectAPIError,
     expectToBeAPIErrorCollection,
@@ -113,17 +120,22 @@ import {
     AddUsersToOrganizationInput,
     CreateOrganizationInput,
     OrganizationsMutationResult,
-    RemoveUsersFromOrganizationInput,
 } from '../../src/types/graphQL/organization'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     AddUsersToOrganizations,
     CreateOrganizations,
+    ChangeOrganizationMembershipStatus,
+    ReactivateUsersFromOrganizations,
     RemoveUsersFromOrganizations,
+    ChangeOrganizationMembershipStatusEntityMap,
+    DeleteUsersFromOrganizations,
+    generateAddRemoveOrgUsersMap,
 } from '../../src/resolvers/organization'
 import { mutate } from '../../src/utils/mutations/commonStructure'
 import { buildPermissionError } from '../utils/errors'
 import {
+    createApplyingChangeToSelfAPIError,
     createDuplicateAttributeAPIError,
     createEntityAPIError,
     createExistentEntityAttributeAPIError,
@@ -132,6 +144,7 @@ import {
 import { APIError } from '../../src/types/errors/apiError'
 import { customErrors } from '../../src/types/errors/customError'
 import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
+import { ObjMap } from '../../src/utils/stringUtils'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -149,13 +162,9 @@ describe('organization', () => {
     const shortcode_re = /^[A-Z|0-9]+$/
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('set', async () => {
@@ -443,9 +452,6 @@ describe('organization', () => {
                     { authorization: getAdminAuthToken() }
                 )
                 expect(cls).to.be.null
-                const dbOrg = await Organization.findOneOrFail(organizationId)
-                const orgClasses = (await dbOrg.classes) || []
-                expect(orgClasses).to.be.empty
             })
         })
 
@@ -567,15 +573,7 @@ describe('organization', () => {
                             undefined,
                             { authorization: getAdminAuthToken() }
                         )
-
                         expect(cls).to.be.null
-                        const dbOrg = await Organization.findOneOrFail(
-                            organizationId
-                        )
-                        const orgClasses = (await dbOrg.classes) || []
-                        expect(orgClasses.map(classInfo)).to.deep.eq([
-                            oldClass.class_id,
-                        ])
                     })
                 }
             )
@@ -684,13 +682,7 @@ describe('organization', () => {
                     undefined,
                     { authorization: getAdminAuthToken() }
                 )
-
                 expect(school).to.be.null
-                const dbSchool = await Organization.findOneOrFail(
-                    organizationId
-                )
-                const orgSchools = (await dbSchool.schools) || []
-                expect(orgSchools).to.be.empty
             })
         })
 
@@ -2849,7 +2841,9 @@ describe('organization', () => {
                             })
 
                             expect(dbAgeRanges).not.to.be.empty
-                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
+                            expect(
+                                dbAgeRanges.map(ageRangeInfo)
+                            ).to.deep.equalInAnyOrder(
                                 gqlAgeRanges.map(ageRangeInfo)
                             )
                         })
@@ -2979,7 +2973,9 @@ describe('organization', () => {
                             })
 
                             expect(dbAgeRanges).not.to.be.empty
-                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
+                            expect(
+                                dbAgeRanges.map(ageRangeInfo)
+                            ).to.deep.equalInAnyOrder(
                                 gqlAgeRanges.map(ageRangeInfo)
                             )
                         })
@@ -3216,9 +3212,9 @@ describe('organization', () => {
                     })
 
                     expect(dbAgeRanges).not.to.be.empty
-                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
-                        gqlAgeRanges.map(ageRangeInfo)
-                    )
+                    expect(
+                        dbAgeRanges.map(ageRangeInfo)
+                    ).to.deep.equalInAnyOrder(gqlAgeRanges.map(ageRangeInfo))
                 })
             })
         })
@@ -3294,7 +3290,7 @@ describe('organization', () => {
                     const dGradesDetails = await Promise.all(
                         dbGrades.map(gradeInfo)
                     )
-                    expect(dGradesDetails).to.deep.eq([
+                    expect(dGradesDetails).to.deep.equalInAnyOrder([
                         progressFromGradeDetails,
                         progressToGradeDetails,
                     ])
@@ -3340,7 +3336,7 @@ describe('organization', () => {
                     const dGradesDetails = await Promise.all(
                         dbGrades.map(gradeInfo)
                     )
-                    expect(dGradesDetails).to.deep.eq([
+                    expect(dGradesDetails).to.deep.equalInAnyOrder([
                         progressFromGradeDetails,
                         progressToGradeDetails,
                         gradeDetails,
@@ -3390,7 +3386,7 @@ describe('organization', () => {
                             const dGradesDetails = await Promise.all(
                                 dbGrades.map(gradeInfo)
                             )
-                            expect(dGradesDetails).to.deep.eq([
+                            expect(dGradesDetails).to.deep.equalInAnyOrder([
                                 progressFromGradeDetails,
                                 progressToGradeDetails,
                             ])
@@ -3462,7 +3458,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     gradeDetails,
@@ -3524,7 +3520,7 @@ describe('organization', () => {
                             const dGradesDetails = await Promise.all(
                                 dbGrades.map(gradeInfo)
                             )
-                            expect(dGradesDetails).to.deep.eq([
+                            expect(dGradesDetails).to.deep.equalInAnyOrder([
                                 progressFromGradeDetails,
                                 progressToGradeDetails,
                                 gradeDetails,
@@ -3579,7 +3575,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     newGradeDetails,
@@ -3634,7 +3630,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     gradeDetails,
@@ -3674,7 +3670,7 @@ describe('organization', () => {
                             const dGradesDetails = await Promise.all(
                                 dbGrades.map(gradeInfo)
                             )
-                            expect(dGradesDetails).to.deep.eq([
+                            expect(dGradesDetails).to.deep.equalInAnyOrder([
                                 progressFromGradeDetails,
                                 progressToGradeDetails,
                                 gradeDetails,
@@ -3729,7 +3725,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     newGradeDetails,
@@ -3786,7 +3782,7 @@ describe('organization', () => {
                                 const dGradesDetails = await Promise.all(
                                     dbGrades.map(gradeInfo)
                                 )
-                                expect(dGradesDetails).to.deep.eq([
+                                expect(dGradesDetails).to.deep.equalInAnyOrder([
                                     progressFromGradeDetails,
                                     progressToGradeDetails,
                                     newGradeDetails,
@@ -3795,6 +3791,116 @@ describe('organization', () => {
                         }
                     )
                 })
+            })
+
+            context('and is a school admin user', () => {
+                let schoolAdmin: User
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    }).save()
+                })
+
+                context('and it tries to create new grades', () => {
+                    it('fails to create grades in the organization', async () => {
+                        const gradeDetails = await gradeInfo(grade)
+
+                        await expect(
+                            createOrUpdateGrades(
+                                testClient,
+                                organization.organization_id,
+                                [gradeDetails],
+                                {
+                                    authorization: generateToken(
+                                        userToPayload(schoolAdmin)
+                                    ),
+                                }
+                            )
+                        ).to.be.rejected
+
+                        const dbGrades = await Grade.find({
+                            where: {
+                                organization: {
+                                    organization_id:
+                                        organization.organization_id,
+                                },
+                            },
+                        })
+                        const dGradesDetails = await Promise.all(
+                            dbGrades.map(gradeInfo)
+                        )
+                        expect(dGradesDetails).to.deep.equalInAnyOrder([
+                            progressFromGradeDetails,
+                            progressToGradeDetails,
+                        ])
+                    })
+                })
+
+                context(
+                    'and it tries to update existing non system grades',
+                    () => {
+                        let gradeDetails: any
+                        let newGrade: any
+
+                        beforeEach(async () => {
+                            gradeDetails = await gradeInfo(grade)
+                            const gqlGrades = await createOrUpdateGrades(
+                                testClient,
+                                organization.organization_id,
+                                [gradeDetails],
+                                { authorization: getAdminAuthToken() }
+                            )
+
+                            newGrade = {
+                                ...gradeDetails,
+                                ...{
+                                    id: gqlGrades[0].id,
+                                    name: 'New Name',
+                                },
+                            }
+                        })
+
+                        it('fails to update grades in the organization', async () => {
+                            await expect(
+                                createOrUpdateGrades(
+                                    testClient,
+                                    organization.organization_id,
+                                    [newGrade],
+                                    {
+                                        authorization: generateToken(
+                                            userToPayload(schoolAdmin)
+                                        ),
+                                    }
+                                )
+                            ).to.be.rejected
+
+                            const dbGrades = await Grade.find({
+                                where: {
+                                    organization: {
+                                        organization_id:
+                                            organization.organization_id,
+                                    },
+                                },
+                            })
+                            const dGradesDetails = await Promise.all(
+                                dbGrades.map(gradeInfo)
+                            )
+                            expect(dGradesDetails).to.deep.equalInAnyOrder([
+                                progressFromGradeDetails,
+                                progressToGradeDetails,
+                                gradeDetails,
+                            ])
+                        })
+                    }
+                )
             })
         })
     })
@@ -3866,7 +3972,7 @@ describe('organization', () => {
                 const dGradesDetails = await Promise.all(
                     dbGrades.map(gradeInfo)
                 )
-                expect(dGradesDetails).to.deep.eq([
+                expect(dGradesDetails).to.deep.equalInAnyOrder([
                     progressFromGradeDetails,
                     progressToGradeDetails,
                     gradeDetails,
@@ -3906,7 +4012,7 @@ describe('organization', () => {
                     const dGradesDetails = await Promise.all(
                         dbGrades.map(gradeInfo)
                     )
-                    expect(dGradesDetails).to.deep.eq([
+                    expect(dGradesDetails).to.deep.equalInAnyOrder([
                         progressFromGradeDetails,
                         progressToGradeDetails,
                         gradeDetails,
@@ -3944,7 +4050,7 @@ describe('organization', () => {
                     const gqlGradesDetails = await Promise.all(
                         gqlGrades.map(gradeInfo)
                     )
-                    expect(gqlGradesDetails).to.deep.eq([
+                    expect(gqlGradesDetails).to.deep.equalInAnyOrder([
                         progressFromGradeDetails,
                         progressToGradeDetails,
                         gradeDetails,
@@ -3980,7 +4086,7 @@ describe('organization', () => {
                         const dGradesDetails = await Promise.all(
                             dbGrades.map(gradeInfo)
                         )
-                        expect(dGradesDetails).to.deep.eq([
+                        expect(dGradesDetails).to.deep.equalInAnyOrder([
                             progressFromGradeDetails,
                             progressToGradeDetails,
                             gradeDetails,
@@ -4246,7 +4352,9 @@ describe('organization', () => {
                             expect(dbSubcategories).not.to.be.empty
                             expect(
                                 dbSubcategories.map(subcategoryInfo)
-                            ).to.deep.eq(gqlSubcategories.map(subcategoryInfo))
+                            ).to.deep.equalInAnyOrder(
+                                gqlSubcategories.map(subcategoryInfo)
+                            )
                         })
                     })
 
@@ -4374,7 +4482,9 @@ describe('organization', () => {
                             expect(dbSubcategories).not.to.be.empty
                             expect(
                                 dbSubcategories.map(subcategoryInfo)
-                            ).to.deep.eq(gqlSubcategories.map(subcategoryInfo))
+                            ).to.deep.equalInAnyOrder(
+                                gqlSubcategories.map(subcategoryInfo)
+                            )
                         })
                     })
 
@@ -4604,7 +4714,9 @@ describe('organization', () => {
                     })
 
                     expect(dbSubcategories).not.to.be.empty
-                    expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(
+                    expect(
+                        dbSubcategories.map(subcategoryInfo)
+                    ).to.deep.equalInAnyOrder(
                         gqlSubcategories.map(subcategoryInfo)
                     )
                 })
@@ -4916,7 +5028,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlCategories.map(categoryInfo)
                             )
-                            expect(dbCategoryDetails).to.deep.eq(
+                            expect(dbCategoryDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -4997,9 +5109,9 @@ describe('organization', () => {
                                 const gqlCateryDetails = await Promise.all(
                                     gqlCategories.map(categoryInfo)
                                 )
-                                expect(dbCategoryDetails).to.deep.eq(
-                                    gqlCateryDetails
-                                )
+                                expect(
+                                    dbCategoryDetails
+                                ).to.deep.equalInAnyOrder(gqlCateryDetails)
                             })
                         }
                     )
@@ -5087,7 +5199,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlCategories.map(categoryInfo)
                             )
-                            expect(dbCategoryDetails).to.deep.eq(
+                            expect(dbCategoryDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -5344,7 +5456,9 @@ describe('organization', () => {
                     const gqlCateryDetails = await Promise.all(
                         gqlCategories.map(categoryInfo)
                     )
-                    expect(dbCategoryDetails).to.deep.eq(gqlCateryDetails)
+                    expect(dbCategoryDetails).to.deep.equalInAnyOrder(
+                        gqlCateryDetails
+                    )
                 })
             })
         })
@@ -5632,7 +5746,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlSubjects.map(subjectInfo)
                             )
-                            expect(dbSubjectDetails).to.deep.eq(
+                            expect(dbSubjectDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -5711,9 +5825,9 @@ describe('organization', () => {
                                 const gqlSubjectDetails = await Promise.all(
                                     gqlSubjects.map(subjectInfo)
                                 )
-                                expect(dbSubjectDetails).to.deep.eq(
-                                    gqlSubjectDetails
-                                )
+                                expect(
+                                    dbSubjectDetails
+                                ).to.deep.equalInAnyOrder(gqlSubjectDetails)
                             })
                         }
                     )
@@ -5801,7 +5915,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlSubjects.map(subjectInfo)
                             )
-                            expect(dbSubjectDetails).to.deep.eq(
+                            expect(dbSubjectDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -6058,7 +6172,9 @@ describe('organization', () => {
                     const gqlSubjectDetails = await Promise.all(
                         gqlSubjects.map(subjectInfo)
                     )
-                    expect(dbSubjectDetails).to.deep.eq(gqlSubjectDetails)
+                    expect(dbSubjectDetails).to.deep.equalInAnyOrder(
+                        gqlSubjectDetails
+                    )
                 })
             })
         })
@@ -6351,7 +6467,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlPrograms.map(programInfo)
                             )
-                            expect(dbProgramDetails).to.deep.eq(
+                            expect(dbProgramDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -6432,9 +6548,9 @@ describe('organization', () => {
                                 const gqlCateryDetails = await Promise.all(
                                     gqlPrograms.map(programInfo)
                                 )
-                                expect(dbProgramDetails).to.deep.eq(
-                                    gqlCateryDetails
-                                )
+                                expect(
+                                    dbProgramDetails
+                                ).to.deep.equalInAnyOrder(gqlCateryDetails)
                             })
                         }
                     )
@@ -6522,7 +6638,7 @@ describe('organization', () => {
                             const gqlCateryDetails = await Promise.all(
                                 gqlPrograms.map(programInfo)
                             )
-                            expect(dbProgramDetails).to.deep.eq(
+                            expect(dbProgramDetails).to.deep.equalInAnyOrder(
                                 gqlCateryDetails
                             )
                         })
@@ -7234,7 +7350,7 @@ describe('organization', () => {
                 const normalizedEmpty = getCreateOrganizations().normalize([])
                 expect(normalizedEmpty).to.be.empty
                 const normalized = getCreateOrganizations().normalize(input)
-                expect(normalized).to.deep.equal(input)
+                expect(normalized).to.deep.equalInAnyOrder(input)
             })
 
             context('shortcodes', () => {
@@ -7621,7 +7737,7 @@ describe('organization', () => {
                     it('makes the expected number of db calls', async () => {
                         connection.logger.reset()
                         await expect(addUsers()).to.be.fulfilled
-                        expect(connection.logger.count).to.equal(10) // preload: 4, authorize: 1, save: 1 per membership
+                        expect(connection.logger.count).to.equal(8) // preload: 4, authorize: 1, save: 3
                     })
                 })
 
@@ -7771,237 +7887,616 @@ describe('organization', () => {
         )
     })
 
-    describe('RemoveUsersFromOrganizations', () => {
-        let input: RemoveUsersFromOrganizationInput[]
+    describe('ChangeOrganizationMembershipStatus', () => {
+        class TestChangeOrganizationMembershipStatus extends ChangeOrganizationMembershipStatus {
+            protected inputTypeName =
+                'TestChangeOrganizationMembershipStatusInput'
+            readonly partialEntity = {
+                status: Status.ACTIVE,
+                deleted_at: new Date(),
+            }
 
-        function removeUsers(authUser = adminUser) {
-            const permissions = new UserPermissions(userToPayload(authUser))
-            return mutate(RemoveUsersFromOrganizations, { input }, permissions)
-        }
+            async authorize(): Promise<void> {
+                return
+            }
 
-        async function checkOutput() {
-            for (const orgInputs of input) {
-                const { organizationId, userIds } = orgInputs
-
-                // eslint-disable-next-line no-await-in-loop
-                const dbMemberships = await OrganizationMembership.find({
-                    where: {
-                        organization_id: organizationId,
-                        user_id: In(userIds),
-                        status: Status.INACTIVE,
-                    },
-                })
-
-                // Check that user ids match
-                const dbUserIds = new Set(
-                    dbMemberships.map((val) => val.user_id)
-                )
-                const userIdsSet = new Set(userIds)
-
-                expect(dbUserIds.size).to.equal(userIdsSet.size)
-                dbUserIds.forEach(
-                    (val) => expect(userIdsSet.has(val)).to.be.true
-                )
+            async generateEntityMaps(
+                input: { organizationId: string; userIds: string[] }[]
+            ): Promise<ChangeOrganizationMembershipStatusEntityMap> {
+                return generateAddRemoveOrgUsersMap(this.mainEntityIds, input, [
+                    Status.INACTIVE,
+                ])
             }
         }
 
-        async function checkNoChangesMade(inactivateCount = 0) {
-            expect(
-                await OrganizationMembership.find({
-                    where: {
-                        organization_id: In(orgs.map((o) => o.organization_id)),
-                        user_id: In(users.map((u) => u.user_id)),
-                        status: Status.INACTIVE,
-                    },
-                })
-            ).to.have.length(inactivateCount)
-        }
+        context('basic case', () => {
+            it('works as expect', async () => {
+                const clientUser = await createUser().save()
+                const member = await createUser().save()
+                const unaffectedUser = await createUser().save()
+                const organization = await createOrganization().save()
+                await createOrganizationMembership({
+                    user: unaffectedUser,
+                    organization,
+                    status: Status.INACTIVE,
+                }).save()
+                await createOrganizationMembership({
+                    user: member,
+                    organization,
+                    status: Status.INACTIVE,
+                }).save()
 
-        async function inactivateMembership(
-            user_id: string,
-            organization_id: string
-        ) {
-            const membership = await OrganizationMembership.findOneOrFail({
-                where: { organization_id, user_id },
+                const result = await mutate(
+                    TestChangeOrganizationMembershipStatus,
+                    {
+                        input: [
+                            {
+                                userIds: [member.user_id],
+                                organizationId: organization.organization_id,
+                            },
+                        ],
+                    },
+                    new UserPermissions(userToPayload(clientUser))
+                )
+
+                expect(result.organizations).to.have.length(1)
+                expect(result.organizations[0].id).to.eq(
+                    organization.organization_id
+                )
+
+                const affectedUserFromDb = await OrganizationMembership.findOneOrFail(
+                    {
+                        where: {
+                            organization_id: organization.organization_id,
+                            user_id: member.user_id,
+                        },
+                    }
+                )
+                expect(affectedUserFromDb.status).to.eq(Status.ACTIVE)
+
+                const unaffectedUserFromDb = await OrganizationMembership.findOneOrFail(
+                    {
+                        where: {
+                            organization_id: organization.organization_id,
+                            user_id: unaffectedUser.user_id,
+                        },
+                    }
+                )
+                expect(unaffectedUserFromDb.status).to.eq(Status.INACTIVE)
             })
-            await membership.inactivate(getManager())
-        }
-
-        beforeEach(async () => {
-            adminUser = await createAdminUser(testClient)
-            nonAdminUser = await createNonAdminUser(testClient)
-            orgs = createOrganizations(3)
-            users = createUsers(3)
-            await Organization.save(orgs)
-            await User.save(users)
-
-            // Generate input & create memberships
-            input = []
-            const memberships: OrganizationMembership[] = []
-            const userIndexGroups = [[0], [1, 2], [0, 2]]
-            for (const [orgIdx, userIndexes] of userIndexGroups.entries()) {
-                const org = orgs[orgIdx]
-                const userIds: string[] = []
-                for (const uIdx of userIndexes) {
-                    userIds.push(users[uIdx].user_id)
-                    memberships.push(
-                        createOrganizationMembership({
-                            user: users[uIdx],
-                            organization: org,
-                        })
-                    )
-                }
-                input.push({ organizationId: org.organization_id, userIds })
-            }
-            await OrganizationMembership.save(memberships)
         })
 
-        context(
-            'when caller has permissions to remove users from organizations',
-            () => {
-                context('and all attributes are valid', () => {
-                    it('removes all the users', async () => {
-                        await expect(removeUsers()).to.be.fulfilled
-                        await checkOutput()
-                    })
+        context('validationOverAllInputs', () => {
+            it('reject duplicate organizationIds', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeOrganizationMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
 
-                    it('returns the expected output', async () => {
-                        const res: OrganizationsMutationResult = await expect(
-                            removeUsers()
-                        ).to.be.fulfilled
-                        const orgIds = new Set(
-                            res.organizations.map((o) => o.id)
-                        )
-                        expect(orgIds).to.have.length(input.length)
-                        input.forEach(
-                            (i) =>
-                                expect(orgIds.has(i.organizationId)).to.be.true
-                        )
-                    })
+                const duplicateOrganizationId = uuid_v4()
+                const notDuplicatedOrganizationId = uuid_v4()
 
-                    it('makes the expected number of database calls', async () => {
-                        connection.logger.reset()
-                        await expect(removeUsers()).to.be.fulfilled
-                        expect(connection.logger.count).to.equal(5) // preload: 3, authorize: 1, save: 1
-                    })
+                const input = [
+                    {
+                        organizationId: duplicateOrganizationId,
+                        userIds: [uuid_v4()],
+                    },
+                    {
+                        organizationId: duplicateOrganizationId,
+                        userIds: [uuid_v4()],
+                    },
+                    {
+                        organizationId: notDuplicatedOrganizationId,
+                        userIds: [uuid_v4()],
+                    },
+                ]
+                const {
+                    validInputs,
+                    apiErrors,
+                } = mutation.validationOverAllInputs(input)
+                expect(validInputs).to.have.length(2)
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].index).to.eq(2)
+                expect(apiErrors).to.have.length(1)
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['id'],
+                    'TestChangeOrganizationMembershipStatusInput'
+                )
+                compareErrors(apiErrors[0], error)
+            })
+
+            it('reject duplicate userIds per input element', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeOrganizationMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+
+                const organizationId = uuid_v4()
+                const duplicateUserId = uuid_v4()
+                const notDuplicatedUserId = uuid_v4()
+
+                const input = [
+                    {
+                        organizationId: organizationId,
+                        userIds: [
+                            duplicateUserId,
+                            duplicateUserId,
+                            notDuplicatedUserId,
+                        ],
+                    },
+                ]
+                const {
+                    validInputs,
+                    apiErrors,
+                } = mutation.validationOverAllInputs(input)
+                expect(validInputs).to.have.length(0)
+                expect(apiErrors).to.have.length(1)
+                const error = createDuplicateAttributeAPIError(
+                    0,
+                    ['userIds'],
+                    'TestChangeOrganizationMembershipStatusInput'
+                )
+                compareErrors(apiErrors[0], error)
+            })
+        })
+
+        context('validate', () => {
+            it('no errors when user and membership exists', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeOrganizationMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const organization = createOrganization()
+                organization.organization_id = uuid_v4()
+                const user = createUser()
+                user.user_id = uuid_v4()
+                const membership = createOrganizationMembership({
+                    user,
+                    organization,
                 })
-
-                context('and one of the users was already removed', () => {
-                    beforeEach(() =>
-                        inactivateMembership(
-                            users[0].user_id,
-                            orgs[0].organization_id
-                        )
-                    )
-
-                    it('returns a nonexistent_child error', async () => {
-                        const res = await expect(removeUsers()).to.be.rejected
-                        expectAPIError.nonexistent_child(
-                            res,
-                            {
-                                entity: 'User',
-                                entityName: users[0].user_id,
-                                parentEntity: 'Organization',
-                                parentName: orgs[0].organization_id,
-                                index: 0,
+                const maps = {
+                    mainEntity: new Map(),
+                    users: new Map([[user.user_id, user]]),
+                    memberships: new ObjMap([
+                        {
+                            key: {
+                                organizationId: organization.organization_id,
+                                userId: user.user_id,
                             },
-                            [''],
-                            0,
-                            1
-                        )
-                        await checkNoChangesMade(1)
-                    })
+                            value: membership,
+                        },
+                    ]),
+                }
+                const input = {
+                    userIds: [user.user_id],
+                    organizationId: organization.organization_id,
+                }
+                const apiErrors = mutation.validate(
+                    0,
+                    organization,
+                    input,
+                    maps
+                )
+                expect(apiErrors).to.have.length(0)
+            })
 
-                    it('does not perform any changes', async () => {
-                        await checkNoChangesMade(1) // one membership is inactivated in the beforeEach
-                        await expect(removeUsers()).to.be.rejected
-                        await checkNoChangesMade(1)
-                    })
+            it('errors if you try to alter your own membership', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeOrganizationMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const organization = createOrganization()
+                organization.organization_id = uuid_v4()
+                const membership = createOrganizationMembership({
+                    user: callingUser,
+                    organization,
                 })
-
-                context('and one of the users is inactive', async () => {
-                    beforeEach(() => users[1].inactivate(getManager()))
-
-                    it('returns a nonexistent_entity error', async () => {
-                        const res = await expect(removeUsers()).to.be.rejected
-                        expectAPIError.nonexistent_entity(
-                            res,
-                            {
-                                entity: 'User',
-                                entityName: users[1].user_id,
-                                index: 1,
+                const maps = {
+                    mainEntity: new Map([
+                        [organization.organization_id, organization],
+                    ]),
+                    users: new Map([[callingUser.user_id, callingUser]]),
+                    memberships: new ObjMap([
+                        {
+                            key: {
+                                organizationId: organization.organization_id,
+                                userId: callingUser.user_id,
                             },
-                            ['id'],
-                            0,
-                            1
-                        )
-                        await checkNoChangesMade(1) // inactivating a user also inactivates its memberships
-                    })
+                            value: membership,
+                        },
+                    ]),
+                }
+
+                const input = {
+                    userIds: [callingUser.user_id],
+                    organizationId: organization.organization_id,
+                }
+                const apiErrors = mutation.validate(
+                    0,
+                    organization,
+                    input,
+                    maps
+                )
+                expect(apiErrors).to.have.length(1)
+                const error = createApplyingChangeToSelfAPIError(
+                    callingUser.user_id,
+                    0
+                )
+                compareErrors(apiErrors[0], error)
+            })
+
+            it('errors when userIds are not found', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeOrganizationMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const maps = {
+                    mainEntity: new Map(),
+                    users: new Map(),
+                    memberships: new ObjMap<
+                        { organizationId: string; userId: string },
+                        OrganizationMembership
+                    >(),
+                }
+
+                const nonExistantUser = uuid_v4()
+
+                const input = {
+                    userIds: [nonExistantUser],
+                    organizationId: uuid_v4(),
+                }
+                const apiErrors = mutation.validate(
+                    0,
+                    organization,
+                    input,
+                    maps
+                )
+                expect(apiErrors).to.have.length(1)
+                const error = createEntityAPIError(
+                    'nonExistent',
+                    0,
+                    'User',
+                    nonExistantUser
+                )
+                compareErrors(apiErrors[0], error)
+            })
+
+            it('errors when memberships are not found', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeOrganizationMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const user = createUser()
+                user.user_id = uuid_v4()
+                const organization = createOrganization()
+                organization.organization_id = uuid_v4()
+                const maps = {
+                    mainEntity: new Map([
+                        [organization.organization_id, organization],
+                    ]),
+                    users: new Map([[user.user_id, user]]),
+                    memberships: new ObjMap<
+                        { organizationId: string; userId: string },
+                        OrganizationMembership
+                    >(),
+                }
+
+                const nonExistantOrg = uuid_v4()
+
+                const input = {
+                    userIds: [user.user_id],
+                    organizationId: nonExistantOrg,
+                }
+                const apiErrors = mutation.validate(
+                    0,
+                    organization,
+                    input,
+                    maps
+                )
+                expect(apiErrors).to.have.length(1)
+                const error = createEntityAPIError(
+                    'nonExistentChild',
+                    0,
+                    'User',
+                    user.user_id,
+                    'Organization',
+                    nonExistantOrg
+                )
+                compareErrors(apiErrors[0], error)
+            })
+        })
+
+        context('process', () => {
+            const makeMembership = (organization: Organization) => {
+                const user = createUser()
+                user.user_id = uuid_v4()
+                const membership = createOrganizationMembership({
+                    user,
+                    organization,
+                    status: Status.INACTIVE,
                 })
-
-                context('and one of each attribute is inactive', async () => {
-                    beforeEach(async () => {
-                        await Promise.all([
-                            orgs[2].inactivate(getManager()),
-                            users[1].inactivate(getManager()),
-                        ])
-                    })
-
-                    it('returns several nonexistent_entity errors', async () => {
-                        const res = await expect(removeUsers()).to.be.rejected
-                        expectAPIError.nonexistent_entity(
-                            res,
-                            {
-                                entity: 'User',
-                                entityName: users[1].user_id,
-                                index: 1,
-                            },
-                            ['id'],
-                            1,
-                            2
-                        )
-                        expectAPIError.nonexistent_entity(
-                            res,
-                            {
-                                entity: 'Organization',
-                                entityName: orgs[2].organization_id,
-                                index: 2,
-                            },
-                            ['id'],
-                            0,
-                            2
-                        )
-                        await checkNoChangesMade(3) // 2 from orgs[2] + 1 from users[1]
-                    })
-                })
+                return { membership, user }
             }
+
+            it('sets the status to active', async () => {
+                const clientUser = await createUser().save()
+                const mutation = new TestChangeOrganizationMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(clientUser))
+                )
+
+                const organization = createOrganization()
+                const { user, membership } = makeMembership(organization)
+
+                const maps = {
+                    mainEntity: new Map([
+                        [organization.organization_id, organization],
+                    ]),
+                    users: new Map([[user.user_id, user]]),
+                    memberships: new ObjMap([
+                        {
+                            key: {
+                                organizationId: organization.organization_id,
+                                userId: user.user_id,
+                            },
+                            value: membership,
+                        },
+                    ]),
+                }
+
+                const input = {
+                    organizationId: organization.organization_id,
+                    userIds: [user.user_id],
+                }
+                const { outputEntity, modifiedEntity } = mutation.process(
+                    input,
+                    maps,
+                    0
+                )
+                expect(outputEntity).to.deep.eq(organization)
+                expect(modifiedEntity).to.have.length(1)
+                expect(modifiedEntity![0]).to.deep.eq(membership)
+                expect(modifiedEntity![0]).deep.include(mutation.partialEntity)
+            })
+        })
+    })
+
+    const inputsForDifferentMembershipStatuses = async () => {
+        const organization = await createOrganization().save()
+        return Promise.all(
+            Object.values(Status).map((status) =>
+                createUser()
+                    .save()
+                    .then((user) => {
+                        return createOrganizationMembership({
+                            user,
+                            organization,
+                            roles: [],
+                            status,
+                        }).save()
+                    })
+                    .then((membership) => {
+                        return {
+                            organizationId: membership.organization_id,
+                            userIds: [membership.user_id],
+                        }
+                    })
+            )
         )
+    }
 
-        context(
-            'when caller does not have permissions to remove users from all organizations',
-            async () => {
-                const permission = PermissionName.edit_this_organization_10330
-                beforeEach(async () => {
-                    const nonAdminRole = await roleFactory(
-                        'Non Admin Role',
-                        orgs[0],
-                        { permissions: [permission] }
-                    ).save()
-                    await createOrganizationMembership({
-                        user: nonAdminUser,
-                        organization: orgs[0],
-                        roles: [nonAdminRole],
-                    }).save()
-                })
+    const makeMembership = async (permissions: PermissionName[] = []) => {
+        const user = await createUser().save()
+        const organization = await createOrganization().save()
+        const role = await roleFactory(undefined, organization, {
+            permissions,
+        }).save()
+        const membership = await createOrganizationMembership({
+            user,
+            organization,
+            roles: [role],
+        }).save()
+        return { user, organization, membership }
+    }
 
-                it('returns a permission error', async () => {
-                    const permOrgs = [orgs[1], orgs[2]]
-                    await expect(removeUsers(nonAdminUser)).to.be.rejectedWith(
-                        buildPermissionError(permission, nonAdminUser, permOrgs)
+    describe('ReactivateUsersFromOrganizations', () => {
+        const makeMutation = (
+            input: {
+                organizationId: string
+                userIds: string[]
+            }[],
+            user: User
+        ) => {
+            return new ReactivateUsersFromOrganizations(
+                input,
+                new UserPermissions(userToPayload(user))
+            )
+        }
+
+        context('authorize', () => {
+            it('rejects when user does not have reactivate_user_40884', async () => {
+                const { user, organization } = await makeMembership()
+                const mutation = makeMutation(
+                    [
+                        {
+                            organizationId: organization.organization_id,
+                            userIds: [],
+                        },
+                    ],
+                    user
+                )
+                await expect(mutation.authorize()).to.eventually.rejectedWith(
+                    /reactivate_user_40884/
+                )
+            })
+
+            it('resolves when user does have reactivate_user_40884', async () => {
+                const { user, organization } = await makeMembership([
+                    PermissionName.reactivate_user_40884,
+                ])
+                const mutation = makeMutation(
+                    [
+                        {
+                            organizationId: organization.organization_id,
+                            userIds: [],
+                        },
+                    ],
+                    user
+                )
+                await expect(mutation.authorize()).to.eventually.fulfilled
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('finds only inactive memberships', async () => {
+                const input = await inputsForDifferentMembershipStatuses()
+
+                const callingUser = await createUser().save()
+                const mutation = makeMutation(input, callingUser)
+                const entityMaps = await mutation.generateEntityMaps(input)
+                expect(entityMaps.memberships.size).to.eq(1)
+                expect(
+                    Array.from(entityMaps.memberships.values())[0].status
+                ).to.eq(Status.INACTIVE)
+            })
+        })
+    })
+
+    describe('DeleteUsersFromOrganizations', () => {
+        const makeMutation = (
+            input: {
+                organizationId: string
+                userIds: string[]
+            }[],
+            user: User
+        ) => {
+            return new DeleteUsersFromOrganizations(
+                input,
+                new UserPermissions(userToPayload(user))
+            )
+        }
+
+        context('authorize', () => {
+            it('rejects when user does not have delete_users_40440', async () => {
+                const { user, organization } = await makeMembership()
+                const mutation = makeMutation(
+                    [
+                        {
+                            organizationId: organization.organization_id,
+                            userIds: [],
+                        },
+                    ],
+                    user
+                )
+                await expect(mutation.authorize()).to.eventually.rejectedWith(
+                    /delete_users_40440/
+                )
+            })
+
+            it('resolves when user does have delete_users_40440', async () => {
+                const { user, organization } = await makeMembership([
+                    PermissionName.delete_users_40440,
+                ])
+                const mutation = makeMutation(
+                    [
+                        {
+                            organizationId: organization.organization_id,
+                            userIds: [],
+                        },
+                    ],
+                    user
+                )
+                await expect(mutation.authorize()).to.eventually.fulfilled
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('finds active and inactive memberships', async () => {
+                const input = await inputsForDifferentMembershipStatuses()
+
+                const callingUser = await createUser().save()
+                const mutation = makeMutation(input, callingUser)
+                const entityMaps = await mutation.generateEntityMaps(input)
+                expect(entityMaps.memberships.size).to.eq(2)
+                for (const [
+                    index,
+                    membership,
+                ] of entityMaps.memberships.entries()) {
+                    expect(membership.status).oneOf(
+                        [Status.INACTIVE, Status.ACTIVE],
+                        `membership ${index} has the wrong status of ${membership.status}`
                     )
-                    await checkNoChangesMade()
-                })
-            }
-        )
+                }
+            })
+        })
+    })
+
+    describe('RemoveUsersFromOrganizations', () => {
+        const makeMutation = (
+            input: {
+                organizationId: string
+                userIds: string[]
+            }[],
+            user: User
+        ) => {
+            return new RemoveUsersFromOrganizations(
+                input,
+                new UserPermissions(userToPayload(user))
+            )
+        }
+
+        context('authorize', () => {
+            it('rejects when user does not have deactivate_user_40883', async () => {
+                const { user, organization } = await makeMembership()
+                const mutation = makeMutation(
+                    [
+                        {
+                            organizationId: organization.organization_id,
+                            userIds: [],
+                        },
+                    ],
+                    user
+                )
+                await expect(mutation.authorize()).to.eventually.rejectedWith(
+                    /deactivate_user_40883/
+                )
+            })
+
+            it('resolves when user does have deactivate_user_40883', async () => {
+                const { user, organization } = await makeMembership([
+                    PermissionName.deactivate_user_40883,
+                ])
+                const mutation = makeMutation(
+                    [
+                        {
+                            organizationId: organization.organization_id,
+                            userIds: [],
+                        },
+                    ],
+                    user
+                )
+                await expect(mutation.authorize()).to.eventually.fulfilled
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('finds only active memberships', async () => {
+                const input = await inputsForDifferentMembershipStatuses()
+                const callingUser = await createUser().save()
+                const mutation = makeMutation(input, callingUser)
+                const entityMaps = await mutation.generateEntityMaps(input)
+                expect(entityMaps.memberships.size).to.eq(1)
+                expect(
+                    Array.from(entityMaps.memberships.values())[0].status
+                ).to.eq(Status.ACTIVE)
+            })
+        })
     })
 })

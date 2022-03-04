@@ -1,12 +1,11 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { getManager, In } from 'typeorm'
+import { getManager, In, getConnection } from 'typeorm'
 import { config } from '../../../../src/config/config'
 import { Category } from '../../../../src/entities/category'
 import { Organization } from '../../../../src/entities/organization'
 import { Status } from '../../../../src/entities/status'
 import { User } from '../../../../src/entities/user'
-import { Model } from '../../../../src/model'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { DeleteCategories } from '../../../../src/resolvers/category'
 import {
@@ -18,7 +17,6 @@ import {
     DeleteMutation,
     mutate,
 } from '../../../../src/utils/mutations/commonStructure'
-import { createServer } from '../../../../src/utils/createServer'
 import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,
@@ -32,10 +30,7 @@ import { createOrganizations } from '../../../factories/organization.factory'
 import { createAdminUser, createUsers } from '../../../factories/user.factory'
 import { compareErrors } from '../../../utils/apiError'
 import { userToPayload } from '../../../utils/operations/userOps'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import { Role } from '../../../../src/entities/role'
 import {
     AddUsersToOrganizationInput,
@@ -60,11 +55,8 @@ describe('commonStructure', () => {
     let admin: User
 
     before(async () => {
-        connection = await createTestConnection()
-        await createServer(new Model(connection))
+        connection = getConnection() as TestConnection
     })
-
-    after(async () => connection.close())
 
     beforeEach(async () => {
         admin = await createAdminUser().save()
@@ -219,7 +211,7 @@ describe('commonStructure', () => {
                         index,
                     }
                 })
-                expect(validInputs).to.deep.equal(expectedValidInputs)
+                expect(validInputs).to.deep.equalInAnyOrder(expectedValidInputs)
                 expect(apiErrors).to.have.length(0)
             })
 
@@ -249,7 +241,9 @@ describe('commonStructure', () => {
                         }
                     })
                     expectedValidInputs.splice(1, 1)
-                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(validInputs).to.deep.equalInAnyOrder(
+                        expectedValidInputs
+                    )
                     expect(apiErrors).to.have.length(1)
                     const error = createDuplicateAttributeAPIError(
                         1,
@@ -290,7 +284,9 @@ describe('commonStructure', () => {
                             }
                         })
                         .slice(1)
-                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(validInputs).to.deep.equalInAnyOrder(
+                        expectedValidInputs
+                    )
                     expect(apiErrors).to.have.length(1)
                     const error = createEntityAPIError(
                         'nonExistent',
@@ -332,7 +328,9 @@ describe('commonStructure', () => {
                             }
                         })
                         .slice(2)
-                    expect(validInputs).to.deep.equal(expectedValidInputs)
+                    expect(validInputs).to.deep.equalInAnyOrder(
+                        expectedValidInputs
+                    )
                     expect(apiErrors).to.have.length(2)
                     const inactiveError = createEntityAPIError(
                         'nonExistent',

@@ -30,7 +30,7 @@ import {
     getAdminAuthToken,
     generateToken,
 } from '../utils/testConfig'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
 import { grantPermission } from '../utils/operations/roleOps'
@@ -50,6 +50,7 @@ import { studentRole } from '../../src/permissions/student'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
 import { buildPermissionError } from '../utils/errors'
+import { getConnection } from 'typeorm'
 
 chai.use(chaiAsPromised)
 
@@ -61,13 +62,9 @@ describe('userPermissions', () => {
     } as Request
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('isAdmin', () => {

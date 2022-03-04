@@ -1,5 +1,5 @@
-import { Connection } from 'typeorm'
-import { createTestConnection } from '../utils/testConnection'
+import { getConnection } from 'typeorm'
+import { TestConnection } from '../utils/testConnection'
 import { createOrganization } from '../factories/organization.factory'
 import { Organization } from '../../src/entities/organization'
 import { expect, use } from 'chai'
@@ -22,18 +22,14 @@ const request = supertest('http://localhost:8080/user')
 use(deepEqualInAnyOrder)
 
 describe('acceptance.OrganizationMembership', () => {
-    let connection: Connection
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {
         await loadFixtures('users', connection)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     context('loaders', () => {
@@ -107,13 +103,15 @@ describe('acceptance.OrganizationMembership', () => {
                     )
                 ).to.be.true
 
-                expect(memberships.map((m) => m.user_id)).to.deep.equal(
+                expect(
+                    memberships.map((m) => m.user_id)
+                ).to.deep.equalInAnyOrder(
                     await Promise.all(
                         memberships.map(async (m) => (await m?.user)?.user_id)
                     )
                 )
 
-                expect(memberships.map((m) => m?.user)).to.deep.equal(
+                expect(memberships.map((m) => m?.user)).to.deep.equalInAnyOrder(
                     users.map((user) =>
                         pick(
                             user,

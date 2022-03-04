@@ -36,10 +36,7 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 import { Class } from '../../../src/entities/class'
 import { createClass } from '../../factories/class.factory'
@@ -49,6 +46,8 @@ import {
     loadAgeRangesForProgram,
     ageRangesChildConnectionResolver as resolverForProgram,
 } from '../../../src/schemas/program'
+import { checkPageInfo } from '../../acceptance/utils'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
@@ -66,13 +65,9 @@ describe('model', () => {
     const ageRangesCount = 12
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {
@@ -124,16 +119,7 @@ describe('model', () => {
                 { authorization: getAdminAuthToken() }
             )
 
-            expect(result.totalCount).to.eq(
-                ageRanges.length + systemAgeRanges.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, ageRanges.length + systemAgeRanges.length)
         })
     })
 
@@ -149,16 +135,7 @@ describe('model', () => {
                 { field: 'id', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(
-                ageRanges.length + systemAgeRanges.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, ageRanges.length + systemAgeRanges.length)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedAscending(ids)
@@ -177,16 +154,7 @@ describe('model', () => {
                 { field: 'id', order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(
-                ageRanges.length + systemAgeRanges.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, ageRanges.length + systemAgeRanges.length)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedDescending(ids)
@@ -205,16 +173,7 @@ describe('model', () => {
                 { field: ['lowValueUnit', 'lowValue'], order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(
-                ageRanges.length + systemAgeRanges.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, ageRanges.length + systemAgeRanges.length)
 
             const units = result.edges.map((edge) => edge.node.lowValueUnit)
             const monthValues = result.edges
@@ -246,16 +205,7 @@ describe('model', () => {
                 { field: ['lowValueUnit', 'lowValue'], order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(
-                ageRanges.length + systemAgeRanges.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, ageRanges.length + systemAgeRanges.length)
 
             const units = result.edges.map((edge) => edge.node.lowValueUnit)
             const monthValues = result.edges
@@ -296,14 +246,7 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(org1AgeRanges.length)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result)
 
             const ageRangeIds = result.edges.map((edge) => edge.node.id)
             const org1AgeRangeIds = org1AgeRanges.map((ageRange) => ageRange.id)

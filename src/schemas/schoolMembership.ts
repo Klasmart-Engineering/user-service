@@ -51,7 +51,7 @@ const typeDefs = gql`
         userId: String!
         schoolId: String!
         status: Status!
-        joinTimestamp: String
+        joinTimestamp: Date
         user: UserConnectionNode @isAdmin(entity: "user")
         school: SchoolConnectionNode @isAdmin(entity: "school")
         rolesConnection(

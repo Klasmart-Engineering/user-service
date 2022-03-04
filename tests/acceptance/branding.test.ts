@@ -2,11 +2,11 @@ import chaiAsPromised from 'chai-as-promised'
 import fs from 'fs'
 import path from 'path'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 import { before } from 'mocha'
 
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import { BrandingImageTag } from '../../src/types/graphQL/branding'
@@ -132,15 +132,11 @@ async function setBranding(
 }
 
 describe('acceptance.branding', () => {
-    let connection: Connection
     const primaryColor = '#cd657b'
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

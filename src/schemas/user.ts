@@ -205,6 +205,11 @@ const typeDefs = gql`
         organizationUserStatus: StringFilter
         classId: UUIDExclusiveFilter
 
+        """
+        Filter users on the grades assigned to the classes they're a member of
+        """
+        gradeId: UUIDFilter
+
         AND: [UserFilter!]
         OR: [UserFilter!]
     }

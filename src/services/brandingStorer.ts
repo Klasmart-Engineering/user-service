@@ -18,8 +18,11 @@ export class BrandingStorer {
         primaryColor: string | undefined,
         connection: Connection
     ): Promise<void> {
+        const overWriteValues = ['status']
+
         if (primaryColor) {
             this.validatePrimaryColor(primaryColor)
+            overWriteValues.push('primary_color')
         }
 
         if (file) {
@@ -39,7 +42,7 @@ export class BrandingStorer {
                 })
                 .orUpdate({
                     conflict_target: ['organization_id'],
-                    overwrite: ['primary_color', 'status'],
+                    overwrite: overWriteValues,
                 })
                 .execute()
 

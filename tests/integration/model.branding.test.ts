@@ -1,16 +1,14 @@
 import chaiAsPromised from 'chai-as-promised'
 import fs from 'fs'
 import { stub, restore } from 'sinon'
-
 import { resolve } from 'path'
-import { ReadStream } from 'fs'
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Model } from '../../src/model'
 import {
@@ -36,7 +34,7 @@ import { NIL_UUID } from '../utils/database'
 use(chaiAsPromised)
 
 describe('model.branding', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     const mimetype = 'image/png'
     const encoding = '7bit'
@@ -46,7 +44,7 @@ describe('model.branding', () => {
     const filenameToUpdate = 'icon.jpg'
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
         stub(CloudStorageUploader, 'call').returns(Promise.resolve(remoteUrl))
@@ -54,7 +52,6 @@ describe('model.branding', () => {
 
     after(async () => {
         restore()
-        await connection?.close()
     })
 
     let organization: Organization
@@ -239,11 +236,12 @@ describe('model.branding', () => {
             context(
                 'and primaryColor is not provided and iconImage is provided',
                 () => {
-                    it('should set primaryColor as null and update iconImage', async () => {
+                    it('should leave primaryColor as its current colour and update iconImage', async () => {
                         const primaryColor = '#cd657b'
                         const iconImage = fs.createReadStream(
                             resolve(`tests/fixtures/${filename}`)
                         )
+
                         await setBranding(
                             testClient,
                             organizationId,
@@ -258,6 +256,7 @@ describe('model.branding', () => {
                         const newImage = fs.createReadStream(
                             resolve(`tests/fixtures/${filenameToUpdate}`)
                         )
+
                         const branding = await setBrandingWithoutPrimaryColor(
                             testClient,
                             organizationId,
@@ -267,9 +266,9 @@ describe('model.branding', () => {
                             encoding,
                             { authorization: arbitraryUserToken }
                         )
-                        expect(branding.iconImageURL).to.exist
 
-                        expect(branding.primaryColor).to.be.null
+                        expect(branding.iconImageURL).to.exist
+                        expect(branding.primaryColor).to.be.equal(primaryColor)
 
                         const brandings = await Branding.find({
                             where: {

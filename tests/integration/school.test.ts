@@ -1,6 +1,5 @@
-/* eslint-disable no-await-in-loop */
 import { expect, use } from 'chai'
-import { getManager, In } from 'typeorm'
+import { getManager, In, getConnection } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -13,7 +12,6 @@ import {
     createSchool,
     createRole,
     createClassAndValidate,
-    createClass,
 } from '../utils/operations/organizationOps'
 import {
     addUserToSchool,
@@ -31,7 +29,7 @@ import {
     createOrganizationAndValidate,
     userToPayload,
 } from '../utils/operations/userOps'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
@@ -107,7 +105,6 @@ import {
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import {
     createDuplicateAttributeAPIError,
-    createDuplicateInputAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
@@ -160,7 +157,6 @@ function intersection<T>(setA: Set<T>, setB: Set<T>) {
 describe('school', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
-
     let school: School
     let school2: School
     let user: User
@@ -255,13 +251,9 @@ describe('school', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('organization', () => {
@@ -1315,7 +1307,7 @@ describe('school', () => {
                     dbSchool = await School.findOneOrFail(school.school_id)
                     dbPrograms = (await dbSchool.programs) || []
                     expect(dbPrograms).not.to.be.empty
-                    expect(dbPrograms.map(programInfo)).to.deep.eq(
+                    expect(dbPrograms.map(programInfo)).to.deep.equalInAnyOrder(
                         gqlPrograms.map(programInfo)
                     )
 
@@ -1687,6 +1679,39 @@ describe('school', () => {
                 await expectSchools(1)
             })
 
+            context('but is school admin', () => {
+                let schoolAdmin: User
+
+                beforeEach(async () => {
+                    schoolAdmin = await createUser().save()
+                    const schoolAdminRole = await Role.findOneOrFail({
+                        where: { role_name: 'School Admin', system_role: true },
+                    })
+
+                    await createOrganizationMembership({
+                        user: schoolAdmin,
+                        organization,
+                        roles: [schoolAdminRole],
+                    })
+
+                    input = [
+                        {
+                            organizationId: organization.organization_id,
+                            name: 'test',
+                        },
+                    ]
+                })
+
+                it('should not create schools', async () => {
+                    const operation = expectSchoolsCreated(schoolAdmin, input)
+                    await expect(operation).to.be.rejectedWith(
+                        permError(schoolAdmin, [organization])
+                    )
+
+                    await expectSchools(0)
+                })
+            })
+
             it('when caller does not have permissions to create schools for all organizations', async () => {
                 const operation = expectSchoolsCreated(
                     userWithPermission,
@@ -1884,9 +1909,9 @@ describe('school', () => {
                         res,
                         {
                             entity: 'Class',
-                            entityName: classes[0].class_name || '',
+                            entityName: classes[0].class_id,
                             parentEntity: 'School',
-                            parentName: schools[0].school_name || '',
+                            parentName: schools[0].school_id,
                             index: 0,
                         },
                         [''],
@@ -3612,8 +3637,8 @@ describe('school', () => {
                     connection.logger.reset()
                     await getAddUsersToSchools().run()
                     expect(connection.logger.count).to.equal(
-                        10,
-                        'preload: 4, authorize: 1, save: 1 select for all memberships, 1 membership insert, 1 roles insert, 2 for transaction start/commit'
+                        8,
+                        'preload: 4, authorize: 1, save: 1 select for all memberships, 1 membership insert, 1 roles insert'
                     )
                 })
             })

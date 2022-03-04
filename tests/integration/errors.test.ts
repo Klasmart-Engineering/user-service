@@ -2,7 +2,7 @@ import { ApolloError } from 'apollo-server-core'
 import { ApolloServer, ExpressContext } from 'apollo-server-express'
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
 import {
@@ -11,25 +11,21 @@ import {
 } from '../utils/createTestClient'
 import { nonExistingQuery } from '../utils/operations/errorOps'
 import { getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 
 use(chaiAsPromised)
 
 describe('errors', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let server: ApolloServer<ExpressContext>
     let env = {}
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
         env = process.env
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     context('when environment is development', () => {

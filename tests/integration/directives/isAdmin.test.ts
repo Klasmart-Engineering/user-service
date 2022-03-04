@@ -1,8 +1,8 @@
 import { expect, use } from 'chai'
 import {
     Brackets,
-    Connection,
     createQueryBuilder,
+    getConnection,
     getRepository,
     SelectQueryBuilder,
 } from 'typeorm'
@@ -10,7 +10,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import { createTestConnection } from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createServer } from '../../../src/utils/createServer'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 import {
@@ -49,13 +49,19 @@ import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createUser, createUsers } from '../../factories/user.factory'
-import { createClass } from '../../factories/class.factory'
+import { createClass, createClasses } from '../../factories/class.factory'
 import { Class } from '../../../src/entities/class'
 import { pick } from 'lodash'
-import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import {
+    createOrganizationMembership,
+    createOrganizationMemberships,
+} from '../../factories/organizationMembership.factory'
 import { ClassConnectionNode } from '../../../src/types/graphQL/class'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
-import { createSchoolMembership } from '../../factories/schoolMembership.factory'
+import {
+    createSchoolMembership,
+    createSchoolMemberships,
+} from '../../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Permission } from '../../../src/entities/permission'
 import {
@@ -83,22 +89,20 @@ import { Context } from '../../../src/main'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { TokenPayload } from '../../../src/token'
+import { classesTeachingConnection } from '../../../src/schemas/user'
+import { mapUserToUserConnectionNode } from '../../../src/pagination/usersConnection'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('isAdmin', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('organizations', () => {
@@ -150,7 +154,7 @@ describe('isAdmin', () => {
                         authorization: getAdminAuthToken(),
                     })
 
-                    expect(gqlOrgs.map(orgInfo)).to.deep.eq([
+                    expect(gqlOrgs.map(orgInfo)).to.deep.equalInAnyOrder([
                         organization.organization_id,
                         otherOrganization.organization_id,
                     ])
@@ -339,20 +343,16 @@ describe('isAdmin', () => {
                 let scope: SelectQueryBuilder<User>
                 let token: TokenPayload
                 let user: User
+                let userPermissions: UserPermissions
 
                 beforeEach(async () => {
                     scope = getRepository(User).createQueryBuilder()
                     user = await createUser().save()
                     token = userToPayload(user, true)
+                    userPermissions = new UserPermissions(token)
                 })
 
                 context('when username is set', () => {
-                    let userPermissions: UserPermissions
-
-                    beforeEach(() => {
-                        userPermissions = new UserPermissions(token)
-                    })
-
                     context(
                         'when there is more then one user with the same username',
                         () => {
@@ -385,7 +385,7 @@ describe('isAdmin', () => {
 
                 it('errors if no user_id is set', async () => {
                     token.id = undefined
-                    const userPermissions = new UserPermissions(token)
+                    userPermissions = new UserPermissions(token)
 
                     await expect(
                         nonAdminUserScope(scope, userPermissions)
@@ -393,6 +393,125 @@ describe('isAdmin', () => {
                         'User is required for authorization'
                     )
                 })
+
+                context(
+                    'permission precedence performance optimization',
+                    () => {
+                        let organization: Organization
+                        beforeEach(async () => {
+                            organization = await createOrganization().save()
+                        })
+                        it("doesn't query view_my_school_users_40111 if view_users_40110 is granted in the same org", async () => {
+                            const role = await createRole(
+                                'role',
+                                organization,
+                                {
+                                    permissions: [
+                                        // view_users_40110 gives full access
+                                        PermissionName.view_users_40110,
+                                        // so don't need to check this
+                                        PermissionName.view_my_school_users_40111,
+                                    ],
+                                }
+                            ).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization,
+                                roles: [role],
+                            }).save()
+
+                            await nonAdminUserScope(scope, userPermissions)
+                            const query = scope.getQuery()
+                            expect(query).to.include('organization_membership')
+                            expect(query).to.not.include('school')
+                        })
+                        it('will always query class users if granted the permissions AND teacher of at least one class', async () => {
+                            // classes may not have a school, and therefore not a subset of view_my_school_users_40111
+                            const role = await createRole(
+                                'role',
+                                organization,
+                                {
+                                    permissions: [
+                                        PermissionName.view_my_school_users_40111,
+                                        PermissionName.view_my_class_users_40112,
+                                    ],
+                                }
+                            ).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization,
+                                roles: [role],
+                            }).save()
+
+                            const school = await createSchool(
+                                organization
+                            ).save()
+                            await createSchoolMembership({
+                                user,
+                                school,
+                            }).save()
+
+                            const class_ = await createClass(
+                                undefined,
+                                undefined,
+                                {
+                                    teachers: [user],
+                                }
+                            ).save()
+
+                            await nonAdminUserScope(scope, userPermissions)
+                            const query = scope.getQuery()
+                            expect(query).to.not.include(
+                                'organization_membership'
+                            )
+                            expect(query).to.include('school')
+                            expect(query).to.include('class')
+                        })
+                        it('queries both view_users_40110 & view_my_school_users_40111 if they are from different orgs', async () => {
+                            const org1Role = await createRole(
+                                'role',
+                                organization,
+                                {
+                                    permissions: [
+                                        PermissionName.view_users_40110,
+                                    ],
+                                }
+                            ).save()
+
+                            const org2 = await createOrganization().save()
+                            const org2Role = await createRole(
+                                'role',
+                                organization,
+                                {
+                                    permissions: [
+                                        PermissionName.view_my_school_users_40111,
+                                    ],
+                                }
+                            ).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization,
+                                roles: [org1Role],
+                            }).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization: org2,
+                                roles: [org2Role],
+                            }).save()
+                            const school = await createSchool(org2).save()
+                            await createSchoolMembership({
+                                user,
+                                school,
+                            }).save()
+
+                            await nonAdminUserScope(scope, userPermissions)
+                            const query = scope.getQuery()
+                            expect(query).to.include('organization_membership')
+                            expect(query).to.include('school')
+                            expect(query).to.not.include('class')
+                        })
+                    }
+                )
             })
 
             it('no permission needed to view my users', async () => {
@@ -1344,6 +1463,58 @@ describe('isAdmin', () => {
                 })
             })
         })
+
+        // Ensures that the query does not perform joins and duplicate data,
+        // otherwise child connections will produce unexpected results as they
+        // work with raw SQL and do not benefit from typeorm's deduplication
+        it('does not produce duplicates and is compatible child connections', async () => {
+            const organization = organizations[0]
+
+            // setup client user with BOTH permissions checked by nonAdminClassScope
+            const nonAdmin = await createNonAdminUser(testClient)
+            const role = await createRole('role', organization, {
+                permissions: [
+                    PermissionName.view_users_40110,
+                    PermissionName.view_classes_20114,
+                    PermissionName.view_school_classes_20117,
+                ],
+            }).save()
+            await createOrganizationMembership({
+                user: nonAdmin,
+                organization,
+                roles: [role],
+            }).save()
+
+            // populate so we'd expect duplicates if left joining
+            const users = await User.save(createUsers(2))
+            const school = await createSchool(organization).save()
+            const classes = createClasses(2, organization)
+            classes.forEach((c) => {
+                c.teachers = Promise.resolve(users)
+                c.schools = Promise.resolve([school])
+            })
+
+            await Class.save(classes)
+            await SchoolMembership.save(
+                createSchoolMemberships([...users, nonAdmin], school)
+            )
+            await OrganizationMembership.save(
+                createOrganizationMemberships(users, organization)
+            )
+
+            const permissions = new UserPermissions({ id: nonAdmin.user_id })
+            const userNode = mapUserToUserConnectionNode(users[0])
+            const classesTeaching = await classesTeachingConnection(
+                userNode,
+                {
+                    count: 2,
+                },
+                createContextLazyLoaders(permissions),
+                true
+            )
+            expect(classesTeaching.totalCount).to.eq(classes.length)
+            expect(classesTeaching.edges).to.have.lengthOf(classes.length)
+        })
     })
 
     describe('permissions', () => {
@@ -1698,7 +1869,7 @@ describe('isAdmin', () => {
                         const schools = await scope.select('School').getMany()
                         expect(
                             schools.map((school) => school.school_id)
-                        ).deep.equal(
+                        ).deep.equalInAnyOrder(
                             schoolMemberships
                                 .get(clientUser)!
                                 .map((school) => school.school_id)

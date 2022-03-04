@@ -1,7 +1,7 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { nonAdminClassScope } from '../../../src/directives/isAdmin'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { Class } from '../../../src/entities/class'
@@ -42,10 +42,7 @@ import { NIL_UUID } from '../../utils/database'
 import { class2Nodes } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 
 use(deepEqualInAnyOrder)
@@ -185,13 +182,9 @@ describe('classNode', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {
@@ -500,7 +493,7 @@ describe('classNode', () => {
 
             expect(conditions.length).to.eq(1)
             expect(conditions).to.deep.equalInAnyOrder([
-                'Class.organization IN (:...classOrgs)',
+                '(Class.organization IN (:...classOrgs))',
             ])
         })
 
@@ -510,17 +503,12 @@ describe('classNode', () => {
             aliases = scope.expressionMap.aliases.map((a) => a.name)
             conditions = scope.expressionMap.wheres.map((w) => w.condition)
 
-            expect(aliases.length).to.eq(4)
-            expect(aliases).to.deep.equalInAnyOrder([
-                'Class',
-                'School',
-                'School_Class',
-                'SchoolMembership',
-            ])
+            expect(aliases.length).to.eq(1)
+            expect(aliases).to.deep.equalInAnyOrder(['Class'])
 
             expect(conditions.length).to.eq(1)
             expect(conditions).to.deep.equalInAnyOrder([
-                'Class.organization IN (:...schoolOrgs)',
+                '((Class.organization IN (:...schoolOrgs) AND "Class"."class_id" IN (SELECT "schoolClasses"."classClassId" AS "schoolClasses_classClassId" FROM "school_classes_class" "schoolClasses" WHERE "schoolClasses"."schoolSchoolId" IN (:...schoolIds))))',
             ])
         })
 
@@ -530,17 +518,12 @@ describe('classNode', () => {
             aliases = scope.expressionMap.aliases.map((a) => a.name)
             conditions = scope.expressionMap.wheres.map((w) => w.condition)
 
-            expect(aliases.length).to.eq(4)
-            expect(aliases).to.deep.equalInAnyOrder([
-                'Class',
-                'School',
-                'School_Class',
-                'SchoolMembership',
-            ])
+            expect(aliases.length).to.eq(1)
+            expect(aliases).to.deep.equalInAnyOrder(['Class'])
 
             expect(conditions.length).to.eq(1)
             expect(conditions).to.deep.equalInAnyOrder([
-                '(Class.organization IN (:...classOrgs) OR Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id)',
+                '(Class.organization IN (:...classOrgs) OR (Class.organization IN (:...schoolOrgs) AND "Class"."class_id" IN (SELECT "schoolClasses"."classClassId" AS "schoolClasses_classClassId" FROM "school_classes_class" "schoolClasses" WHERE "schoolClasses"."schoolSchoolId" IN (:...schoolIds))))',
             ])
         })
 

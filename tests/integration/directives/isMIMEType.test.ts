@@ -1,4 +1,4 @@
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { expect } from 'chai'
 import fs from 'fs'
 
@@ -7,24 +7,20 @@ import {
     createTestClient,
 } from '../../utils/createTestClient'
 import { createServer } from '../../../src/utils/createServer'
-import { createTestConnection } from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { uploadFile } from '../../utils/operations/modelOps'
 import { Model } from '../../../src/model'
 import { resolve } from 'path'
 
 describe('isMIMEType', async () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     context('when the mimetype is not the expected', async () => {

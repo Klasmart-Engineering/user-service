@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import supertest from 'supertest'
-import { Connection, In } from 'typeorm'
+import { getConnection, In } from 'typeorm'
 import faker from 'faker'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { Class } from '../../src/entities/class'
@@ -37,20 +37,20 @@ import {
     inviteUserToOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import {
+    ADD_PROGRAMS_TO_CLASSES,
+    ADD_STUDENTS_TO_CLASSES,
+    ADD_TEACHERS_TO_CLASSES,
+    CREATE_CLASSES,
     DELETE_CLASS,
     DELETE_CLASSES,
-    ADD_PROGRAMS_TO_CLASSES,
     REMOVE_PROGRAMS_FROM_CLASSES,
-    CREATE_CLASSES,
-    UPDATE_CLASSES,
-    ADD_STUDENTS_TO_CLASSES,
     REMOVE_STUDENTS_FROM_CLASSES,
-    ADD_TEACHERS_TO_CLASSES,
     REMOVE_TEACHERS_FROM_CLASSES,
+    UPDATE_CLASSES,
 } from '../utils/operations/classOps'
 import {
-    CLASSES_CONNECTION,
     CLASS_NODE,
+    CLASSES_CONNECTION,
     CLASSES_CONNECTION_SCHOOL_CHILD,
 } from '../utils/operations/modelOps'
 import {
@@ -59,11 +59,10 @@ import {
 } from '../utils/operations/organizationOps'
 import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Program } from '../../src/entities/program'
 import ProgramsInitializer from '../../src/initializers/programs'
-import { makeRequest } from './utils'
+import { failsValidation, makeRequest } from './utils'
 import { CoreSubjectConnectionNode } from '../../src/pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../../src/pagination/programsConnection'
 import { createUser, createUsers } from '../factories/user.factory'
@@ -79,6 +78,7 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { TestConnection } from '../utils/testConnection'
 
 use(deepEqualInAnyOrder)
 
@@ -122,7 +122,7 @@ const ageRangeDetail: IAgeRangeDetail = {
 }
 
 async function createOrg(userId: string, orgName: string, token: string) {
-    return await request
+    return request
         .post('/user')
         .set({
             ContentType: 'application/json',
@@ -142,7 +142,7 @@ async function createClass(
     class_name: string,
     token: string
 ) {
-    return await request
+    return request
         .post('/user')
         .set({
             ContentType: 'application/json',
@@ -158,7 +158,7 @@ async function createClass(
 }
 
 async function deleteClass(classId: string, token: string) {
-    return await request
+    return request
         .post('/user')
         .set({
             ContentType: 'application/json',
@@ -173,14 +173,10 @@ async function deleteClass(classId: string, token: string) {
 }
 
 describe('acceptance.class', () => {
-    let connection: Connection
+    let connection: TestConnection
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {
@@ -385,7 +381,7 @@ describe('acceptance.class', () => {
     context('classesConnection', () => {
         context('using explict count', async () => {
             async function makeQuery(pageSize: any) {
-                return await request
+                return request
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
@@ -413,20 +409,8 @@ describe('acceptance.class', () => {
             })
 
             it('fails validation', async () => {
-                const pageSize = 'not_a_number'
-
-                const response = await makeQuery(pageSize)
-
-                expect(response.status).to.eq(400)
-                expect(response.body.errors.length).to.equal(1)
-                const message = response.body.errors[0].message
-                expect(message)
-                    .to.be.a('string')
-                    .and.satisfy((msg: string) =>
-                        msg.startsWith(
-                            'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
-                        )
-                    )
+                const response = await makeQuery('not_a_number')
+                await failsValidation(response)
             })
         })
 
@@ -499,8 +483,6 @@ describe('acceptance.class', () => {
         })
 
         it('queries paginated classes filtering by organization ID', async () => {
-            const organizationId = org2Id
-
             const response = await request
                 .post('/user')
                 .set({
@@ -514,7 +496,7 @@ describe('acceptance.class', () => {
                         filterArgs: {
                             organizationId: {
                                 operator: 'eq',
-                                value: organizationId,
+                                value: org2Id,
                             },
                         },
                     },
@@ -845,8 +827,6 @@ describe('acceptance.class', () => {
         })
 
         it("returns just the classes that belongs to user's school", async () => {
-            const organizationId = org1Id
-
             const response = await request
                 .post('/user')
                 .set({
@@ -860,7 +840,7 @@ describe('acceptance.class', () => {
                         filterArgs: {
                             organizationId: {
                                 operator: 'eq',
-                                value: organizationId,
+                                value: org1Id,
                             },
                         },
                     },
@@ -875,8 +855,6 @@ describe('acceptance.class', () => {
         })
 
         it('returns empty classes if the user has not permissions', async () => {
-            const organizationId = org1Id
-
             const response = await request
                 .post('/user')
                 .set({
@@ -890,7 +868,7 @@ describe('acceptance.class', () => {
                         filterArgs: {
                             organizationId: {
                                 operator: 'eq',
-                                value: organizationId,
+                                value: org1Id,
                             },
                         },
                     },
@@ -903,8 +881,6 @@ describe('acceptance.class', () => {
         })
 
         it('returns empty classes if the user is not owner of the organization', async () => {
-            const organizationId = org1Id
-
             const response = await request
                 .post('/user')
                 .set({
@@ -918,7 +894,7 @@ describe('acceptance.class', () => {
                         filterArgs: {
                             organizationId: {
                                 operator: 'eq',
-                                value: organizationId,
+                                value: org1Id,
                             },
                         },
                     },
@@ -984,8 +960,6 @@ describe('acceptance.class', () => {
         })
 
         it('has schoolsConnection as a child', async () => {
-            const organizationId = org1Id
-
             const response = await request
                 .post('/user')
                 .set({
@@ -999,7 +973,7 @@ describe('acceptance.class', () => {
                         filterArgs: {
                             organizationId: {
                                 operator: 'eq',
-                                value: organizationId,
+                                value: org1Id,
                             },
                         },
                     },
@@ -1185,7 +1159,7 @@ describe('acceptance.class', () => {
         const makeAddProgramsToClassesMutation = async (
             input: AddProgramsToClassInput[]
         ) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(ADD_PROGRAMS_TO_CLASSES),
                 { input },
@@ -1350,7 +1324,7 @@ describe('acceptance.class', () => {
             input: any,
             caller: User
         ) => {
-            return await makeRequest(
+            return makeRequest(
                 request,
                 print(REMOVE_PROGRAMS_FROM_CLASSES),
                 { input },
@@ -1425,7 +1399,6 @@ describe('acceptance.class', () => {
         let adminUser: User
         let input: AddStudentsToClassInput[]
         let classes: Class[]
-        const classCount = 2
 
         beforeEach(async () => {
             adminUser = await createUser({
@@ -1486,7 +1459,6 @@ describe('acceptance.class', () => {
         let adminUser: User
         let input: RemoveStudentsFromClassInput[]
         let classes: Class[]
-        const classCount = 2
 
         beforeEach(async () => {
             adminUser = await createUser({
@@ -1611,7 +1583,6 @@ describe('acceptance.class', () => {
         let adminUser: User
         let input: RemoveTeachersFromClassInput[]
         let classes: Class[]
-        const classCount = 2
 
         beforeEach(async () => {
             adminUser = await createUser({

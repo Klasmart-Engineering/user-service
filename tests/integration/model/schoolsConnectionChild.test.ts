@@ -1,13 +1,7 @@
 import { Organization } from '../../../src/entities/organization'
-import {
-    createContextLazyLoaders,
-    IDataLoaders,
-} from '../../../src/loaders/setup'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { createOrganization } from '../../factories/organization.factory'
 import { createUser } from '../../factories/user.factory'
 import { User } from '../../../src/entities/user'
@@ -32,6 +26,7 @@ import { createSchool } from '../../factories/school.factory'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { Class } from '../../../src/entities/class'
 import { createClass } from '../../factories/class.factory'
+import { getConnection } from 'typeorm'
 
 describe('schoolsChildConnection', async () => {
     let connection: TestConnection
@@ -51,15 +46,10 @@ describe('schoolsChildConnection', async () => {
     let clientUserClass: Class
     let clientUserNightClass: Class
 
-    let orgMemberships: Map<User, Organization[]>
     let schoolMemberships: Map<User, School[]>
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

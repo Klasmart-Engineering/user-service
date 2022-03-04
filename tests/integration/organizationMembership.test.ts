@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { Organization } from '../../src/entities/organization'
 import { Status } from '../../src/entities/status'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
@@ -30,7 +30,7 @@ import {
     createOrganizationAndValidate,
 } from '../utils/operations/userOps'
 import { getNonAdminAuthToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import {
     addRoleToSchoolMembership,
@@ -41,30 +41,23 @@ import { grantPermission } from '../utils/operations/roleOps'
 import { Role } from '../../src/entities/role'
 import { addTeacherToClass } from '../utils/operations/classOps'
 import { createUserAndValidate } from '../utils/operations/modelOps'
-import { accountUUID, User } from '../../src/entities/user'
+import { User } from '../../src/entities/user'
 
 describe('organizationMembership', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let userId: string
     let organizationId: string
-    let schoolId: string
-    let originalAdmins: string[]
     let organization: Organization
-    let testSchoolRoleId: string
 
     const roleInfo = (role: any) => {
         return role.role_id
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('schoolMemberships', () => {

@@ -20,10 +20,7 @@ import {
     programsConnectionMainData,
 } from '../../utils/operations/modelOps'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -61,6 +58,8 @@ import {
 } from '../../../src/schemas/school'
 import { createAdminUser } from '../../factories/user.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { checkPageInfo } from '../../acceptance/utils'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -88,13 +87,9 @@ describe('model', () => {
     const subjectsCount = 3
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {
@@ -212,16 +207,7 @@ describe('model', () => {
                 { authorization: getAdminAuthToken() }
             )
 
-            expect(result.totalCount).to.eq(
-                programsCount * 2 + systemPrograms.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, programsCount * 2 + systemPrograms.length)
         })
     })
 
@@ -236,16 +222,7 @@ describe('model', () => {
                 { field: 'id', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(
-                programsCount * 2 + systemPrograms.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, programsCount * 2 + systemPrograms.length)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedAscending(ids)
@@ -263,16 +240,7 @@ describe('model', () => {
                 { field: 'id', order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(
-                programsCount * 2 + systemPrograms.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, programsCount * 2 + systemPrograms.length)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedDescending(ids)
@@ -290,16 +258,7 @@ describe('model', () => {
                 { field: 'name', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(
-                programsCount * 2 + systemPrograms.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, programsCount * 2 + systemPrograms.length)
 
             const names = result.edges.map((edge) => edge.node.name!)
             const isSorted = isStringArraySortedAscending(names)
@@ -317,16 +276,7 @@ describe('model', () => {
                 { field: 'name', order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(
-                programsCount * 2 + systemPrograms.length
-            )
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, programsCount * 2 + systemPrograms.length)
 
             const names = result.edges.map((edge) => edge.node.name!)
             const isSorted = isStringArraySortedDescending(names)
@@ -353,14 +303,7 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(programsCount)
-
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-
-            expect(result.edges.length).eq(10)
+            checkPageInfo(result, programsCount)
 
             const programIds = result.edges.map((edge) => edge.node.id)
             const org1ProgramIds = org1Programs.map((program) => program.id)

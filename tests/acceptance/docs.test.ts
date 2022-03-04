@@ -1,8 +1,6 @@
 import supertest from 'supertest'
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
-import { createTestConnection } from '../utils/testConnection'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { customErrors } from '../../src/types/errors/customError'
 
@@ -13,16 +11,6 @@ const url = 'http://localhost:8080'
 const request = supertest(url)
 
 describe('API docs', () => {
-    let connection: Connection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     describe('GET /', () => {
         context('when authenticated', () => {
             it('returns the API docs landing page', async () => {

@@ -1,5 +1,5 @@
 // Taken from https://stackoverflow.com/a/37580979
-export function permutations(elements: any[]) {
+export function permutations<T>(elements: T[]) {
     const length = elements.length
     const result = [elements.slice()]
     const c = new Array(length).fill(0)
@@ -24,8 +24,8 @@ export function permutations(elements: any[]) {
     return result
 }
 
-export function permutationsWithRepetition(
-    elements: any[],
+export function permutationsWithRepetition<T>(
+    elements: T[],
     length = elements.length
 ) {
     const base = elements.length

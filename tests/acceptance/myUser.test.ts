@@ -18,23 +18,12 @@ import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createUser } from '../factories/user.factory'
 import { generateToken } from '../utils/testConfig'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 
 const url = 'http://localhost:8080/user'
 const request = supertest(url)
 
 describe('acceptance.myUser', () => {
-    let connection: TestConnection
-
-    before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
-    })
-
     context('MyUser.node', () => {
         const query = `
             query {

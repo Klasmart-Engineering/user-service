@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { AgeRange } from '../../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
 import { Organization } from '../../../../src/entities/organization'
@@ -15,20 +15,16 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { User } from '../../../../src/entities/user'
 import { createAdminUser } from '../../../utils/testEntities'
-import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
-import { Role } from '../../../../src/entities/role'
-import { School } from '../../../../src/entities/school'
-import { Class } from '../../../../src/entities/class'
 
 use(chaiAsPromised)
 
 describe('processAgeRangeFromCSVRow', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let row: AgeRangeRow
     let organization: Organization
@@ -44,13 +40,9 @@ describe('processAgeRangeFromCSVRow', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

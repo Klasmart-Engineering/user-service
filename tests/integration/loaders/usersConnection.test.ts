@@ -2,11 +2,8 @@ import faker from 'faker'
 import { User } from '../../../src/entities/user'
 import { createUser } from '../../factories/user.factory'
 import { createOrganization } from '../../factories/organization.factory'
-import { getRepository } from 'typeorm'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { getRepository, getConnection } from 'typeorm'
+import { TestConnection } from '../../utils/testConnection'
 import {
     orgsForUsers,
     schoolsForUsers,
@@ -27,7 +24,6 @@ import { createSchoolMembership } from '../../factories/schoolMembership.factory
 
 describe('usersConnection loaders', async () => {
     let connection: TestConnection
-
     let usersList: User[] = []
     let userIds: string[]
     let org1: Organization
@@ -35,11 +31,7 @@ describe('usersConnection loaders', async () => {
     let school1: School
 
     before(async () => {
-        connection = await createTestConnection()
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {

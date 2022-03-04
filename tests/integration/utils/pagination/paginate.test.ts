@@ -1,5 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, getRepository } from 'typeorm'
+import { getRepository, getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 
 import { Model } from '../../../../src/model'
@@ -8,7 +8,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { createUser } from '../../../factories/user.factory'
 import {
@@ -30,20 +30,16 @@ import { truncateTables } from '../../../utils/database'
 use(chaiAsPromised)
 
 describe('paginate', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let usersList: User[] = []
     let scope: any
     const sortColumn = 'user_id'
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {

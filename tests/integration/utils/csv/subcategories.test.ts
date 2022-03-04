@@ -1,5 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 
 import { Model } from '../../../../src/model'
@@ -8,7 +8,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
-import { createTestConnection } from '../../../utils/testConnection'
+import { TestConnection } from '../../../utils/testConnection'
 import { Organization } from '../../../../src/entities/organization'
 import { Subcategory } from '../../../../src/entities/subcategory'
 import { createOrganization } from '../../../factories/organization.factory'
@@ -23,7 +23,7 @@ import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 use(chaiAsPromised)
 
 describe('processSubCategoriesFromCSVRow', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let row: SubCategoryRow
     let expectedOrg: Organization
@@ -34,7 +34,7 @@ describe('processSubCategoriesFromCSVRow', () => {
 
     const orgName = 'my-org'
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
     })
@@ -51,10 +51,6 @@ describe('processSubCategoriesFromCSVRow', () => {
             email: adminUser.email || '',
         })
         queryResultCache = new QueryResultCache()
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     it('should create a class with school and program when present', async () => {

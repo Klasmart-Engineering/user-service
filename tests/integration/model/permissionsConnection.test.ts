@@ -2,28 +2,19 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Permission } from '../../../src/entities/permission'
 import { User } from '../../../src/entities/user'
-import { Model } from '../../../src/model'
 import {
     permissionsConnectionResolver,
     permissionSummaryNodeFields,
 } from '../../../src/pagination/permissionsConnection'
 import { PermissionConnectionNode } from '../../../src/types/graphQL/permission'
-import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createAdminUser, createUser } from '../../factories/user.factory'
-import {
-    ApolloServerTestClient,
-    createTestClient,
-} from '../../utils/createTestClient'
 import { getSystemRoleIds } from '../../utils/operations/organizationOps'
 import {
     isStringArraySortedAscending,
     isStringArraySortedDescending,
 } from '../../utils/sorting'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { Organization } from '../../../src/entities/organization'
 import { createOrganization } from '../../factories/organization.factory'
 import { Role } from '../../../src/entities/role'
@@ -31,7 +22,7 @@ import { createOrganizationMembership } from '../../factories/organizationMember
 import { userToPayload } from '../../utils/operations/userOps'
 import { GraphQLResolveInfo } from 'graphql'
 import { Context } from '../../../src/main'
-import { SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { createRole } from '../../factories/role.factory'
 import { PermissionName } from '../../../src/permissions/permissionNames'
@@ -42,6 +33,7 @@ import {
     loadPermissionsForRole,
     permissionsChildConnectionResolver,
 } from '../../../src/schemas/roles'
+import { checkPageInfo } from '../../acceptance/utils'
 
 type PermissionConnectionNodeKey = keyof Pick<
     PermissionConnectionNode,
@@ -52,7 +44,6 @@ use(chaiAsPromised)
 
 describe('model', () => {
     let connection: TestConnection
-    let testClient: ApolloServerTestClient
     let adminUser: User
     let organizationUser: User
     let noMembershipUser: User
@@ -110,13 +101,7 @@ describe('model', () => {
     }
 
     before(async () => {
-        connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
-        testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
+        connection = getConnection() as TestConnection
     })
 
     beforeEach(async () => {
@@ -186,14 +171,7 @@ describe('model', () => {
                     }
                 )
 
-                expect(result.totalCount).to.eql(permissionsCount)
-
-                expect(result.pageInfo.hasNextPage).to.be.true
-                expect(result.pageInfo.hasPreviousPage).to.be.false
-                expect(result.pageInfo.startCursor).to.be.string
-                expect(result.pageInfo.endCursor).to.be.string
-
-                expect(result.edges.length).eq(10)
+                checkPageInfo(result, permissionsCount)
             })
         })
 
@@ -213,14 +191,7 @@ describe('model', () => {
                     }
                 )
 
-                expect(result.totalCount).to.eql(roleInvolvedPermissionsCount)
-
-                expect(result.pageInfo.hasNextPage).to.be.true
-                expect(result.pageInfo.hasPreviousPage).to.be.false
-                expect(result.pageInfo.startCursor).to.be.string
-                expect(result.pageInfo.endCursor).to.be.string
-
-                expect(result.edges.length).eq(10)
+                checkPageInfo(result, roleInvolvedPermissionsCount)
             })
         })
 
@@ -510,7 +481,7 @@ describe('model', () => {
         let permissions: Permission[]
         let permission1: Permission
         let permission2: Permission
-        let filter: IEntityFilter
+
         let user: User
 
         beforeEach(async () => {

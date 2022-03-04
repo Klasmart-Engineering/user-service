@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import chaiAsPromised from 'chai-as-promised'
 
 import {
@@ -17,26 +17,24 @@ import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 import { createOrganization } from '../../factories/organization.factory'
 import { createCategory } from '../../factories/category.factory'
 import { createSubcategory } from '../../factories/subcategory.factory'
-import { createTestConnection } from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import {
     deleteCategory,
     editSubcategories,
 } from '../../utils/operations/categoryOps'
 import { grantPermission } from '../../utils/operations/roleOps'
 import { Model } from '../../../src/model'
-import { Role } from '../../../src/entities/role'
 import { Organization } from '../../../src/entities/organization'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { Category } from '../../../src/entities/category'
 import { Subcategory } from '../../../src/entities/subcategory'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
-import { AuthenticationError } from 'apollo-server-express'
 
 use(chaiAsPromised)
 
 describe('Category', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let user: User
     let org: Organization
@@ -45,13 +43,9 @@ describe('Category', () => {
     let userId: string
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     beforeEach(async () => {
@@ -524,7 +518,9 @@ describe('Category', () => {
                     dbCategory = await Category.findOneOrFail(category.id)
                     dbSubcategories = (await dbCategory.subcategories) || []
                     expect(dbSubcategories).not.to.be.empty
-                    expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(
+                    expect(
+                        dbSubcategories.map(subcategoryInfo)
+                    ).to.deep.equalInAnyOrder(
                         gqlSubcategories.map(subcategoryInfo)
                     )
 

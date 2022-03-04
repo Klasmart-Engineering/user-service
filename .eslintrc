@@ -3,7 +3,8 @@
     "parser": "@typescript-eslint/parser",
     "plugins": [
       "@typescript-eslint",
-      "mocha"
+      "mocha",
+      "unused-imports"
     ],
     "extends": [
       "eslint:recommended",
@@ -31,6 +32,7 @@
       "@typescript-eslint/no-object-literal-type-assertion": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-unused-vars": [2, {"vars": "all", "args": "none"}],
+      "unused-imports/no-unused-imports": "error",
       "@typescript-eslint/no-floating-promises": "error",
       "mocha/no-exclusive-tests": "error",
       "mocha/no-nested-tests": "error",

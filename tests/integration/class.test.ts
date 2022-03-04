@@ -1,9 +1,9 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
-import { getManager, In } from 'typeorm'
+import { getManager, In, getConnection } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 import { Model } from '../../src/model'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
@@ -48,15 +48,10 @@ import {
     CreateClasses,
     EntityMapCreateClass,
     UpdateClasses,
-    UpdateClassEntityMap,
     AddStudentsToClasses,
-    AddStudentsClassesEntityMap,
     RemoveStudentsFromClasses,
     AddTeachersToClasses,
-    AddTeachersClassesEntityMap,
     RemoveTeachersFromClasses,
-    RemoveStudentsClassesEntityMap,
-    RemoveTeachersClassesEntityMap,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -141,6 +136,7 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { mapClassToClassConnectionNode } from '../../src/pagination/classesConnection'
 import { config } from '../../src/config/config'
 import { compareMultipleEntities } from '../utils/assertions'
+import { sortObjectArray } from '../../src/utils/array'
 
 type ClassSpecs = {
     class: Class
@@ -161,18 +157,15 @@ describe('class', () => {
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('createClasses', () => {
         let ctx: { permissions: UserPermissions }
         let org: Organization
+        let org2: Organization
         let createClasses: CreateClasses
 
         beforeEach(async () => {
@@ -181,6 +174,7 @@ describe('class', () => {
             const r = await createRoleFactory(undefined, org, {
                 permissions: [PermissionName.create_class_20224],
             }).save()
+            org2 = await createOrganization().save()
             await createOrganizationMembership({
                 user: clientUser,
                 organization: org,
@@ -247,7 +241,7 @@ describe('class', () => {
                     inputElement(),
                 ])
                 expect(twoClassCount).to.be.eq(singleClassCount)
-                expect(twoClassCount).to.be.equal(5)
+                expect(twoClassCount).to.be.equal(3)
             })
         })
 
@@ -263,18 +257,8 @@ describe('class', () => {
                             shortcode: generateShortCode(),
                         }
                     })
-
                     const normalized = createClasses.normalize(input)
-                    expect(normalized.length).to.eq(input.length)
-                    expect(
-                        normalized.map((n) => n.organizationId)
-                    ).to.deep.equal(input.map((i) => i.organizationId))
-                    expect(normalized.map((n) => n.name)).to.deep.equal(
-                        input.map((i) => i.name)
-                    )
-                    expect(normalized.map((n) => n.shortcode)).to.deep.equal(
-                        input.map((i) => i.shortcode)
-                    )
+                    compareMultipleEntities(input, normalized, 'organizationId')
                 }
             })
 
@@ -640,6 +624,27 @@ describe('class', () => {
                 ]
             })
 
+            it('duplicates names but in different orgs', async () => {
+                const duplicateInput = inputs[1]
+
+                duplicateInput.name = inputs[0].name
+                duplicateInput.organizationId = org2.organization_id
+
+                const {
+                    validInputs,
+                    apiErrors,
+                } = createClasses.validationOverAllInputs(inputs)
+
+                expect(validInputs.length).to.eq(3)
+                expect(validInputs[0].input.name).to.eq(inputs[0].name)
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].input.name).to.eq(inputs[1].name)
+                expect(validInputs[1].index).to.eq(1)
+                expect(validInputs[2].input.name).to.eq(inputs[2].name)
+                expect(validInputs[2].index).to.eq(2)
+                expect(apiErrors.length).to.equal(0)
+            })
+
             it('duplicate names', async () => {
                 const duplicateInput = inputs[1]
 
@@ -656,14 +661,37 @@ describe('class', () => {
                 expect(validInputs[1].input.name).to.eq(inputs[2].name)
                 expect(validInputs[1].index).to.eq(2)
 
-                const error = createDuplicateAttributeAPIError(
+                const error = createDuplicateInputAttributeAPIError(
                     1,
-                    ['name'],
-                    'class'
+                    'organizationId',
+                    inputs[1].organizationId,
+                    'name',
+                    inputs[1].name
                 )
 
                 expect(apiErrors.length).to.eq(1)
                 compareErrors(apiErrors[0], error)
+            })
+
+            it('duplicate shortcodes but in different orgs', async () => {
+                const duplicateInput = inputs[1]
+
+                duplicateInput.shortcode = inputs[0].shortcode
+                duplicateInput.organizationId = org2.organization_id
+
+                const {
+                    validInputs,
+                    apiErrors,
+                } = createClasses.validationOverAllInputs(inputs)
+
+                expect(validInputs.length).to.eq(3)
+                expect(validInputs[0].input.name).to.eq(inputs[0].name)
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].input.name).to.eq(inputs[1].name)
+                expect(validInputs[1].index).to.eq(1)
+                expect(validInputs[2].input.name).to.eq(inputs[2].name)
+                expect(validInputs[2].index).to.eq(2)
+                expect(apiErrors.length).to.equal(0)
             })
 
             it('duplicate shortcodes', async () => {
@@ -4299,7 +4327,7 @@ describe('class', () => {
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).not.to.be.empty
-                    expect(dbPrograms.map(programInfo)).to.deep.eq(
+                    expect(dbPrograms.map(programInfo)).to.deep.equalInAnyOrder(
                         gqlPrograms.map(programInfo)
                     )
 
@@ -4701,9 +4729,9 @@ describe('class', () => {
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).not.to.be.empty
-                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
-                        gqlAgeRanges.map(ageRangeInfo)
-                    )
+                    expect(
+                        dbAgeRanges.map(ageRangeInfo)
+                    ).to.deep.equalInAnyOrder(gqlAgeRanges.map(ageRangeInfo))
 
                     await editAgeRanges(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
@@ -4833,7 +4861,7 @@ describe('class', () => {
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).not.to.be.empty
-                    expect(dbGrades.map(gradeInfo)).to.deep.eq(
+                    expect(dbGrades.map(gradeInfo)).to.deep.equalInAnyOrder(
                         gqlGrades.map(gradeInfo)
                     )
 
@@ -4965,7 +4993,7 @@ describe('class', () => {
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).not.to.be.empty
-                    expect(dbSubjects.map(subjectInfo)).to.deep.eq(
+                    expect(dbSubjects.map(subjectInfo)).to.deep.equalInAnyOrder(
                         gqlSubjects.map(subjectInfo)
                     )
 
@@ -5044,18 +5072,8 @@ describe('class', () => {
                             shortcode: generateShortCode(),
                         }
                     })
-
                     const normalized = updateClasses().normalize(input)
-                    expect(normalized.length).to.eq(input.length)
-                    expect(normalized.map((n) => n.classId)).to.deep.equal(
-                        input.map((i) => i.classId)
-                    )
-                    expect(normalized.map((n) => n.className)).to.deep.equal(
-                        input.map((i) => i.className)
-                    )
-                    expect(normalized.map((n) => n.shortcode)).to.deep.equal(
-                        input.map((i) => i.shortcode)
-                    )
+                    compareMultipleEntities(normalized, input, 'classId')
                 }
             })
 
@@ -5448,9 +5466,10 @@ describe('class', () => {
                 const result = await updateClasses(inputs).run()
                 const dbClasses = await Class.findByIds(
                     inputs.map((i) => i.classId)
-                )
+                ).then((dbc) => sortObjectArray(dbc, 'class_name'))
 
                 expect(result.classes.length).to.eq(inputs.length)
+                expect(dbClasses.length).to.eq(inputs.length)
                 for (const [idx, i] of inputs.entries()) {
                     expect(result.classes[idx].id).to.eq(i.classId)
                     expect(result.classes[idx].name).to.eq(i.className)
@@ -5470,7 +5489,7 @@ describe('class', () => {
 
             it('makes 1 db connection per extra input element', async () => {
                 const countForOneClass = await getDbCallCount([inputs[0]])
-                expect(countForOneClass).to.be.equal(8)
+                expect(countForOneClass).to.be.equal(6)
 
                 const countForFourClasses = await getDbCallCount(
                     inputs.slice(1)
@@ -6441,7 +6460,8 @@ describe('class', () => {
                             if (cls.class_id == classes[1].class_id) {
                                 compareMultipleEntities(
                                     mapStudents,
-                                    studentsInClass
+                                    studentsInClass,
+                                    'user_id'
                                 )
                             } else {
                                 expect(mapStudents).to.be.empty
@@ -6633,10 +6653,12 @@ describe('class', () => {
                     it('returns existent errors', async () => {
                         const actualErrors = await validate(input[0], 0)
                         const expectedError = createEntityAPIError(
-                            'existent',
+                            'existentChild',
                             0,
                             'User',
-                            input[0].studentIds[0]
+                            input[0].studentIds[0],
+                            'Class',
+                            input[0].classId
                         )
 
                         expect(actualErrors.length).to.eq(1)
@@ -7310,7 +7332,8 @@ describe('class', () => {
                             if (cls.class_id == classes[1].class_id) {
                                 compareMultipleEntities(
                                     mapTeachers,
-                                    teachersInClass
+                                    teachersInClass,
+                                    'user_id'
                                 )
                             } else {
                                 expect(mapTeachers).to.be.empty
@@ -7494,10 +7517,12 @@ describe('class', () => {
                     it('returns existent errors', async () => {
                         const actualErrors = await validate(input[0], 0)
                         const expectedError = createEntityAPIError(
-                            'existent',
+                            'existentChild',
                             0,
                             'User',
-                            input[0].teacherIds[0]
+                            input[0].teacherIds[0],
+                            'Class',
+                            input[0].classId
                         )
 
                         expect(actualErrors.length).to.eq(1)

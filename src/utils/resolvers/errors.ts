@@ -4,9 +4,15 @@ import { config } from '../../config/config'
 import logger from '../../logging'
 import newrelic from 'newrelic'
 
-export function reportError(e: Error) {
+export function reportError(
+    e: Error,
+    customAttributes?: { [key: string]: string | number | boolean }
+) {
     logger.error(e)
-    newrelic.noticeError(e)
+    if (customAttributes) {
+        logger.error(`Error attributes: ${JSON.stringify(customAttributes)}`)
+    }
+    newrelic.noticeError(e, customAttributes)
 }
 
 type entityErrorType =
@@ -198,6 +204,19 @@ export function createDuplicateChildEntityAttributeAPIError(
         attributeValue,
         parentEntity,
         parentName,
+    })
+}
+
+export function createApplyingChangeToSelfAPIError(
+    userId: string,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.applying_change_to_self.code,
+        message: customErrors.applying_change_to_self.message,
+        variables: [],
+        entityName: userId,
+        index,
     })
 }
 

@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import chaiAsPromised from 'chai-as-promised'
 
 import { AgeRange } from '../../../src/entities/ageRange'
@@ -17,31 +17,25 @@ import { createAgeRange } from '../../factories/ageRange.factory'
 import { createServer } from '../../../src/utils/createServer'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 import { createOrganization } from '../../factories/organization.factory'
-import { createTestConnection } from '../../utils/testConnection'
+import { TestConnection } from '../../utils/testConnection'
 import { deleteAgeRange } from '../../utils/operations/ageRangeOps'
 import { grantPermission } from '../../utils/operations/roleOps'
 import { Model } from '../../../src/model'
-import { Role } from '../../../src/entities/role'
 import { Organization } from '../../../src/entities/organization'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
-import { AuthenticationError } from 'apollo-server-express'
 
 use(chaiAsPromised)
 
 describe('ageRange', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     describe('delete', () => {

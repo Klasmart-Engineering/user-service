@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { TestConnection } from '../utils/testConnection'
 import chaiAsPromised from 'chai-as-promised'
 import { User } from '../../src/entities/user'
 import { Organization } from '../../src/entities/organization'
@@ -31,6 +31,7 @@ import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
 import { IEntityFilter } from '../../src/utils/pagination/filtering'
 import { createAdminUser } from '../utils/testEntities'
 import { userToPayload } from '../utils/operations/userOps'
+import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
 
@@ -39,13 +40,9 @@ describe('myUser', () => {
     let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection()
+        connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
-    })
-
-    after(async () => {
-        await connection?.close()
     })
 
     context('MyUser.XWithPermissions', () => {
