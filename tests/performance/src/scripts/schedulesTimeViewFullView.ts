@@ -16,6 +16,8 @@ const params = {
 const counter = new Counter('CmsScheduleTimeViewList');
 const serverWaitingTime = new Trend('CmsScheduleTimeViewListWaiting', true);
 
+const errorCounter = new Counter('CmsScheduleTimeViewListError');
+
 export default function (roleType?: string) {
     const userPayload = JSON.stringify(
         {
@@ -40,8 +42,11 @@ export default function (roleType?: string) {
         userRoleType: roleType
     });
 
-    if (res.status === 200) {
+    if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
-        serverWaitingTime.add(res.timings.waiting);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res.timings.waiting);
 }

@@ -12,6 +12,8 @@ const params = {
 const counter = new Counter('MeQueryOrganizationReq2');
 const serverWaitingTime = new Trend('meQueryOrganizationReq2Waiting', true);
 
+const errorCounter = new Counter('MeQueryOrganizationReq2Error');
+
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
         variables: {},
@@ -28,8 +30,16 @@ export default function (roleType?: string) {
         userRoleType: roleType
     });
 
-    if (res.status === 200) {
+    /* if (res.status === 200) {
         counter.add(1);
         serverWaitingTime.add(res.timings.waiting);
+    } */
+
+    if (res.status >= 200 && res.status <= 299) {
+        counter.add(1);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res.timings.waiting);
 }

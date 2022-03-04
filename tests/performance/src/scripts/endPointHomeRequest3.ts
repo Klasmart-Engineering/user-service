@@ -11,6 +11,8 @@ const params = {
 const counter = new Counter('MeQueryOrganizationReq3');
 const serverWaitingTime = new Trend('meQueryOrganizationReq3Waiting', true);
 
+const errorCounter = new Counter('MeQueryOrganizationReq3Error');
+
 export default function (roleType?: string) {
     const res = http.get(`${process.env.ASSESSMENT_SUMMARY_URL}?org_id=${process.env.ORG_ID}` as string, params);
 
@@ -20,8 +22,18 @@ export default function (roleType?: string) {
         userRoleType: roleType
     });
 
-    if (res.status === 200) {
+   /*  if (res.status === 200) {
         counter.add(1);
         serverWaitingTime.add(res.timings.waiting);
+    } */
+    
+    if (res.status >= 200 && res.status <= 299) {
+        counter.add(1);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res.timings.waiting);
+
+
 }

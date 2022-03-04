@@ -16,6 +16,8 @@ const params = {
 const counter = new Counter('SchedulesTimeView');
 const serverWaitingTime = new Trend('SchedulesTimeViewWaiting', true);
 
+const errorCounter = new Counter('CmsSSchedulesTimeViewError');
+
 export default function (roleType?: string) {
     const userPayload = JSON.stringify(
         {
@@ -30,7 +32,7 @@ export default function (roleType?: string) {
         }
     );
 
-    const res = http.post(`${process.env.SCHEDULES_TIME_VIEW_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
+    const res = http.post(`${process.env.CMS_SCHEDULE_TIME_VIEW_LIST}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
 
     check(res, {
         'SCHEDULES_TIME_VIEW - status is 200': () => res.status === 200,
@@ -39,8 +41,12 @@ export default function (roleType?: string) {
         userRoleType: roleType
     });
 
-    if (res.status === 200) {
+    if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
-        serverWaitingTime.add(res.timings.waiting);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res.timings.waiting);
+    
 }

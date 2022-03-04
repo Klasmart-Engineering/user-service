@@ -17,6 +17,8 @@ const params = {
 const counter = new Counter('GetSchoolsFilter');
 const serverWaitingTime = new Trend('GetSchoolsFilterWaiting', true);
 
+const errorCounter = new Counter('GetSchoolsFilterError');
+
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
         variables: {
@@ -44,8 +46,12 @@ export default function (roleType?: string) {
         userRoleType: roleType
     });
 
-    if (res.status === 200) {
+    if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
-        serverWaitingTime.add(res.timings.waiting);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res.timings.waiting);
+   
 }

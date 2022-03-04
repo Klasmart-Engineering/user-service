@@ -8,7 +8,6 @@ import meMembershipsForStudents from "./meMembershipsForStudents";
 
 export default function() {
     schedulesTimeViewMonth(); // CMS service
-    sleep(1);
     scheduleFilterProgram(); // CMS service
     //sleep(0.5);
     // schedulesTimeViewDay(); // CMS service

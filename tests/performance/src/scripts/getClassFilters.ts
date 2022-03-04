@@ -13,6 +13,8 @@ const params = {
 const counter = new Counter('GetClassFilter');
 const serverWaitingTime = new Trend('GetClassFilterWaiting', true);
 
+const errorCounter = new Counter('GetClassFilterError');
+
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
         variables: {
@@ -47,9 +49,12 @@ export default function (roleType?: string) {
         userRoleType: roleType
     });
 
-    if (res.status === 200) {
+    if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
-        serverWaitingTime.add(res.timings.waiting);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res.timings.waiting);
 }
 

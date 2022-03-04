@@ -17,6 +17,8 @@ const params = {
 const counter = new Counter('MeMembershipStudents');
 const serverWaitingTime = new Trend('MeMembershipStudentsWaiting', true);
 
+const errorCounter = new Counter('MeMembershipStudentsError');
+
 const counterBasic = new Counter('MeQueryBasicInStudents');
 const serverWaitingTimeBasic = new Trend('MeQueryBasicInStudentsWaiting', true);
 
@@ -62,49 +64,90 @@ export default function (roleType?: string) {
     // request to verfiy the memershipPayload 1
     const res = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload1, params);
    
-    if (res.status === 200) {
+    /* if (res.status === 200) {
         counter.add(1);
         serverWaitingTime.add(res.timings.waiting);
+    } */
+
+    if (res.status >= 200 && res.status <= 299) {
+        counter.add(1);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res.timings.waiting);
 
     // request to verfiy the memershipPayload 2
     const res2 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload2, params);
 
-    if (res2.status === 200) {
+    /* if (res2.status === 200) {
         counter.add(1);
         serverWaitingTime.add(res2.timings.waiting);
+    } */
+
+    if (res2.status >= 200 && res2.status <= 299) {
+        counter.add(1);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res2.timings.waiting);
 
     // request to verfiy the memershipPayload 3
     const res3 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload3, params);
     
-    if (res3.status === 200) {
+    /* if (res3.status === 200) {
         counter.add(1);
         serverWaitingTime.add(res3.timings.waiting);
+    } */
+
+    if (res3.status >= 200 && res3.status <= 299) {
+        counter.add(1);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res3.timings.waiting);
 
     // request to verfiy the memershipPayload 4
     const res4 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload4, params);
 
-    if (res4.status === 200) {
+    /* if (res4.status === 200) {
         counter.add(1);
         serverWaitingTime.add(res4.timings.waiting);
-    }
+    } */    
 
     const resBasic = http.post(process.env.SERVICE_URL as string, meQueryBasic, params);
 
-    if (resBasic.status === 200) {
+    /* if (resBasic.status === 200) {
         counter.add(1);
         serverWaitingTime.add(resBasic.timings.waiting);
+    } */
+
+    if (resBasic.status >= 200 && resBasic.status <= 299) {
+        counter.add(1);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(resBasic.timings.waiting);
+
 
     // request to verfiy the memershipPayload 5
     const res5 = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, membershipPayload5, params);
  
-    if (res5.status === 200) {
+    /* if (res5.status === 200) {
         counter.add(1);
         serverWaitingTime.add(res5.timings.waiting);
+    } */
+
+    if (res4.status >= 200 && res4.status <= 299) {
+        counter.add(1);
+        
+    } else {
+        errorCounter.add(1);
     }
+    serverWaitingTime.add(res4.timings.waiting);
 
     check(res, {
         '"Get me membership 1" status is 200': (r) => r.status === 200,
