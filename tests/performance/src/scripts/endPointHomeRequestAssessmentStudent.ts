@@ -9,7 +9,7 @@ const params = {
 };
 
 const counter = new Counter('endPointHomeRequestAssessmentStudent');
-const serverWaitingTime = new Trend('endPointHomeRequestAssessmentStudent', true);
+const serverWaitingTime = new Trend('endPointHomeRequestAssessmentStudentWaiting', true);
 
 const errorCounter = new Counter('endPointHomeRequestAssessmentStudentError');
 
