@@ -393,7 +393,7 @@ describe('subcategory', () => {
                         )
 
                         await expect(result).to.be.rejectedWith(
-                            "Cannot read properties of undefined (reading 'organization_id')"
+                            "Cannot read property 'organization_id' of undefined"
                         )
                     })
                 }
@@ -433,15 +433,10 @@ describe('subcategory', () => {
                         .rejected) as APIErrorCollection
 
                     const subcategoryName = input[0].name
-                    const subcategoryOrganization = await Organization.findOne(
-                        input[0].organizationId
-                    )
-                    const organizationName =
-                        subcategoryOrganization?.organization_name
                     const errors = response.errors
                     expect(errors.length).to.eq(1)
                     expect(errors[0].message).to.be.eq(
-                        `On index 0, Subcategory ${subcategoryName} already exists for Organization ${organizationName}.`
+                        `Subcategory ${subcategoryName} doesn't exist.`
                     )
                 })
             })

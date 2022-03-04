@@ -107,17 +107,14 @@ export async function createSubcategories(
             [organization.organization_id, name].toString()
         )
 
-        if (organization && subcategoryExist) {
+        if (subcategoryExist) {
             errors.push(
                 new APIError({
-                    code: customErrors.existent_child_entity.code,
-                    message: customErrors.existent_child_entity.message,
-                    variables: ['organization_id', 'name'],
+                    code: customErrors.nonexistent_entity.code,
+                    message: customErrors.nonexistent_entity.message,
+                    entityName: name,
+                    variables: ['name'],
                     entity: 'Subcategory',
-                    entityId: name,
-                    parentEntity: 'Organization',
-                    parentId: organization.organization_id,
-                    index,
                 })
             )
         }
