@@ -53,7 +53,6 @@ import {
     OrganizationMembershipMap,
 } from '../utils/resolvers/entityMaps'
 import {
-    flagExistent,
     flagExistentChild,
     flagNonExistent,
     flagNonExistentChild,
@@ -1120,20 +1119,23 @@ export class AddStudentsToClasses extends AddMutation<
         )
         errors.push(...classes.errors)
 
-        const currentClassStudents = new Map(
-            maps.classesStudents.get(classId)?.map((u) => [u.user_id, u])
+        const currentClassStudents = new Set(
+            maps.classesStudents.get(classId)?.map((u) => u.user_id)
         )
 
         const students = flagNonExistent(User, index, studentIds, maps.students)
         errors.push(...students.errors)
 
-        const alreadyAdded = flagExistent(
+        const alreadyAddedErrors = flagExistentChild(
+            Class,
             User,
             index,
-            students.values.map((u) => u.user_id),
+            classId,
+            studentIds,
             currentClassStudents
         )
-        errors.push(...alreadyAdded.errors)
+
+        errors.push(...alreadyAddedErrors)
 
         if (currentEntity) {
             const classOrgId = (currentEntity as ClassAndOrg).__organization__

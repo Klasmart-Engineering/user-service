@@ -6653,10 +6653,12 @@ describe('class', () => {
                     it('returns existent errors', async () => {
                         const actualErrors = await validate(input[0], 0)
                         const expectedError = createEntityAPIError(
-                            'existent',
+                            'existentChild',
                             0,
                             'User',
-                            input[0].studentIds[0]
+                            input[0].studentIds[0],
+                            'Class',
+                            input[0].classId
                         )
 
                         expect(actualErrors.length).to.eq(1)
