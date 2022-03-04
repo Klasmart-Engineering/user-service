@@ -242,6 +242,7 @@ export const multiKeyChildConnectionLoader = async <
                 baseScope.orWhere(`${systemColumnString} = true`)
             }
             const table = baseScope.expressionMap.mainAlias?.name
+            const primaryColumnSql = `"${table}"."${primaryColumn}"`
 
             //
             // Get the total counts per parent and update the dataloader map
@@ -260,7 +261,7 @@ export const multiKeyChildConnectionLoader = async <
                 const countScope = baseScope
                     .clone()
                     .select(pivots)
-                    .addSelect(`COUNT(DISTINCT "${table}"."${primaryColumn}")`)
+                    .addSelect(`COUNT(DISTINCT ${primaryColumnSql})`)
                     .groupBy(groupByString)
 
                 if (request.systemColumn) {
@@ -333,16 +334,26 @@ export const multiKeyChildConnectionLoader = async <
             // get one more item to determine if there is another page
             const seekPageSize = pageSize + 1
 
-            // Select the row number to select n _sorted_ children per parent,
-            // respecting the requested order
+            // Select the dense_rank to assign an index to unique parentId+childId
+            // result, respecting the requested order of pagination
+            // Indices will not be incremented for duplicate results
+
             const filterQuery = paginationScope.getQuery()
             // TODO a better way of extracting the ORDER BY clause
             const orderBy = filterQuery.slice(filterQuery.indexOf('ORDER BY'))
 
             paginationScope.addSelect(pivots)
             paginationScope.addSelect(
-                `ROW_NUMBER() OVER (PARTITION BY ${groupByString} ${orderBy})`,
-                'row_num'
+                `DENSE_RANK() OVER (PARTITION BY ${groupByString} ${orderBy})`,
+                'child_index_by_parent'
+            )
+
+            // To prevent all duplicates detected by DENSE_RANK being fetched,
+            // also calculate row_number() on unique parentId+childId
+            // and pick only the first row
+            paginationScope.addSelect(
+                `ROW_NUMBER() OVER (PARTITION BY ${groupByString}, ${primaryColumnSql} ${orderBy})`,
+                'child_index_by_parent_dupe_num'
             )
 
             // Create the query for getting n children per parents
@@ -350,7 +361,8 @@ export const multiKeyChildConnectionLoader = async <
                 .createQueryBuilder()
                 .select('*')
                 .from(`(${paginationScope.getQuery()})`, 'subquery')
-                .where(`"row_num" <= ${seekPageSize}`)
+                .where(`"child_index_by_parent" <= ${seekPageSize}`)
+                .andWhere(`"child_index_by_parent_dupe_num" = 1`)
                 .setParameters(paginationScope.getParameters())
 
             // get raw SQL results and create a map of parentId:childEntity
