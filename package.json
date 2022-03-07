@@ -36,11 +36,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@bitbucket.org/calmisland/kidsloop-user-service.git"
+    "url": "git+ssh://git@github.com:KL-Engineering/user-service.git"
   },
   "author": "",
   "license": "ISC",
-  "homepage": "https://bitbucket.org/calmisland/kidsloop-user-service#readme",
+  "homepage": "https://github.com/KL-Engineering/user-service/blob/main/README.md",
   "devDependencies": {
     "@commitlint/cli": "13.2.1",
     "@commitlint/config-conventional": "13.2.0",
