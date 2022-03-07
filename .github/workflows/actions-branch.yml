@@ -1,0 +1,134 @@
+name: CI Pipeline for Branches
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  pull_request:
+    branches-ignore:
+      - "**"
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: kidsloop
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          registry-url: https://npm.pkg.github.com/
+      - name: "Install NPM dependencies"
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_PAT }}
+      - name: "Static checks"
+        if: github.ref == 'refs/heads/main'
+        run: |
+          npm run prettier-check
+          npm run lint
+          npm run commitlint-check -- --from=HEAD
+      - name: "Unit tests"
+        run: npm run coverage:unit
+      - name: "Migration tests"
+        run: npm run coverage:migrations
+      - name: "Integration tests"
+        run: npm run coverage:integration
+      - name: "Acceptance tests"
+        run: |
+          curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      
+          ids=$(docker ps -a -q)
+          for id in $ids
+          do
+            echo "$id"
+            docker stop $id && docker rm $id
+          done
+      
+          npm run build
+          npx nyc instrument ./dist --in-place
+          docker-compose up -d && sleep 20
+          docker-compose ps
+          npm run test:acceptance
+      
+          docker stop -t 2 user-service
+          npx nyc report --require ts-node/register --reporter=lcov --reporter=json-summary --reporter=text-summary --report-dir ./coverage_acceptance
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          registry-url: https://npm.pkg.github.com/
+      - name: "Install NMP dependencies"
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_PAT }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build, tag, and push image to Amazon ECR
+        run: |
+          echo ${GITHUB_REF_NAME}
+          export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          
+          docker build -t $ECR_REPOSITORY .
+            
+          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG
+          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG-${GITHUB_SHA::7}
+            
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG-${GITHUB_SHA::7}
+        env:
+          ECR_REGISTRY: ${{ secrets.DOCKER_REPO_URL }}
+          ECR_REPOSITORY: "kidsloop-user"
+      - name: "Deploy"
+        if: github.ref == 'refs/heads/main'
+        run: |
+          export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          if test -z "$BRANCH_TAG"; then export TAG=commit; else export TAG=$BRANCH_TAG;fi
+
+          echo "TAG - ${TAG}"
+          echo "COMMIT_TAG - ${GITHUB_SHA::7}"
+          echo "IMAGE_TAG - $TAG-${GITHUB_SHA::7}"
+          
+          curl --request POST \
+          --url https://circleci.com/api/v2/project/bitbucket/calmisland/kidsloop-user-service/pipeline \
+          --header "Circle-Token: $CIRCLECI_TOKEN" \
+          --header "content-type: application/json" \
+          --data "{\"branch\":\"main\",\"parameters\":{\"image-tag\":\"$TAG-${GITHUB_SHA::7}\"}}"
+        env:
+          CIRCLECI_TOKEN: ${{ secrets.CIRCLECI_TOKEN }}
