@@ -1,4 +1,4 @@
-import { In, WhereExpression } from 'typeorm'
+import { In } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
@@ -14,7 +14,6 @@ import { APIError } from '../types/errors/apiError'
 import {
     CreateSchoolInput,
     DeleteSchoolInput,
-    RemoveUsersFromSchoolInput,
     SchoolsMutationResult,
     AddClassesToSchoolInput,
     UpdateSchoolInput,
@@ -22,6 +21,9 @@ import {
     RemoveProgramsFromSchoolInput,
     AddUsersToSchoolInput,
     RemoveClassesFromSchoolInput,
+    RemoveUsersFromSchoolInput,
+    DeleteUsersFromSchoolInput,
+    ReactivateUsersFromSchoolInput,
 } from '../types/graphQL/school'
 import {
     CreateMutation,
@@ -42,7 +44,6 @@ import {
 import { Class } from '../entities/class'
 import {
     createEntityAPIError,
-    createDuplicateAttributeAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../utils/resolvers/errors'
 import { formatShortCode, generateShortCode } from '../utils/shortcode'
@@ -57,6 +58,8 @@ import {
     flagNonExistentChild,
 } from '../utils/resolvers/inputValidation'
 import { customErrors } from '../types/errors/customError'
+import logger from '../logging'
+import { ObjMap } from '../utils/stringUtils'
 
 export interface CreateSchoolEntityMap extends EntityMap<School> {
     mainEntity: Map<string, School>
@@ -593,101 +596,72 @@ export class AddUsersToSchools extends AddMembershipMutation<
     }
 }
 
-export interface RemoveUsersFromSchoolsEntityMap extends EntityMap<School> {
+export interface ChangeSchoolMembershipStatusEntityMap
+    extends EntityMap<School> {
     mainEntity: Map<string, School>
     users: Map<string, User>
-    memberships: Map<string, SchoolMembership>
-    organizations: Map<string, Organization>
+    memberships: ObjMap<{ schoolId: string; userId: string }, SchoolMembership>
+    orgIds: string[]
 }
 
-export class RemoveUsersFromSchools extends RemoveMembershipMutation<
+type ChangeSchoolMembershipStatusInput = { schoolId: string; userIds: string[] }
+
+export abstract class ChangeSchoolMembershipStatus extends RemoveMembershipMutation<
     School,
-    RemoveUsersFromSchoolInput,
+    ChangeSchoolMembershipStatusInput,
     SchoolsMutationResult,
-    RemoveUsersFromSchoolsEntityMap,
+    ChangeSchoolMembershipStatusEntityMap,
     SchoolMembership
 > {
     protected readonly EntityType = School
     protected readonly MembershipType = SchoolMembership
-    protected inputTypeName = 'RemoveUsersFromSchoolInput'
     protected output: SchoolsMutationResult = { schools: [] }
     protected mainEntityIds: string[]
-    protected readonly saveIds: Record<string, string>[]
 
     constructor(
-        input: RemoveUsersFromSchoolInput[],
+        input: ChangeSchoolMembershipStatusInput[],
         permissions: Context['permissions']
     ) {
         super(input, permissions)
         this.mainEntityIds = input.map((val) => val.schoolId)
-        this.saveIds = input.flatMap((i) =>
-            i.userIds.map((user_id) => {
-                return {
-                    user_id,
-                    school_id: i.schoolId,
-                }
-            })
-        )
     }
 
-    generateEntityMaps = async (
-        input: RemoveUsersFromSchoolInput[]
-    ): Promise<RemoveUsersFromSchoolsEntityMap> =>
-        generateMapsForRemoveUsers(this.mainEntityIds, input)
+    abstract generateEntityMaps(
+        input: ChangeSchoolMembershipStatusInput[]
+    ): Promise<ChangeSchoolMembershipStatusEntityMap>
 
-    protected async authorize(
-        _input: RemoveUsersFromSchoolInput[],
-        maps: RemoveUsersFromSchoolsEntityMap
-    ): Promise<void> {
-        return this.permissions.rejectIfNotAllowed(
-            {
-                organization_ids: [...maps.organizations.keys()],
-                school_ids: this.mainEntityIds,
-            },
-            PermissionName.edit_school_20330
-        )
-    }
-
-    protected validationOverAllInputs(
-        inputs: RemoveUsersFromSchoolInput[],
-        entityMaps: RemoveUsersFromSchoolsEntityMap
+    validationOverAllInputs(
+        inputs: ChangeSchoolMembershipStatusInput[]
     ): {
-        validInputs: { index: number; input: RemoveUsersFromSchoolInput }[]
+        validInputs: {
+            index: number
+            input: ChangeSchoolMembershipStatusInput
+        }[]
         apiErrors: APIError[]
     } {
-        return filterInvalidInputs(
-            inputs,
-            validateActiveAndNoDuplicates(
+        return filterInvalidInputs(inputs, [
+            ...validateNoDuplicates(
                 inputs,
-                entityMaps,
                 inputs.map((val) => val.schoolId),
-                this.EntityType.name,
                 this.inputTypeName
-            )
-        )
+            ),
+            ...validateSubItemsLengthAndNoDuplicates(
+                inputs,
+                this.inputTypeName,
+                'userIds'
+            ),
+        ])
     }
 
-    protected validate(
+    validate(
         index: number,
-        currentEntity: School,
-        currentInput: RemoveUsersFromSchoolInput,
-        maps: RemoveUsersFromSchoolsEntityMap
+        _currentEntity: School,
+        currentInput: ChangeSchoolMembershipStatusInput,
+        maps: ChangeSchoolMembershipStatusEntityMap
     ): APIError[] {
         // Retrieval
         const errors: APIError[] = []
         const { schoolId, userIds } = currentInput
-
-        const uniqueUserIds = new Set(userIds)
-
-        if (uniqueUserIds.size < userIds.length) {
-            errors.push(
-                createDuplicateAttributeAPIError(
-                    index,
-                    ['userIds'],
-                    'RemoveUsersFromSchoolInput'
-                )
-            )
-        }
 
         for (const userId of userIds) {
             // User validation
@@ -702,16 +676,15 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
             }
 
             // Membership validation
-            if (!maps.memberships.has([schoolId, userId].toString())) {
+            if (!maps.memberships.has({ schoolId, userId })) {
                 errors.push(
                     createEntityAPIError(
                         'nonExistentChild',
                         index,
                         'User',
-                        user.user_name() || user.user_id,
+                        user.user_id,
                         'School',
-                        currentEntity.school_name || schoolId,
-                        ['school_id', 'user_id']
+                        schoolId
                     )
                 )
             }
@@ -720,9 +693,9 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
         return errors
     }
 
-    protected process(
-        currentInput: RemoveUsersFromSchoolInput,
-        maps: RemoveUsersFromSchoolsEntityMap,
+    process(
+        currentInput: ChangeSchoolMembershipStatusInput,
+        maps: ChangeSchoolMembershipStatusEntityMap,
         index: number
     ): {
         outputEntity: School
@@ -734,9 +707,7 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
         const currentEntity = maps.mainEntity!.get(this.mainEntityIds[index])!
 
         for (const userId of userIds) {
-            const membership = maps.memberships.get(
-                [schoolId, userId].toString()
-            )!
+            const membership = maps.memberships.get({ schoolId, userId })!
 
             Object.assign(membership, this.partialEntity)
             memberships.push(membership)
@@ -745,10 +716,102 @@ export class RemoveUsersFromSchools extends RemoveMembershipMutation<
         return { outputEntity: currentEntity, modifiedEntity: memberships }
     }
 
+    protected async applyToDatabase(
+        results: ProcessedResult<School, SchoolMembership>[]
+    ) {
+        await super.applyToDatabase(results)
+        for (const result of results) {
+            logger.info(
+                `${
+                    this.inputTypeName
+                }: ${this.permissions.getUserId()} on users ${result.modifiedEntity?.map(
+                    (m) => m.user_id
+                )} of school ${result.outputEntity.school_id}`
+            )
+        }
+    }
+
     protected buildOutput = async (currentEntity: School): Promise<void> => {
         this.output.schools.push(
             await mapSchoolToSchoolConnectionNode(currentEntity)
         )
+    }
+}
+
+export class ReactivateUsersFromSchools extends ChangeSchoolMembershipStatus {
+    protected inputTypeName = 'reactivateUsersFromSchoolInput'
+    protected readonly partialEntity = {
+        status: Status.ACTIVE,
+    }
+
+    authorize(
+        _input: ReactivateUsersFromSchoolInput[],
+        maps: Pick<ChangeSchoolMembershipStatusEntityMap, 'orgIds'>
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.orgIds, school_ids: this.mainEntityIds },
+            PermissionName.reactivate_my_school_user_40886
+        )
+    }
+
+    generateEntityMaps(
+        input: ReactivateUsersFromSchoolInput[]
+    ): Promise<ChangeSchoolMembershipStatusEntityMap> {
+        return generateMapsForRemoveUsers(this.mainEntityIds, input, [
+            Status.INACTIVE,
+        ])
+    }
+}
+
+export class RemoveUsersFromSchools extends ChangeSchoolMembershipStatus {
+    protected inputTypeName = 'removeUsersFromSchoolInput'
+    protected readonly partialEntity = {
+        status: Status.INACTIVE,
+        deleted_at: new Date(),
+    }
+
+    authorize(
+        _input: RemoveUsersFromSchoolInput[],
+        maps: Pick<ChangeSchoolMembershipStatusEntityMap, 'orgIds'>
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.orgIds, school_ids: this.mainEntityIds },
+            PermissionName.deactivate_my_school_user_40885
+        )
+    }
+
+    generateEntityMaps(
+        input: RemoveUsersFromSchoolInput[]
+    ): Promise<ChangeSchoolMembershipStatusEntityMap> {
+        return generateMapsForRemoveUsers(this.mainEntityIds, input, [
+            Status.ACTIVE,
+        ])
+    }
+}
+
+export class DeleteUsersFromSchools extends ChangeSchoolMembershipStatus {
+    protected inputTypeName = 'deleteUsersFromSchoolInput'
+    protected readonly partialEntity = {
+        status: Status.DELETED,
+    }
+
+    authorize(
+        _input: DeleteUsersFromSchoolInput[],
+        maps: Pick<ChangeSchoolMembershipStatusEntityMap, 'orgIds'>
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.orgIds, school_ids: this.mainEntityIds },
+            PermissionName.delete_my_school_users_40441
+        )
+    }
+
+    generateEntityMaps(
+        input: DeleteUsersFromSchoolInput[]
+    ): Promise<ChangeSchoolMembershipStatusEntityMap> {
+        return generateMapsForRemoveUsers(this.mainEntityIds, input, [
+            Status.ACTIVE,
+            Status.INACTIVE,
+        ])
     }
 }
 
@@ -1241,54 +1304,34 @@ async function generateMapsForRemoveUsers(
     input: {
         userIds: string[]
         schoolRoleIds?: string[]
-    }[]
-) {
-    const preloadedSchoolArray = School.findByIds(schoolIds, {
-        where: { status: Status.ACTIVE },
-    })
-
+    }[],
+    membershipStatuses = [Status.ACTIVE]
+): Promise<ChangeSchoolMembershipStatusEntityMap> {
     const preloadedUserArray = User.findByIds(
         input.map((i) => i.userIds).flat(),
         { where: { status: Status.ACTIVE } }
     )
 
-    const preloadedMembershipArray = SchoolMembership.find({
-        where: {
-            user_id: In(input.map((i) => i.userIds).flat()),
-            school_id: In(schoolIds),
-            status: Status.ACTIVE,
-        },
-    })
+    const preloadedSchoolArray = await getMap.school(schoolIds, [
+        'organization',
+    ])
 
-    const preloadedOrganizationArray = Organization.find({
-        join: {
-            alias: 'Organization',
-            innerJoin: {
-                schools: 'Organization.schools',
-            },
-        },
-        where: (qb: WhereExpression) => {
-            qb.where('schools.school_id IN (:...schoolIds)', { schoolIds })
-        },
-    })
+    const orgIds = await Promise.all(
+        Array.from(preloadedSchoolArray.values(), (school) =>
+            school.organization?.then((org) => org?.organization_id)
+        ).filter((id): id is Promise<string> => id !== undefined)
+    )
 
     return {
-        mainEntity: new Map(
-            (await preloadedSchoolArray).map((i) => [i.school_id, i])
-        ),
+        mainEntity: preloadedSchoolArray,
         users: new Map((await preloadedUserArray).map((i) => [i.user_id, i])),
-        memberships: new Map(
-            (await preloadedMembershipArray).map((i) => [
-                [i.school_id, i.user_id].toString(),
-                i,
-            ])
+        memberships: await getMap.membership.school(
+            schoolIds,
+            input.flatMap((i) => i.userIds),
+            undefined,
+            membershipStatuses
         ),
-        organizations: new Map(
-            (await preloadedOrganizationArray).map((i) => [
-                i.organization_id,
-                i,
-            ])
-        ),
+        orgIds: orgIds,
     }
 }
 

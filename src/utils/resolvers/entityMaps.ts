@@ -91,13 +91,14 @@ const membership = {
     school: async (
         schoolIds: string[],
         userIds: string[],
-        relations?: string[]
+        relations?: string[],
+        statuses = [Status.ACTIVE]
     ): Promise<SchoolMembershipMap> => {
         return SchoolMembership.find({
             where: {
                 user_id: In(userIds),
                 school_id: In(schoolIds),
-                status: Status.ACTIVE,
+                status: In(statuses),
             },
             relations,
         }).then((entities) => {
