@@ -19,6 +19,9 @@ import {
     DeleteSchoolInput,
     AddUsersToSchoolInput,
     RemoveClassesFromSchoolInput,
+    ReactivateUsersFromSchoolInput,
+    SchoolsMutationResult,
+    DeleteUsersFromSchoolInput,
 } from '../../src/types/graphQL/school'
 import { createClass, createClasses } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
@@ -28,8 +31,11 @@ import {
     createSchools,
     createSchool as createSchoolFactory,
 } from '../factories/school.factory'
-import { createSchoolMembership } from '../factories/schoolMembership.factory'
-import { createUser } from '../factories/user.factory'
+import {
+    createSchoolMembership,
+    createSchoolMembershipsInManySchools,
+} from '../factories/schoolMembership.factory'
+import { createUser, createUsers } from '../factories/user.factory'
 import { NIL_UUID } from '../utils/database'
 import { loadFixtures } from '../utils/fixtures'
 import {
@@ -62,6 +68,7 @@ import { ADD_CLASSES_TO_SCHOOLS } from '../utils/operations/schoolOps'
 import { Role } from '../../src/entities/role'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { createProgram, createPrograms } from '../factories/program.factory'
+import { Status } from '../../src/entities/status'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -683,24 +690,171 @@ describe('acceptance.school', () => {
                 expect(schoolEditedIds).to.deep.equalInAnyOrder(inputIds)
             })
         })
+    })
 
-        context('when user in userIds input does not exists', () => {
-            it('should respond with errors', async () => {
-                const input = [
-                    {
-                        schoolId,
-                        userIds: [NIL_UUID],
-                    },
-                ]
+    context('reactivateUsersFromSchools', () => {
+        let clientUser: User
+        let input: ReactivateUsersFromSchoolInput[]
+        const userCount = 2
+        const schoolCount = 2
 
-                const response = await makeRemoveUsersFromSchoolsMutation(input)
-                const schoolsEdited = response.body.data.removeUsersFromSchools
-                const errors = response.body.errors
+        beforeEach(async () => {
+            clientUser = await createUser().save()
+            const users = createUsers(userCount)
+            await User.save(users)
 
-                expect(response.status).to.eq(200)
-                expect(schoolsEdited).to.be.null
-                expect(errors).to.exist
+            const org = await createOrganization().save()
+            const schools = createSchools(schoolCount, org)
+            await connection.manager.save(schools)
+            await createRole(undefined, org, {
+                permissions: [PermissionName.reactivate_my_school_user_40886],
             })
+                .save()
+                .then((role) => {
+                    return createOrganizationMembership({
+                        user: clientUser,
+                        organization: org,
+                        roles: [role],
+                    }).save()
+                })
+
+            const memberships = createSchoolMembershipsInManySchools(
+                users,
+                schools
+            )
+            for (const membership of memberships) {
+                membership.status = Status.INACTIVE
+            }
+            await SchoolMembership.save(memberships)
+
+            input = schools.map((s) => {
+                return {
+                    schoolId: s.school_id,
+                    userIds: users.map((v) => v.user_id),
+                }
+            })
+        })
+
+        const REACTIVATE_USERS_IN_ORGANIZATION = `
+            mutation myMutation($input: [ReactivateUsersFromSchoolInput!]!) {
+                reactivateUsersFromSchools(input: $input) {
+                    schools{
+                        id,
+                        schoolMembershipsConnection{
+                            edges{
+                                node {
+                                    status
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `
+
+        it('should respond with status 200', async () => {
+            const response = await makeRequest(
+                request,
+                REACTIVATE_USERS_IN_ORGANIZATION,
+                { input, me: clientUser.user_id },
+                generateToken(userToPayload(clientUser))
+            )
+            const res: SchoolsMutationResult =
+                response.body.data.reactivateUsersFromSchools
+            expect(response.status).to.eq(200)
+            expect(res.schools.length).to.equal(schoolCount)
+            for (const school of res.schools) {
+                expect(
+                    school.schoolMembershipsConnection?.edges
+                ).to.have.length(userCount)
+                for (const node of school.schoolMembershipsConnection!.edges.map(
+                    (e) => e.node
+                )) {
+                    expect(node.status).to.eq(Status.ACTIVE)
+                }
+            }
+        })
+    })
+
+    context('deleteUsersFromOrganizations', () => {
+        let clientUser: User
+        let input: DeleteUsersFromSchoolInput[]
+        const userCount = 2
+        const orgCount = 2
+
+        beforeEach(async () => {
+            clientUser = await createUser().save()
+            const users = createUsers(userCount)
+            await User.save(users)
+
+            const org = await createOrganization().save()
+            const schools = createSchools(orgCount, org)
+            await connection.manager.save(schools)
+            await createRole(undefined, org, {
+                permissions: [PermissionName.delete_my_school_users_40441],
+            })
+                .save()
+                .then((role) => {
+                    return createOrganizationMembership({
+                        user: clientUser,
+                        organization: org,
+                        roles: [role],
+                    }).save()
+                })
+
+            const memberships = createSchoolMembershipsInManySchools(
+                users,
+                schools
+            )
+
+            await SchoolMembership.save(memberships)
+
+            input = schools.map((s) => {
+                return {
+                    schoolId: s.school_id,
+                    userIds: users.map((v) => v.user_id),
+                }
+            })
+        })
+
+        const DELETE_USERS_IN_ORGANIZATION = `
+            mutation myMutation($input: [DeleteUsersFromSchoolInput!]!) {
+                deleteUsersFromSchools(input: $input) {
+                    schools{
+                        id,
+                        schoolMembershipsConnection{
+                            edges{
+                                node {
+                                    status
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `
+
+        it('should respond with status 200', async () => {
+            const response = await makeRequest(
+                request,
+                DELETE_USERS_IN_ORGANIZATION,
+                { input },
+                generateToken(userToPayload(clientUser))
+            )
+            const res: SchoolsMutationResult =
+                response.body.data.deleteUsersFromSchools
+            expect(response.status).to.eq(200)
+            expect(res.schools.length).to.equal(orgCount)
+            for (const school of res.schools) {
+                expect(
+                    school.schoolMembershipsConnection?.edges
+                ).to.have.length(userCount)
+                for (const node of school.schoolMembershipsConnection!.edges.map(
+                    (e) => e.node
+                )) {
+                    expect(node.status).to.eq(Status.DELETED)
+                }
+            }
         })
     })
 

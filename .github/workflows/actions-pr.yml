@@ -1,0 +1,90 @@
+name: CI Pipeline for PRs
+
+on:
+  push:
+    branches-ignore:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  pull_request_target:
+    branches-ignore:
+      - "**"
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: write-all
+
+    services:
+      postgres:
+        image: postgres:11.9
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: kidsloop
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          registry-url: https://npm.pkg.github.com/
+      - name: "Install NPM dependencies"
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_PAT }}
+      - name: "Static checks"
+        run: |
+          npm run prettier-check
+          npm run lint
+          npm run commitlint-check -- --from=HEAD
+      - name: "Check PR title format"
+        uses: aslafy-z/conventional-pr-title-action@master
+        with:
+          success-state: Title follows the specification.
+          failure-state: Title does not follow the specification.
+          context-name: conventional-pr-title
+          preset: conventional-changelog-angular@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          registry: 942095822719.dkr.ecr.eu-west-2.amazonaws.com
+      - name: Build, tag, and push image to Amazon ECR
+        run: |
+          echo ${GITHUB_HEAD_REF}
+          export BRANCH_TAG=$(echo "${GITHUB_HEAD_REF}" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          
+          docker build -t $ECR_REPOSITORY .
+          
+          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG
+          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG-${GITHUB_SHA::7}
+          
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG-${GITHUB_SHA::7}
+        env:
+          ECR_REGISTRY: ${{ secrets.DOCKER_REPO_URL }}
+          ECR_REPOSITORY: "kidsloop-user"

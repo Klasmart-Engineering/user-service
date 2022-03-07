@@ -51,8 +51,6 @@ import {
     AddProgramsToSchoolInput,
     CreateSchoolInput,
     DeleteSchoolInput,
-    ISchoolsConnectionNode,
-    RemoveUsersFromSchoolInput,
     SchoolsMutationResult,
     UpdateSchoolInput,
     RemoveProgramsFromSchoolInput,
@@ -71,6 +69,10 @@ import {
     RemoveProgramsFromSchools,
     AddUsersToSchools,
     RemoveClassesFromSchools,
+    ChangeSchoolMembershipStatus,
+    ChangeSchoolMembershipStatusEntityMap,
+    ReactivateUsersFromSchools,
+    DeleteUsersFromSchools,
 } from '../../src/resolvers/school'
 import { buildPermissionError, permErrorMeta } from '../utils/errors'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
@@ -92,9 +94,7 @@ import {
     createRoles,
 } from '../factories/role.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
-import { createRole as createARole } from '../factories/role.factory'
 import { createSchool as createASchool } from '../factories/school.factory'
-import { createSchoolMembershipsInManySchools } from '../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import {
     checkNotFoundErrors,
@@ -110,8 +110,9 @@ import {
     createNonExistentOrInactiveEntityAPIError,
 } from '../../src/utils/resolvers/errors'
 import { NIL_UUID } from '../utils/database'
-import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Role } from '../../src/entities/role'
+import { v4 as uuid_v4 } from 'uuid'
+import { ObjMap } from '../../src/utils/stringUtils'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -2085,689 +2086,505 @@ describe('school', () => {
         )
     })
 
-    context('removeUsersFromSchools', () => {
-        let schoolAdminData: SpecialAdminData
-        let orgAndSchoolAdminData: SpecialAdminData
-        let dataToUse: OrgData
-        let orgsData: OrgData[] = []
-        const orgsCount = 3
-        const schoolsCount = 4
-        const membersCount = 10
-
-        const removeUsersFromResolver = async (
-            caller: User,
-            input: RemoveUsersFromSchoolInput[]
-        ) => {
-            const permissions = new UserPermissions(userToPayload(caller))
-            return mutate(RemoveUsersFromSchools, { input }, permissions)
-        }
-
-        const expectRemoveUsers = async (
-            caller: User,
-            input: RemoveUsersFromSchoolInput[]
-        ) => {
-            const usersKept = new Map()
-
-            for (const i of input) {
-                const school = await School.findOne(i.schoolId)
-                const users = await findSchoolMembers(i.schoolId)
-
-                for (const id of i.userIds) {
-                    const index = users.findIndex((u) => u.user_id === id)
-                    users.splice(index, 1)
-                }
-
-                usersKept.set(i.schoolId, users)
+    describe('ChangeSchoolMembershipStatus', () => {
+        class TestChangeSchoolMembershipStatus extends ChangeSchoolMembershipStatus {
+            protected inputTypeName = 'TestChangeSchoolMembershipStatusInput'
+            readonly partialEntity = {
+                status: Status.ACTIVE,
+                deleted_at: new Date(),
             }
 
-            const { schools } = await removeUsersFromResolver(caller, input)
-            const schoolsDB = await School.findByIds(
-                input.map((i) => i.schoolId)
-            )
+            async authorize(): Promise<void> {
+                throw new Error('not implemented')
+            }
 
-            expect(schools).to.have.lengthOf(input.length)
-            expect(schoolsDB).to.have.lengthOf(input.length)
-
-            for (const [i, sdb] of schoolsDB.entries()) {
-                const schoolRelated = schools.find(
-                    (s: ISchoolsConnectionNode) => s.id === sdb.school_id
-                )
-
-                expect(schoolRelated).to.exist
-                expect(sdb.school_id).to.eq(schoolRelated?.id)
-                expect(sdb.school_name).to.eq(schoolRelated?.name)
-                expect(sdb.status).to.eq(schoolRelated?.status)
-                expect(sdb.shortcode).to.eq(schoolRelated?.shortCode)
-
-                const users = await findSchoolMembers(sdb.school_id)
-
-                const usersRelated = usersKept.get(sdb.school_id)
-                expect(users).to.have.lengthOf(usersRelated.length)
-                expect(users.map((u) => u.user_id)).to.deep.equalInAnyOrder(
-                    usersRelated.map((u: User) => u.user_id)
-                )
+            async generateEntityMaps(): Promise<ChangeSchoolMembershipStatusEntityMap> {
+                throw new Error('not implemented')
             }
         }
 
-        const buildInputArrayFromSchoolData = (data: SchoolData[]) =>
-            Array.from(data, (d) => {
-                return {
-                    schoolId: d.school.school_id,
-                    userIds: d.members.map((m) => m.user_id),
-                }
-            })
-
-        const buildInputArrayFromSchoolsAndMembers = (
-            schools: School[],
-            members: User[]
-        ) =>
-            Array.from(schools, (s) => {
-                return {
-                    schoolId: s.school_id,
-                    userIds: members.map((m) => m.user_id),
-                }
-            })
-
-        const findSchoolMembers = async (schoolId: string) =>
-            await User.createQueryBuilder('User')
-                .innerJoin('User.school_memberships', 'SchoolMembership')
-                .where('SchoolMembership.school_id = :schoolId', {
-                    schoolId: schoolId,
-                })
-                .andWhere("SchoolMembership.status = 'active'")
-                // Just getting the users that are used to be removed (no callers)
-                .andWhere('SchoolMembership.user_id NOT IN (:...adminIds)', {
-                    adminIds: [
-                        schoolAdminData.admin.user_id,
-                        orgAndSchoolAdminData.admin.user_id,
-                    ],
-                })
-                .getMany()
-
-        const expectNoRemoves = async (
-            schools: School[],
-            expectedUsers: User[]
-        ) => {
-            const schoolsDB = await School.findByIds(
-                schools.map((s) => s.school_id)
-            )
-
-            expect(schoolsDB).to.have.lengthOf(schools.length)
-            for (const sdb of schoolsDB) {
-                const relatedSchool = schools.find(
-                    (s) => s.school_id === sdb.school_id
-                )
-                expect(relatedSchool).to.exist
-
-                const usersDB = await findSchoolMembers(sdb.school_id)
-                expect(usersDB).to.have.lengthOf(expectedUsers.length)
-                expect(usersDB.map((u) => u.user_id)).to.deep.equalInAnyOrder(
-                    expectedUsers.map((u) => u.user_id)
-                )
-            }
-        }
-
-        beforeEach(async () => {
-            orgsData = []
-
-            // Creating role for edit schools
-            const editSchoolsRole = createARole('Edit Schools', undefined, {
-                permissions: [PermissionName.edit_school_20330],
-            })
-
-            editSchoolsRole.system_role = true
-            await editSchoolsRole.save()
-
-            admin = await createAdmin().save()
-
-            for (let i = 0; i < orgsCount; i += 1) {
-                const orgAdmin = await createUser().save()
-                const org = await createOrganization(orgAdmin).save()
-
-                await createOrganizationMembership({
-                    user: orgAdmin,
-                    organization: org,
-                    roles: [editSchoolsRole],
-                }).save()
-
-                const schools = await School.save(
-                    Array.from(new Array(schoolsCount), () =>
-                        createASchool(org)
-                    )
+        context('validationOverAllInputs', () => {
+            it('reject duplicate organizationIds', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeSchoolMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
                 )
 
-                const schoolMembers = await User.save(
-                    Array.from(new Array(membersCount), () => createUser())
-                )
+                const duplicateSchoolId = uuid_v4()
+                const notDuplicatedSchoolId = uuid_v4()
 
-                await SchoolMembership.save(
-                    createSchoolMembershipsInManySchools(schoolMembers, schools)
-                )
-
-                orgsData.push({
-                    org,
-                    schools,
-                    schoolMembers,
-                    admin: orgAdmin,
-                })
-            }
-
-            // Creating special users
-            const schoolAdmin = await createUser().save()
-            schoolAdminData = {
-                admin: schoolAdmin,
-                schoolMembershipsData: orgsData.map((data) => {
-                    return {
-                        school: data.schools[0],
-                        members: data.schoolMembers,
-                    }
-                }),
-            }
-
-            await SchoolMembership.save(
-                createSchoolMembershipsInManySchools(
-                    [schoolAdminData.admin],
-                    schoolAdminData.schoolMembershipsData.map(
-                        (sd) => sd.school
-                    ),
-                    [editSchoolsRole]
-                )
-            )
-
-            const orgAndSchoolAdmin = await createUser().save()
-            dataToUse = orgsData[1]
-            orgAndSchoolAdminData = {
-                admin: orgAndSchoolAdmin,
-                schoolMembershipsData: [
+                const input = [
                     {
-                        school: dataToUse.schools[0],
-                        members: dataToUse.schoolMembers,
+                        schoolId: duplicateSchoolId,
+                        userIds: [uuid_v4()],
                     },
-                ],
-                orgMembershipsData: [orgsData[0]],
+                    {
+                        schoolId: duplicateSchoolId,
+                        userIds: [uuid_v4()],
+                    },
+                    {
+                        schoolId: notDuplicatedSchoolId,
+                        userIds: [uuid_v4()],
+                    },
+                ]
+                const {
+                    validInputs,
+                    apiErrors,
+                } = mutation.validationOverAllInputs(input)
+                expect(validInputs).to.have.length(2)
+                expect(validInputs[0].index).to.eq(0)
+                expect(validInputs[1].index).to.eq(2)
+                expect(apiErrors).to.have.length(1)
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['id'],
+                    'TestChangeSchoolMembershipStatusInput'
+                )
+                compareErrors(apiErrors[0], error)
+            })
+
+            it('reject duplicate userIds per input element', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeSchoolMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+
+                const schoolId = uuid_v4()
+                const duplicateUserId = uuid_v4()
+                const notDuplicatedUserId = uuid_v4()
+
+                const input = [
+                    {
+                        schoolId: schoolId,
+                        userIds: [
+                            duplicateUserId,
+                            duplicateUserId,
+                            notDuplicatedUserId,
+                        ],
+                    },
+                ]
+                const {
+                    validInputs,
+                    apiErrors,
+                } = mutation.validationOverAllInputs(input)
+                expect(validInputs).to.have.length(0)
+                expect(apiErrors).to.have.length(1)
+                const error = createDuplicateAttributeAPIError(
+                    0,
+                    ['userIds'],
+                    'TestChangeSchoolMembershipStatusInput'
+                )
+                compareErrors(apiErrors[0], error)
+            })
+        })
+
+        context('validate', () => {
+            it('no errors when user and membership exists', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeSchoolMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const organization = createOrganization()
+                organization.organization_id = uuid_v4()
+                const school = createASchool(organization)
+                school.school_id = uuid_v4()
+                const user = createUser()
+                user.user_id = uuid_v4()
+                const membership = createSchoolMembership({
+                    user,
+                    school,
+                })
+                const maps = {
+                    mainEntity: new Map(),
+                    users: new Map([[user.user_id, user]]),
+                    organizations: new Map([
+                        [organization.organization_id, organization],
+                    ]),
+                    memberships: new ObjMap([
+                        {
+                            key: {
+                                schoolId: school.school_id,
+                                userId: user.user_id,
+                            },
+                            value: membership,
+                        },
+                    ]),
+                    orgIds: [],
+                }
+                const input = {
+                    userIds: [user.user_id],
+                    schoolId: school.school_id,
+                }
+                const apiErrors = mutation.validate(0, school, input, maps)
+                expect(apiErrors).to.have.length(0)
+            })
+
+            it('does not error if you try to alter your own membership', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeSchoolMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const school = createASchool()
+                const membership = createSchoolMembership({
+                    user: callingUser,
+                    school,
+                })
+                const maps = {
+                    mainEntity: new Map([[school.school_id, school]]),
+                    users: new Map([[callingUser.user_id, callingUser]]),
+                    memberships: new ObjMap([
+                        {
+                            key: {
+                                schoolId: school.school_id,
+                                userId: callingUser.user_id,
+                            },
+                            value: membership,
+                        },
+                    ]),
+                    orgIds: [],
+                }
+
+                const input = {
+                    userIds: [callingUser.user_id],
+                    schoolId: school.school_id,
+                }
+                const apiErrors = mutation.validate(0, school, input, maps)
+                expect(apiErrors).to.have.length(0)
+            })
+
+            it('errors when userIds are not found', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeSchoolMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const maps = {
+                    mainEntity: new Map(),
+                    users: new Map(),
+                    memberships: new ObjMap<
+                        { schoolId: string; userId: string },
+                        SchoolMembership
+                    >(),
+                    orgIds: [],
+                }
+
+                const nonExistantUser = uuid_v4()
+
+                const input = {
+                    userIds: [nonExistantUser],
+                    schoolId: uuid_v4(),
+                }
+                const apiErrors = mutation.validate(0, school, input, maps)
+                expect(apiErrors).to.have.length(1)
+                const error = createEntityAPIError(
+                    'nonExistent',
+                    0,
+                    'User',
+                    nonExistantUser
+                )
+                compareErrors(apiErrors[0], error)
+            })
+
+            it('errors when memberships are not found', async () => {
+                const callingUser = await createUser().save()
+                const mutation = new TestChangeSchoolMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(callingUser))
+                )
+                const user = createUser()
+                user.user_id = uuid_v4()
+                const school = createASchool()
+                school.school_id = uuid_v4()
+                const maps = {
+                    mainEntity: new Map([[school.school_id, school]]),
+                    users: new Map([[user.user_id, user]]),
+                    memberships: new ObjMap<
+                        { schoolId: string; userId: string },
+                        SchoolMembership
+                    >(),
+                    orgIds: [],
+                }
+
+                const nonExistantSchool = uuid_v4()
+
+                const input = {
+                    userIds: [user.user_id],
+                    schoolId: nonExistantSchool,
+                }
+                const apiErrors = mutation.validate(0, school, input, maps)
+                expect(apiErrors).to.have.length(1)
+                const error = createEntityAPIError(
+                    'nonExistentChild',
+                    0,
+                    'User',
+                    user.user_id,
+                    'School',
+                    nonExistantSchool
+                )
+                compareErrors(apiErrors[0], error)
+            })
+        })
+
+        context('process', () => {
+            const makeMembership = (school: School) => {
+                const user = createUser()
+                user.user_id = uuid_v4()
+                const membership = createSchoolMembership({
+                    user,
+                    school,
+                    status: Status.INACTIVE,
+                })
+                return { membership, user }
             }
 
-            await OrganizationMembership.save(
-                Array.from(orgAndSchoolAdminData.orgMembershipsData!, (od) =>
-                    createOrganizationMembership({
-                        user: orgAndSchoolAdminData.admin,
-                        organization: od.org,
-                        roles: [editSchoolsRole],
-                    })
-                )
-            )
-
-            await SchoolMembership.save(
-                createSchoolMembershipsInManySchools(
-                    [orgAndSchoolAdminData.admin],
-                    orgAndSchoolAdminData.schoolMembershipsData.map(
-                        (sd) => sd.school
-                    ),
-                    [editSchoolsRole]
-                )
-            )
-        })
-
-        context('permissions', () => {
-            context('successful cases', () => {
-                context('when caller is admin', () => {
-                    it('should remove users from any school', async () => {
-                        const input = buildInputArrayFromSchoolData(
-                            orgsData.map((d, i) => {
-                                return {
-                                    school: d.schools[i],
-                                    members: d.schoolMembers,
-                                }
-                            })
-                        )
-
-                        await expectRemoveUsers(admin, input)
-                    })
-                })
-
-                context('when caller is not admin', () => {
-                    context('but has permissions', () => {
-                        context('in schools', () => {
-                            it('should remove users from those schools', async () => {
-                                const callerData = schoolAdminData
-                                const input = buildInputArrayFromSchoolData(
-                                    callerData.schoolMembershipsData
-                                )
-
-                                await expectRemoveUsers(callerData.admin, input)
-                            })
-                        })
-
-                        context('in organizations', () => {
-                            it('should remove users from the schools that belongs to those organizations', async () => {
-                                dataToUse = orgsData[0]
-                                const input = buildInputArrayFromSchoolsAndMembers(
-                                    dataToUse.schools,
-                                    dataToUse.schoolMembers
-                                )
-
-                                await expectRemoveUsers(dataToUse.admin, input)
-                            })
-                        })
-
-                        context('in schools and organizations', () => {
-                            it('should remove users from those schools and the schools that belongs to those organization', async () => {
-                                const callerData = orgAndSchoolAdminData
-                                const input = buildInputArrayFromSchoolData(
-                                    callerData.schoolMembershipsData
-                                )
-
-                                callerData.orgMembershipsData!.forEach((omd) =>
-                                    input.push(
-                                        ...buildInputArrayFromSchoolsAndMembers(
-                                            omd.schools,
-                                            omd.schoolMembers
-                                        )
-                                    )
-                                )
-
-                                await expectRemoveUsers(callerData.admin, input)
-                            })
-                        })
-                    })
-                })
-            })
-
-            context('error handling', () => {
-                const permError = permErrorMeta(
-                    PermissionName.edit_school_20330
+            it('sets the status to active', async () => {
+                const clientUser = await createUser().save()
+                const mutation = new TestChangeSchoolMembershipStatus(
+                    [],
+                    new UserPermissions(userToPayload(clientUser))
                 )
 
-                context('when user is not admin', () => {
-                    context('but has permissions', () => {
-                        context('in schools', () => {
-                            context(
-                                'and tries to remove users from other schools',
-                                () => {
-                                    it('should throw a permission error', async () => {
-                                        const callerData = schoolAdminData
-                                        const caller = callerData.admin
-                                        dataToUse = orgsData[0]
-                                        const input = buildInputArrayFromSchoolsAndMembers(
-                                            dataToUse.schools,
-                                            dataToUse.schoolMembers
-                                        )
+                const school = createASchool()
+                const { user, membership } = makeMembership(school)
 
-                                        const operation = removeUsersFromResolver(
-                                            caller,
-                                            input
-                                        )
-
-                                        await expect(
-                                            operation
-                                        ).to.be.rejectedWith(permError(caller))
-
-                                        await expectNoRemoves(
-                                            dataToUse.schools,
-                                            dataToUse.schoolMembers
-                                        )
-                                    })
-                                }
-                            )
-                        })
-
-                        context('in organizations', () => {
-                            context(
-                                'and tries to remove users from schools that belongs to other organizations',
-                                () => {
-                                    it('should throw a permission error', async () => {
-                                        const caller = orgsData[1].admin
-                                        dataToUse = orgsData[0]
-                                        const input = buildInputArrayFromSchoolsAndMembers(
-                                            dataToUse.schools,
-                                            dataToUse.schoolMembers
-                                        )
-
-                                        const operation = removeUsersFromResolver(
-                                            caller,
-                                            input
-                                        )
-
-                                        await expect(
-                                            operation
-                                        ).to.be.rejectedWith(permError(caller))
-
-                                        await expectNoRemoves(
-                                            dataToUse.schools,
-                                            dataToUse.schoolMembers
-                                        )
-                                    })
-                                }
-                            )
-                        })
-
-                        context('in schools and organizations', () => {
-                            context(
-                                'and tries to remove users from other schools and other schools that does not belong to those organizations',
-                                () => {
-                                    it('should throw a permission error', async () => {
-                                        const callerData = orgAndSchoolAdminData
-                                        const caller = callerData.admin
-                                        dataToUse = orgsData[2]
-                                        const input = buildInputArrayFromSchoolsAndMembers(
-                                            dataToUse.schools,
-                                            dataToUse.schoolMembers
-                                        )
-
-                                        const operation = removeUsersFromResolver(
-                                            caller,
-                                            input
-                                        )
-
-                                        await expect(
-                                            operation
-                                        ).to.be.rejectedWith(permError(caller))
-
-                                        await expectNoRemoves(
-                                            dataToUse.schools,
-                                            dataToUse.schoolMembers
-                                        )
-                                    })
-                                }
-                            )
-                        })
-                    })
-                })
-            })
-        })
-
-        context('inputs', () => {
-            context('error handling', () => {
-                context(
-                    "when input provided has duplicates in 'schoolId' field",
-                    () => {
-                        it('should throw an ErrorCollection', async () => {
-                            dataToUse = orgsData[0]
-                            const input = buildInputArrayFromSchoolData(
-                                Array.from(new Array(2), () => {
-                                    return {
-                                        school: dataToUse.schools[0],
-                                        members: dataToUse.schoolMembers,
-                                    }
-                                })
-                            )
-
-                            await expectAPIErrorCollection(
-                                removeUsersFromResolver(admin, input),
-                                new APIErrorCollection([
-                                    createDuplicateAttributeAPIError(
-                                        1,
-                                        ['id'],
-                                        'RemoveUsersFromSchoolInput'
-                                    ),
-                                ])
-                            )
-
-                            await expectNoRemoves(
-                                dataToUse.schools,
-                                dataToUse.schoolMembers
-                            )
-                        })
-                    }
-                )
-
-                context(
-                    "when a school with the received 'schoolId' does not exists",
-                    () => {
-                        it('should throw an ErrorCollection', async () => {
-                            dataToUse = orgsData[0]
-                            const inexistentId = NIL_UUID
-                            const input = buildInputArrayFromSchoolsAndMembers(
-                                dataToUse.schools,
-                                dataToUse.schoolMembers
-                            )
-
-                            input.push({
-                                schoolId: inexistentId,
-                                userIds: dataToUse.schoolMembers.map(
-                                    (u) => u.user_id
-                                ),
-                            })
-
-                            await expectAPIErrorCollection(
-                                removeUsersFromResolver(admin, input),
-                                new APIErrorCollection([
-                                    createEntityAPIError(
-                                        'nonExistent',
-                                        input.length - 1,
-                                        'School',
-                                        inexistentId
-                                    ),
-                                ])
-                            )
-
-                            await expectNoRemoves(
-                                dataToUse.schools,
-                                dataToUse.schoolMembers
-                            )
-                        })
-                    }
-                )
-
-                context('when the received school is inactive', () => {
-                    let inactiveSchool: School
-
-                    beforeEach(async () => {
-                        dataToUse = orgsData[0]
-                        inactiveSchool = dataToUse.schools[0]
-                        inactiveSchool.status = Status.INACTIVE
-                        await inactiveSchool.save()
-                    })
-
-                    it('should throw an ErrorCollection', async () => {
-                        const input = buildInputArrayFromSchoolsAndMembers(
-                            dataToUse.schools,
-                            dataToUse.schoolMembers
-                        )
-
-                        await expectAPIErrorCollection(
-                            removeUsersFromResolver(admin, input),
-                            new APIErrorCollection([
-                                createEntityAPIError(
-                                    'nonExistent',
-                                    0,
-                                    'School',
-                                    inactiveSchool.school_id
-                                ),
-                            ])
-                        )
-
-                        await expectNoRemoves(
-                            dataToUse.schools,
-                            dataToUse.schoolMembers
-                        )
-                    })
-                })
-
-                context("when input 'userIds' has duplicate elements", () => {
-                    it('should throw an ErrorCollection', async () => {
-                        dataToUse = orgsData[0]
-                        const input = buildInputArrayFromSchoolsAndMembers(
-                            dataToUse.schools,
-                            Array.from(
-                                dataToUse.schoolMembers,
-                                () => dataToUse.schoolMembers[0]
-                            )
-                        )
-
-                        await expectAPIErrorCollection(
-                            removeUsersFromResolver(admin, input),
-                            new APIErrorCollection(
-                                Array.from(input, (_, i) =>
-                                    createDuplicateAttributeAPIError(
-                                        i,
-                                        ['userIds'],
-                                        'RemoveUsersFromSchoolInput'
-                                    )
-                                )
-                            )
-                        )
-
-                        await expectNoRemoves(
-                            dataToUse.schools,
-                            dataToUse.schoolMembers
-                        )
-                    })
-                })
-
-                context('when user received does not exists', () => {
-                    it('should throw an ErrorCollection', async () => {
-                        dataToUse = orgsData[0]
-                        const inexistentId = NIL_UUID
-                        const input = Array.from(dataToUse.schools, (s) => {
-                            return {
-                                schoolId: s.school_id,
-                                userIds: [inexistentId],
-                            }
-                        })
-
-                        await expectAPIErrorCollection(
-                            removeUsersFromResolver(admin, input),
-                            new APIErrorCollection(
-                                Array.from(input, (_, i) =>
-                                    createEntityAPIError(
-                                        'nonExistent',
-                                        i,
-                                        'User',
-                                        inexistentId
-                                    )
-                                )
-                            )
-                        )
-
-                        await expectNoRemoves(
-                            dataToUse.schools,
-                            dataToUse.schoolMembers
-                        )
-                    })
-                })
-
-                context('when user received is inactive', () => {
-                    let inactiveUser: User
-
-                    beforeEach(async () => {
-                        dataToUse = orgsData[0]
-                        inactiveUser = dataToUse.schoolMembers[0]
-                        inactiveUser.status = Status.INACTIVE
-                        await inactiveUser.save()
-                    })
-
-                    it('should throw an ErrorCollection', async () => {
-                        const input = buildInputArrayFromSchoolsAndMembers(
-                            dataToUse.schools,
-                            dataToUse.schoolMembers
-                        )
-
-                        await expectAPIErrorCollection(
-                            removeUsersFromResolver(admin, input),
-                            new APIErrorCollection(
-                                Array.from(input, (_, i) =>
-                                    createEntityAPIError(
-                                        'nonExistent',
-                                        i,
-                                        'User',
-                                        inactiveUser.user_id
-                                    )
-                                )
-                            )
-                        )
-
-                        await expectNoRemoves(
-                            dataToUse.schools,
-                            dataToUse.schoolMembers
-                        )
-                    })
-                })
-
-                context('when user does not exists in school', () => {
-                    it('should throw an ErrorCollection', async () => {
-                        dataToUse = orgsData[0]
-                        const noBelongsUser = orgsData[1].schoolMembers[0]
-                        const input = buildInputArrayFromSchoolsAndMembers(
-                            dataToUse.schools,
-                            [...dataToUse.schoolMembers, noBelongsUser]
-                        )
-
-                        await expectAPIErrorCollection(
-                            removeUsersFromResolver(admin, input),
-                            new APIErrorCollection(
-                                Array.from(dataToUse.schools, (s, i) =>
-                                    createEntityAPIError(
-                                        'nonExistentChild',
-                                        i,
-                                        'User',
-                                        noBelongsUser.user_name(),
-                                        'School',
-                                        s.school_name,
-                                        ['school_id', 'user_id']
-                                    )
-                                )
-                            )
-                        )
-
-                        await expectNoRemoves(
-                            dataToUse.schools,
-                            dataToUse.schoolMembers
-                        )
-                    })
-                })
-            })
-        })
-
-        context('DB calls', () => {
-            context('when the schools belong to the same organization', () => {
-                it('should do 10 DB calls', async () => {
-                    dataToUse = orgsData[0]
-                    const input = buildInputArrayFromSchoolsAndMembers(
-                        dataToUse.schools,
-                        dataToUse.schoolMembers
-                    )
-
-                    connection.logger.reset()
-                    await removeUsersFromResolver(admin, input)
-
-                    const callsToDB = connection.logger.count
-                    expect(callsToDB).to.eq(
-                        10,
-                        '4 for get schools, users, schoolMemberships, and organizations; 1 for get the caller user; 4 for normalize method (1 per input element); 1 for save entities'
-                    )
-                })
-            })
-
-            context(
-                'when the schools belong to 2 different organizations',
-                () => {
-                    it('should do 14 DB calls', async () => {
-                        const input = buildInputArrayFromSchoolData(
-                            orgsData
-                                .slice(0, 2)
-                                .map((d) =>
-                                    d.schools.map((s) => {
-                                        return {
-                                            school: s,
-                                            members: d.schoolMembers,
-                                        }
-                                    })
-                                )
-                                .flat()
-                        )
-
-                        connection.logger.reset()
-                        await removeUsersFromResolver(admin, input)
-
-                        const callsToDB = connection.logger.count
-                        expect(callsToDB).to.eq(
-                            14,
-                            '4 for get schools, users, schoolMemberships, and organizations; 1 for get the caller user; 8 for normalize() method (1 per input element); 1 for save entities'
-                        )
-                    })
+                const maps = {
+                    mainEntity: new Map([[school.school_id, school]]),
+                    users: new Map([[user.user_id, user]]),
+                    memberships: new ObjMap([
+                        {
+                            key: {
+                                schoolId: school.school_id,
+                                userId: user.user_id,
+                            },
+                            value: membership,
+                        },
+                    ]),
+                    orgIds: [],
                 }
+
+                const input = {
+                    schoolId: school.school_id,
+                    userIds: [user.user_id],
+                }
+                const { outputEntity, modifiedEntity } = mutation.process(
+                    input,
+                    maps,
+                    0
+                )
+                expect(outputEntity).to.deep.eq(school)
+                expect(modifiedEntity).to.have.length(1)
+                expect(modifiedEntity![0]).to.deep.eq(membership)
+                expect(modifiedEntity![0]).deep.include(mutation.partialEntity)
+            })
+        })
+    })
+
+    const inputsForDifferentMembershipStatuses = async () => {
+        const school = await createASchool().save()
+        return Promise.all(
+            Object.values(Status).map((status) =>
+                createUser()
+                    .save()
+                    .then((user) => {
+                        return createSchoolMembership({
+                            user,
+                            school,
+                            roles: [],
+                            status,
+                        }).save()
+                    })
+                    .then((membership) => {
+                        return {
+                            schoolId: membership.school_id,
+                            userIds: [membership.user_id],
+                        }
+                    })
             )
+        )
+    }
+
+    const makeMembership = async (permissions: PermissionName[] = []) => {
+        const user = await createUser().save()
+        const organization = await createOrganization().save()
+        const role = await roleFactory(undefined, organization, {
+            permissions,
+        }).save()
+        const membership = await createOrganizationMembership({
+            user,
+            organization,
+            roles: [role],
+        }).save()
+        return { user, organization, membership }
+    }
+
+    describe('ReactivateUsersFromOrganizations', () => {
+        const makeMutation = (
+            input: {
+                schoolId: string
+                userIds: string[]
+            }[],
+            user: User
+        ) => {
+            return new ReactivateUsersFromSchools(
+                input,
+                new UserPermissions(userToPayload(user))
+            )
+        }
+
+        context('authorize', () => {
+            it('rejects when user does not have reactivate_my_school_user_40886', async () => {
+                const { user } = await makeMembership()
+                const mutation = makeMutation([], user)
+                const entityMap = {
+                    orgIds: [uuid_v4()],
+                }
+                await expect(
+                    mutation.authorize([], entityMap)
+                ).to.eventually.rejectedWith(/reactivate_my_school_user_40886/)
+            })
+
+            it('resolves when user does have reactivate_my_school_user_40886', async () => {
+                const { user, organization } = await makeMembership([
+                    PermissionName.reactivate_my_school_user_40886,
+                ])
+                const entityMap = {
+                    orgIds: [organization.organization_id],
+                }
+                const mutation = makeMutation([], user)
+                await expect(mutation.authorize([], entityMap)).to.eventually
+                    .fulfilled
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('finds only inactive memberships', async () => {
+                const input = await inputsForDifferentMembershipStatuses()
+
+                const callingUser = await createUser().save()
+                const mutation = makeMutation(input, callingUser)
+                const entityMaps = await mutation.generateEntityMaps(input)
+                expect(entityMaps.memberships.size).to.eq(1)
+                expect(
+                    Array.from(entityMaps.memberships.values())[0].status
+                ).to.eq(Status.INACTIVE)
+            })
+        })
+    })
+
+    describe('DeleteUsersFromSchools', () => {
+        const makeMutation = (
+            input: {
+                schoolId: string
+                userIds: string[]
+            }[],
+            user: User
+        ) => {
+            return new DeleteUsersFromSchools(
+                input,
+                new UserPermissions(userToPayload(user))
+            )
+        }
+
+        context('authorize', () => {
+            it('rejects when user does not have delete_my_school_users_40441', async () => {
+                const { user } = await makeMembership()
+                const entityMap = {
+                    orgIds: [uuid_v4()],
+                }
+                const mutation = makeMutation([], user)
+                await expect(
+                    mutation.authorize([], entityMap)
+                ).to.eventually.rejectedWith(/delete_my_school_users_40441/)
+            })
+
+            it('resolves when user does have delete_my_school_users_40441', async () => {
+                const { user, organization } = await makeMembership([
+                    PermissionName.delete_my_school_users_40441,
+                ])
+                const mutation = makeMutation([], user)
+                const entityMap = {
+                    orgIds: [organization.organization_id],
+                }
+                await expect(mutation.authorize([], entityMap)).to.eventually
+                    .fulfilled
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('finds active and inactive memberships', async () => {
+                const input = await inputsForDifferentMembershipStatuses()
+
+                const callingUser = await createUser().save()
+                const mutation = makeMutation(input, callingUser)
+                const entityMaps = await mutation.generateEntityMaps(input)
+                expect(entityMaps.memberships.size).to.eq(2)
+                for (const [
+                    index,
+                    membership,
+                ] of entityMaps.memberships.entries()) {
+                    expect(membership.status).oneOf(
+                        [Status.INACTIVE, Status.ACTIVE],
+                        `membership ${index} has the wrong status of ${membership.status}`
+                    )
+                }
+            })
+        })
+    })
+
+    describe('RemoveUsersFromSchools', () => {
+        const makeMutation = (
+            input: {
+                schoolId: string
+                userIds: string[]
+            }[],
+            user: User
+        ) => {
+            return new RemoveUsersFromSchools(
+                input,
+                new UserPermissions(userToPayload(user))
+            )
+        }
+
+        context('authorize', () => {
+            it('rejects when user does not have deactivate_my_school_user_40885', async () => {
+                const { user } = await makeMembership()
+                const entityMap = {
+                    orgIds: [uuid_v4()],
+                }
+                const mutation = makeMutation([], user)
+                await expect(
+                    mutation.authorize([], entityMap)
+                ).to.eventually.rejectedWith(/deactivate_my_school_user_40885/)
+            })
+
+            it('resolves when user does have deactivate_my_school_user_40885', async () => {
+                const { user, organization } = await makeMembership([
+                    PermissionName.deactivate_my_school_user_40885,
+                ])
+                const entityMap = {
+                    orgIds: [organization.organization_id],
+                }
+                const mutation = makeMutation([], user)
+                await expect(mutation.authorize([], entityMap)).to.eventually
+                    .fulfilled
+            })
+        })
+
+        context('generateEntityMaps', () => {
+            it('finds only active memberships', async () => {
+                const input = await inputsForDifferentMembershipStatuses()
+                const callingUser = await createUser().save()
+                const mutation = makeMutation(input, callingUser)
+                const entityMaps = await mutation.generateEntityMaps(input)
+                expect(entityMaps.memberships.size).to.eq(1)
+                expect(
+                    Array.from(entityMaps.memberships.values())[0].status
+                ).to.eq(Status.ACTIVE)
+            })
         })
     })
 

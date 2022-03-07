@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import http from 'http'
 import request from 'supertest'
 import { createExpressApp, DOMAIN } from '../../../src/app'
-import { DEFAULT_CORRELATION_HEADER } from 'kidsloop-nodejs-logger'
+import { DEFAULT_CORRELATION_HEADER } from '@kl-engineering/kidsloop-nodejs-logger'
 
 context('cors', () => {
     let server: http.Server

@@ -52,6 +52,16 @@ export interface RemoveUsersFromSchoolInput {
     userIds: string[]
 }
 
+export interface ReactivateUsersFromSchoolInput {
+    schoolId: string
+    userIds: string[]
+}
+
+export interface DeleteUsersFromSchoolInput {
+    schoolId: string
+    userIds: string[]
+}
+
 export interface AddClassesToSchoolInput {
     schoolId: string
     classIds: string[]

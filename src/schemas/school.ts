@@ -16,6 +16,8 @@ import {
     AddClassesToSchools,
     AddProgramsToSchools,
     AddUsersToSchools,
+    DeleteUsersFromSchools,
+    ReactivateUsersFromSchools,
     RemoveClassesFromSchools,
     RemoveProgramsFromSchools,
 } from '../resolvers/school'
@@ -38,8 +40,27 @@ const typeDefs = gql`
         addUsersToSchools(
             input: [AddUsersToSchoolInput!]!
         ): SchoolsMutationResult
+        """
+        Inactivates users in a School. Their membership data
+        will be maintained and can be restored with reactivateUsersFromSchools.
+        """
         removeUsersFromSchools(
             input: [RemoveUsersFromSchoolInput!]!
+        ): SchoolsMutationResult
+        """
+        Reactivates users in a school who were previously removed via removeUsersFromSchools.
+        They will have the same roles they had at the time of removal.
+        """
+        reactivateUsersFromSchools(
+            input: [ReactivateUsersFromSchoolInput!]!
+        ): SchoolsMutationResult
+        """
+        Deletes users from a School. They will
+        be treated as if they had never been part of the school.
+        Membership data may not be maintained.
+        """
+        deleteUsersFromSchools(
+            input: [DeleteUsersFromSchoolInput!]!
         ): SchoolsMutationResult
         addClassesToSchools(
             input: [AddClassesToSchoolInput!]!
@@ -244,6 +265,16 @@ const typeDefs = gql`
         userIds: [ID!]!
     }
 
+    input DeleteUsersFromSchoolInput {
+        schoolId: ID!
+        userIds: [ID!]!
+    }
+
+    input ReactivateUsersFromSchoolInput {
+        schoolId: ID!
+        userIds: [ID!]!
+    }
+
     type SchoolsMutationResult {
         schools: [SchoolConnectionNode!]!
     }
@@ -342,8 +373,13 @@ export default function getDefault(
                     mutate(UpdateSchools, args, ctx.permissions),
                 addUsersToSchools: (_parent, args, ctx, _info) =>
                     mutate(AddUsersToSchools, args, ctx.permissions),
-                removeUsersFromSchools: (_parent, args, ctx, _info) =>
+                removeUsersFromSchools: (_parent, args, ctx) =>
                     mutate(RemoveUsersFromSchools, args, ctx.permissions),
+                reactivateUsersFromSchools: (_parent, args, ctx) =>
+                    mutate(ReactivateUsersFromSchools, args, ctx.permissions),
+                deleteUsersFromSchools: (_parent, args, ctx) =>
+                    mutate(DeleteUsersFromSchools, args, ctx.permissions),
+
                 removeProgramsFromSchools: (_parent, args, ctx, _info) =>
                     mutate(RemoveProgramsFromSchools, args, ctx.permissions),
                 removeClassesFromSchools: (_parent, args, ctx, _info) =>
