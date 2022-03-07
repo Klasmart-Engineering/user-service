@@ -42,6 +42,7 @@ import {
     createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
     createUnauthorizedAPIError,
+    createUnauthorizedAPIErrorWithIndex,
 } from '../utils/resolvers/errors'
 import {
     getMap,
@@ -1650,11 +1651,30 @@ function validationOverAllUpdateOrganizationInput(
     validInputs: { index: number; input: UpdateOrganizationUserInputElement }[]
     apiErrors: APIError[]
 } {
+    const failedMembers: Map<number, APIError>[] = []
+    if (input.members.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
+        const failedMember = new Map<number, APIError>()
+        failedMember.set(
+            0,
+            createInputLengthAPIError('members', 'max', undefined, 0)
+        )
+        failedMembers.push(failedMember)
+    }
+    if (input.members.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
+        const failedMember = new Map<number, APIError>()
+        failedMember.set(
+            0,
+            createInputLengthAPIError('members', 'min', undefined, 0)
+        )
+        failedMembers.push(failedMember)
+    }
+
     const failedRoles = validateSubItemsLengthAndNoDuplicates(
         input.members,
         'User',
         'roleIds'
     )
+
     const failedClasses = validateSubItemsLengthAndNoDuplicates(
         input.members,
         'User',
@@ -1666,12 +1686,30 @@ function validationOverAllUpdateOrganizationInput(
         'User',
         'schoolIds'
     )
+
+    if (failedMembers.length > 0) {
+        const validInputs: {
+            index: number
+            input: UpdateOrganizationUserInputElement
+        }[] = []
+        const errorMaps = [
+            ...failedMembers,
+            ...failedRoles,
+            ...failedClasses,
+            ...failedSchools,
+        ]
+        const apiErrors = errorMaps.flatMap((em) => [...em.values()])
+        return { validInputs, apiErrors }
+    }
+
     return filterInvalidInputs(input.members, [
         ...failedRoles,
         ...failedClasses,
         ...failedSchools,
     ])
 }
+
+function processUpdateOrganization() {}
 
 function validateUpdateOrganization(
     index: number,
@@ -1745,8 +1783,10 @@ function validateUpdateOrganization(
                 }
             }
         }
+
         const roleIds = currentInput.roleIds || []
         for (const r of roleIds) {
+            let userCanTeachOrStudy = false
             if (!maps.allRoles.has(r)) {
                 errors.push(
                     createNonExistentOrInactiveEntityAPIError(
@@ -1771,8 +1811,24 @@ function validateUpdateOrganization(
                     )
                 }
             }
+            if (maps.studentRoles.has(r) || maps.teacherRoles.has(r)) {
+                userCanTeachOrStudy = true
+            }
+            if (
+                !userCanTeachOrStudy &&
+                currentInput.classIds &&
+                currentInput.classIds.length > 0
+            ) {
+                errors.push(
+                    createUnauthorizedAPIErrorWithIndex(
+                        index,
+                        'User',
+                        currentInput.userId,
+                        'classes'
+                    )
+                )
+            }
         }
     }
-
     return errors
 }

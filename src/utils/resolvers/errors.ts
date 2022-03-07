@@ -150,6 +150,22 @@ export function createUnauthorizedAPIError(
     })
 }
 
+export function createUnauthorizedAPIErrorWithIndex(
+    index: number,
+    entity: string,
+    attribute: string,
+    entityName?: string
+) {
+    return new APIError({
+        code: customErrors.unauthorized.code,
+        message: customErrors.unauthorized.message,
+        variables: [attribute],
+        entity: entity,
+        entityName: entityName,
+        index: index,
+    })
+}
+
 export function createUserAlreadyOwnsOrgAPIError(
     userId: string,
     orgId: string,
