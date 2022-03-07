@@ -13,13 +13,17 @@ Install postgres:
 
 - `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres`
 
+Setup environment variables:
+
+- Create a `.env` file by copying the contents of `.env.example`
+
+Authenticate with the kidsloop private npm registry:
+- See instructions [here](https://calmisland.atlassian.net/wiki/spaces/ED/pages/2537193585/GH+Storing+libraries+and+containers+in+Github+Packages#Getting-access)
+
 Install dependencies:
 
 - `npm i`
 
-Setup environment variables:
-
-- Create a `.env` file by copying the contents of `.env.example`
 
 <br>
 

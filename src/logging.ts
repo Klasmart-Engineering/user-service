@@ -1,5 +1,5 @@
 import { QueryRunner, Logger as BaseTypeORMLogger } from 'typeorm'
-import { KLLogger, withLogger } from 'kidsloop-nodejs-logger'
+import { KLLogger, withLogger } from '@kl-engineering/kidsloop-nodejs-logger'
 
 export const logger: KLLogger = withLogger('')
 

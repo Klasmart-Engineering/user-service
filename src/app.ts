@@ -7,7 +7,7 @@ import { graphqlUploadExpress } from 'graphql-upload'
 import {
     correlationMiddleware,
     DEFAULT_CORRELATION_HEADER,
-} from 'kidsloop-nodejs-logger'
+} from '@kl-engineering/kidsloop-nodejs-logger'
 import path from 'path'
 import appPackage from '../package.json'
 import { Model } from './model'

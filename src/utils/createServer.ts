@@ -16,7 +16,7 @@ import {
 import { loadPlugins } from './plugins'
 
 import newrelic from 'newrelic'
-import { withCorrelation } from 'kidsloop-nodejs-logger'
+import { withCorrelation } from '@kl-engineering/kidsloop-nodejs-logger'
 
 /* accessing a child via a connection field takes 3 depth
     myconnection { // 0
