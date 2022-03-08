@@ -155,8 +155,10 @@ export class DeletingDuplicatedSystemRoles1644427897509
         rolesToDelete: Map<string, Role>,
         rolesToPersist: Map<string, Role>
     ) {
-        for (const m of memberships) {
-            const roles = (await m.roles) || []
+        const allRoles = await Promise.all(memberships.map(m => m.roles))
+
+        for (const [i, m] of memberships.entries()) {
+            const roles = allRoles[i] || []
             const newRoles: Role[] = []
 
             for (const r of roles) {
