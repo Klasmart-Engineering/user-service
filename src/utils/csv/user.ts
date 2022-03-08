@@ -41,8 +41,29 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
 ) => {
     const allRowErrors = []
     const classes = new Map<Class['class_id'], Class>()
+    const orgMemberships = new ObjMap<
+        {
+            userId: OrganizationMembership['user_id']
+            orgId: OrganizationMembership['organization_id']
+        },
+        OrganizationMembership
+    >()
+    const schoolMemberships = new ObjMap<
+        {
+            userId: SchoolMembership['user_id']
+            schoolId: SchoolMembership['school_id']
+        },
+        SchoolMembership
+    >()
 
     const usersFound = await getUsers(rows, manager, rowNumber)
+
+    const rowInfo: {
+        user?: User
+        cls?: Class
+        organizationMembership?: OrganizationMembership
+        row: UserRow
+    }[] = []
 
     for (const [index, row] of rows.entries()) {
         const {
@@ -50,6 +71,7 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
             user,
             organizationMembership,
             cls,
+            schoolMembership,
         } = await processUserFromCSVRow(
             manager,
             row,
@@ -60,13 +82,54 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
             usersFound
         )
 
+        if (organizationMembership !== undefined) {
+            orgMemberships.set(
+                {
+                    userId: organizationMembership.user_id,
+                    orgId: organizationMembership.organization_id,
+                },
+                organizationMembership
+            )
+        }
+
+        if (schoolMembership !== undefined) {
+            schoolMemberships.set(
+                {
+                    userId: schoolMembership.user_id,
+                    schoolId: schoolMembership.school_id,
+                },
+                schoolMembership
+            )
+        }
+
+        rowInfo.push({
+            user,
+            organizationMembership,
+            cls,
+            row,
+        })
+
+        allRowErrors.push(...rowErrors)
+    }
+
+    if (allRowErrors.length !== 0) {
+        return allRowErrors
+    }
+
+    await manager.save(Array.from(orgMemberships.values()))
+    await manager.save(Array.from(schoolMemberships.values()))
+
+    for (const [
+        index,
+        { cls, organizationMembership, user, row },
+    ] of rowInfo.entries()) {
         // redo to avoid non null assertions
-        if (rowErrors.length === 0 && cls !== undefined) {
+        if (cls !== undefined) {
             const classRowErrors = await addUserToClass(
                 manager,
                 row,
-                rowNumber,
-                cls!,
+                rowNumber + index,
+                cls,
                 user!,
                 organizationMembership!
             )
@@ -75,7 +138,6 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
             }
             allRowErrors.push(...classRowErrors)
         }
-        allRowErrors.push(...rowErrors)
     }
     await manager.save(Array.from(classes.values()))
 
@@ -170,6 +232,7 @@ export const processUserFromCSVRow = async (
     organizationMembership?: OrganizationMembership
     user?: User
     cls?: Class
+    schoolMembership?: SchoolMembership
 }> => {
     const rowErrors: CSVError[] = []
     // First check static validation constraints
@@ -523,10 +586,10 @@ export const processUserFromCSVRow = async (
         }
     }
 
-    await manager.save(organizationMembership)
+    let schoolMembership: SchoolMembership | undefined
 
     if (school) {
-        let schoolMembership = await manager.findOne(SchoolMembership, {
+        schoolMembership = await manager.findOne(SchoolMembership, {
             where: {
                 school_id: school.school_id,
                 user_id: user.user_id,
@@ -539,11 +602,10 @@ export const processUserFromCSVRow = async (
             schoolMembership.school = Promise.resolve(school)
             schoolMembership.user_id = user.user_id
             schoolMembership.user = Promise.resolve(user)
-            await manager.save(schoolMembership)
         }
     }
 
-    return { rowErrors, organizationMembership, user, cls }
+    return { rowErrors, organizationMembership, user, cls, schoolMembership }
 }
 
 export async function addUserToClass(
@@ -561,7 +623,7 @@ export async function addUserToClass(
         .innerJoin('Permission.roles', 'Role')
         .innerJoin('Role.memberships', 'OrganizationMembership')
         .where('OrganizationMembership.user_id = :user_id', {
-            user_id: user.user_id,
+            user_id: organizationMembership.user_id,
         })
         .andWhere('OrganizationMembership.organization_id = :organization_id', {
             organization_id: organizationMembership.organization_id,
