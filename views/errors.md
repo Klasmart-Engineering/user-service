@@ -1,6 +1,6 @@
 ## Error Handling
 
-All errors are returned in the `errors` array in the GraphQL response. Please see [customError.ts](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/src/types/errors/customError.ts) for the full list of application-defined error codes and messages.
+All errors are returned in the `errors` array in the GraphQL response. Please see [customError.ts](https://github.com/KL-Engineering/user-service/tree/main/src/types/errors/customError.ts) for the full list of application-defined error codes and messages.
 
 
 ### Batch Mutations
@@ -79,4 +79,4 @@ Example response:
 
 ### Additional resources
 - [Apollo server error handling documentation](https://www.apollographql.com/docs/apollo-server/data/errors/)
-- [Batch mutation implementation design](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/059-COMMON-STRUCTURE-FOR-MUTATIONS.md)
+- [Batch mutation implementation design](https://github.com/KL-Engineering/user-service/tree/main/documents/rfc/059-COMMON-STRUCTURE-FOR-MUTATIONS.md)

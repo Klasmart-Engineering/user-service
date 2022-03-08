@@ -8,7 +8,7 @@ This application is the one responsible for offering CRUD functionality, via a g
 
 ## Where do I start ?
 
-First of all if you haven't done it yet, follow the [README](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/README.md) to start the application locally and make sure all the tests go green on your machine.
+First of all if you haven't done it yet, follow the [README](https://github.com/KL-Engineering/user-service/blob/main/README.md) to start the application locally and make sure all the tests go green on your machine.
 
 ## What's next ?
 

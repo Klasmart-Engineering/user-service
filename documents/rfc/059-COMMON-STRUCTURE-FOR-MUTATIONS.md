@@ -13,10 +13,10 @@ structure should accomplish the following objectives:
 ## Background
 
 This is a follow-up from
-[RFC-038-HOW-TO-STRUCTURE-MUTATIONS](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/038-How-to-structure-mutations.md),
+[RFC-038-HOW-TO-STRUCTURE-MUTATIONS](https://github.com/KL-Engineering/user-service/tree/main/documents/rfc/038-How-to-structure-mutations.md),
 related to issue [AD-1724](https://calmisland.atlassian.net/browse/AD-1724).
 While RFC-038 specifies what to implement (details specified in the sub-RFCs located
-[here](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/mutations/)),
+[here](https://github.com/KL-Engineering/user-service/tree/main/documents/rfc/mutations/)),
 it gives no instructions on how. This led to a divergence in our approaches within the team,
 which ended up slowing dow the development process.
 
