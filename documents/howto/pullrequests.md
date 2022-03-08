@@ -84,8 +84,8 @@ Try to dedicate some time each day to review pull requests.
 ### Make your stance clear
 
 - If you are happy with the changes and don't think any suggestions should block the merge, approve the PR.
-- If you have think additional work/discussion is required before the PR can merge, request changes on Bitbucket.
-- If you change your mind at any time (perhaps based on new suggestions), update your review status on Bitbucket.
+- If you have think additional work/discussion is required before the PR can merge, request changes on Github.
+- If you change your mind at any time (perhaps based on new suggestions), update your review status on Github.
 - Don't worry about disagreeing with your coworkers, that's all part of healthy debate.  
 - Consider using [conventional comments](https://conventionalcomments.org/) to clarify your comments.
 
