@@ -433,10 +433,15 @@ describe('subcategory', () => {
                         .rejected) as APIErrorCollection
 
                     const subcategoryName = input[0].name
+                    const subcategoryOrganization = await Organization.findOne(
+                        input[0].organizationId
+                    )
+                    const organizationId =
+                        subcategoryOrganization?.organization_id
                     const errors = response.errors
                     expect(errors.length).to.eq(1)
                     expect(errors[0].message).to.be.eq(
-                        `Subcategory ${subcategoryName} doesn't exist.`
+                        `On index 0, Subcategory ${subcategoryName} already exists for Organization ${organizationId}.`
                     )
                 })
             })

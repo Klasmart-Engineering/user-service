@@ -272,8 +272,8 @@ export function createEntityAPIError(
 
     if (['existentChild', 'nonExistentChild'].includes(errorType)) {
         errorDetails.parentEntity = parentEntity
-        errorDetails.parentId = parentName
-        errorDetails.entityId = name
+        errorDetails.parentValue = parentName
+        errorDetails.entityValue = name
     } else {
         errorDetails.entityName = name
     }

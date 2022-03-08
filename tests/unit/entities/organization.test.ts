@@ -37,9 +37,9 @@ context('Organization', () => {
                 'message',
                 'variables',
                 'entity',
-                'entityId',
+                'entityValue',
                 'parentEntity',
-                'parentId',
+                'parentValue',
             ])
         }
 
@@ -53,9 +53,9 @@ context('Organization', () => {
                 message: `${childEntity} ${id} doesn't exist for Organization ${organization.organization_id}.`,
                 variables: [variable],
                 entity: childEntity,
-                entityId: id,
+                entityValue: id,
                 parentEntity: 'Organization',
-                parentId: organization.organization_id,
+                parentValue: organization.organization_id,
             }
         }
 

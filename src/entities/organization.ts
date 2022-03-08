@@ -615,9 +615,9 @@ export class Organization extends CustomBaseEntity {
                         message: customErrors.existent_child_entity.message,
                         variables: ['shortcode'],
                         entity: 'OrganizationMembership',
-                        entityId: duplicateShortcode.shortcode,
+                        entityValue: duplicateShortcode.shortcode,
                         parentEntity: 'Organization',
-                        parentId: this.organization_id,
+                        parentValue: this.organization_id,
                     })
                 )
             }
@@ -652,9 +652,9 @@ export class Organization extends CustomBaseEntity {
                             message: customErrors.existent_child_entity.message,
                             variables: ['email', 'phone', 'user_id'],
                             entity: 'User',
-                            entityId: existingUser.user_id,
+                            entityValue: existingUser.user_id,
                             parentEntity: 'Organization',
-                            parentId: this.organization_id,
+                            parentValue: this.organization_id,
                         })
                     )
                 }
@@ -807,9 +807,9 @@ export class Organization extends CustomBaseEntity {
                         message: customErrors.existent_child_entity.message,
                         variables: ['shortcode'],
                         entity: 'OrganizationMembership',
-                        entityId: shortcode,
+                        entityValue: shortcode,
                         parentEntity: 'Organization',
-                        parentId: this.organization_id,
+                        parentValue: this.organization_id,
                     })
                 )
             }
@@ -845,9 +845,9 @@ export class Organization extends CustomBaseEntity {
                         message: customErrors.nonexistent_child.message,
                         variables: ['user_id', 'organization_id'],
                         entity: 'User',
-                        entityId: user.user_id,
+                        entityValue: user.user_id,
                         parentEntity: 'Organization',
-                        parentId: this.organization_id,
+                        parentValue: this.organization_id,
                     })
                 )
             }
@@ -980,9 +980,9 @@ export class Organization extends CustomBaseEntity {
                         message: customErrors.nonexistent_child.message,
                         variables,
                         entity: repository.metadata.targetName,
-                        entityId: id,
+                        entityValue: id,
                         parentEntity: 'Organization',
-                        parentId: this.organization_id,
+                        parentValue: this.organization_id,
                     })
             )
         return { data: records, errors }

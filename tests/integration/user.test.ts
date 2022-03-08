@@ -2108,9 +2108,9 @@ describe('user', () => {
                             res,
                             {
                                 entity: 'User',
-                                entityId: user1.user_id,
+                                entityValue: user1.user_id,
                                 parentEntity: 'Organization',
-                                parentId: organization1.organization_id,
+                                parentValue: organization1.organization_id,
                                 index: 0,
                             },
                             [''],
@@ -2167,9 +2167,9 @@ describe('user', () => {
                             res,
                             {
                                 entity: 'User',
-                                entityId: user3.user_id,
+                                entityValue: user3.user_id,
                                 parentEntity: 'Organization',
-                                parentId: organization3.organization_id,
+                                parentValue: organization3.organization_id,
                                 index: 2,
                             },
                             [''],

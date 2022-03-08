@@ -138,9 +138,9 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 customErrors.nonexistent_child.message,
                 {
                     entity: 'Organization Role',
-                    entityId: row.organization_role_name,
+                    entityValue: row.organization_role_name,
                     parentEntity: 'Organization',
-                    parentId: row.organization_name,
+                    parentValue: row.organization_name,
                 }
             )
         } else {
@@ -178,9 +178,9 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     customErrors.nonexistent_child.message,
                     {
                         entity: 'School',
-                        entityId: row.school_name,
+                        entityValue: row.school_name,
                         parentEntity: 'Organization',
-                        parentId: row.organization_name,
+                        parentValue: row.organization_name,
                     }
                 )
                 schoolIfPresentExistsInOrg = false
@@ -245,9 +245,9 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     customErrors.nonexistent_child.message,
                     {
                         entity: 'Class',
-                        entityId: row.class_name,
+                        entityValue: row.class_name,
                         parentEntity: 'School',
-                        parentId: row.school_name || '',
+                        parentValue: row.school_name || '',
                     }
                 )
             } else {

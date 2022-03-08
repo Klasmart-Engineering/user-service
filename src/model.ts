@@ -548,9 +548,9 @@ export class Model {
                     message: customErrors.nonexistent_child.message,
                     variables: ['role_id', 'organization_id'],
                     entity: 'Role',
-                    entityId: newRole.role_id,
+                    entityValue: newRole.role_id,
                     parentEntity: 'Organization',
-                    parentId: organization.organization_id,
+                    parentValue: organization.organization_id,
                 })
             )
         if (errors.length > 0) throw new APIErrorCollection(errors)
