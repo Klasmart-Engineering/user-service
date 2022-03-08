@@ -55,7 +55,7 @@ type SubcategoryConnectionNode {
 
 ## New mutations
 
-Based on [RFC-038: How to structure mutations](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/038-How-to-structure-mutations.md), we want to define new top-level mutations.
+Based on [RFC-038: How to structure mutations](https://github.com/KL-Engineering/user-service/tree/main/documents/rfc/038-How-to-structure-mutations.md), we want to define new top-level mutations.
 
 - Create subcategories
 - Update subcategories (don't allow updating `organization_id`)

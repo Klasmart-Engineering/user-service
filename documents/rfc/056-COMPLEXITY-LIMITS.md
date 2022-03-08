@@ -2,7 +2,7 @@
 
 ## Synopsis
 
-[RFC 045-CHILD-CONNECTIONS](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/044-CHILD-CONNECTIONS.md) proposed adding nested connection fields to our schema.
+[RFC 045-CHILD-CONNECTIONS](https://github.com/KL-Engineering/user-service/tree/main/documents/rfc/044-CHILD-CONNECTIONS.md) proposed adding nested connection fields to our schema.
 
 This would give our clients the ability to construct very expensive operations that could have a performance impact on our application and/or database.
 
@@ -323,7 +323,7 @@ schoolsConnection{
 
 #### Proof of concept
 
-See [this commit](https://bitbucket.org/calmisland/kidsloop-user-service/commits/2541aac0150e8a20cf51c9c9356373eac267d77f) of [this PR](https://bitbucket.org/calmisland/kidsloop-user-service/pull-requests/632/dont-merge-ud-1107-complexity-limit-poc)
+See [this commit](https://github.com/KL-Engineering/user-service/commit/2541aac0150e8a20cf51c9c9356373eac267d77f) of [this PR](https://bitbucket.org/calmisland/kidsloop-user-service/pull-requests/632/dont-merge-ud-1107-complexity-limit-poc)
 
 It uses [graphql-query-complexity](https://github.com/slicknode/graphql-query-complexity), a library that lets you perform a arbitrary complexity calculations for each field of a query.
 
@@ -386,7 +386,7 @@ What values we should give input fields is out of scope of this RFC and should b
 
 #### Proof of concept
 
-See [this commit](https://bitbucket.org/calmisland/kidsloop-user-service/commits/8689540a4d5b540aea1c9fa7ffb1355341064670) of [this PR](https://bitbucket.org/calmisland/kidsloop-user-service/pull-requests/632/dont-merge-ud-1107-complexity-limit-poc)
+See [this commit](https://github.com/KL-Engineering/user-service/commit/8689540a4d5b540aea1c9fa7ffb1355341064670) of [this PR](https://bitbucket.org/calmisland/kidsloop-user-service/pull-requests/632/dont-merge-ud-1107-complexity-limit-poc)
 
 We have to implement the parsing of input arguments ourselves, as [graphql-query-complexity](https://github.com/slicknode/graphql-query-complexity) only supplies argument values, not associated directives.
 
@@ -413,7 +413,7 @@ We will enforce a limit on top-level fields allowed in an operation and will all
 
 #### Proof of concept
 
-See [this commit](https://bitbucket.org/calmisland/kidsloop-user-service/commits/b2242fca32bc7eec2c713350ce1c6cf5c175690a) of [this PR](https://bitbucket.org/calmisland/kidsloop-user-service/pull-requests/632/dont-merge-ud-1107-complexity-limit-poc)
+See [this commit](https://github.com/KL-Engineering/user-service/commit/b2242fca32bc7eec2c713350ce1c6cf5c175690a) of [this PR](https://bitbucket.org/calmisland/kidsloop-user-service/pull-requests/632/dont-merge-ud-1107-complexity-limit-poc)
 
 Clients can still work around that by splitting fields over multiple operations/requests, but solving that would require a rate limiting solution which is out of scope for this RFC.
 

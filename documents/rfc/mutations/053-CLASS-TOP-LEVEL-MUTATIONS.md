@@ -70,7 +70,7 @@ type Class {
 
 ## New mutations
 
-Base on agreed [RFC-038: How to structure mutations](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/038-How-to-structure-mutations.md), we want to define new top levels mutations.
+Base on agreed [RFC-038: How to structure mutations](https://github.com/KL-Engineering/user-service/tree/main/documents/rfc/038-How-to-structure-mutations.md), we want to define new top levels mutations.
 
 - Create classes with name & shortcode
 - Delete classes

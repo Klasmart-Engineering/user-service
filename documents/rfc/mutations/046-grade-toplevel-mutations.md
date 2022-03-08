@@ -60,7 +60,7 @@ type GradeConnectionNode {
 
 ## New mutations
 
-Based on [RFC-038: How to structure mutations](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/038-How-to-structure-mutations.md), we want to define new top-level mutations. Below, we define the standard root mutations we want.
+Based on [RFC-038: How to structure mutations](https://github.com/KL-Engineering/user-service/tree/main/documents/rfc/038-How-to-structure-mutations.md), we want to define new top-level mutations. Below, we define the standard root mutations we want.
 
 - Create grades
 - Update grades (don't allow updating `organization_id`)

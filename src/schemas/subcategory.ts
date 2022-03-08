@@ -54,7 +54,7 @@ const typeDefs = gql`
         # Mutations
         delete(_: Int): Boolean
             @deprecated(
-                reason: "Sunset Date: 10/02/2022 Details: https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/mutations/050-Subcategory-toplevel-mutations.md"
+                reason: "Sunset Date: 10/02/2022 Details: https://github.com/KL-Engineering/user-service/tree/main/documents/rfc/mutations/050-Subcategory-toplevel-mutations.md"
             )
     }
 
