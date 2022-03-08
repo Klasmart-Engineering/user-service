@@ -17,6 +17,9 @@ import { createAdminUser } from '../../../utils/testEntities'
 import { CreateEntityRowCallback } from '../../../../src/types/csv/createEntityRowCallback'
 import { CSVError } from '../../../../src/types/csv/csvError'
 import { processUserFromCSVRows } from '../../../../src/utils/csv/user'
+import { addCsvError } from '../../../../src/utils/csv/csvUtils'
+import { customErrors } from '../../../../src/types/errors/customError'
+import { config } from '../../../../src/config/config'
 
 use(chaiAsPromised)
 
@@ -111,7 +114,7 @@ describe('read file', () => {
         const encoding = '7bit'
         const dummyFn: CreateEntityRowCallback = async (
             manager: EntityManager,
-            row: any,
+            rows: any,
             rowCount: number
         ) => {
             return []
@@ -151,7 +154,7 @@ describe('read file', () => {
         const encoding = '7bit'
         const dummyFn: CreateEntityRowCallback = async (
             manager: EntityManager,
-            row: any,
+            rows: any,
             rowCount: number
         ) => {
             return []
@@ -189,33 +192,80 @@ describe('read file', () => {
         'when there are more rows then MUTATION_MAX_INPUT_ARRAY_SIZE',
         () => {
             const filename = 'users_example_big.csv'
-            const mimetype = 'text/csv'
-            const encoding = '7bit'
-            const dummyFn: CreateEntityRowCallback = async (
-                manager: EntityManager,
-                row: any,
-                rowCount: number
-            ) => {
-                return []
+            const upload: Upload = {
+                filename: filename,
+                mimetype: 'text/csv',
+                encoding: '7bit',
+                createReadStream: () => {
+                    return fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+                },
             }
-            it('should work', async () => {
-                const upload: Upload = {
-                    filename: filename,
-                    mimetype: mimetype,
-                    encoding: encoding,
-                    createReadStream: () => {
-                        return fs.createReadStream(
-                            resolve(`tests/fixtures/${filename}`)
-                        )
+            it('should invokes the callback with correct parameters', async () => {
+                const expectedBatches = [
+                    {
+                        rowsLength: config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE,
+                        rowCount: 1,
                     },
-                }
-
+                    {
+                        rowsLength: 1,
+                        rowCount: 51,
+                    },
+                ]
                 await readCSVFile(
                     connection.manager,
                     upload,
-                    [dummyFn],
+                    [
+                        async (
+                            manager: EntityManager,
+                            rows: any,
+                            rowCount: number
+                        ) => {
+                            const expectedBatch = expectedBatches.shift()!
+                            expect(rows).to.have.length(
+                                expectedBatch.rowsLength
+                            )
+                            expect(rowCount).to.eq(expectedBatch.rowCount)
+                            return []
+                        },
+                    ],
                     adminPermissions
                 )
+            })
+
+            it('collects errors returned from the callbacks', async () => {
+                const error = await expect(
+                    readCSVFile(
+                        connection.manager,
+                        upload,
+                        [
+                            async (
+                                manager: EntityManager,
+                                rows: any,
+                                rowCount: number
+                            ) => {
+                                const rowErrors: CSVError[] = []
+                                addCsvError(
+                                    rowErrors,
+                                    customErrors.nonexistent_entity.code,
+                                    rowCount,
+                                    'organization_name',
+                                    customErrors.nonexistent_entity.message,
+                                    {
+                                        entity: 'Organization',
+                                        attribute: 'Name',
+                                        entityName: 'fake entity name',
+                                    }
+                                )
+                                return rowErrors
+                            },
+                        ],
+                        adminPermissions
+                    )
+                ).to.eventually.be.rejected
+                // one per callback invocation
+                expect(error).to.have.length(2)
             })
         }
     )
