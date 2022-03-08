@@ -40,6 +40,7 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
     queryResultCache: QueryResultCache
 ) => {
     const allRowErrors = []
+    const users = new Map<User['user_id'], User>()
     const classes = new Map<Class['class_id'], Class>()
     const orgMemberships = new ObjMap<
         {
@@ -65,13 +66,23 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
         row: UserRow
     }[] = []
 
+    const rowInfo1: {
+        user?: User
+        cls?: Class
+        org?: Organization
+        school?: School
+        organizationRole?: Role
+        row: UserRow
+    }[] = []
+
     for (const [index, row] of rows.entries()) {
         const {
             rowErrors,
             user,
-            organizationMembership,
             cls,
-            schoolMembership,
+            org,
+            school,
+            organizationRole,
         } = await processUserFromCSVRow(
             manager,
             row,
@@ -80,6 +91,41 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
             userPermissions,
             queryResultCache,
             usersFound
+        )
+
+        if (rowErrors.length === 0) {
+            rowInfo1.push({
+                user,
+                cls,
+                org,
+                school,
+                organizationRole,
+                row,
+            })
+
+            users.set(user!.user_id, user!)
+        }
+
+        allRowErrors.push(...rowErrors)
+    }
+
+    if (allRowErrors.length !== 0) {
+        return allRowErrors
+    }
+
+    await manager.save(Array.from(users.values()))
+
+    for (const { user, cls, org, school, organizationRole, row } of rowInfo1) {
+        const {
+            organizationMembership,
+            schoolMembership,
+        } = await createOrUpdateMemberships(
+            manager,
+            row,
+            user!,
+            org!,
+            organizationRole!,
+            school!
         )
 
         if (organizationMembership !== undefined) {
@@ -108,8 +154,6 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
             cls,
             row,
         })
-
-        allRowErrors.push(...rowErrors)
     }
 
     if (allRowErrors.length !== 0) {
@@ -229,10 +273,11 @@ export const processUserFromCSVRow = async (
     usersFound: Map<number, User>
 ): Promise<{
     rowErrors: CSVError[]
-    organizationMembership?: OrganizationMembership
     user?: User
     cls?: Class
-    schoolMembership?: SchoolMembership
+    org?: Organization
+    organizationRole?: Role
+    school?: School
 }> => {
     const rowErrors: CSVError[] = []
     // First check static validation constraints
@@ -555,8 +600,20 @@ export const processUserFromCSVRow = async (
         return { rowErrors }
     }
 
-    await manager.save(user)
+    return { rowErrors, user, cls, org, organizationRole, school }
+}
 
+export const createOrUpdateMemberships = async (
+    manager: EntityManager,
+    row: UserRow,
+    user: User,
+    org: Organization,
+    organizationRole: Role,
+    school?: School
+): Promise<{
+    organizationMembership: OrganizationMembership
+    schoolMembership?: SchoolMembership
+}> => {
     let organizationMembership = await manager.findOne(OrganizationMembership, {
         where: {
             organization_id: org.organization_id,
@@ -605,7 +662,7 @@ export const processUserFromCSVRow = async (
         }
     }
 
-    return { rowErrors, organizationMembership, user, cls, schoolMembership }
+    return { organizationMembership, schoolMembership }
 }
 
 export async function addUserToClass(
