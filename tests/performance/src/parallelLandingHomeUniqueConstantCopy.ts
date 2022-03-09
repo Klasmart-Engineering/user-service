@@ -31,35 +31,35 @@ export const options: Options = {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students01',
-            duration: "20s",
-        },/* 
+            duration: "30s",
+        },
         student02: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students02',
-            duration: "10m",
+            duration: "30s",
         },
-        student03: {
-            executor: 'constant-vus',
-            vus: parseInt(__ENV.VUS, 10),
-            exec: 'students03',
-            duration: "10m",
-        },
-        student04: {
-            executor: 'constant-vus',
-            vus: parseInt(__ENV.VUS, 10),
-            exec: 'students04',
-            duration: "10m",
-        }, */
+        // student03: {
+        //     executor: 'constant-vus',
+        //     vus: parseInt(__ENV.VUS, 10),
+        //     exec: 'students03',
+        //     duration: "10m",
+        // },
+        // student04: {
+        //     executor: 'constant-vus',
+        //     vus: parseInt(__ENV.VUS, 10),
+        //     exec: 'students04',
+        //     duration: "10m",
+        // },
     },
-    setupTimeout: '5m',
+    setupTimeout: '10m',
 };
 
 //////////////////////
 
 export function setup() {
     let i = 1;
-    const l = parseInt(__ENV.VUS, 10) + 1;
+    const l = (parseInt(__ENV.VUS, 10) * 4) + 1;
     let data = {};
 
     for (i; i < l; i++) {
@@ -107,6 +107,8 @@ export function setup() {
         console.log(`Logged in student: ${process.env.B2C_USERNAME}${3000 + i}@${process.env.B2C_DOMAIN}`);
         //console.log(JSON.stringify(data));
     }
+
+    console.log(JSON.stringify(data));
     
     return data;
 };
@@ -129,20 +131,20 @@ export function students01(data: { [key: string]: { res: any, userId: string }})
     landingV3Students(data[`student${__VU}`]);
 }
 
-/*
 export function students02(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data[`student${__VU}`].res.cookies?.access[0].value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data[`student${__VU + 2000}`].res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`student${__VU}`].res.cookies?.refresh[0].value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`student${__VU + 2000}`].res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
 
-    landingV3Students(data[`student${__VU}`]);
+    landingV3Students(data[`student${__VU + 2000}`]);
 }
 
+/*
 export function students03(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data[`student${__VU}`].res.cookies?.access[0].value, {
