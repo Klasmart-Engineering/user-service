@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import { Connection } from 'typeorm'
 import faker from 'faker'
-
 import { createTestConnection } from '../../utils/testConnection'
 import { createOrganization } from '../../factories/organization.factory'
 import { Organization } from '../../../src/entities/organization'
