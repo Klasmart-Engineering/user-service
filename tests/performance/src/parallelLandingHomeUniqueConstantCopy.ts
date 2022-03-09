@@ -31,7 +31,7 @@ export const options: Options = {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students01',
-            duration: "1m",
+            duration: "20s",
         },/* 
         student02: {
             executor: 'constant-vus',
@@ -58,29 +58,54 @@ export const options: Options = {
 //////////////////////
 
 export function setup() {
-    let i = 0;
-    const l = 2;
+    let i = 1;
+    const l = parseInt(__ENV.VUS, 10) + 1;
     let data = {};
 
     for (i; i < l; i++) {
-    const prefix = i < 1000 ? i : i < 2000 ? i + 2000 : i + 3000
-    //const prefix = __VU;
+        // const prefix = i < 1000 ? i : i < 2000 ? i + 2000 : i + 3000
 
-    const studentLoginPayload = {
-        deviceId: "webpage",
-        deviceName: "k6",
-        email: `${process.env.B2C_USERNAME}${prefix}@${process.env.B2C_DOMAIN}`,
-        pw: process.env.B2C_PASSWORD as string,
-    };
+        let studentLoginPayload = {
+            deviceId: "webpage",
+            deviceName: "k6",
+            email: `${process.env.B2C_USERNAME}${i}@${process.env.B2C_DOMAIN}`,
+            pw: process.env.B2C_PASSWORD as string,
+        };
 
-    const studentLoginData = loginSetup(studentLoginPayload);
-    data = { 
-        ...data, 
-        [`student${prefix}`]: studentLoginData,
-    };
+        const studentLoginData = loginSetup(studentLoginPayload);
+        data = { 
+            ...data, 
+            [`student${i}`]: studentLoginData,
+        };
 
-    console.log(`Logged in student: ${process.env.B2C_USERNAME}${prefix}@${process.env.B2C_DOMAIN}`);
-    //console.log(JSON.stringify(data));
+        console.log(`Logged in student: ${process.env.B2C_USERNAME}${i}@${process.env.B2C_DOMAIN}`);
+
+        studentLoginPayload = {
+            deviceId: "webpage",
+            deviceName: "k6",
+            email: `${process.env.B2C_USERNAME}${2000 + i}@${process.env.B2C_DOMAIN}`,
+            pw: process.env.B2C_PASSWORD as string,
+        };
+        data = { 
+            ...data, 
+            [`student${2000 + i}`]: studentLoginData,
+        };
+
+        console.log(`Logged in student: ${process.env.B2C_USERNAME}${2000 + i}@${process.env.B2C_DOMAIN}`);
+
+        studentLoginPayload = {
+            deviceId: "webpage",
+            deviceName: "k6",
+            email: `${process.env.B2C_USERNAME}${3000 + i}@${process.env.B2C_DOMAIN}`,
+            pw: process.env.B2C_PASSWORD as string,
+        };
+        data = { 
+            ...data, 
+            [`student${3000 + i}`]: studentLoginData,
+        };
+
+        console.log(`Logged in student: ${process.env.B2C_USERNAME}${3000 + i}@${process.env.B2C_DOMAIN}`);
+        //console.log(JSON.stringify(data));
     }
     
     return data;
@@ -91,16 +116,16 @@ export function setup() {
 
 export function students01(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', data[`student${__VU}`].res.cookies?.access[0].value, {
+    jar.set(process.env.COOKIE_URL as string, 'access', data[`student${__VU}`].res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`student${__VU}`].res.cookies?.refresh[0].value, {
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`student${__VU}`].res.cookies?.refresh[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    /* landingV2(studentLoginData);
-    sleep(5); 
-    landingSchedule();*/
+    // /* landingV2(studentLoginData);
+    // sleep(5); 
+    // landingSchedule();*/
     landingV3Students(data[`student${__VU}`]);
 }
 
