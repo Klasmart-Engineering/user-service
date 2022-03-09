@@ -1783,11 +1783,13 @@ export async function updateOrganizationUsers(
                 context.permissions.getUserId()
             )
         )
-        throw errs
+        throw new APIErrorCollection(errs)
     }
 
     const inputValidation = validationOverAllUpdateOrganizationInput(theInput)
     const maps = await buildUpdateUserMembershipEntityMap(manager, theInput)
+
+    errs.push(...inputValidation.apiErrors)
 
     const organization = await manager.findOne(
         Organization,
@@ -1812,6 +1814,10 @@ export async function updateOrganizationUsers(
             processedEntities.push(entities)
             if (entities.user)
                 results.push(buildUpdateOrganizationUsersOutput(entities.user))
+        }
+        errs.push(...validationErrs)
+        if (errs.length > 0) {
+            throw new APIErrorCollection(errs)
         }
         await applyUpdateOrganizationUsersToDatabase(manager, processedEntities)
     }
