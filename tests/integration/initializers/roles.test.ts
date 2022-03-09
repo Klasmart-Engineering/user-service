@@ -12,9 +12,9 @@ import { createAdminUser } from '../../utils/testEntities'
 import { Model } from '../../../src/model'
 import { Organization } from '../../../src/entities/organization'
 import RoleInitializer from '../../../src/initializers/roles'
+import { Role } from '../../../src/entities/role'
 import { Permission } from '../../../src/entities/permission'
 import { permissionInfo } from '../../../src/permissions/permissionInfo'
-import { Role } from '../../../src/entities/role'
 import { createRole } from '../../factories/role.factory'
 import { createPermission } from '../../factories/permission.factory'
 import { PermissionName } from '../../../src/permissions/permissionNames'
@@ -98,6 +98,24 @@ describe('RolesInitializer', () => {
                 expect(dbPermissions).to.deep.members(resetPermissions)
             })
         })
+
+        context('when system roles already exist', () => {
+            beforeEach(async () => {
+                await RoleInitializer.run()
+            })
+
+            it('should not create them again', async () => {
+                const rolesBefore = await Role.find()
+
+                // Second initialization, new roles would't be created
+                await RoleInitializer.run()
+                const rolesAfter = await Role.find()
+
+                expect(rolesAfter).to.have.lengthOf(rolesBefore.length)
+                expect(rolesAfter).to.deep.equalInAnyOrder(rolesBefore)
+            })
+        })
+
         context(
             'when an existing permission is not in the permissionInfo.csv file but is in an existing custom role',
             () => {
