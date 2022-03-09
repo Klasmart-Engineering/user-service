@@ -23,7 +23,7 @@ import { config } from '../../../../src/config/config'
 
 use(chaiAsPromised)
 
-describe.only('read file', () => {
+describe('read file', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
     let adminPermissions: UserPermissions
@@ -77,7 +77,7 @@ describe.only('read file', () => {
     })
 
     context('when there are dynamic constraint errors in multiple rows', () => {
-        it.only("validates all rows and doesn't terminate after the first", async () => {
+        it("validates all rows and doesn't terminate after the first", async () => {
             try {
                 await readCSVFile(
                     connection.manager,

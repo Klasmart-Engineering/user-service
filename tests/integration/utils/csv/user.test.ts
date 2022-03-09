@@ -47,7 +47,7 @@ import { objectToKey } from '../../../../src/utils/stringUtils'
 
 use(chaiAsPromised)
 
-describe.only('processUserFromCSVRow', async () => {
+describe('processUserFromCSVRow', async () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
     let cls: Class

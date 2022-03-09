@@ -110,7 +110,6 @@ export const createTestConnection = async ({
             },
             slaves: slavesURLList,
         },
-        maxQueryExecutionTime: 1,
     }) as Promise<TestConnection>
 }
 
