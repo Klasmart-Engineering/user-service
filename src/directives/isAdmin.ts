@@ -25,7 +25,6 @@ import { School } from '../entities/school'
 import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
-import { distinctMembers } from './isAdminUtils'
 
 //
 // changing permission rules? update the docs: permissions.md
@@ -250,9 +249,41 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     const email = permissions.getEmail()
     const phone = permissions.getPhone()
 
-    // generate queries to find users for each of the conditions below,
-    // then do a WHERE user_id IN on each query to find all visible users
-    const visibleUserQueries: SelectQueryBuilder<unknown>[] = []
+    // for each condition generate a WHERE clause, then OR
+    // them all together
+    const userFilters: {
+        where: string
+        params?: Record<string, unknown>
+    }[] = []
+
+    userFilters.push({
+        where: 'User.user_id = :user_id',
+        params: { user_id },
+    })
+
+    // assuming no extra permissions, you should only be able to see
+    // users whose profiles you can sign in as
+    // meaning those that are returned by the profiles resolver
+    // profiles does not return users with matching emails or phone numbers if username is set
+    // do the same here
+    // we don't match on username, because username is supposed to be globally unique
+    // which makes it the same as matching on user_id
+
+    if (permissions.getUsername() === undefined) {
+        if (email) {
+            userFilters.push({
+                where: 'User.email = :email',
+                params: { email },
+            })
+        }
+        // todo: make this an else if, to match myUsers resolver
+        if (phone) {
+            userFilters.push({
+                where: 'User.phone = :phone',
+                params: { phone },
+            })
+        }
+    }
 
     // avoid querying org users that have already been queried using
     // less restrictive permissions
@@ -263,32 +294,35 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
         PermissionName.view_users_40110,
     ])
 
-    if (userOrgs.length > 0) {
-        visibleUserQueries.push(
-            distinctMembers(
-                'organization_membership',
-                `organizationOrganizationId`,
-                userOrgs
-            )!
+    if (userOrgs.length) {
+        scope.leftJoin(
+            'User.memberships',
+            'OrganizationMembership',
+            'OrganizationMembership.organization IN (:...organizations)',
+            { organizations: userOrgs }
         )
+        userFilters.push({
+            where: 'OrganizationMembership.user_id IS NOT NULL',
+        })
         orgsWithFullAccess.push(...userOrgs)
     }
+
     // 2 - can we view school users?
-    const userSchoolOrgs = (
+    const orgsWithSchools = (
         await permissions.orgMembershipsWithPermissions([
             PermissionName.view_my_school_users_40111,
         ])
     ).filter((org) => !orgsWithFullAccess.includes(org))
 
-    if (userSchoolOrgs.length) {
+    if (orgsWithSchools.length) {
         // find a schools the user is a member of in these orgs
         const schoolIdsQuery = getRepository(SchoolMembership)
             .createQueryBuilder()
             .select('SchoolMembership.school_id')
             .innerJoin('SchoolMembership.school', 'School')
             .innerJoin('School.organization', 'Organization')
-            .where('Organization.organization_id in (:...ids)', {
-                ids: userSchoolOrgs,
+            .where('Organization.organization_id in (:...orgsWithSchools)', {
+                orgsWithSchools,
             })
             .andWhere('SchoolMembership.userUserId = :user_id', { user_id })
 
@@ -296,14 +330,18 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
             ({ SchoolMembership_school_id }) => SchoolMembership_school_id
         )
 
-        // you can view all users in the schools you belong to\
-        const qbDistinctMembers = distinctMembers(
-            'school_membership',
-            `schoolSchoolId`,
-            schoolIds
-        )
-        if (qbDistinctMembers) {
-            visibleUserQueries.push(qbDistinctMembers)
+        if (schoolIds.length) {
+            scope.leftJoin(
+                'User.school_memberships',
+                'SchoolMembership',
+                'SchoolMembership.school_id IN (:...schoolIds)',
+                {
+                    schoolIds,
+                }
+            )
+            userFilters.push({
+                where: 'SchoolMembership.user_id IS NOT NULL',
+            })
         }
     }
 
@@ -311,61 +349,48 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     const orgsWithClasses = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_my_class_users_40112,
     ])
-
     if (orgsWithClasses.length) {
         const classesTaught = await user.classesTeaching
         if (classesTaught?.length) {
-            visibleUserQueries.push(
-                distinctMembers(
-                    'user_classes_studying_class',
-                    'classClassId',
-                    classesTaught.map(({ class_id }) => class_id)
-                )!
+            const distinctMembers = (
+                membershipTable: string,
+                qb: SelectQueryBuilder<User>
+            ) => {
+                return qb
+                    .select('membership_table.userUserId', 'user_id')
+                    .distinct(true)
+                    .from(membershipTable, 'membership_table')
+                    .andWhere('membership_table.classClassId IN (:...ids)', {
+                        ids: classesTaught.map(({ class_id }) => class_id),
+                    })
+            }
+            scope.leftJoin(
+                (qb) => distinctMembers('user_classes_studying_class', qb),
+                'class_studying_membership',
+                'class_studying_membership.user_id = User.user_id'
             )
-            visibleUserQueries.push(
-                distinctMembers(
-                    'user_classes_teaching_class',
-                    'classClassId',
-                    classesTaught.map(({ class_id }) => class_id)
-                )!
+            scope.leftJoin(
+                (qb) => distinctMembers('user_classes_teaching_class', qb),
+                'class_teaching_membership',
+                'class_teaching_membership.user_id = User.user_id'
             )
+            userFilters.push({
+                where: 'class_studying_membership.user_id IS NOT NULL',
+            })
+            userFilters.push({
+                where: 'class_teaching_membership.user_id IS NOT NULL',
+            })
         }
     }
 
+    // encase all user filters in brackets to avoid conflicting
+    // with subsequent conditions
     scope.where(
         new Brackets((qb) => {
-            qb.orWhere('User.user_id = :user_id', {
-                user_id,
-            })
-            // assuming no extra permissions, you should only be able to see
-            // users whose profiles you can sign in as
-            // meaning those that are returned by the profiles resolver
-            // profiles does not return users with matching emails or phone numbers if username is set
-            // do the same here
-            // we don't match on username, because username is supposed to be globally unique
-            // which makes it the same as matching on user_id
-            if (permissions.getUsername() === undefined) {
-                if (email) {
-                    qb.orWhere('User.email = :email', {
-                        email,
-                    })
-                }
-                // todo: make this an else if, to match myUsers resolver
-                if (phone) {
-                    qb.orWhere('User.phone = :phone', {
-                        phone,
-                    })
-                }
+            for (const where of userFilters) {
+                // match users that meet ANY of the conditions
+                qb.orWhere(where.where, where.params)
             }
-            visibleUserQueries.forEach((userQuery) => {
-                qb.orWhere((_) => {
-                    scope.setParameters({
-                        ...scope.getParameters(),
-                        ...userQuery.getParameters(),
-                    })
-                    return `"User"."user_id" IN (${userQuery.getQuery()})`
-                })
-            })
         })
     )
 }
