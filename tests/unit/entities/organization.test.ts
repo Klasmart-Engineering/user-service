@@ -4,7 +4,6 @@ import faker from 'faker'
 import { createTestConnection } from '../../utils/testConnection'
 import { createOrganization } from '../../factories/organization.factory'
 import { Organization } from '../../../src/entities/organization'
-
 import RolesInitializer from '../../../src/initializers/roles'
 import { APIError, IAPIError } from '../../../src/types/errors/apiError'
 import { customErrors } from '../../../src/types/errors/customError'
