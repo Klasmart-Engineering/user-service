@@ -325,16 +325,10 @@ abstract class Mutation<
     protected readonly permissions: Context['permissions']
     protected entityMaps?: EntityMapType
     protected processedEntities: ModifiedEntityType[] = []
-    protected wipeExisting = false
 
-    constructor(
-        input: InputType[],
-        permissions: Context['permissions'],
-        wipeExisting = false
-    ) {
+    constructor(input: InputType[], permissions: Context['permissions']) {
         this.input = input
         this.permissions = permissions
-        this.wipeExisting = wipeExisting
     }
 
     // Abstract methods
@@ -493,8 +487,7 @@ export function mutate<
 >(
     mutation: new (
         argsInput: InputType[],
-        perms: Context['permissions'],
-        wipeExisting?: boolean
+        perms: Context['permissions']
     ) => Mutation<
         EntityType,
         InputType,
@@ -503,10 +496,9 @@ export function mutate<
         ModifiedEntityType
     >,
     args: Record<'input', InputType[]>,
-    permissions: Context['permissions'],
-    doWipeExisting?: boolean
+    permissions: Context['permissions']
 ): Promise<OutputType> {
-    return new mutation(args.input, permissions, doWipeExisting || false).run()
+    return new mutation(args.input, permissions).run()
 }
 
 export abstract class CreateMutation<
