@@ -71,7 +71,6 @@ import {
 } from '../utils/resolvers/inputValidation'
 import { Organization } from '../entities/organization'
 import { Class } from '../entities/class'
-import { schoolMembershipCheckAllowed } from '../../tests/utils/operations/schoolMembershipOps'
 import { CustomBaseEntity } from '../entities/customBaseEntity'
 
 export interface AddSchoolRolesToUsersEntityMap
@@ -1335,26 +1334,6 @@ async function queryRolesForPermission(
         )
         .getMany()
 }
-/*
-async function getMemberRoleIds(
-    manager: EntityManager,
-    userId: string,
-    organizationId: string
-): Promise<{ role_id: string }[]> {
-    return await manager
-        .createQueryBuilder()
-        .select('role.role_id AS role_id')
-        .from('role', 'role')
-        .innerJoin('OrganizationMembership.roles', 'role')
-        .where('OrganizationMembership.user_id = :user_id', {
-            user_id: userId,
-        })
-        .andWhere('OrganizationMembership.organization_id = :orgId', {
-            orgId: organizationId,
-        })
-        .getRawMany()
-}
-*/
 
 function generateParameterStr(len: number): string {
     let result = ''
@@ -1461,34 +1440,7 @@ async function getexistingOrgMembership(
     userIds: string[],
     organizationId: string
 ): Promise<Map<string, OrganizationMembership>> {
-    //const parameterStr = generateParameterStr(userIds.length)
-    //const lastParameterStr = '$' + (userIds.length + 1)
     const results = await manager
-        /*   
-     .query(
-        `
-    SELECT 
-  "membership"."created_at" AS "created_at", 
-  "membership"."updated_at" AS "updated_at", 
-  "membership"."deleted_at" AS "deleted_at", 
-  "membership"."status" AS "status", 
-  "membership"."user_id" AS "user_id", 
-  "membership"."organization_id" AS "organization_id", 
-  "membership"."join_timestamp" AS "join_timestamp", 
-  "membership"."shortcode" AS "shortcode", 
-  "membership"."userUserId" AS "userUserId", 
-  "membership"."organizationOrganizationId" AS "organizationOrganizationId" 
-FROM 
-  "organization_membership" "membership" 
-WHERE 
-  "membership"."user_id" IN (
-    ${parameterStr}
-  ) 
-  AND "membership"."organization_id" = ${lastParameterStr}
-    `,
-        [...userIds, organizationId]
-    )) as OrganizationMembership[]
-    */
         .createQueryBuilder(OrganizationMembership, 'membership')
         .where('membership.user_id IN (:...userIds)', { userIds: userIds })
         .andWhere('membership.organization_id = :orgId', {
@@ -1504,25 +1456,8 @@ async function getExistingSchoolMemberships(
     manager: EntityManager,
     userIds: string[]
 ): Promise<Map<string, SchoolMembership[]>> {
-    // const parameterStr = generateParameterStr(userIds.length)
     const results = await manager
-        /*
-        .query(
-        `select 
-                "schoolMembership"."created_at" AS "created_at",
-                "schoolMembership"."updated_at" AS "updated_at",
-                "schoolMembership"."deleted_at" AS "deleted_at",
-                "schoolMembership"."status" AS "status",
-                "schoolMembership"."user_id" AS "user_id",
-                "schoolMembership"."school_id" AS "school_id",
-                "schoolMembership"."join_timestamp" AS "join_timestamp",
-                "schoolMembership"."userUserId" AS "userUserId",
-                "schoolMembership"."schoolSchoolId" AS "schoolSchoolId"
-                FROM "school_membership" "schoolMembership" WHERE "schoolMembership"."user_id" 
-                IN (${parameterStr}) `,
-        [...userIds]
-    )) as SchoolMembership[]
-*/
+
         .createQueryBuilder(SchoolMembership, 'schoolMembership')
         .where('schoolMembership.user_id IN (:...userIds)', {
             userIds: userIds,
@@ -1627,7 +1562,6 @@ async function buildUpdateUserMembershipEntityMap(
     for (const member of input.members) {
         let isTeacher = false
         let isStudent = false
-        //userIds.push(member.userId)
         const sids = member.schools || []
 
         sids.reduce((s, e) => s.add(e), schoolIdsSet)
@@ -1712,19 +1646,8 @@ async function buildUpdateUserMembershipEntityMap(
             })
             .getMany()) || []
 
-    //    const schoolsMap = new Map<string, School[]>()
     const schoolsLookup = new Map(allSchools.map((s) => [s.school_id, s]))
-    /*
-    for (const [id, schoolIds] of schoolIdMap) {
-        const schools: School[] = []
-        for (const s of schoolIds) {
-            if (schoolsLookup.has(s)) {
-                schools.push(schoolsLookup.get(s)!)
-            }
-            schoolsMap.set(id, schools)
-        }
-    }
-*/
+
     const existingSchoolLookup = await getExistingSchools(manager, userIds)
     for (const [id, classIds] of classesStudyingIdMap) {
         const classes: Class[] = []
@@ -2119,10 +2042,7 @@ function processUpdateOrganizationUsers(
         }
 
         membership = maps.existingMembership.get(input.userId)
-        //membership = maps.membership.get({
-        //    organizationId: org.organization_id,
-        //    userId: input.userId,
-        //})
+
         if (membership) membership.roles = Promise.resolve(roles)
     }
 
@@ -2189,9 +2109,6 @@ async function applyUpdateOrganizationUsersToDatabase(
     manager: EntityManager,
     results: userMembership[]
 ): Promise<void> {
-    //const users: User[] = []
-    //const members: OrganizationMembership[] = []
-    //const schoolMembers: SchoolMembership[] = []
     const baseEntities: CustomBaseEntity[] = []
 
     for (const userMem of results) {
@@ -2204,6 +2121,4 @@ async function applyUpdateOrganizationUsersToDatabase(
         }
     }
     await manager.save(baseEntities)
-    //await manager.save(members)
-    //await manager.save(schoolMembers)
 }
