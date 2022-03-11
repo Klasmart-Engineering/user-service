@@ -117,17 +117,15 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
         })
     })
 
-    context('status_updated_at column already exists', () => {
-        it('rejects the migration to prevent overwriting existing data with deleted_at data', async () => {
+    context('migration is run twice', () => {
+        it('is benign', async () => {
             migrationsConnection = await createMigrationsTestConnection(
                 false,
                 false,
                 'migrations'
             )
             await runMigration()
-            await expect(runMigration()).to.be.rejectedWith(
-                'column "status_updated_at" of relation "school_membership" already exists'
-            )
+            await expect(runMigration()).to.be.fulfilled
         })
     })
 })

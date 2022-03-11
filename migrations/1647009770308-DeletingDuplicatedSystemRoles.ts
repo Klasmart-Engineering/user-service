@@ -34,8 +34,10 @@ const systemRoleNames = [
     studentRole.role_name,
 ]
 
-export class DeletingDuplicatedSystemRoles1644427897509
+export class DeletingDuplicatedSystemRoles1647009770308
     implements MigrationInterface {
+    name = 'DeletingDuplicatedSystemRoles1647009770308'
+
     public async up(queryRunner: QueryRunner): Promise<void> {
         const manager = queryRunner.manager
         // Searching for the roles that will be deleted
