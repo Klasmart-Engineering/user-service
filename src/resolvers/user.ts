@@ -1649,6 +1649,7 @@ async function buildUpdateUserMembershipEntityMap(
     const schoolsLookup = new Map(allSchools.map((s) => [s.school_id, s]))
 
     const existingSchoolLookup = await getExistingSchools(manager, userIds)
+
     for (const [id, classIds] of classesStudyingIdMap) {
         const classes: Class[] = []
         for (const c of classIds) {
@@ -2020,7 +2021,7 @@ function processUpdateOrganizationUsers(
     let membership: OrganizationMembership | undefined
 
     // we set the classes teaching and studying the logic of classes in other
-    // organizations has already been sorted
+    // organizations has already been sorted when we make the maps
 
     const classesTeaching = maps.classesTeaching.get(input.userId)
     const classesStudying = maps.classesStudying.get(input.userId)
@@ -2032,7 +2033,7 @@ function processUpdateOrganizationUsers(
     }
 
     // Set Membership roles if they are set
-
+    // If the roles are changing we need to update the organization membership
     if (input.roles && input.roles.length > 0) {
         const roles: Role[] = []
 
@@ -2059,22 +2060,27 @@ function processUpdateOrganizationUsers(
         const newSchoolSet = new Set(newSchoolIds)
 
         for (const smem of existingSchoolMemberships) {
+            // The new membership is in the old membership
+            // just delete it from the map that will be looked at later
             if (newSchoolSet.has(smem.school_id)) {
                 newSchoolMemberships.push(smem)
                 newSchoolSet.delete(smem.school_id)
             } else {
                 const sch = maps.existingSchoolLookup.get(smem.school_id)
                 if (sch) {
+                    // The old school membership is in a different organization
+                    // leave it alone
                     if (sch.organizationId != org.organization_id) {
                         newSchoolMemberships.push(smem)
                     } else {
-                        smem.status == Status.INACTIVE
+                        // Otherwise mark it inactive
+                        smem.status = Status.INACTIVE
                         newSchoolMemberships.push(smem)
                     }
                 }
             }
         }
-
+        // Add genuinely new schoolmemberships
         for (const sid of newSchoolIds) {
             if (newSchoolSet.has(sid)) {
                 const schoolMembership = new SchoolMembership()
