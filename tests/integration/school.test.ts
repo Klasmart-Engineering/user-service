@@ -3520,7 +3520,7 @@ describe('school', () => {
                 const xErrors = [
                     createDuplicateAttributeAPIError(
                         input.length - 1,
-                        ['id'],
+                        ['schoolId'],
                         'AddUsersToSchoolInput'
                     ),
                 ]

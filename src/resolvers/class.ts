@@ -206,7 +206,8 @@ export class AddProgramsToClasses extends AddMutation<
                 entityMaps,
                 inputs.map((val) => val.classId),
                 this.EntityType.name,
-                this.inputTypeName
+                this.inputTypeName,
+                'classId'
             )
         )
     }
@@ -323,7 +324,8 @@ export class RemoveProgramsFromClasses extends RemoveMutation<
             entityMaps,
             inputs.map((val) => val.classId),
             this.EntityType.name,
-            this.inputTypeName
+            this.inputTypeName,
+            'classId'
         )
 
         return filterInvalidInputs(inputs, [

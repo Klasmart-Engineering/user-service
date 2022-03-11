@@ -348,7 +348,8 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
                 entityMaps,
                 inputs.map((val) => val.organizationId),
                 this.EntityType.name,
-                this.inputTypeName
+                this.inputTypeName,
+                'organizationId'
             )
         )
     }
