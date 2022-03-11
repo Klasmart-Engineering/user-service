@@ -465,7 +465,8 @@ export class AddUsersToSchools extends AddMembershipMutation<
             entityMaps,
             inputs.map((val) => val.schoolId),
             this.EntityType.name,
-            this.inputTypeName
+            this.inputTypeName,
+            'schoolId'
         )
         const roleIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
             inputs,
@@ -883,7 +884,8 @@ export class AddClassesToSchools extends AddMutation<
                 entityMaps,
                 inputs.map((val) => val.schoolId),
                 this.EntityType.name,
-                this.inputTypeName
+                this.inputTypeName,
+                'schoolId'
             )
         )
     }
@@ -1039,7 +1041,8 @@ export class AddProgramsToSchools extends AddMutation<
                 entityMaps,
                 inputs.map((val) => val.schoolId),
                 this.EntityType.name,
-                this.inputTypeName
+                this.inputTypeName,
+                'schoolId'
             )
         )
     }
@@ -1155,7 +1158,8 @@ export class RemoveProgramsFromSchools extends AddMutation<
                 entityMaps,
                 inputs.map((val) => val.schoolId),
                 this.EntityType.name,
-                this.inputTypeName
+                this.inputTypeName,
+                'schoolId'
             )
         )
     }

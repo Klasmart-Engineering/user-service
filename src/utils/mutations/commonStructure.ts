@@ -215,11 +215,11 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     entityMaps: EntityMap<B>,
     mainEntityIds: string[],
     entityTypeName: string,
-    inputTypeName: string
+    inputTypeName: string,
+    idName = 'id'
 ) {
     const errors: APIError[] = []
     const ids = inputs.map((_, index) => mainEntityIds[index])
-
     const failedActiveInputs = validateActiveEntityExists(
         ids,
         entityTypeName,
@@ -227,7 +227,11 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     )
     errors.push(...failedActiveInputs.values())
 
-    const failedDuplicateInputs = validateNoDuplicate(ids, inputTypeName, 'id')
+    const failedDuplicateInputs = validateNoDuplicate(
+        ids,
+        inputTypeName,
+        idName
+    )
     errors.push(...failedDuplicateInputs.values())
 
     return [failedActiveInputs, failedDuplicateInputs]
