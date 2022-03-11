@@ -90,8 +90,8 @@ export interface UpdateOrganizationUserInput {
 export interface UpdateOrganizationUserInputElement {
     status: Status
     userId: string
-    roleIds?: string[]
-    schoolIds?: string[]
-    classIds?: string[]
+    roles?: string[]
+    schools?: string[]
+    classes?: string[]
     academicYear: string
 }
