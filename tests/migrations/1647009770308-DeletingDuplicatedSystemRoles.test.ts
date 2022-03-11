@@ -21,7 +21,7 @@ import {
 } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { rolesToDeleteIds } from '../../migrations/1644427897509-DeletingDuplicatedSystemRoles'
+import { rolesToDeleteIds } from '../../migrations/1647009770308-DeletingDuplicatedSystemRoles'
 
 use(deepEqualInAnyOrder)
 

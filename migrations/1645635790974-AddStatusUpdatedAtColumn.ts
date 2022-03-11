@@ -6,16 +6,26 @@ export class AddStatusUpdatedAtColumn1645635790974
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(
-            `ALTER TABLE "school_membership" ADD "status_updated_at" TIMESTAMP(3)`
+            `
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='school_membership' AND column_name='status_updated_at') THEN
+                    ALTER TABLE "school_membership" ADD "status_updated_at" TIMESTAMP(3);
+                    UPDATE "school_membership" SET "status_updated_at" = "deleted_at";
+                END IF;
+            END$$;
+            `
         )
         await queryRunner.query(
-            `ALTER TABLE "organization_membership" ADD "status_updated_at" TIMESTAMP(3)`
-        )
-        await queryRunner.query(
-            `UPDATE "school_membership" SET "status_updated_at" = "deleted_at"`
-        )
-        await queryRunner.query(
-            `UPDATE "organization_membership" SET "status_updated_at" = "deleted_at"`
+            `
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organization_membership' AND column_name='status_updated_at') THEN
+                    ALTER TABLE "organization_membership" ADD "status_updated_at" TIMESTAMP(3);
+                    UPDATE "organization_membership" SET "status_updated_at" = "deleted_at";
+                END IF;
+            END$$;
+            `
         )
     }
 
