@@ -227,7 +227,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 510,view_my_calendar_510,View My Calendar,Schedule,Student,Gives users access to view my calendar,Operational,,,,,,,Y
 511,view_org_calendar_511,View Org Calendar,Schedule,Org Admin,Gives users access to view org calendar,Operational,,,,,,,Y
 512,view_school_calendar_512,View School Calendar,Schedule,School Admin,Gives users access to view school calendar,Operational,,,,,,,Y
-513,view_review_calendar_events_513,View Review Calendar Events,Schedule,Teacher,Gives users access to view adaptive learning review events on the calendar,Operational,,,,,,,
+513,view_pending_calendar_events_513,View Pending Calendar Events,Schedule,Teacher,Gives users access to view pending adaptive learning review events on the calendar,Operational,,,,,,,
 520,create_event_520,Create Event,Schedule,Org Admin,Gives users access to create events,Create Schedule,,,,,,,Y
 521,create_my_schedule_events_521,Create My Schedule Events,Schedule,Teacher,Gives user access to create events for themselves,Create Schedule,,,,,,,Y
 522,create_my_schools_schedule_events_522,Create My Schools Schedule Events,Schedule,School Admin,Gives user access to create events for the school,Create Schedule,,,,,,,Y
@@ -239,8 +239,9 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 530,edit_event_530,Edit Event,Schedule,Teacher,Gives users access to edit events,Edit Schedule,,,,,,,Y
 531,override_live_classroom_recording_setting_531,Override Live Classroom Recording Setting,Schedule,Org Admin,Gives users access to override live classroom recording settings,Operational,,,,,,,
 540,delete_event_540,Delete Event,Schedule,Teacher,Gives users access to delete events,Delete Schedule,,,,,,,Y
+541,delete_review_calendar_events_541,Delete Review Calendar Events,Schedule,Teacher,Gives users access to delete review calendar events,Delete Schedule,,,,,,,
 580,schedule_settings_580,Schedule Settings,Schedule,Teacher,Gives users access to schedule settings,Operational,,,,,,,
-581,schedule_quick_start_581,Schedule Quick Start,Schedule,Teacher,Gives users access to schedule quick starts,Create Schedule,,,,,,,
+581,schedule_quick_start_581,Schedule Quick Start,Schedule,Teacher,Gives users access to schedule quick starts,operational,,,,,,,
 582,schedule_search_582,Schedule Search,Schedule,School Admin,Gives users access to schedule searches,Operational,,,,,,,Y
 600,reports_600,Reports,Reports,Student,Gives users access to Reports (i.e. via icons/buttons),Access Reports,,,,,,,
 601,org_reports_601,Org Reports,Reports,Org Admin,Gives users access to view org reports,Operational,,,,,,,
