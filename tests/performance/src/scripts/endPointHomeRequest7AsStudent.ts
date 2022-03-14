@@ -17,8 +17,8 @@ const params = {
 
 const counter = new Counter('endPointHomeRequest7AsStudent');
 const serverWaitingTime = new Trend('endPointHomeRequest7AsStudentWaiting', true);
-
-const errorCounter = new Counter('endPointHomeRequest7AsStudentError');
+const errorCounter400 = new Counter('endPointHomeRequest7AsStudentError400');
+const errorCounter500 = new Counter('endPointHomeRequest7AsStudentError500');
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
@@ -48,9 +48,11 @@ export default function (roleType?: string) {
     if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
         
+    } else if (res.status >= 400 && res.status <= 499) {
+        errorCounter400.add(1);
     } else {
-        errorCounter.add(1);
+        errorCounter500.add(1);
     }
-    serverWaitingTime.add(res.timings.waiting);
 
+    serverWaitingTime.add(res.timings.waiting);
 }

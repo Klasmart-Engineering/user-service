@@ -12,7 +12,9 @@ const params = {
 const counter = new Counter('MeQueryOrganizationReq5');
 const serverWaitingTime = new Trend('meQueryOrganizationReq5Waiting', true);
 
-const errorCounter = new Counter('MeQueryOrganizationReq5Error');
+const errorCounter400 = new Counter('MeQueryOrganizationReq5Error400');
+const errorCounter500 = new Counter('MeQueryOrganizationReq5Error500');
+
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
@@ -39,9 +41,11 @@ export default function (roleType?: string) {
     if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
         
+    } else if (res.status >= 400 && res.status <= 499) {
+        errorCounter400.add(1);
     } else {
-        errorCounter.add(1);
+        errorCounter500.add(1);
     }
-    serverWaitingTime.add(res.timings.waiting);
 
+    serverWaitingTime.add(res.timings.waiting);
 }

@@ -11,8 +11,8 @@ const params = {
 
 const counter = new Counter('GetMeClassesStudying');
 const serverWaitingTime = new Trend('GetMeClassesStudyingWaiting', true);
-
-const errorCounter = new Counter('GetMeClassesStudyingError');
+const errorCounter400 = new Counter('GetMeClassesStudyingError400');
+const errorCounter500 = new Counter('GetMeClassesStudyingError500');
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
@@ -39,9 +39,11 @@ export default function (roleType?: string) {
     if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
         
+    } else if (res.status >= 400 && res.status <= 499) {
+        errorCounter400.add(1);
     } else {
-        errorCounter.add(1);
+        errorCounter500.add(1);
     }
-    serverWaitingTime.add(res.timings.waiting);
 
+    serverWaitingTime.add(res.timings.waiting);
 }

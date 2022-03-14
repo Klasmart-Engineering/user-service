@@ -10,8 +10,8 @@ const params = {
 
 const counter = new Counter('endPointHomeRequestAssessmentStudent');
 const serverWaitingTime = new Trend('endPointHomeRequestAssessmentStudentWaiting', true);
-
-const errorCounter = new Counter('endPointHomeRequestAssessmentStudentError');
+const errorCounter400 = new Counter('endPointHomeRequestAssessmentStudentError400');
+const errorCounter500 = new Counter('endPointHomeRequestAssessmentStudentError500');
 
 export default function (roleType?: string) {
 
@@ -32,9 +32,11 @@ export default function (roleType?: string) {
     if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
         
+    } else if (res.status >= 400 && res.status <= 499) {
+        errorCounter400.add(1);
     } else {
-        errorCounter.add(1);
+        errorCounter500.add(1);
     }
-    serverWaitingTime.add(res.timings.waiting);
 
+    serverWaitingTime.add(res.timings.waiting);
 }
