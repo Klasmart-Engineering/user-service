@@ -704,7 +704,7 @@ function buildListOfExistingUserErrors(
             getUserIdentifier(user.username, user.email, user.phone)
         )
         const index = inputMap.get(userKey)
-        if (index) {
+        if (index != undefined) {
             errs.push(
                 createEntityAPIError(
                     'existent',

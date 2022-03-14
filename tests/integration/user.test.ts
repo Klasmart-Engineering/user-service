@@ -1798,9 +1798,10 @@ describe('user', () => {
             }
 
             beforeEach(async () => {
-                duplicateUsers = await User.save(userFactory(2))
-                createUserInputs[5] = userToCreateUserInput(duplicateUsers[0])
-                createUserInputs[35] = userToCreateUserInput(duplicateUsers[1])
+                duplicateUsers = await User.save(userFactory(3))
+                createUserInputs[0] = userToCreateUserInput(duplicateUsers[0])
+                createUserInputs[5] = userToCreateUserInput(duplicateUsers[1])
+                createUserInputs[35] = userToCreateUserInput(duplicateUsers[2])
             })
 
             it('it fails to create users', async () => {
@@ -1813,8 +1814,9 @@ describe('user', () => {
                 ).to.be.rejected
 
                 const expectedErrors = [
-                    createExistentError(duplicateUsers[0], 5),
-                    createExistentError(duplicateUsers[1], 35),
+                    createExistentError(duplicateUsers[0], 0),
+                    createExistentError(duplicateUsers[1], 5),
+                    createExistentError(duplicateUsers[2], 35),
                 ]
 
                 compareMultipleErrors(error.errors, expectedErrors)
