@@ -9,7 +9,7 @@ import landingScheduleStudents from './scripts/landingScheduleStudents';
 import landingV3Students from './scripts/landingV3Students';
 
 // Command:
-// k6 -e VUS=50 run parallelLandingScheduleUniqueConstantCopy.js
+// k6 -e VUS=50 run parallelLandingScheduleUniqueConstantCSplitB2c.js
 // to run the script be positioned in the folder ¨dist¨
 
 // const prefixLimit: number = !isNaN(parseInt(__ENV.PREFIX_LIMIT, 10)) ? parseInt(__ENV.PREFIX_LIMIT) : 9;
@@ -31,14 +31,14 @@ export const options: Options = {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students01',
-            duration: "30s",
+            duration: "1m",
         },
-        student02: {
+       /*   student02: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students02',
             duration: "30s",
-        },
+        }, */
         // student03: {
         //     executor: 'constant-vus',
         //     vus: parseInt(__ENV.VUS, 10),
@@ -52,14 +52,14 @@ export const options: Options = {
         //     duration: "10m",
         // },
     },
-    setupTimeout: '10m',
+    setupTimeout: '120m',
 };
 
 //////////////////////
 
 export function setup() {
     let i = 1;
-    const l = (parseInt(__ENV.VUS, 10) * 4) + 1;
+    const l = (parseInt(__ENV.VUS, 10) * 1) + 1;
     let data = {};
 
     for (i; i < l; i++) {
@@ -80,7 +80,7 @@ export function setup() {
 
         console.log(`Logged in student: ${process.env.B2C_USERNAME}${i}@${process.env.B2C_DOMAIN}`);
 
-        studentLoginPayload = {
+       /* studentLoginPayload = {
             deviceId: "webpage",
             deviceName: "k6",
             email: `${process.env.B2C_USERNAME}${2000 + i}@${process.env.B2C_DOMAIN}`,
@@ -102,13 +102,13 @@ export function setup() {
         data = { 
             ...data, 
             [`student${3000 + i}`]: studentLoginData,
-        };
+        }; */
 
-        console.log(`Logged in student: ${process.env.B2C_USERNAME}${3000 + i}@${process.env.B2C_DOMAIN}`);
+        //console.log(`Logged in student: ${process.env.B2C_USERNAME}${3000 + i}@${process.env.B2C_DOMAIN}`);
         //console.log(JSON.stringify(data));
     }
 
-    console.log(JSON.stringify(data));
+    // console.log(JSON.stringify(data));
     
     return data;
 };
@@ -128,10 +128,11 @@ export function students01(data: { [key: string]: { res: any, userId: string }})
     // /* landingV2(studentLoginData);
     // sleep(5); 
     // landingSchedule();*/
-    landingV3Students(data[`student${__VU}`]);
+    //landingV3Students(data[`student${__VU}`]);
+    landingScheduleStudents();
 }
 
-export function students02(data: { [key: string]: { res: any, userId: string }}) {
+/* export function students02(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
     jar.set(process.env.COOKIE_URL as string, 'access', data[`student${__VU + 2000}`].res.cookies?.access[0].Value, {
         domain: process.env.COOKIE_DOMAIN,
@@ -142,7 +143,7 @@ export function students02(data: { [key: string]: { res: any, userId: string }})
 
 
     landingV3Students(data[`student${__VU + 2000}`]);
-}
+} */
 
 /*
 export function students03(data: { [key: string]: { res: any, userId: string }}) {
@@ -154,7 +155,7 @@ export function students03(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data[`student${__VU}`]);
+    landingV3Students(data[`student${__VU+3000}`]);
 }
 
 export function students04(data: { [key: string]: { res: any, userId: string }}) {

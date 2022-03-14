@@ -82,7 +82,8 @@ module.exports = env => ({
         getPaginatedUsersMixedNewConfigUniqueSt: `./getPaginatedUsersMixedNewConfigUniqueSt.ts`,
         parallelLandingHomeUniqueConstant: `./parallelLandingHomeUniqueConstant.ts`,
         parallelLandingScheduleUniqueConstant: `./parallelLandingScheduleUniqueConstant.ts`,
-        parallelLandingHomeUniqueConstantCopy: `./parallelLandingHomeUniqueConstantCopy.ts`,
+        parallelLandingHomeUniqueConstantSplitB2c: `./parallelLandingHomeUniqueConstantSplitB2c.ts`,
+        parallelLandingScheduleUniqueConstantSplitB2c: `./parallelLandingScheduleUniqueConstantSplitB2c.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),

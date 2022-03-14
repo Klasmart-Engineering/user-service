@@ -29,10 +29,13 @@ const lessonPlanPayload = {
     thumbnail: "",
 };
 
+
 export default function () {
     const payload = JSON.stringify(lessonPlanPayload);
     const res = http.post(`${process.env.CMS_URL}/v1/contents?org_id=${process.env.ORG_ID}`, payload, params);
     
+    console.log(JSON.stringify(res));
+
     check(res, {
         'CREATE LESSON PLAN status is 200': () => res.status === 200,
         'CREATE LESSON PLAN returned class ID': (r) => JSON.parse(r.body as string).id ?? false,
