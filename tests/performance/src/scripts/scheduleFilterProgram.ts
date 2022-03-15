@@ -14,7 +14,12 @@ const serverWaitingTime = new Trend('ScheduleFilterProgramWaiting', true);
 const errorCounter = new Counter('CmsScheduleFilterProgramError');
 
 export default function (roleType?: string) {
-    const res = http.get(`${process.env.SCHEDULE_FILTER_PROGRAM_URL}?org_id=${process.env.ORG_ID}` as string, params)
+    let res = http.get(`${process.env.SCHEDULE_FILTER_PROGRAM_URL}?org_id=${process.env.ORG_ID}` as string, params)
+    
+    if (res.status === 401) {
+        http.get(`https://auth.${process.env.APP_URL}/refresh`, params);
+        res = http.get(`${process.env.SCHEDULE_FILTER_PROGRAM_URL}?org_id=${process.env.ORG_ID}` as string, params)
+    }
     
     check(res, {
         'SCHEDULE_FILTER_Program - status is 200': () => res.status === 200,

@@ -37,8 +37,13 @@ export default function (roleType?: string) {
         query: getSchoolsFilterList,
     });
 
-    const res = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
+    let res = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
 
+    if (res.status === 401) {
+        http.get(`https://auth.${process.env.APP_URL}/refresh`, params);
+        res = http.post(`${process.env.SERVICE_URL}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
+    }
+    
     check(res, {
         '"Get SCHOOL filter list" status is 200': () => res.status === 200,
        // '"Get school filter list" query returns data': (r) => JSON.parse(r.body as string).data?.schoolsConnection?.edges ?? false,

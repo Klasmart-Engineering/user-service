@@ -1,7 +1,7 @@
 
 import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
-import { sleep } from 'k6';
+import { fail, sleep } from 'k6';
 import landingSchedule from './scripts/landingSchedule';
 import http from 'k6/http';
 import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
@@ -73,6 +73,13 @@ export function setup() {
         };
 
         const studentLoginData = loginSetup(studentLoginPayload);
+
+        if (!studentLoginData.res.cookies?.access[0].value) {
+            console.log('failed login.');
+            JSON.stringify(studentLoginPayload);
+            fail('User did not login');
+        }
+        
         data = { 
             ...data, 
             [`student${i}`]: studentLoginData,
