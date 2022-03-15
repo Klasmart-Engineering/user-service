@@ -25,7 +25,10 @@ import {
 } from '../../src/types/graphQL/school'
 import { createClass, createClasses } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import {
+    createOrganizationMembership,
+    createOrganizationMemberships,
+} from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
 import {
     createSchools,
@@ -69,6 +72,7 @@ import { Role } from '../../src/entities/role'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { createProgram, createPrograms } from '../factories/program.factory'
 import { Status } from '../../src/entities/status'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -122,9 +126,7 @@ describe('acceptance.school', () => {
         await loadFixtures('users', connection)
         // find the NON admin user created above...
         // TODO this whole thing better...
-        clientUser = (await User.findOne(
-            'c6d4feed-9133-5529-8d72-1003526d1b13'
-        )) as User
+        clientUser = (await User.findOne(user_id)) as User
         const createOrgResponse = await createOrg(
             user_id,
             org_name,
@@ -132,6 +134,8 @@ describe('acceptance.school', () => {
         )
         organizationId =
             createOrgResponse.body.data.user.createOrganization.organization_id
+        const org = await Organization.findOneOrFail(organizationId)
+
         const createSchoolResponse = await createSchool(
             organizationId,
             `school x`,
@@ -142,6 +146,10 @@ describe('acceptance.school', () => {
         const school = await School.findOne(schoolId)
 
         schoolMember = await createUser().save()
+        await createOrganizationMembership({
+            user: schoolMember,
+            organization: org,
+        }).save()
         await createSchoolMembership({
             school: school!,
             user: schoolMember,
@@ -707,7 +715,11 @@ describe('acceptance.school', () => {
             const schools = createSchools(schoolCount, org)
             await connection.manager.save(schools)
             await createRole(undefined, org, {
-                permissions: [PermissionName.reactivate_my_school_user_40886],
+                permissions: [
+                    PermissionName.reactivate_my_school_user_40886,
+                    PermissionName.view_users_40110,
+                    PermissionName.view_school_20110,
+                ],
             })
                 .save()
                 .then((role) => {
@@ -718,6 +730,9 @@ describe('acceptance.school', () => {
                     }).save()
                 })
 
+            await OrganizationMembership.save(
+                createOrganizationMemberships(users, org)
+            )
             const memberships = createSchoolMembershipsInManySchools(
                 users,
                 schools
@@ -791,7 +806,11 @@ describe('acceptance.school', () => {
             const schools = createSchools(orgCount, org)
             await connection.manager.save(schools)
             await createRole(undefined, org, {
-                permissions: [PermissionName.delete_my_school_users_40441],
+                permissions: [
+                    PermissionName.delete_my_school_users_40441,
+                    PermissionName.view_users_40110,
+                    PermissionName.view_school_20110,
+                ],
             })
                 .save()
                 .then((role) => {
@@ -801,6 +820,10 @@ describe('acceptance.school', () => {
                         roles: [role],
                     }).save()
                 })
+
+            await OrganizationMembership.save(
+                createOrganizationMemberships(users, org)
+            )
 
             const memberships = createSchoolMembershipsInManySchools(
                 users,

@@ -1684,10 +1684,14 @@ describe('usersConnection', () => {
                     .organizationMembershipsConnection!
                 expect(memberships.totalCount).to.eq(1)
 
-                // can see the other org membership if they are part of that org
+                // can see the other org membership if they are part of that org with permissions
+                const otherOrgRole = await createRole('role', organization, {
+                    permissions: [PermissionName.view_users_40110],
+                }).save()
                 await createOrganizationMembership({
                     user: nonAdmin,
                     organization: otherOrg,
+                    roles: [otherOrgRole],
                 }).save()
 
                 result = await getUsers(getNonAdminAuthToken(), {
@@ -1728,7 +1732,10 @@ describe('usersConnection', () => {
                 // create a non-admin user and add to org & school
                 const nonAdmin = await createNonAdminUser(testClient)
                 const role = await createRole('role', organization, {
-                    permissions: [PermissionName.view_users_40110],
+                    permissions: [
+                        PermissionName.view_users_40110,
+                        PermissionName.view_my_school_20119,
+                    ],
                 }).save()
                 await createOrganizationMembership({
                     user: nonAdmin,
@@ -1761,7 +1768,18 @@ describe('usersConnection', () => {
                     .schoolMembershipsConnection!
                 expect(memberships.totalCount).to.eq(1)
 
-                // can see other school membership if they are part of that school
+                // can see other school membership if they are part of that school and org with permissions
+                const otherOrgRole = await createRole('role', organization, {
+                    permissions: [
+                        PermissionName.view_users_40110,
+                        PermissionName.view_my_school_20119,
+                    ],
+                }).save()
+                await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization: otherOrg,
+                    roles: [otherOrgRole],
+                }).save()
                 await createSchoolMembership({
                     user: nonAdmin,
                     school: otherSchool,
