@@ -34,8 +34,13 @@ export default function (roleType?: string) {
         }
     );
 
-    const res = http.post(`${process.env.CMS_SCHEDULE_TIME_VIEW_LIST}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
+    let res = http.post(`${process.env.CMS_SCHEDULE_TIME_VIEW_LIST}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
 
+    if (res.status === 401) {
+        http.get(`https://auth.${process.env.APP_URL}/refresh`, params);
+        res = http.post(`${process.env.CMS_SCHEDULE_TIME_VIEW_LIST}?org_id=${process.env.ORG_ID}` as string, userPayload, params);
+    }
+    
     check(res, {
         'SCHEDULES_time_view FULL VIEW - status is 200': () => res.status === 200,
         //'schedule time view FULL VIEW returns data': (r) => JSON.parse(r.body as string).data,
@@ -47,6 +52,7 @@ export default function (roleType?: string) {
         counter.add(1);
         
     } else if (res.status >= 400 && res.status <= 499) {
+        console.log('error: ', res.status, JSON.stringify(res.body));
         errorCounter400.add(1);
     } else {
         errorCounter500.add(1);

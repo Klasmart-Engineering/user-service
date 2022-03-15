@@ -21,7 +21,12 @@ export default function (roleType?: string) {
         query: meClassesStudying,
     });
 
-    const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+    let res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+
+    if (res.status === 401) {
+        http.get(`https://auth.${process.env.APP_URL}/refresh`, params);
+        res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+    }
 
     check(res, {
         'status is 200 meClassesStudying': () => res.status === 200,

@@ -14,8 +14,13 @@ const errorCounter400 = new Counter('MeQueryOrganizationReq3Error400');
 const errorCounter500 = new Counter('MeQueryOrganizationReq3Error500');
 
 export default function (roleType?: string) {
-    const res = http.get(`${process.env.ASSESSMENT_SUMMARY_URL}?org_id=${process.env.ORG_ID}` as string, params);
+    let res = http.get(`${process.env.ASSESSMENT_SUMMARY_URL}?org_id=${process.env.ORG_ID}` as string, params);
 
+    if (res.status === 401) {
+        http.get(`https://auth.${process.env.APP_URL}/refresh`, params);
+        res = http.get(`${process.env.ASSESSMENT_SUMMARY_URL}?org_id=${process.env.ORG_ID}` as string, params);
+    }
+   
     check(res, {
         'status is 200 meQueryReq3': () => res.status === 200,
     }, {

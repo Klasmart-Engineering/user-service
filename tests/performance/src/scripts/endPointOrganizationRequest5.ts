@@ -23,7 +23,12 @@ export default function (roleType?: string) {
         query: meQueryOrganizationReq5,
     });
 
-    const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+    let res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+
+    if (res.status === 401) {
+        http.get(`https://auth.${process.env.APP_URL}/refresh`, params);
+        res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+    }
 
     check(res, {
         'status is 200 meQueryOrganizationReq5': () => res.status === 200,
@@ -42,6 +47,7 @@ export default function (roleType?: string) {
         counter.add(1);
         
     } else if (res.status >= 400 && res.status <= 499) {
+        console.log('error: ', res.status, JSON.stringify(res.body));
         errorCounter400.add(1);
     } else {
         errorCounter500.add(1);

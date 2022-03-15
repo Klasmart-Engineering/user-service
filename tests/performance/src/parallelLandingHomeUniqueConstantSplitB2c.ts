@@ -7,6 +7,7 @@ import http from 'k6/http';
 import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import landingScheduleStudents from './scripts/landingScheduleStudents';
 import landingV3Students from './scripts/landingV3Students';
+import "https://raw.githubusercontent.com/facebook/regenerator/main/packages/runtime/runtime.js"
 
 // Command:
 // k6 -e VUS=50 run parallelLandingScheduleUniqueConstantCSplitB2c.js
@@ -31,7 +32,7 @@ export const options: Options = {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students01',
-            duration: "10m",
+            duration: "2m",
         },
        /*   student02: {
             executor: 'constant-vus',
@@ -75,6 +76,7 @@ export function setup() {
         const studentLoginData = loginSetup(studentLoginPayload);
 
         if (!studentLoginData.res.cookies?.access[0].value) {
+            console.log('failed login.');
             JSON.stringify(studentLoginPayload);
             fail('User did not login');
         }

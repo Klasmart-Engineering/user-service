@@ -21,7 +21,12 @@ export default function (roleType?: string) {
         query: getMyUsers
     });
 
-    const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+    let res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+
+    if (res.status === 401) {
+        http.get(`https://auth.${process.env.APP_URL}/refresh`, params);
+        res = http.post(process.env.SERVICE_URL as string, userPayload, params);
+    }
 
     check(res, {
         'status is 200 myUser plural': () => res.status === 200,
