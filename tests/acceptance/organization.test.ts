@@ -243,7 +243,10 @@ describe('acceptance.organization', () => {
             await Organization.save(orgs)
             for (const org of orgs) {
                 await createRole(undefined, org, {
-                    permissions: [PermissionName.reactivate_user_40884],
+                    permissions: [
+                        PermissionName.reactivate_user_40884,
+                        PermissionName.view_users_40110,
+                    ],
                 })
                     .save()
                     .then((role) => {
@@ -326,7 +329,10 @@ describe('acceptance.organization', () => {
             await Organization.save(orgs)
             for (const org of orgs) {
                 await createRole(undefined, org, {
-                    permissions: [PermissionName.delete_users_40440],
+                    permissions: [
+                        PermissionName.delete_users_40440,
+                        PermissionName.view_users_40110,
+                    ],
                 })
                     .save()
                     .then((role) => {

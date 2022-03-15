@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { createEntityScope } from '../../../src/directives/isAdmin'
+import { Organization } from '../../../src/entities/organization'
 import { Role } from '../../../src/entities/role'
 import { School } from '../../../src/entities/school'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
@@ -10,11 +11,14 @@ import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Context } from '../../../src/main'
 import { Model } from '../../../src/model'
 import { schoolMembershipConnectionQuery } from '../../../src/pagination/schoolMembershipsConnection'
+import { PermissionName } from '../../../src/permissions/permissionNames'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { schoolMembershipsConnectionResolver as resolverForSchool } from '../../../src/schemas/school'
 import { schoolMembershipsConnectionResolver as resolverForUser } from '../../../src/schemas/user'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
+import { createOrganization } from '../../factories/organization.factory'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
@@ -47,6 +51,7 @@ describe('schoolMembershipsConnection', () => {
     let school2Memberships: SchoolMembership[]
     let school1Role: Role
     let school2Role: Role
+    let organization: Organization
 
     function ids(memberships: SchoolMembership[]) {
         return memberships.map((m) => m.user_id + m.school_id)
@@ -71,10 +76,12 @@ describe('schoolMembershipsConnection', () => {
             entity: 'schoolMembership',
         })) as SelectQueryBuilder<SchoolMembership>
 
-        school1 = await createSchool().save()
-        school2 = await createSchool().save()
-        school1Role = await createRole().save()
-        school2Role = await createRole().save()
+        organization = await createOrganization().save()
+
+        school1 = await createSchool(organization).save()
+        school2 = await createSchool(organization).save()
+        school1Role = await createRole('r1', organization).save()
+        school2Role = await createRole('r2', organization).save()
 
         school1Memberships = await Promise.all([
             createSchoolMembership({
@@ -163,7 +170,23 @@ describe('schoolMembershipsConnection', () => {
         beforeEach(async () => {
             clientUser = await createUser().save()
 
-            // add the client user to both orgs
+            const nonAdminRole = await createRole(
+                'nonAdminRole',
+                organization,
+                {
+                    permissions: [
+                        PermissionName.view_my_school_users_40111,
+                        PermissionName.view_my_school_20119,
+                    ],
+                }
+            ).save()
+            await createOrganizationMembership({
+                user: clientUser,
+                organization,
+                roles: [nonAdminRole],
+            }).save()
+
+            // add the client user to both schools
             school1Memberships.push(
                 await createSchoolMembership({
                     school: school1,
@@ -297,9 +320,10 @@ describe('schoolMembershipsConnection', () => {
                 )
             }
             await Promise.all(loaderResults)
-            // two for permissions query
-            // one for fetching memberships
-            expect(connection.logger.count).to.be.eq(3)
+            expect(connection.logger.count).to.be.eq(
+                4,
+                '2 for permissions, 1 for org memberships, 1 for schools memberships'
+            )
         })
 
         context('sorting', () => {

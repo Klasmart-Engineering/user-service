@@ -2720,13 +2720,13 @@ describe('isAdmin', () => {
             })
         })
         context('organization member', () => {
+            let membership: OrganizationMembership
             beforeEach(async () => {
-                org1Memberships.push(
-                    await createOrganizationMembership({
-                        organization: org1,
-                        user: nonAdmin,
-                    }).save()
-                )
+                membership = await createOrganizationMembership({
+                    organization: org1,
+                    user: nonAdmin,
+                }).save()
+                org1Memberships.push(membership)
                 nonAdminScope = (await createEntityScope({
                     permissions: new UserPermissions({
                         id: nonAdmin.user_id,
@@ -2735,9 +2735,32 @@ describe('isAdmin', () => {
                     entity: 'organizationMembership',
                 })) as SelectQueryBuilder<OrganizationMembership>
             })
-            it('can see organization memberships from their orgs only', async () => {
-                const results = await nonAdminScope.getMany()
-                expect(ids(results)).to.have.members(ids(org1Memberships))
+            context('with permissions to view other users', () => {
+                beforeEach(async () => {
+                    const role = await createRole('r', org1, {
+                        permissions: [PermissionName.view_users_40110],
+                    }).save()
+                    membership.roles = Promise.resolve([role])
+                    await membership.save()
+
+                    nonAdminScope = (await createEntityScope({
+                        permissions: new UserPermissions({
+                            id: nonAdmin.user_id,
+                            email: nonAdmin.email!,
+                        }),
+                        entity: 'organizationMembership',
+                    })) as SelectQueryBuilder<OrganizationMembership>
+                })
+                it('can see organization memberships from their orgs only', async () => {
+                    const results = await nonAdminScope.getMany()
+                    expect(ids(results)).to.have.members(ids(org1Memberships))
+                })
+            })
+            context('without permission to view other users', () => {
+                it('can see their organization memberships only', async () => {
+                    const results = await nonAdminScope.getMany()
+                    expect(ids(results)).to.have.members(ids([membership]))
+                })
             })
         })
         context('no organization user', () => {
@@ -3029,34 +3052,14 @@ describe('isAdmin', () => {
             })
         })
 
-        context('when user is a org member', () => {
-            beforeEach(async () => {
-                await createOrganizationMembership({
-                    user: nonAdmin,
-                    organization: org1,
-                }).save()
-                nonAdminScope = (await createEntityScope({
-                    permissions: new UserPermissions({
-                        id: nonAdmin.user_id,
-                        email: nonAdmin.email!,
-                    }),
-                    entity: 'schoolMembership',
-                })) as SelectQueryBuilder<SchoolMembership>
-            })
-            it('can see memberships from schools in their orgs only', async () => {
-                const members = await nonAdminScope.getMany()
-                expect(members).to.have.lengthOf(school1Memberships.length)
-            })
-        })
-
         context('when user is a school member', () => {
+            let membership: SchoolMembership
             beforeEach(async () => {
-                school1Memberships.push(
-                    await createSchoolMembership({
-                        user: nonAdmin,
-                        school: school1,
-                    }).save()
-                )
+                membership = await createSchoolMembership({
+                    user: nonAdmin,
+                    school: school1,
+                }).save()
+                school1Memberships.push(membership)
                 nonAdminScope = (await createEntityScope({
                     permissions: new UserPermissions({
                         id: nonAdmin.user_id,
@@ -3065,10 +3068,44 @@ describe('isAdmin', () => {
                     entity: 'schoolMembership',
                 })) as SelectQueryBuilder<SchoolMembership>
             })
-            it('can see memberships from schools', async () => {
-                const members = await nonAdminScope.getMany()
-                expect(members).to.have.lengthOf(school1Memberships.length)
+            context('and has permission to view schools and users', () => {
+                beforeEach(async () => {
+                    const role = await createRole('r', org1, {
+                        permissions: [
+                            PermissionName.view_school_20110,
+                            PermissionName.view_my_school_users_40111,
+                        ],
+                    }).save()
+                    const orgMem = await createOrganizationMembership({
+                        user: nonAdmin,
+                        organization: org1,
+                        roles: [role],
+                    }).save()
+                    await orgMem.save()
+
+                    nonAdminScope = (await createEntityScope({
+                        permissions: new UserPermissions({
+                            id: nonAdmin.user_id,
+                            email: nonAdmin.email!,
+                        }),
+                        entity: 'schoolMembership',
+                    })) as SelectQueryBuilder<SchoolMembership>
+                })
+                it('can see memberships from schools', async () => {
+                    const members = await nonAdminScope.getMany()
+                    expect(members).to.have.lengthOf(school1Memberships.length)
+                })
             })
+
+            context(
+                'and does not have permission to view schools or users',
+                () => {
+                    it('returns no memberships', async () => {
+                        const members = await nonAdminScope.getMany()
+                        expect(members).to.have.lengthOf(0)
+                    })
+                }
+            )
         })
 
         context('when user is not an org or school member', () => {
