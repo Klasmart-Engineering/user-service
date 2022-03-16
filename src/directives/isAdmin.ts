@@ -639,12 +639,15 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
     const schoolOrgs = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_school_classes_20117,
     ])
+    const myClassOrgs = await permissions.orgMembershipsWithPermissions([
+        PermissionName.view_my_classes_20118,
+    ])
     let schoolIds: string[] = []
     if (schoolOrgs.length > 0) {
         schoolIds = await permissions.schoolMembershipsWithPermissions([])
     }
 
-    if (!classOrgs.length && !schoolIds.length) {
+    if (!classOrgs.length && !schoolIds.length && !myClassOrgs.length) {
         scope.where('false')
         return
     }
@@ -653,6 +656,44 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
             if (classOrgs.length) {
                 // can view all classes in these orgs
                 qb.where('Class.organization IN (:...classOrgs)', { classOrgs })
+            }
+            if (myClassOrgs.length) {
+                const teachingClassIdsQuery = createQueryBuilder()
+                    .select('teachingClasses.classClassId')
+                    .from('user_classes_teaching_class', 'teachingClasses')
+                    .where('teachingClasses.userUserId = :userId', {
+                        userId: permissions.getUserId(),
+                    })
+                const studyingClassIdsQuery = createQueryBuilder()
+                    .select('studyingClasses.classClassId')
+                    .from('user_classes_studying_class', 'studyingClasses')
+                    .where('studyingClasses.userUserId = :userId', {
+                        userId: permissions.getUserId(),
+                    })
+                scope.setParameters({
+                    ...scope.getParameters(),
+                    ...teachingClassIdsQuery.getParameters(),
+                    ...studyingClassIdsQuery.getParameters(),
+                })
+                qb.orWhere(
+                    new Brackets((subQb) => {
+                        subQb
+                            .where('Class.organization IN (:...myClassOrgs)', {
+                                myClassOrgs,
+                            })
+                            .andWhere(
+                                new Brackets((subQb2) => {
+                                    subQb2
+                                        .where(
+                                            `"Class"."class_id" IN (${teachingClassIdsQuery.getQuery()})`
+                                        )
+                                        .orWhere(
+                                            `"Class"."class_id" IN (${studyingClassIdsQuery.getQuery()})`
+                                        )
+                                })
+                            )
+                    })
+                )
             }
             if (schoolOrgs.length && schoolIds.length) {
                 const classIdsQuery = createQueryBuilder()
