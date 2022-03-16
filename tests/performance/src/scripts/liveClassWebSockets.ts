@@ -2,6 +2,10 @@ import ws from 'k6/ws';
 import { check } from 'k6';
 import { Params } from 'k6/http';
 import { userAgent } from '../utils/common';
+import { Counter } from 'k6/metrics';
+
+const counter = new Counter('WebSocketMessageSuccess');
+const errorCounter = new Counter('WebSocketMessageError');
 
 
 export default function (data: { refreshId: string, accessCookie: string, token: string, roomId: string, userId: string }) {
@@ -109,7 +113,10 @@ export default function (data: { refreshId: string, accessCookie: string, token:
 			socket.send(studentUsage);
 		});
 
-		socket.on('message', (data) => console.log('Message received: ', data));
+		socket.on('message', (data) => {
+			console.log('Message received: ', data)
+			counter.add(1);
+		});
 
 		socket.setTimeout(function () {
 			socket.close();
@@ -119,6 +126,8 @@ export default function (data: { refreshId: string, accessCookie: string, token:
 			if (e.error() != 'websocket: close sent') {
 				console.log('An unexpected error occured: ', JSON.stringify(e));
 			}
+
+			errorCounter.add(1);
 		});
 	});
 
