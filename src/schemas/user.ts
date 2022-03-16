@@ -21,7 +21,7 @@ import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import {
     addOrganizationRolesToUsers,
     AddSchoolRolesToUsers,
-    createUsers,
+    CreateUsers,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
     updateUsers,
@@ -501,7 +501,7 @@ export default function getDefault(
                 removeSchoolRolesFromUsers: (_parent, args, ctx, _info) =>
                     mutate(RemoveSchoolRolesFromUsers, args, ctx.permissions),
                 createUsers: (_parent, args, ctx, _info) =>
-                    createUsers(args, ctx),
+                    mutate(CreateUsers, args, ctx.permissions),
                 updateUsers: (_parent, args, ctx, _info) =>
                     updateUsers(args, ctx),
             },
