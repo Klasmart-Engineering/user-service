@@ -52,9 +52,9 @@ export class NodeDataLoader<
             scope
                 .select(selectFields)
                 .andWhere(
-                    `"${scope.alias}"."${primaryKeyLabel}" IN (:...ids)`,
+                    `"${scope.alias}"."${primaryKeyLabel}" IN (:...dataloaderNodeIds)`,
                     {
-                        ids,
+                        dataloaderNodeIds: ids, // use a specific parameter name to avoid conflicting with others
                     }
                 )
 

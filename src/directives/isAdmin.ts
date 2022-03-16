@@ -355,9 +355,14 @@ export const nonAdminUserScope: NonAdminScope<
                     .select('membership_table.userUserId', 'user_id')
                     .distinct(true)
                     .from(membershipTable, 'membership_table')
-                    .andWhere('membership_table.classClassId IN (:...ids)', {
-                        ids: classesTaught.map(({ class_id }) => class_id),
-                    })
+                    .andWhere(
+                        'membership_table.classClassId IN (:...classIds)',
+                        {
+                            classIds: classesTaught.map(
+                                ({ class_id }) => class_id
+                            ),
+                        }
+                    )
             }
             scope.leftJoin(
                 (qb) => distinctMembers('user_classes_studying_class', qb),
