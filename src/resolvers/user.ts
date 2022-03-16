@@ -63,7 +63,7 @@ import {
 } from '../utils/resolvers/inputValidation'
 import { Organization } from '../entities/organization'
 
-type ConflictingUserKey = {
+export type ConflictingUserKey = {
     givenName: string
     familyName: string
     username?: string
@@ -1292,7 +1292,7 @@ export async function updateUsers(
 /**
  * Transforms the given CreateUserInput in a ConflictingUserKey
  */
-function createUserInputToConflictingUserKey(
+export function createUserInputToConflictingUserKey(
     input: CreateUserInput
 ): ConflictingUserKey {
     const { givenName, familyName, username, contactInfo } = input
@@ -1309,7 +1309,7 @@ function createUserInputToConflictingUserKey(
  * Builds a ConflictingUserKey taking the transformed CreateUserInput.
  * This key is built taking givenName, familyName and the first existing value of the following fields in that order: (username, email, phone)
  */
-function buildConflictingUserKey(
+export function buildConflictingUserKey(
     inputValues: ConflictingUserKey
 ): ConflictingUserKey {
     const { givenName, familyName, username, email, phone } = inputValues
@@ -1325,7 +1325,11 @@ function buildConflictingUserKey(
 /**
  * Returns in an Object like format the first value found between (username, email, phone)
  */
-function addIdentifierToKey(username?: string, email?: string, phone?: string) {
+export function addIdentifierToKey(
+    username?: string,
+    email?: string,
+    phone?: string
+) {
     if (username) return { username }
     else if (email) return { email }
     else if (phone) return { phone }
