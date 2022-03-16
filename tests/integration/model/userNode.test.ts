@@ -252,6 +252,33 @@ describe('userNode', () => {
                     )
                 })
             })
+            context('User with view_my_class_users_40112', () => {
+                let teacher: User
+                let student: User
+                beforeEach(async () => {
+                    teacher = users[1]
+                    student = users[2]
+                    await addPermission({
+                        user: teacher,
+                        organization: organizations[1],
+                        permission: PermissionName.view_my_class_users_40112,
+                    })
+                })
+                it('can view class students and teachers', async () => {
+                    const userNodeResponse = await userNode(
+                        testClient,
+                        {
+                            authorization: generateToken(
+                                userToPayload(teacher)
+                            ),
+                        },
+                        student.user_id
+                    )
+                    expect(userNodeResponse).to.deep.equal(
+                        mapUserToUserConnectionNode(student)
+                    )
+                })
+            })
             context('User with no "view_*_users" permission', () => {
                 it('can only see their own User', async () => {
                     const userNodeResponse = await userNode(
