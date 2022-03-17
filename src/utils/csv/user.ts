@@ -21,7 +21,7 @@ import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeaders
 import clean from '../clean'
 import { Permission } from '../../entities/permission'
 import { config } from '../../config/config'
-import { objectToKey } from '../stringUtils'
+import { objectToKey, ObjMap } from '../stringUtils'
 
 export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     headers: (keyof UserRow)[],
@@ -29,6 +29,13 @@ export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     fileErrors: CSVError[]
 ) => {
     fileErrors.push(...UserRowRequirements.validate(headers, filename))
+}
+
+function createUserKey(user: User) {
+    return {
+        givenName: user.given_name,
+        familyName: user.family_name,
+    }
 }
 
 export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
@@ -40,21 +47,211 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
     queryResultCache: QueryResultCache
 ) => {
     const allRowErrors = []
-    for (const [index, row] of rows.entries()) {
-        // TODO: return entities instead of saving them inside the function
-        // so that can be saved in bulk
+    const users = new Map<User['user_id'], User>()
+    const classes = new Map<Class['class_id'], Class>()
+    const orgMemberships = new ObjMap<
+        {
+            userId: OrganizationMembership['user_id']
+            orgId: OrganizationMembership['organization_id']
+        },
+        OrganizationMembership
+    >()
+    const schoolMemberships = new ObjMap<
+        {
+            userId: SchoolMembership['user_id']
+            schoolId: SchoolMembership['school_id']
+        },
+        SchoolMembership
+    >()
 
-        const rowErrors = await processUserFromCSVRow(
+    const usersFound = await getUsers(rows, manager)
+
+    const dataForMakingMemberships: {
+        user: User
+        org: Organization
+        school?: School
+        organizationRole?: Role
+        row: UserRow
+    }[] = []
+
+    const dataForMakingClasses: {
+        index: number
+        user: User
+        cls: Class
+        organizationId: string
+        row: UserRow
+    }[] = []
+
+    for (const [index, row] of rows.entries()) {
+        const { rowErrors, entities } = await processUserFromCSVRow(
             manager,
             row,
             rowNumber + index,
             fileErrors,
             userPermissions,
-            queryResultCache
+            queryResultCache,
+            usersFound
         )
+
+        if (entities !== undefined) {
+            dataForMakingMemberships.push({
+                user: entities.user,
+                org: entities.org,
+                school: entities.school,
+                organizationRole: entities.organizationRole,
+                row,
+            })
+            users.set(entities.user.user_id, entities.user)
+
+            if (entities.cls !== undefined) {
+                dataForMakingClasses.push({
+                    index: rowNumber + index,
+                    user: entities.user,
+                    organizationId: entities.org.organization_id,
+                    cls: entities.cls,
+                    row,
+                })
+            }
+        }
         allRowErrors.push(...rowErrors)
     }
-    return allRowErrors
+
+    if (allRowErrors.length !== 0) {
+        return allRowErrors
+    }
+
+    await manager.save(Array.from(users.values()))
+
+    for (const {
+        user,
+        org,
+        school,
+        organizationRole,
+        row,
+    } of dataForMakingMemberships) {
+        const {
+            organizationMembership,
+            schoolMembership,
+        } = await createOrUpdateMemberships(
+            manager,
+            row,
+            user,
+            org,
+            organizationRole,
+            school
+        )
+
+        if (organizationMembership !== undefined) {
+            orgMemberships.set(
+                {
+                    userId: organizationMembership.user_id,
+                    orgId: organizationMembership.organization_id,
+                },
+                organizationMembership
+            )
+        }
+
+        if (schoolMembership !== undefined) {
+            schoolMemberships.set(
+                {
+                    userId: schoolMembership.user_id,
+                    schoolId: schoolMembership.school_id,
+                },
+                schoolMembership
+            )
+        }
+    }
+
+    await Promise.all([
+        manager.save(Array.from(orgMemberships.values())),
+        manager.save(Array.from(schoolMemberships.values())),
+    ])
+
+    for (const {
+        index,
+        cls,
+        organizationId,
+        user,
+        row,
+    } of dataForMakingClasses) {
+        const classRowErrors = await addUserToClass(
+            manager,
+            row,
+            index,
+            cls,
+            user,
+            organizationId
+        )
+        if (classRowErrors.length === 0) {
+            classes.set(cls.class_id, cls)
+        } else {
+            allRowErrors.push(...classRowErrors)
+        }
+    }
+
+    if (allRowErrors.length > 0) {
+        return allRowErrors
+    } else {
+        await manager.save(Array.from(classes.values()))
+        return []
+    }
+}
+
+async function getUsers(
+    rows: Pick<UserRow, 'user_given_name' | 'user_family_name'>[],
+    manager: EntityManager
+): Promise<ObjMap<{ givenName?: string; familyName?: string }, User[]>> {
+    const givenNames = rows.map((r) => r.user_given_name)
+    const familyNames = rows.map((r) => r.user_family_name)
+
+    const users = await manager.find(User, {
+        where: [
+            {
+                given_name: In(givenNames),
+                family_name: In(familyNames),
+            },
+        ],
+    })
+
+    const usersFromDb = new ObjMap<
+        { givenName?: string; familyName?: string },
+        User[]
+    >()
+
+    for (const user of users) {
+        const key = createUserKey(user)
+        const matches = usersFromDb.get(key) || []
+        matches.push(user)
+        usersFromDb.set(key, matches)
+    }
+
+    return usersFromDb
+}
+
+function doesUserAlreadyExist(
+    row: UserRow,
+    usersFromDb: ObjMap<{ givenName?: string; familyName?: string }, User[]>
+) {
+    const usersWhoMatchByName = usersFromDb.get({
+        givenName: row.user_given_name,
+        familyName: row.user_family_name,
+    })
+    // search for both the normalized and raw value.
+    // only need to do this because we were previously saving the raw
+    // value instead of the normalized value.
+    // this could be removed if a DB migration was run to normalize all email values.
+    if (usersWhoMatchByName !== undefined) {
+        const usersWhoMatchByLogin = usersWhoMatchByName?.filter(
+            (u) =>
+                u.email === row.user_email ||
+                clean.email(u.email) === row.user_email ||
+                u.phone === row.user_phone ||
+                u.username === row.user_username
+        )
+        if (usersWhoMatchByLogin.length > 0) {
+            return usersWhoMatchByLogin.pop()
+        }
+    }
 }
 
 export const processUserFromCSVRow = async (
@@ -63,8 +260,18 @@ export const processUserFromCSVRow = async (
     rowNumber: number,
     fileErrors: CSVError[],
     userPermissions: UserPermissions,
-    queryResultCache: QueryResultCache
-) => {
+    queryResultCache: QueryResultCache,
+    usersFound: ObjMap<{ givenName?: string; familyName?: string }, User[]>
+): Promise<{
+    rowErrors: CSVError[]
+    entities?: {
+        user: User
+        cls?: Class
+        org: Organization
+        organizationRole?: Role
+        school?: School
+    }
+}> => {
     const rowErrors: CSVError[] = []
     // First check static validation constraints
     const validationErrors = validateRow(row, rowNumber, userRowValidation)
@@ -72,7 +279,7 @@ export const processUserFromCSVRow = async (
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
     if (rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
     // Now check dynamic constraints
@@ -107,7 +314,7 @@ export const processUserFromCSVRow = async (
                     entityName: row.organization_name,
                 }
             )
-            return rowErrors
+            return { rowErrors }
         }
 
         // And is the user authorized to upload to this org?
@@ -129,7 +336,7 @@ export const processUserFromCSVRow = async (
                 }
             )
             // AD-1721: Added because validation process should not reveal validity of other entities after this point if client user unauthorized. Discussed with Charlie (PM).
-            return rowErrors
+            return { rowErrors }
         }
 
         // Update the cache
@@ -301,10 +508,9 @@ export const processUserFromCSVRow = async (
     }
 
     if (rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
-    const rawEmail = row.user_email
     row.user_email = clean.email(row.user_email) || undefined
     // we don't need to catch errors here
     // as its already pass validation
@@ -312,26 +518,9 @@ export const processUserFromCSVRow = async (
     row.user_phone = clean.phone(row.user_phone) || undefined
     row.user_gender = row.user_gender?.toLowerCase()
 
-    const personalInfo = {
-        given_name: row.user_given_name,
-        family_name: row.user_family_name,
-    }
-
-    let user = await manager.findOne(User, {
-        where: [
-            {
-                // search for both the normalized and raw value.
-                // only need to do this because we were previously saving the raw
-                // value instead of the normalized value.
-                // this could be removed if a DB migration was run to normalize all email values.
-                email: In([rawEmail, clean.email(rawEmail)]),
-                ...personalInfo,
-            },
-            { phone: row.user_phone, ...personalInfo },
-            { username: row.user_username, ...personalInfo },
-        ],
-    })
+    let user = doesUserAlreadyExist(row, usersFound)
     let isNewUser = false
+
     if (!user) {
         user = new User()
         user.user_id = uuid_v4()
@@ -376,6 +565,13 @@ export const processUserFromCSVRow = async (
         user.alternate_phone = clean.phone(row.user_alternate_phone)
     }
 
+    if (isNewUser) {
+        const key = createUserKey(user)
+        const usersWithMatchingNames = usersFound.get(key) || []
+        usersWithMatchingNames.push(user!)
+        usersFound.set(key, usersWithMatchingNames)
+    }
+
     if (row.user_shortcode) {
         const userShortcode = await manager.findOne(OrganizationMembership, {
             where: {
@@ -401,11 +597,23 @@ export const processUserFromCSVRow = async (
 
     // never save if there are any errors in the file
     if (fileErrors.length > 0 || rowErrors.length > 0) {
-        return rowErrors
+        return { rowErrors }
     }
 
-    await manager.save(user)
+    return { rowErrors, entities: { user, cls, org, organizationRole, school } }
+}
 
+export const createOrUpdateMemberships = async (
+    manager: EntityManager,
+    row: UserRow,
+    user: User,
+    org: Organization,
+    organizationRole?: Role,
+    school?: School
+): Promise<{
+    organizationMembership: OrganizationMembership
+    schoolMembership?: SchoolMembership
+}> => {
     let organizationMembership = await manager.findOne(OrganizationMembership, {
         where: {
             organization_id: org.organization_id,
@@ -435,10 +643,10 @@ export const processUserFromCSVRow = async (
         }
     }
 
-    await manager.save(organizationMembership)
+    let schoolMembership: SchoolMembership | undefined
 
     if (school) {
-        let schoolMembership = await manager.findOne(SchoolMembership, {
+        schoolMembership = await manager.findOne(SchoolMembership, {
             where: {
                 school_id: school.school_id,
                 user_id: user.user_id,
@@ -451,70 +659,81 @@ export const processUserFromCSVRow = async (
             schoolMembership.school = Promise.resolve(school)
             schoolMembership.user_id = user.user_id
             schoolMembership.user = Promise.resolve(user)
-            await manager.save(schoolMembership)
         }
     }
 
-    if (cls) {
-        const perms = await manager
-            .createQueryBuilder(Permission, 'Permission')
-            .innerJoin('Permission.roles', 'Role')
-            .innerJoin('Role.memberships', 'OrganizationMembership')
-            .where('OrganizationMembership.user_id = :user_id', {
-                user_id: user.user_id,
-            })
-            .andWhere(
-                'OrganizationMembership.organization_id = :organization_id',
-                {
-                    organization_id: organizationMembership.organization_id,
-                }
-            )
-            .getMany()
+    return { organizationMembership, schoolMembership }
+}
 
-        const teacherPerm =
-            perms.some(
-                (p) =>
-                    p.permission_name ===
-                    PermissionName.attend_live_class_as_a_teacher_186.valueOf()
-            ) || false
-        const studentPerm =
-            perms.some(
-                (p) =>
-                    p.permission_name ===
-                    PermissionName.attend_live_class_as_a_student_187.valueOf()
-            ) || false
+export async function addUserToClass(
+    manager: EntityManager,
+    row: UserRow,
+    rowNumber: number,
+    cls: Class,
+    user: User,
+    organizationId: Organization['organization_id']
+): Promise<CSVError[]> {
+    const rowErrors: CSVError[] = []
 
-        if (teacherPerm) {
-            const teachers = (await cls.teachers) || []
-            if (!teachers.includes(user)) {
-                teachers.push(user)
-                cls.teachers = Promise.resolve(teachers)
-            }
+    const perms = await manager
+        .createQueryBuilder(Permission, 'Permission')
+        .innerJoin('Permission.roles', 'Role')
+        .innerJoin('Role.memberships', 'OrganizationMembership')
+        .where('OrganizationMembership.user_id = :user_id', {
+            user_id: user.user_id,
+        })
+        .andWhere('OrganizationMembership.organization_id = :organization_id', {
+            organization_id: organizationId,
+        })
+        .andWhere('Permission.permission_name IN (:...permission_ids)', {
+            permission_ids: [
+                PermissionName.attend_live_class_as_a_teacher_186.valueOf(),
+                PermissionName.attend_live_class_as_a_student_187.valueOf(),
+            ],
+        })
+        .getMany()
+
+    const teacherPerm =
+        perms.some(
+            (p) =>
+                p.permission_name ===
+                PermissionName.attend_live_class_as_a_teacher_186.valueOf()
+        ) || false
+    const studentPerm =
+        perms.some(
+            (p) =>
+                p.permission_name ===
+                PermissionName.attend_live_class_as_a_student_187.valueOf()
+        ) || false
+
+    if (teacherPerm) {
+        const teachers = (await cls.teachers) || []
+        if (!teachers.includes(user)) {
+            teachers.push(user)
+            cls.teachers = Promise.resolve(teachers)
         }
-        if (studentPerm) {
-            const students = (await cls.students) || []
-            if (!students.includes(user)) {
-                students.push(user)
-                cls.students = Promise.resolve(students)
-            }
-        }
-        if (!studentPerm && !teacherPerm) {
-            addCsvError(
-                rowErrors,
-                customErrors.unauthorized_upload_child.code,
-                rowNumber,
-                'organization_role_name',
-                customErrors.unauthorized_upload_child.message,
-                {
-                    entity: 'User',
-                    parentEntity: 'Class',
-                    parentName: row.class_name,
-                }
-            )
-        } else {
-            await manager.save(cls)
+    }
+    if (studentPerm) {
+        const students = (await cls.students) || []
+        if (!students.includes(user)) {
+            students.push(user)
+            cls.students = Promise.resolve(students)
         }
     }
 
+    if (!studentPerm && !teacherPerm) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_upload_child.code,
+            rowNumber,
+            'organization_role_name',
+            customErrors.unauthorized_upload_child.message,
+            {
+                entity: 'User',
+                parentEntity: 'Class',
+                parentName: row.class_name,
+            }
+        )
+    }
     return rowErrors
 }

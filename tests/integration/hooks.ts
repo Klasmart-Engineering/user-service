@@ -24,6 +24,7 @@ after(async () => {
 
 beforeEach(async () => {
     faker.seed(123)
+    connection.logger.reset()
     transactionalContext = new TransactionalTestContext(connection)
     await transactionalContext.start()
 })

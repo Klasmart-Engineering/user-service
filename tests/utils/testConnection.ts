@@ -1,10 +1,14 @@
 import { Connection, createConnection, QueryRunner } from 'typeorm'
 import { TypeORMLogger } from '../../src/logging'
 import { getEnvVar } from '../../src/config/config'
+import { max, min, sum } from 'lodash'
+import * as fs from 'fs'
 
 class QueryMetricsLogger extends TypeORMLogger {
     private counter = 0
     private wasReset = false
+    private slowStats = new Map<string, number[]>()
+    public queryCounts = new Map<string, number>()
 
     logQuery(
         query: string,
@@ -12,7 +16,53 @@ class QueryMetricsLogger extends TypeORMLogger {
         queryRunner?: QueryRunner
     ): void {
         this.counter += 1
+        const queryCount = this.queryCounts.get(query) || 0
+        this.queryCounts.set(query, queryCount + 1)
         super.logQuery(query, parameters, queryRunner)
+    }
+
+    logQuerySlow(
+        time: number,
+        query: string,
+        parameters?: unknown[],
+        queryRunner?: QueryRunner
+    ) {
+        const timings = this.slowStats.get(query) || []
+        timings.push(time)
+        this.slowStats.set(query, timings)
+        super.logQuerySlow(time, query, parameters, queryRunner)
+    }
+
+    get slowQueryStats(): Map<
+        string,
+        {
+            total: number
+            mean: number
+            timesCalled: number
+            min: number | undefined
+            max: number | undefined
+        }
+    > {
+        const results = new Map()
+
+        for (const [query, times] of this.slowStats.entries()) {
+            const total = sum(times)
+            results.set(query, {
+                total,
+                mean: total / times.length,
+                timesCalled: times.length,
+                min: min(times),
+                max: max(times),
+            })
+        }
+        return results
+    }
+
+    saveSlowQueryStats() {
+        fs.writeFileSync(
+            './slow_query_stats.json',
+            JSON.stringify(Object.fromEntries(this.slowQueryStats), null, 4)
+        )
     }
 
     get count(): number {
@@ -27,6 +77,8 @@ class QueryMetricsLogger extends TypeORMLogger {
     reset(): void {
         this.wasReset = true
         this.counter = 0
+        this.slowStats = new Map()
+        this.queryCounts = new Map()
     }
 }
 
