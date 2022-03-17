@@ -1,4 +1,4 @@
-import { getManager, In, WhereExpression } from 'typeorm'
+import { getManager, In } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Role } from '../entities/role'
 import { Status } from '../entities/status'
@@ -25,9 +25,7 @@ import {
     UserContactInfo,
     UsersMutationResult,
 } from '../types/graphQL/user'
-import { Brackets, EntityManager, getConnection } from 'typeorm'
 import { CreateUserInput } from '../types/graphQL/user'
-import { UserConnectionNode } from '../types/graphQL/user'
 import {
     createUserSchema,
     updateUserSchema,
@@ -37,7 +35,6 @@ import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
-    createUnauthorizedAPIError,
 } from '../utils/resolvers/errors'
 import { getMap, SchoolMembershipMap } from '../utils/resolvers/entityMaps'
 import { config } from '../config/config'
@@ -48,6 +45,8 @@ import {
     filterInvalidInputs,
     ProcessedResult,
     RemoveMutation,
+    validateAtLeastOne,
+    validateNoDuplicate,
     validateNoDuplicateAttribute,
     validateSubItemsLengthAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
@@ -75,18 +74,15 @@ export interface CreateUsersEntityMap extends EntityMap<User> {
     conflictingUsers: ObjMap<ConflictingUserKey, User>
 }
 
+export interface UpdateUsersEntityMap extends EntityMap<User> {
+    mainEntity: Map<string, User>
+    conflictingUsers: ObjMap<ConflictingUserKey, User>
+}
+
 export interface AddSchoolRolesToUsersEntityMap
     extends RemoveSchoolRolesFromUsersEntityMap {
     schoolOrg: Map<string, Organization>
     orgRoles: Map<string, Role[]>
-}
-
-function getUserIdentifier(
-    username?: string | null,
-    email?: string | null,
-    phone?: string | null
-): string {
-    return username ? username : email ? email : phone || ''
 }
 
 export class AddSchoolRolesToUsers extends AddMutation<
@@ -654,21 +650,6 @@ function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
     return cleanCui
 }
 
-// We build a key for a map, I am using maps to reduce the looping through arrays to
-// a minimum when looking up values
-export function makeLookupKey(
-    given: string | undefined | null,
-    family: string | undefined | null,
-    contact: string | undefined | null
-): string {
-    const jsonKey = {
-        contactInfo: contact,
-        givenName: given,
-        familyName: family,
-    }
-    return JSON.stringify(jsonKey)
-}
-
 export function keyToPrintableString(key: string): string {
     const jsonKey = JSON.parse(key)
     const given = jsonKey['givenName']
@@ -752,10 +733,11 @@ export class CreateUsers extends CreateMutation<
         validInputs: { index: number; input: CreateUserInput }[]
         apiErrors: APIError[]
     } {
-        const inputMap = new Map<string, number>()
+        const inputMap = new Map<ConflictingUserKey, number>()
         const inputErrors = new Map<number, APIError>()
 
         for (const [index, input] of inputs.entries()) {
+            // Checking correct input format
             const { errors } = validateAPICall(input, createUserSchema, {
                 entity: 'User',
             })
@@ -767,20 +749,9 @@ export class CreateUsers extends CreateMutation<
                 }
             }
 
-            const {
-                givenName,
-                familyName,
-                username,
-                email,
-                phone,
-            } = createUserInputToConflictingUserKey(input)
+            const key = createUserInputToConflictingUserKey(input)
 
-            const key = makeLookupKey(
-                givenName,
-                familyName,
-                getUserIdentifier(username, email, phone)
-            )
-
+            // Checking input duplicates
             if (inputMap.has(key)) {
                 inputErrors.set(
                     index,
@@ -800,25 +771,6 @@ export class CreateUsers extends CreateMutation<
                 inputMap.set(key, index)
             }
         }
-        // // Checking correct format on each field for each input
-        // const failedFormat = validateUserInputFormat(inputs)
-
-        // const inputValues = inputs.map((i) => {
-        //     const { givenName, familyName, username, contactInfo } = i
-        //     return {
-        //         givenName,
-        //         familyName,
-        //         username: username || undefined,
-        //         email: contactInfo?.email || undefined,
-        //         phone: contactInfo?.phone || undefined,
-        //     }
-        // })
-
-        // // Checking duplicates in givenName, familyName and (username, contactInfo.email or contactInfo.phone)
-        // const failedDuplicateUsers = validateNoUsersDuplicate(
-        //     inputValues,
-        //     this.inputTypeName
-        // )
 
         return filterInvalidInputs(inputs, [inputErrors])
     }
@@ -835,6 +787,7 @@ export class CreateUsers extends CreateMutation<
             createUserInputToConflictingUserKey(normalizedInput)
         )
 
+        // Checking already existent users
         const conflictingUser = maps.conflictingUsers.get(key)
         if (conflictingUser?.user_id) {
             errors.push(
@@ -886,34 +839,6 @@ export class CreateUsers extends CreateMutation<
     }
 }
 
-// Convenience function to generate Users from UpdateUserInputs
-function buildListOfUpdatedUsers(
-    inputs: UpdateUserInput[],
-    existingUserMap: Map<string, User>
-): User[] {
-    const updatedUsers: User[] = []
-    for (const uui of inputs) {
-        const updatedUser = existingUserMap.get(uui.id)
-        if (updatedUser != undefined) {
-            updatedUser.user_id = uui.id
-            updatedUser.given_name = uui.givenName ?? undefined
-            updatedUser.family_name = uui.familyName ?? undefined
-            updatedUser.email = uui.email ?? undefined
-            updatedUser.phone = uui.phone ?? undefined
-            updatedUser.gender = uui.gender ?? undefined
-            updatedUser.username = uui.username
-            updatedUser.date_of_birth = uui.dateOfBirth ?? undefined
-            updatedUser.alternate_email = uui.alternateEmail ?? undefined
-            updatedUser.alternate_phone = uui.alternatePhone ?? undefined
-            updatedUser.avatar = uui.avatar ?? undefined
-            updatedUser.date_of_birth = uui.dateOfBirth ?? undefined
-            updatedUser.primary = uui.primaryUser ?? updatedUser.primary
-            updatedUsers.push(updatedUser)
-        }
-    }
-    return updatedUsers
-}
-
 function cleanUpdateUserInput(uui: UpdateUserInput): UpdateUserInput {
     const cleanUui: UpdateUserInput = {
         id: uui.id,
@@ -936,357 +861,242 @@ function cleanUpdateUserInput(uui: UpdateUserInput): UpdateUserInput {
     return cleanUui
 }
 
-interface ConflictCheck {
-    conflicts: User[]
-    checklist: UpdateUserInput[]
-}
+export class UpdateUsers extends CreateMutation<
+    User,
+    UpdateUserInput,
+    UsersMutationResult,
+    UpdateUsersEntityMap
+> {
+    protected readonly EntityType = User
+    protected inputTypeName = 'UpdateUserInput'
+    protected mainEntityIds: string[] = []
+    protected output: UsersMutationResult = { users: [] }
 
-function buildUserPersonalInfoScope(
-    scope: WhereExpression,
-    i: number,
-    given?: string,
-    family?: string,
-    email?: string | null,
-    phone?: string | null,
-    username?: string | null
-): WhereExpression {
-    const searchParameters: Record<string, string | undefined | null> = {}
-    searchParameters[`given_name${i}`] = given
-    searchParameters[`family_name${i}`] = family
-    let whereStr: string
-    if (username) {
-        searchParameters[`username${i}`] = username
-        whereStr = `User.username = :username${i} AND User.given_name = :given_name${i} AND User.family_name = :family_name${i}`
-    } else if (email) {
-        searchParameters[`email${i}`] = email
-        whereStr = `User.email = :email${i} AND User.given_name = :given_name${i} AND User.family_name = :family_name${i}`
-    } else {
-        searchParameters[`phone${i}`] = phone
-        whereStr = `User.phone = :phone${i} AND User.given_name = :given_name${i} AND User.family_name = :family_name${i}`
-    }
-    scope.orWhere(
-        new Brackets((qb) => {
-            qb.where(whereStr, searchParameters)
-        })
-    )
-    return scope
-}
-
-async function checkForGivenNameFamilyNameContactInfoCollisions(
-    existingUserMap: Map<string, User>,
-    inputs: UpdateUserInput[],
-    manager: EntityManager
-): Promise<APIError[]> {
-    const scope = manager.createQueryBuilder(User, 'User')
-    const checkingInputs: UpdateUserInput[] = []
-    const ids: string[] = []
-    scope.andWhere(
-        new Brackets((oqb) => {
-            for (let i = 0, len = inputs.length; i < len; i++) {
-                const uui = inputs[i]
-                const id = uui.id
-
-                const existingUser = existingUserMap.get(id)
-                const given = uui.givenName ?? existingUser?.given_name
-                const family = uui.familyName ?? existingUser?.family_name
-                const email = uui.email ?? existingUser?.email
-                const phone = uui.phone ?? existingUser?.phone
-                const username = uui.username ?? existingUser?.username
-                checkingInputs.push({
-                    id: id,
-                    givenName: given,
-                    familyName: family,
-                    email: email,
-                    phone: phone,
-                    username: username,
-                })
-                ids.push(id)
-
-                buildUserPersonalInfoScope(
-                    oqb,
-                    i,
-                    given,
-                    family,
-                    email,
-                    phone,
-                    username
-                )
-            }
-        })
-    )
-    scope.andWhere(
-        new Brackets((qb) => {
-            qb.where('User.user_id NOT IN (:...ids)', {
-                ids: ids,
-            }).andWhere('User.status = :status', { status: Status.ACTIVE })
-        })
-    )
-    const errs: APIError[] = []
-    const conflicts = await scope.getMany()
-    if (conflicts.length > 0) {
-        const conflictErrs = buildConflictsErrors({
-            conflicts,
-            checklist: checkingInputs,
-        })
-        if (conflictErrs.length > 0) {
-            errs.push(...conflictErrs)
+    constructor(input: UpdateUserInput[], permissions: Context['permissions']) {
+        super(input, permissions)
+        for (const val of input) {
+            this.mainEntityIds.push(val.id)
         }
     }
-    return errs
-}
 
-function checkUpdateUserInputs(inputs: UpdateUserInput[]): APIError[] {
-    const inputMap = new Map<string, number>()
-    const inputPersonalInfoMap = new Map<string, number>()
-    const errs: APIError[] = []
-    for (let i = 0, len = inputs.length; i < len; i++) {
-        const updateUserInput = inputs[i]
-        const { errors } = validateAPICall(updateUserInput, updateUserSchema, {
-            entity: 'User',
-        })
-        if (errors.length > 0) {
-            for (const e of errors) {
-                e.index = i
-            }
-            errs.push(...errors)
-        }
-        let idErr = false
-        if (inputMap.has(updateUserInput.id)) {
-            idErr = true
-            errs.push(
-                new APIError({
-                    code: customErrors.duplicate_input_value.code,
-                    message: customErrors.duplicate_input_value.message,
-                    variables: ['givenName', 'familyName', `${'id'}`],
-                    entity: 'User',
-                    attribute: 'ID',
-                    entityName: updateUserInput.id,
-                    otherAttribute: `${updateUserInput.id}`,
-                    index: i,
-                })
-            )
-        } else {
-            inputMap.set(updateUserInput.id, i)
-        }
-        const key = makeLookupKey(
-            updateUserInput.givenName,
-            updateUserInput.familyName,
-            getUserIdentifier(
-                updateUserInput.username,
-                updateUserInput.email,
-                updateUserInput.phone
-            )
+    protected async generateEntityMaps(
+        input: UpdateUserInput[]
+    ): Promise<UpdateUsersEntityMap> {
+        const ids: string[] = input.map((i) => i.id)
+        const mainEntity = await getMap.user(ids)
+
+        const userKeys: ConflictingUserKey[] = input.map((i) =>
+            updateUserInputToConflictingUserKey(i, mainEntity)
         )
-        if (inputPersonalInfoMap.has(key)) {
-            if (!idErr) {
-                errs.push(
-                    new APIError({
-                        code: customErrors.duplicate_input_value.code,
-                        message: customErrors.duplicate_input_value.message,
-                        variables: ['givenName', 'familyName'],
-                        entity: 'User',
-                        attribute: 'ID',
-                        entityName: updateUserInput.id,
-                        index: i,
-                    })
-                )
-            }
-        } else {
-            inputPersonalInfoMap.set(key, i)
+
+        const matchingPreloadedUserArray = await User.find({
+            where: userKeys.map((k) => {
+                const { givenName, familyName, username, email, phone } = k
+                const condition = {
+                    given_name: givenName,
+                    family_name: familyName,
+                    status: Status.ACTIVE,
+                    ...addIdentifierToKey(username, email, phone),
+                }
+
+                return condition
+            }),
+        })
+
+        const conflictingUsers = new ObjMap<ConflictingUserKey, User>()
+        for (const u of matchingPreloadedUserArray) {
+            const { given_name, family_name, username, email, phone } = u
+
+            conflictingUsers.set(
+                {
+                    givenName: given_name!,
+                    familyName: family_name!,
+                    ...addIdentifierToKey(username, email, phone),
+                },
+                u
+            )
+        }
+
+        return {
+            mainEntity,
+            conflictingUsers,
         }
     }
-    return errs
-}
 
-async function checkForUpdateExistingUsers(
-    manager: EntityManager,
-    inputs: UpdateUserInput[]
-): Promise<User[]> {
-    const ids = inputs.map((uui) => uui.id)
-    const scope = manager
-        .createQueryBuilder(User, 'User')
-        .where('User.user_id IN (:...ids)', { ids })
-        .andWhere('User.status = :status', { status: Status.ACTIVE })
-    return await scope.getMany()
-}
-
-function buildConflictsErrors(conflictcheck: ConflictCheck): APIError[] {
-    const conflictErrs: APIError[] = []
-    const conflictsMap = new Map(
-        conflictcheck.checklist.map((v, i) => [
-            makeLookupKey(
-                v.givenName,
-                v.familyName,
-                getUserIdentifier(v.username, v.email, v.phone)
-            ),
-            i,
+    async authorize(): Promise<void> {
+        const updateUsersPermission = PermissionName.edit_users_40330
+        const orgs = await this.permissions.orgMembershipsWithPermissions([
+            updateUsersPermission,
         ])
-    )
-    for (const u of conflictcheck.conflicts) {
-        const ukey = makeLookupKey(
-            u.given_name,
-            u.family_name,
-            getUserIdentifier(u.username, u.email, u.phone)
+
+        if (!orgs.length) {
+            throw new Error(
+                `User(${this.permissions.getUserId()}) does not have Permission(${updateUsersPermission})`
+            )
+        }
+    }
+
+    validationOverAllInputs(
+        inputs: UpdateUserInput[],
+        maps: UpdateUsersEntityMap
+    ): {
+        validInputs: { index: number; input: UpdateUserInput }[]
+        apiErrors: APIError[]
+    } {
+        // Checking that at least one of the optional params is sent
+        const failedAtLeastOne = validateAtLeastOne(
+            inputs,
+            this.inputTypeName,
+            [
+                'givenName',
+                'familyName',
+                'email',
+                'phone',
+                'username',
+                'dateOfBirth',
+                'gender',
+                'avatar',
+                'alternateEmail',
+                'alternatePhone',
+                'primaryUser',
+            ]
         )
-        if (conflictsMap.has(ukey)) {
-            const index = conflictsMap.get(ukey)
-            if (index != undefined) {
-                const e = new APIError({
-                    code: customErrors.existent_entity.code,
-                    message: customErrors.existent_entity.message,
-                    variables: ['givenName', 'familyName', 'username', 'email'],
-                    entity: 'User',
-                    entityName: u.user_id,
-                    index: index,
-                })
-                conflictErrs.push(e)
+
+        // Checking that you are not editing the same user more than once
+        const failedDuplicates = validateNoDuplicate(
+            inputs.map((i) => i.id),
+            this.inputTypeName,
+            'id'
+        )
+
+        const inputPersonalInfoMap = new Map<ConflictingUserKey, number>()
+        const inputErrors = new Map<number, APIError>()
+
+        for (const [index, input] of inputs.entries()) {
+            // Checking correct input format
+            const { errors } = validateAPICall(input, updateUserSchema, {
+                entity: 'User',
+            })
+
+            if (errors.length) {
+                for (const e of errors) {
+                    const apiErr = new APIError({ ...e, index })
+                    inputErrors.set(index, apiErr)
+                }
+            }
+
+            const key = updateUserInputToConflictingUserKey(
+                input,
+                maps.mainEntity
+            )
+
+            // Checking input personal info duplicates
+            if (inputPersonalInfoMap.has(key)) {
+                inputErrors.set(
+                    index,
+                    createDuplicateAttributeAPIError(
+                        index,
+                        [
+                            'givenName',
+                            'familyName',
+                            'username',
+                            'phone',
+                            'email',
+                        ],
+                        this.inputTypeName
+                    )
+                )
+            } else {
+                inputPersonalInfoMap.set(key, index)
             }
         }
-    }
 
-    return conflictErrs
-}
-
-function buildListOfUpdateMissingUserErrors(
-    missingIds: number[],
-    inputs: UpdateUserInput[]
-): APIError[] {
-    const errs: APIError[] = []
-    for (const index of missingIds) {
-        const e = new APIError({
-            code: customErrors.nonexistent_entity.code,
-            message: customErrors.nonexistent_entity.message,
-            variables: ['id'],
-            entity: 'User',
-            attribute: 'user_id',
-            entityName: inputs[index].id,
-            otherAttribute: `${inputs[index].id}`,
-            index,
-        })
-
-        errs.push(e)
-    }
-    return errs
-}
-
-// We check that the incoming user ids already exist in the db
-// we must not create new users with explicit ids.
-function checkForMissingUpdateUsers(
-    inputs: UpdateUserInput[],
-    existingUsers: User[],
-    existingUserMap: Map<string, User>
-): APIError[] {
-    let missingErrs: APIError[] = []
-    if (existingUsers.length < inputs.length) {
-        const missingIndexes: number[] = []
-        for (let i = 0, len = inputs.length; i < len; i++) {
-            if (!existingUserMap.has(inputs[i].id)) {
-                missingIndexes.push(i)
-            }
-        }
-        missingErrs = buildListOfUpdateMissingUserErrors(missingIndexes, inputs)
-    }
-
-    return missingErrs
-}
-
-export async function updateUsers(
-    args: { input: UpdateUserInput[] },
-    context: Pick<Context, 'permissions'>
-): Promise<UsersMutationResult> {
-    const connection = getConnection()
-    const results: UserConnectionNode[] = []
-    const inputs = args.input
-    const errs: APIError[] = []
-    const manager = connection.manager
-    let updateUserPerm = false
-    try {
-        context.permissions.rejectIfNotAdmin()
-        updateUserPerm = true
-    } catch {
-        const orgs = await context.permissions.orgMembershipsWithPermissions([
-            PermissionName.edit_users_40330,
+        return filterInvalidInputs(inputs, [
+            failedAtLeastOne,
+            failedDuplicates,
+            inputErrors,
         ])
-        updateUserPerm = orgs.length > 0
     }
-    if (!updateUserPerm) {
-        errs.push(
-            createUnauthorizedAPIError(
-                'User',
-                'userId',
-                context.permissions.getUserId()
+
+    validate(
+        index: number,
+        _currentUser: User | undefined,
+        currentInput: UpdateUserInput,
+        maps: UpdateUsersEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { id } = currentInput
+
+        // Checking that the user exist
+        const userExists = flagNonExistent(User, index, [id], maps.mainEntity)
+        errors.push(...userExists.errors)
+
+        const normalizedInput = cleanUpdateUserInput(currentInput)
+        const key = buildConflictingUserKey(
+            updateUserInputToConflictingUserKey(
+                normalizedInput,
+                maps.mainEntity
             )
         )
 
-        throw new APIErrorCollection(errs)
-    }
-    if (inputs.length === 0) errs.push(createInputLengthAPIError('User', 'min'))
+        // Checking user personal info duplicates
+        const conflictingUser = maps.conflictingUsers.get(key)
+        if (conflictingUser?.user_id) {
+            errors.push(
+                createEntityAPIError(
+                    'existent',
+                    index,
+                    'User',
+                    conflictingUser?.user_id,
+                    undefined,
+                    undefined,
+                    ['user_id']
+                )
+            )
+        }
 
-    if (inputs.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
-        errs.push(createInputLengthAPIError('User', 'max'))
-
-    if (errs.length > 0) throw new APIErrorCollection(errs)
-
-    const checkErrs = checkUpdateUserInputs(inputs)
-    if (checkErrs.length > 0) {
-        errs.push(...checkErrs)
-
-        // Removing failing inputs,
-        // because these could produce unexpected errors in next validations
-        checkErrs.forEach((userError) => {
-            if (userError.index) {
-                inputs.splice(userError.index, 1)
-            }
-        })
+        return errors
     }
 
-    const normalizedInputs = inputs.map((val) => cleanUpdateUserInput(val))
-    const existingUsers = await checkForUpdateExistingUsers(
-        manager,
-        normalizedInputs
-    )
-    const existingUserMap = new Map(existingUsers.map((v) => [v.user_id, v]))
-    const missingUserErrors = checkForMissingUpdateUsers(
-        normalizedInputs,
-        existingUsers,
-        existingUserMap
-    )
-    if (missingUserErrors.length > 0) {
-        errs.push(...missingUserErrors)
+    protected process(
+        currentInput: UpdateUserInput,
+        maps: UpdateUsersEntityMap
+    ): ProcessedResult<User, User> {
+        const {
+            id,
+            givenName,
+            familyName,
+            email,
+            phone,
+            username,
+            dateOfBirth,
+            gender,
+            avatar,
+            alternateEmail,
+            alternatePhone,
+            primaryUser,
+        } = currentInput
 
-        // Removing inputs related to non existent users,
-        // because these could produce unexpected errors in next validations
-        missingUserErrors.forEach((userError) => {
-            if (userError.index) {
-                normalizedInputs.splice(userError.index, 1)
-            }
-        })
+        const user = maps.mainEntity.get(id)!
+        user.given_name = givenName || user.given_name
+        user.family_name = familyName || user.family_name
+        user.email = email || user.email
+        user.phone = phone || user.phone
+        user.username = username || user.username
+        user.date_of_birth = dateOfBirth || user.date_of_birth
+        user.gender = gender || user.gender
+        user.avatar = avatar || user.avatar
+        user.alternate_email = alternateEmail || user.alternate_email
+        user.alternate_phone = alternatePhone || user.alternate_phone
+        user.primary = primaryUser || user.primary
+
+        return { outputEntity: user }
     }
 
-    const conflictErrs = await checkForGivenNameFamilyNameContactInfoCollisions(
-        existingUserMap,
-        normalizedInputs,
-        manager
-    )
-    if (conflictErrs.length > 0) {
-        errs.push(...conflictErrs)
+    protected async buildOutput(outputUser: User): Promise<void> {
+        const userConnectionNode = mapUserToUserConnectionNode(outputUser)
+        this.output.users.push(userConnectionNode)
     }
-
-    if (errs.length > 0) throw new APIErrorCollection(errs)
-
-    const updatedUsers = buildListOfUpdatedUsers(
-        normalizedInputs,
-        existingUserMap
-    )
-    await manager.save<User>(updatedUsers)
-
-    updatedUsers.map((u) =>
-        results.push(mapUserToUserConnectionNode(u) as UserConnectionNode)
-    )
-
-    const resultValue: UsersMutationResult = { users: results }
-
-    return resultValue
 }
 
 /**
@@ -1302,6 +1112,24 @@ export function createUserInputToConflictingUserKey(
         username: username || undefined,
         email: contactInfo?.email || undefined,
         phone: contactInfo?.phone || undefined,
+    }
+}
+
+/**
+ * Transforms the given UpdateUserInput in a ConflictingUserKey
+ */
+export function updateUserInputToConflictingUserKey(
+    input: UpdateUserInput,
+    usersMap: Map<string, User>
+): ConflictingUserKey {
+    const { id, givenName, familyName, username, email, phone } = input
+    const user = usersMap.get(id)
+    return {
+        givenName: givenName || user?.given_name || '',
+        familyName: familyName || user?.family_name || '',
+        username: username || user?.username,
+        email: email || user?.email,
+        phone: phone || user?.phone,
     }
 }
 
