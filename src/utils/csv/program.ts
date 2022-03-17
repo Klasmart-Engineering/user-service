@@ -1,6 +1,5 @@
 import { EntityManager } from 'typeorm'
 import { AgeRange } from '../../entities/ageRange'
-import { AgeRangeUnit } from '../../entities/ageRangeUnit'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
 import { Program } from '../../entities/program'
@@ -10,7 +9,7 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
-import { config } from '../../config/config'
+import { validateAgeRanges } from './validations/ageRange'
 
 export const processProgramFromCSVRow = async (
     manager: EntityManager,
@@ -37,12 +36,6 @@ export const processProgramFromCSVRow = async (
         grade_name,
         subject_name,
     } = row
-
-    const allAgeRangeFieldsExists =
-        age_range_high_value && age_range_low_value && age_range_unit
-    const noneOfAgeRangeFieldsExists =
-        !age_range_high_value && !age_range_low_value && !age_range_unit
-
     if (!organization_name) {
         addCsvError(
             rowErrors,
@@ -71,100 +64,13 @@ export const processProgramFromCSVRow = async (
         )
     }
 
-    if (!allAgeRangeFieldsExists && !noneOfAgeRangeFieldsExists) {
-        addCsvError(
-            rowErrors,
-            csvErrorConstants.ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST,
-            rowNumber,
-            'age_range_high_value, age_range_low_value, age_range_unit',
-            csvErrorConstants.MSG_ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST
-        )
-    }
-
-    const highValueNumber = Number(age_range_high_value)
-    const lowValueNumber = Number(age_range_low_value)
-
-    if (
-        age_range_high_value &&
-        (Number.isNaN(highValueNumber) ||
-            !Number.isInteger(highValueNumber) ||
-            highValueNumber < config.limits.AGE_RANGE_HIGH_VALUE_MIN ||
-            highValueNumber > config.limits.AGE_RANGE_HIGH_VALUE_MAX)
-    ) {
-        addCsvError(
-            rowErrors,
-            csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
-            rowNumber,
-            'age_range_high_value',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_BETWEEN,
-            {
-                entity: 'ageRange',
-                attribute: 'age_range_high_value',
-                min: config.limits.AGE_RANGE_HIGH_VALUE_MIN,
-                max: config.limits.AGE_RANGE_HIGH_VALUE_MAX,
-            }
-        )
-    }
-
-    if (
-        age_range_low_value &&
-        (Number.isNaN(lowValueNumber) ||
-            !Number.isInteger(lowValueNumber) ||
-            lowValueNumber < config.limits.AGE_RANGE_LOW_VALUE_MIN ||
-            lowValueNumber > config.limits.AGE_RANGE_LOW_VALUE_MAX)
-    ) {
-        addCsvError(
-            rowErrors,
-            csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
-            rowNumber,
-            'age_range_low_value',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_BETWEEN,
-            {
-                entity: 'ageRange',
-                attribute: 'age_range_low_value',
-                min: config.limits.AGE_RANGE_LOW_VALUE_MIN,
-                max: config.limits.AGE_RANGE_LOW_VALUE_MAX,
-            }
-        )
-    }
-
-    if (
-        age_range_low_value &&
-        age_range_high_value &&
-        lowValueNumber >= highValueNumber
-    ) {
-        addCsvError(
-            rowErrors,
-            csvErrorConstants.ERR_CSV_INVALID_GREATER_THAN_OTHER,
-            rowNumber,
-            'age_range_low_value',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_GREATER_THAN_OTHER,
-            {
-                entity: 'ageRange',
-                attribute: 'age_range_high_value',
-                other: 'age_range_low_value',
-            }
-        )
-    }
-
-    if (
-        age_range_unit &&
-        age_range_unit !== AgeRangeUnit.MONTH &&
-        age_range_unit !== AgeRangeUnit.YEAR
-    ) {
-        addCsvError(
-            rowErrors,
-            csvErrorConstants.ERR_CSV_INVALID_ENUM,
-            rowNumber,
-            'age_range_low_value',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_ENUM,
-            {
-                entity: 'ageRange',
-                attribute: 'age_range_unit',
-                values: 'month, year',
-            }
-        )
-    }
+    validateAgeRanges(
+        rowErrors,
+        rowNumber,
+        age_range_low_value,
+        age_range_high_value,
+        age_range_unit
+    )
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
     if (rowErrors.length > 0) {
@@ -191,7 +97,8 @@ export const processProgramFromCSVRow = async (
         return rowErrors
     }
 
-    if (noneOfAgeRangeFieldsExists) {
+    const ageRangeName = `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`
+    if (!age_range_low_value && !age_range_high_value && !age_range_unit) {
         ageRange = await manager.findOneOrFail(AgeRange, {
             where: {
                 name: 'None Specified',
@@ -202,16 +109,28 @@ export const processProgramFromCSVRow = async (
         })
     } else {
         ageRange = await manager.findOne(AgeRange, {
-            where: {
-                name: `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`,
-                low_value: age_range_low_value,
-                high_value: age_range_high_value,
-                high_value_unit: age_range_unit,
-                low_value_unit: age_range_unit,
-                system: false,
-                status: 'active',
-                organization,
-            },
+            where: [
+                {
+                    name: ageRangeName,
+                    low_value: age_range_low_value,
+                    high_value: age_range_high_value,
+                    high_value_unit: age_range_unit,
+                    low_value_unit: age_range_unit,
+                    system: false,
+                    status: 'active',
+                    organization,
+                },
+                {
+                    name: ageRangeName,
+                    low_value: age_range_low_value,
+                    high_value: age_range_high_value,
+                    high_value_unit: age_range_unit,
+                    low_value_unit: age_range_unit,
+                    system: true,
+                    status: 'active',
+                    organization: null,
+                },
+            ],
         })
     }
 
@@ -224,7 +143,7 @@ export const processProgramFromCSVRow = async (
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             {
                 entity: 'ageRange',
-                name: `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`,
+                name: ageRangeName,
                 parent_entity: 'organization',
                 parent_name: organization_name,
             }
@@ -320,11 +239,7 @@ export const processProgramFromCSVRow = async (
         programAgeRanges = (await program.age_ranges) || []
         const ageRangeNames = programAgeRanges.map(({ name }) => name)
 
-        if (
-            ageRangeNames.includes(
-                `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`
-            )
-        ) {
+        if (ageRangeNames.includes(ageRangeName)) {
             addCsvError(
                 rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
@@ -333,7 +248,7 @@ export const processProgramFromCSVRow = async (
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 {
                     entity: 'ageRange',
-                    name: `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`,
+                    name: ageRangeName,
                     parent_entity: 'program',
                     parent_name: program.name,
                 }
