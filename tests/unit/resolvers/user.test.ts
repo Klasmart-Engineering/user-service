@@ -1,12 +1,22 @@
 import { expect } from 'chai'
 import faker from 'faker'
+import { User } from '../../../src/entities/user'
 import {
     addIdentifierToKey,
     buildConflictingUserKey,
     ConflictingUserKey,
     createUserInputToConflictingUserKey,
+    updateUserInputToConflictingUserKey,
 } from '../../../src/resolvers/user'
-import { CreateUserInput } from '../../../src/types/graphQL/user'
+import {
+    CreateUserInput,
+    UpdateUserInput,
+} from '../../../src/types/graphQL/user'
+import { createUsers } from '../../factories/user.factory'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 
 describe('User', () => {
     context('createUserInputToConflictingUserKey', () => {
@@ -189,6 +199,84 @@ describe('User', () => {
                 const identifier = addIdentifierToKey()
                 expect(identifier).to.be.undefined
             })
+        })
+    })
+
+    context('updateUserInputToConflictingUserKey', () => {
+        let connection: TestConnection
+        let users: User[]
+        let usersMap: Map<string, User>
+
+        before(async () => {
+            connection = await createTestConnection()
+        })
+
+        after(async () => {
+            await connection.close()
+        })
+
+        beforeEach(async () => {
+            users = await User.save(createUsers(3))
+            usersMap = new Map(users.map((u) => [u.user_id, u]))
+        })
+
+        const generateInput = (
+            user: User,
+            omit?: (keyof UpdateUserInput)[]
+        ): UpdateUserInput => {
+            return {
+                id: user.user_id,
+                givenName: omit?.includes('givenName')
+                    ? undefined
+                    : faker.name.firstName(),
+                familyName: omit?.includes('familyName')
+                    ? undefined
+                    : faker.name.lastName(),
+                username: omit?.includes('username')
+                    ? undefined
+                    : faker.name.firstName(),
+                email: omit?.includes('email')
+                    ? undefined
+                    : faker.internet.email(),
+                phone: omit?.includes('phone')
+                    ? undefined
+                    : faker.phone.phoneNumber('+44#######'),
+            }
+        }
+
+        it('transforms UpdateUserInput to ConflictingUserKey', () => {
+            const input: UpdateUserInput = generateInput(users[0])
+            const key: ConflictingUserKey = updateUserInputToConflictingUserKey(
+                input,
+                usersMap
+            )
+
+            expect(key.givenName).to.eq(input.givenName)
+            expect(key.familyName).to.eq(input.familyName)
+            expect(key.username).to.eq(input.username)
+            expect(key.email).to.eq(input.email)
+            expect(key.phone).to.eq(input.phone)
+        })
+
+        it('undefined values are found in the map', () => {
+            const input: UpdateUserInput = generateInput(users[0], [
+                'givenName',
+                'familyName',
+                'username',
+            ])
+
+            const key: ConflictingUserKey = updateUserInputToConflictingUserKey(
+                input,
+                usersMap
+            )
+
+            const userInMap = usersMap.get(input.id)
+
+            expect(key.givenName).to.eq(userInMap?.given_name)
+            expect(key.familyName).to.eq(userInMap?.family_name)
+            expect(key.username).to.eq(userInMap?.username)
+            expect(key.email).to.eq(input.email)
+            expect(key.phone).to.eq(input.phone)
         })
     })
 })

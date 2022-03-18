@@ -715,12 +715,13 @@ export class CreateUsers extends CreateMutation<
     }
 
     async authorize(): Promise<void> {
+        const isAdmin = this.permissions.isAdmin
         const createUsersPermission = PermissionName.create_users_40220
         const orgs = await this.permissions.orgMembershipsWithPermissions([
             createUsersPermission,
         ])
 
-        if (!orgs.length) {
+        if (!orgs.length && !isAdmin) {
             throw new Error(
                 `User(${this.permissions.getUserId()}) does not have Permission(${createUsersPermission})`
             )
@@ -733,7 +734,7 @@ export class CreateUsers extends CreateMutation<
         validInputs: { index: number; input: CreateUserInput }[]
         apiErrors: APIError[]
     } {
-        const inputMap = new Map<ConflictingUserKey, number>()
+        const inputMap = new ObjMap<ConflictingUserKey, number>()
         const inputErrors = new Map<number, APIError>()
 
         for (const [index, input] of inputs.entries()) {
@@ -749,7 +750,9 @@ export class CreateUsers extends CreateMutation<
                 }
             }
 
-            const key = createUserInputToConflictingUserKey(input)
+            const key = buildConflictingUserKey(
+                createUserInputToConflictingUserKey(input)
+            )
 
             // Checking input duplicates
             if (inputMap.has(key)) {
@@ -788,14 +791,14 @@ export class CreateUsers extends CreateMutation<
         )
 
         // Checking already existent users
-        const conflictingUser = maps.conflictingUsers.get(key)
-        if (conflictingUser?.user_id) {
+        const conflictingUserId = maps.conflictingUsers.get(key)?.user_id
+        if (conflictingUserId) {
             errors.push(
                 createEntityAPIError(
                     'existent',
                     index,
                     'User',
-                    conflictingUser?.user_id,
+                    conflictingUserId,
                     undefined,
                     undefined,
                     ['user_id']
@@ -879,7 +882,7 @@ export class UpdateUsers extends CreateMutation<
         }
     }
 
-    protected async generateEntityMaps(
+    async generateEntityMaps(
         input: UpdateUserInput[]
     ): Promise<UpdateUsersEntityMap> {
         const ids: string[] = input.map((i) => i.id)
@@ -924,12 +927,13 @@ export class UpdateUsers extends CreateMutation<
     }
 
     async authorize(): Promise<void> {
+        const isAdmin = this.permissions.isAdmin
         const updateUsersPermission = PermissionName.edit_users_40330
         const orgs = await this.permissions.orgMembershipsWithPermissions([
             updateUsersPermission,
         ])
 
-        if (!orgs.length) {
+        if (!orgs.length && !isAdmin) {
             throw new Error(
                 `User(${this.permissions.getUserId()}) does not have Permission(${updateUsersPermission})`
             )
@@ -969,7 +973,7 @@ export class UpdateUsers extends CreateMutation<
             'id'
         )
 
-        const inputPersonalInfoMap = new Map<ConflictingUserKey, number>()
+        const inputPersonalInfoMap = new ObjMap<ConflictingUserKey, number>()
         const inputErrors = new Map<number, APIError>()
 
         for (const [index, input] of inputs.entries()) {
@@ -985,9 +989,8 @@ export class UpdateUsers extends CreateMutation<
                 }
             }
 
-            const key = updateUserInputToConflictingUserKey(
-                input,
-                maps.mainEntity
+            const key = buildConflictingUserKey(
+                updateUserInputToConflictingUserKey(input, maps.mainEntity)
             )
 
             // Checking input personal info duplicates
@@ -1020,7 +1023,7 @@ export class UpdateUsers extends CreateMutation<
 
     validate(
         index: number,
-        _currentUser: User | undefined,
+        currentUser: User | undefined,
         currentInput: UpdateUserInput,
         maps: UpdateUsersEntityMap
     ): APIError[] {
@@ -1040,17 +1043,22 @@ export class UpdateUsers extends CreateMutation<
         )
 
         // Checking user personal info duplicates
-        const conflictingUser = maps.conflictingUsers.get(key)
-        if (conflictingUser?.user_id) {
+        const conflictingUserId = maps.conflictingUsers.get(key)?.user_id
+        const currentUserId = currentUser?.user_id
+        if (
+            conflictingUserId &&
+            currentUserId &&
+            conflictingUserId !== currentUserId
+        ) {
             errors.push(
                 createEntityAPIError(
                     'existent',
                     index,
                     'User',
-                    conflictingUser?.user_id,
+                    conflictingUserId,
                     undefined,
                     undefined,
-                    ['user_id']
+                    ['givenName', 'familyName', 'username', 'email']
                 )
             )
         }
