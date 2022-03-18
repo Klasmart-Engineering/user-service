@@ -69,7 +69,8 @@ module.exports = env => ({
         parallelLandingHomeStudents:  `./parallelLandingHomeStudents.ts`,
         parallelLandingScheduleStudents:  `./parallelLandingScheduleStudents.ts`,
         create20kUsers: `./create20kUsers.ts`,
-        joinLiveStudyClassStudent: `./joinLiveStudyClassStudent`,
+        joinLiveStudyClassStudent: `./joinLiveStudyClassStudent.ts`,
+        joinLiveStudyClassMultiPage: `./joinLiveStudyClassMultiPage.ts`,
         
         create200kUsers: `./create20kUsers.ts`,
         loginV2: `./loginV2.ts`,

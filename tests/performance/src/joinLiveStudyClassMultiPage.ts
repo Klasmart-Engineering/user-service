@@ -1,12 +1,12 @@
 import http from 'k6/http';
 import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import getLiveClassToken from './scripts/getLiveClassToken';
-import liveClassWebSockets from './scripts/liveClassWebSockets';
-import previewLiveStudy from './scripts/previewLiveStudyClass';
 import { Options } from 'k6/options';
 import { APIHeaders } from './utils/common';
 import getClassRosterTest from './scripts/getClassRosterTest';
+import studyClassWebSockets from './scripts/studyClassWebSockets';
 import { sleep } from 'k6';
+import randomNumber from './utils/randomNumber';
 
 export const options: Options = {
     ext: {
@@ -17,13 +17,13 @@ export const options: Options = {
     },
     scenarios: {
         students: {
-            executor: 'per-vu-iterations',
-            iterations: 1,
+            executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students',
-            maxDuration: '40s',
+            duration: '1m',
         },
-    }
+    },
+    setupTimeout: '5m',
 };
 
 const params = {
@@ -106,19 +106,42 @@ export function setup() {
         classId: JSON.parse(res.body as string).data?.id,
     }
 
+    let i = 0;
+    let l = 10;
+
+    for (i; i < l; i++) {
+        const prefix = ('0' + i).slice(-2);
+        const loginPayload = {
+            deviceId: "webpage",
+            deviceName: "k6",
+            email: `${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
+            pw: process.env.PW as string,
+        };
+
+        const studentLoginData = loginSetup(loginPayload);
+
+        console.log(`Logged in student with ID: `, studentLoginData.userId);
+
+
+        data = {
+            ...data,
+            [`student${prefix}`]: studentLoginData,
+        }
+    }
+
     return data;
 }
 
 export function students(data: { [key: string]: { res: any, userId: string } }) {
-    const prefix = ('0' + (__VU - 1)).slice(-2);
-    const loginPayload = {
-        deviceId: "webpage",
-        deviceName: "k6",
-        email: `${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`,
-        pw: process.env.PW as string,
-    };
-    const studentLoginData = loginSetup(loginPayload);
-    console.log(`Logged in student: ${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}`);
+    const random = randomNumber(9);
+    const jar = http.cookieJar();
+    jar.set(process.env.COOKIE_URL as string, 'access', data[`student0${random}`].res.cookies?.access[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    jar.set(process.env.COOKIE_URL as string, 'refresh', data[`student0${random}`].res.cookies?.refresh[0].Value, {
+        domain: process.env.COOKIE_DOMAIN,
+    });
+    
 
     const refresh = http.get(`${process.env.AUTH_URL}refresh`, {
         headers: APIHeaders,
@@ -126,29 +149,20 @@ export function students(data: { [key: string]: { res: any, userId: string } }) 
     
     const refreshId = JSON.parse(refresh.body as string)?.id;
 
-    console.log(`Refresh ID for ${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}: ${refreshId}`);
-    
-    const accessCookie = studentLoginData.res.cookies?.access[0].value;
-    const jar = http.cookieJar();
-    jar.set(process.env.COOKIE_URL as string, 'access', accessCookie, {
-        domain: process.env.COOKIE_DOMAIN,
-    });
-    jar.set(process.env.COOKIE_URL as string, 'refresh', studentLoginData.res.cookies?.refresh[0].value, {
-        domain: process.env.COOKIE_DOMAIN,
-    });
+    console.log(`Refresh ID for ${process.env.STUDENT_USERNAME}0${random}@${process.env.EMAIL_DOMAIN}: ${refreshId}`);
     
     sleep(__VU * 1.5);
 
     const token = getLiveClassToken(data.classId as unknown as string);
-    console.log(`Token for ${process.env.STUDENT_USERNAME}${prefix}@${process.env.EMAIL_DOMAIN}: ${token}`);
-    previewLiveStudy(data.classId as unknown as string);
     const liveClassPayload = {
         token,
         refreshId: refreshId as unknown as string,
         roomId: data.classId as unknown as string,
-        accessCookie: accessCookie,
-        userId: studentLoginData.userId,
+        accessCookie: data[`student0${random}`].res.cookies?.access[0].Value,
+        userId: data[`student0${random}`].userId,
     };
 
-    liveClassWebSockets(liveClassPayload);
+    console.log(JSON.stringify(liveClassPayload));
+
+    studyClassWebSockets(liveClassPayload);
 }
