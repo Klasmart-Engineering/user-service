@@ -22,7 +22,7 @@ const errorCounter500 = new Counter('MeQueryBasicError500');
 
 export default function (roleType?: string) {
     const userPayload = JSON.stringify({
-       // operationName: 'me',
+        //operationName: 'me',
         variables: {},
         query: meQueryReq1
     });

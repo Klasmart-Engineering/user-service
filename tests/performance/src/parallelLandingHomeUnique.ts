@@ -5,7 +5,7 @@ import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import landingV3Students from './scripts/landingV3Students';
 
 // Command:
-// k6 -e VUS=50 run parallelLandingScheduleUnique.js
+// k6 -e VUS=50 run parallelLandingHomeUnique.js
 // to run the script be positioned in the folder ¨dist¨
 
 // const prefixLimit: number = !isNaN(parseInt(__ENV.PREFIX_LIMIT, 10)) ? parseInt(__ENV.PREFIX_LIMIT) : 9;

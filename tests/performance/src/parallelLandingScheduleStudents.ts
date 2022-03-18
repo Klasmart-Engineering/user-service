@@ -175,72 +175,72 @@ export const options: Options = {
         loadimpact: {
             projectID: 3560234,
             // projectID: 3559532,
-        }
+        },
     },
 
     scenarios:{
         students00: {
             executor: 'constant-vus',
             exec: 'students00',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students01: {
             executor: 'constant-vus',
             exec: 'students01',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students02: {
             executor: 'constant-vus',
             exec: 'students02',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students03: {
             executor: 'constant-vus',
             exec: 'students03',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
 
           students04: {
             executor: 'constant-vus',
             exec: 'students04',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
           students05: {
             executor: 'constant-vus',
             exec: 'students05',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
           students06: {
             executor: 'constant-vus',
             exec: 'students06',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
           students07: {
             executor: 'constant-vus',
             exec: 'students07',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
           students08: {
             executor: 'constant-vus',
             exec: 'students08',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           },
           students09: {
             executor: 'constant-vus',
             exec: 'students09',
-            vus: 100,
+            vus: 50,
             duration: '10m',
           }, 
     }, 

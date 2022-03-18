@@ -20,6 +20,7 @@ export const get_organization_memberships = `{ me {
         roles {
             role_id
             role_name
+            status
         }
     }
 }

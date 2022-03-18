@@ -31,7 +31,7 @@ export const options: Options = {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students01',
-            duration: "1m",
+            duration: "10m",
         },
        /*   student02: {
             executor: 'constant-vus',
