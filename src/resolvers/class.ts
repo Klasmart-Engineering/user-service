@@ -2042,6 +2042,7 @@ export async function moveUsersToClassValidation(
         }
         count++
     }
+
     if (errors.length > 0) throw new APIErrorCollection(errors)
 
     return [fromClass, toClass]
