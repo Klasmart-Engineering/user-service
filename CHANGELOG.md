@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0](https://github.com/KL-Engineering/user-service/compare/v4.0.0...v4.1.0) (2022-03-21)
+
+
+### Features
+
+* **AD-2005:** status updated at column migration for orgs and schools ([c2f2714](https://github.com/KL-Engineering/user-service/commit/c2f2714a8a251b97f03824c237f8a93e4ec6a24c))
+* **AD-2039:** removed unnecessary scripts and fixed release script ([#5](https://github.com/KL-Engineering/user-service/issues/5)) ([3b1a7ef](https://github.com/KL-Engineering/user-service/commit/3b1a7ef1b3d5b3467214efff559ab5d122de8d95))
+* **AD-2039:** replaced Bitbucket links with Github links in documentation ([157f5c2](https://github.com/KL-Engineering/user-service/commit/157f5c283e9f4ee20fc7e9d14ba043a068e7ac81))
+* **AD-2225:** add age range and subject to csv class creation ([fc19266](https://github.com/KL-Engineering/user-service/commit/fc192666048e29b390f447ed923952da9edf592d))
+* **AD-2247:** added default reviewers to Github repo ([635191c](https://github.com/KL-Engineering/user-service/commit/635191cf162d02f87a36b46a75f8e70d3f0c2e09))
+* **AD-2259:** moved main tag deployment action to use new Circle CI env ([5b429b1](https://github.com/KL-Engineering/user-service/commit/5b429b1d412128b806886847060ef8705428668d))
+* **AD-2313:** removed Pawel and added QA lead to SuperAdmin list ([e8794e4](https://github.com/KL-Engineering/user-service/commit/e8794e4455f566582a20ac6ffcc23e2270a6b292))
+* permission list update ([#25](https://github.com/KL-Engineering/user-service/issues/25)) ([52fa93b](https://github.com/KL-Engineering/user-service/commit/52fa93b2755051fe21384c7aca5fd12d05f31f62))
+
+
+### Bug Fixes
+
+* **AD-1134:** support view_my_classes_20118 in isAdmin class scope ([#33](https://github.com/KL-Engineering/user-service/issues/33)) ([c6d0a93](https://github.com/KL-Engineering/user-service/commit/c6d0a93d87d365c672700331bb060f7c6adc8b41))
+* **AD-1659:** duplicate system roles ([#11](https://github.com/KL-Engineering/user-service/issues/11)) ([cf51011](https://github.com/KL-Engineering/user-service/commit/cf51011cece4f07baf5d630f773fe7e617d2f751))
+* **AD-2151:** replace generic id error variable ([#17](https://github.com/KL-Engineering/user-service/issues/17)) ([2fdef5c](https://github.com/KL-Engineering/user-service/commit/2fdef5c6df9ea7fcbb18ac8638e4663f35079f8c))
+* **AD-2238:** restrict org & school membership visibility scopes ([#15](https://github.com/KL-Engineering/user-service/issues/15)) ([57e4024](https://github.com/KL-Engineering/user-service/commit/57e40249662173be43fc2e7857c65a99950e7479)), closes [#5](https://github.com/KL-Engineering/user-service/issues/5) [#14](https://github.com/KL-Engineering/user-service/issues/14) [#14](https://github.com/KL-Engineering/user-service/issues/14)
+* **AD-2255:** duplicate index 0 users created by createusers ([#23](https://github.com/KL-Engineering/user-service/issues/23)) ([4c2bda1](https://github.com/KL-Engineering/user-service/commit/4c2bda11a6dc87ba9be954cd9304bafd9798eb5f))
+* **AD-2276:** use a unique parameter name in the generic dataloader query builder ([#30](https://github.com/KL-Engineering/user-service/issues/30)) ([4f05e83](https://github.com/KL-Engineering/user-service/commit/4f05e834d8ca4e98fb9f0ae2431c43e9214a92d5))
+* duplicate system role migration hotfix ([#21](https://github.com/KL-Engineering/user-service/issues/21)) ([9122de7](https://github.com/KL-Engineering/user-service/commit/9122de75f8d550c6e9fa622c14f2e64e30fbc419))
+
 ## 4.0.0 (2022-03-08)
 
 
