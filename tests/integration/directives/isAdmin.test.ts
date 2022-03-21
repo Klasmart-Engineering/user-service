@@ -1405,35 +1405,202 @@ describe('isAdmin', () => {
                 })
             })
 
-            context('view_classes_20114 AND view_school_classes_20117', () => {
-                context('in the same organization', () => {
-                    beforeEach(async () => {
-                        await grantPermissionFactory({
-                            user,
-                            permissions: [
-                                PermissionName.view_classes_20114,
-                                PermissionName.view_school_classes_20117,
-                            ],
-                            organization: organizationWithMembership,
-                        })
-                    })
-                    it('shows all classes in the Organization', async () => {
-                        const visibleClasses = await queryVisibleClasses(token)
-                        expect(visibleClasses).to.deep.equalInAnyOrder(
-                            classesForOrganization[
-                                organizationWithMembership.organization_id
-                            ]
-                        )
+            context('view_my_classes_20118', () => {
+                beforeEach(async () => {
+                    await grantPermissionFactory({
+                        user,
+                        permissions: PermissionName.view_my_classes_20118,
+                        organization: organizationWithMembership,
                     })
                 })
 
-                context('in different organizations', () => {
+                context(
+                    'shows only classes they are part of in an Organization',
+                    () => {
+                        it('as a student', async () => {
+                            const myClass = await createClass(
+                                [],
+                                organizationWithMembership,
+                                {
+                                    students: [user],
+                                }
+                            ).save()
+                            const visibleClasses = await queryVisibleClasses(
+                                token
+                            )
+                            expect(visibleClasses).to.deep.equalInAnyOrder(
+                                [myClass].map((cls) => {
+                                    return {
+                                        id: cls.class_id,
+                                        name: cls.class_name,
+                                        status: cls.status,
+                                    }
+                                })
+                            )
+                        })
+                        it('as a teacher', async () => {
+                            const myClass = await createClass(
+                                [],
+                                organizationWithMembership,
+                                {
+                                    teachers: [user],
+                                }
+                            ).save()
+                            const visibleClasses = await queryVisibleClasses(
+                                token
+                            )
+                            expect(visibleClasses).to.deep.equalInAnyOrder(
+                                [myClass].map((cls) => {
+                                    return {
+                                        id: cls.class_id,
+                                        name: cls.class_name,
+                                        status: cls.status,
+                                    }
+                                })
+                            )
+                        })
+                        it('as a student and a teacher', async () => {
+                            const myClass = await createClass(
+                                [],
+                                organizationWithMembership,
+                                {
+                                    teachers: [user],
+                                    students: [user],
+                                }
+                            ).save()
+                            const visibleClasses = await queryVisibleClasses(
+                                token
+                            )
+                            expect(visibleClasses).to.deep.equalInAnyOrder(
+                                [myClass].map((cls) => {
+                                    return {
+                                        id: cls.class_id,
+                                        name: cls.class_name,
+                                        status: cls.status,
+                                    }
+                                })
+                            )
+                        })
+                    }
+                )
+            })
+
+            const clearPermissionFactory = async ({
+                user,
+                organization,
+            }: {
+                user: User
+                organization: Organization
+            }) => {
+                const membership = await OrganizationMembership.findOne({
+                    user_id: user.user_id,
+                    organization_id: organization.organization_id,
+                })
+                membership!.roles = Promise.resolve([])
+                await membership!.save()
+            }
+
+            context(
+                'view_classes_20114 with other permissions in the same organization',
+                () => {
+                    it('gives the same results as just view_classes_20114', async () => {
+                        const permissionCombinations = [
+                            [],
+                            [
+                                PermissionName.view_school_classes_20117,
+                                PermissionName.view_my_classes_20118,
+                            ],
+                            [PermissionName.view_my_classes_20118],
+                            [PermissionName.view_school_classes_20117],
+                        ]
+
+                        await createClass([], organizationWithMembership, {
+                            teachers: [user],
+                        }).save()
+                        const classesFoundForPermissionCombinations = await Promise.all(
+                            permissionCombinations.map(async (pc) => {
+                                await clearPermissionFactory({
+                                    user,
+                                    organization: organizationWithMembership,
+                                })
+                                await grantPermissionFactory({
+                                    user,
+                                    permissions: [
+                                        ...pc,
+                                        PermissionName.view_classes_20114,
+                                    ],
+                                    organization: organizationWithMembership,
+                                })
+                                return queryVisibleClasses(token)
+                            })
+                        )
+                        for (const classesFoundForPermissionCombination of classesFoundForPermissionCombinations) {
+                            expect(
+                                classesFoundForPermissionCombination
+                            ).to.deep.equalInAnyOrder(
+                                classesFoundForPermissionCombinations[0]
+                            )
+                        }
+                    })
+                }
+            )
+
+            context(
+                'view_school_classes_20117 and view_my_classes_20118 in the same organization',
+                () => {
+                    it('gives the same results as just view_school_classes_20117', async () => {
+                        await createClass([], organizationWithMembership, {
+                            teachers: [user],
+                        }).save()
+
+                        const permissionCombinations = [
+                            [
+                                PermissionName.view_school_classes_20117,
+                                PermissionName.view_my_classes_20118,
+                            ],
+                            [PermissionName.view_school_classes_20117],
+                        ]
+                        const classesFoundForPermissionCombinations = await Promise.all(
+                            permissionCombinations.map(async (pc) => {
+                                await clearPermissionFactory({
+                                    user,
+                                    organization: organizationWithMembership,
+                                })
+                                await grantPermissionFactory({
+                                    user,
+                                    permissions: pc,
+                                    organization: organizationWithMembership,
+                                })
+                                return queryVisibleClasses(token)
+                            })
+                        )
+                        for (const classesFoundForPermissionCombination of classesFoundForPermissionCombinations) {
+                            expect(
+                                classesFoundForPermissionCombination
+                            ).to.deep.equalInAnyOrder(
+                                classesFoundForPermissionCombinations[0]
+                            )
+                        }
+                    })
+                }
+            )
+
+            context(
+                'view_classes_20114, view_school_classes_20117 and view_my_classes_20118 in different organizations',
+                () => {
                     let otherOrganizationWithMembership: Organization
+                    let viewMyClassOrganizationWithMembership: Organization
                     beforeEach(async () => {
                         otherOrganizationWithMembership = organizations[1]
                         await createOrganizationMembership({
                             user,
                             organization: otherOrganizationWithMembership,
+                        }).save()
+
+                        viewMyClassOrganizationWithMembership = organizations[2]
+                        await createOrganizationMembership({
+                            user,
+                            organization: viewMyClassOrganizationWithMembership,
                         }).save()
 
                         await grantPermissionFactory({
@@ -1449,19 +1616,41 @@ describe('isAdmin', () => {
                             ],
                             organization: organizationWithMembership,
                         })
+
+                        await grantPermissionFactory({
+                            user,
+                            permissions: [PermissionName.view_my_classes_20118],
+                            organization: viewMyClassOrganizationWithMembership,
+                        })
                     })
 
-                    it('shows classes across both organizations', async () => {
+                    it('shows classes across all organizations', async () => {
+                        const myClass = await createClass(
+                            [],
+                            viewMyClassOrganizationWithMembership,
+                            {
+                                teachers: [user],
+                            }
+                        )
+                            .save()
+                            .then((cls) => {
+                                return {
+                                    id: cls.class_id,
+                                    name: cls.class_name,
+                                    status: cls.status,
+                                }
+                            })
                         const visibleClasses = await queryVisibleClasses(token)
                         expect(visibleClasses).to.deep.equalInAnyOrder([
                             classAssignedToSchool,
                             ...classesForOrganization[
                                 otherOrganizationWithMembership.organization_id
                             ],
+                            myClass,
                         ])
                     })
-                })
-            })
+                }
+            )
         })
 
         // Ensures that the query does not perform joins and duplicate data,
