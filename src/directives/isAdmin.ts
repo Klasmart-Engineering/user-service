@@ -661,19 +661,15 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
                 const teachingClassIdsQuery = createQueryBuilder()
                     .select('teachingClasses.classClassId')
                     .from('user_classes_teaching_class', 'teachingClasses')
-                    .where('teachingClasses.userUserId = :userId', {
-                        userId: permissions.getUserId(),
-                    })
+                    .where('teachingClasses.userUserId = :userId')
                 const studyingClassIdsQuery = createQueryBuilder()
                     .select('studyingClasses.classClassId')
                     .from('user_classes_studying_class', 'studyingClasses')
-                    .where('studyingClasses.userUserId = :userId', {
-                        userId: permissions.getUserId(),
-                    })
+                    .where('studyingClasses.userUserId = :userId')
+
                 scope.setParameters({
                     ...scope.getParameters(),
-                    ...teachingClassIdsQuery.getParameters(),
-                    ...studyingClassIdsQuery.getParameters(),
+                    userId: permissions.getUserId(),
                 })
                 qb.orWhere(
                     new Brackets((subQb) => {

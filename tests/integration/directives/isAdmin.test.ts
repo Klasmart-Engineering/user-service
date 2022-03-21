@@ -1415,7 +1415,7 @@ describe('isAdmin', () => {
                 })
 
                 context(
-                    'shows all classes they are part of in an Organization',
+                    'shows only classes they are part of in an Organization',
                     () => {
                         it('as a student', async () => {
                             const myClass = await createClass(
