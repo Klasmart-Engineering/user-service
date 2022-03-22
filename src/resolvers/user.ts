@@ -22,7 +22,6 @@ import {
     RemoveOrganizationRolesFromUserInput,
     RemoveSchoolRolesFromUserInput,
     UpdateUserInput,
-    UserContactInfo,
     UsersMutationResult,
 } from '../types/graphQL/user'
 import { CreateUserInput } from '../types/graphQL/user'
@@ -46,13 +45,14 @@ import {
     ProcessedResult,
     RemoveMutation,
     validateAtLeastOne,
+    validateDataAgainstSchema,
     validateNoDuplicate,
     validateNoDuplicateAttribute,
     validateSubItemsLengthAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
-import { ObjMap } from '../utils/stringUtils'
+import { objectToKey, ObjMap } from '../utils/stringUtils'
 import {
     flagExistentChild,
     flagNonExistent,
@@ -61,13 +61,16 @@ import {
     flagNonExistentSchoolMembership,
 } from '../utils/resolvers/inputValidation'
 import { Organization } from '../entities/organization'
+import {
+    addIdentifierToKey,
+    buildConflictingUserKey,
+    cleanCreateUserInput,
+    ConflictingUserKey,
+    createUserInputToConflictingUserKey,
+} from '../utils/resolvers/user'
 
-export type ConflictingUserKey = {
-    givenName: string
-    familyName: string
-    username?: string
-    email?: string
-    phone?: string
+export interface CreateUsersEntityMap extends EntityMap<User> {
+    conflictingUsers: ObjMap<ConflictingUserKey, User>
 }
 
 export interface CreateUsersEntityMap extends EntityMap<User> {
@@ -625,40 +628,6 @@ export class RemoveSchoolRolesFromUsers extends RemoveMutation<
     }
 }
 
-// Uses the same "clean.xxxx()" calls as the csv functions do
-function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
-    const ci: UserContactInfo | undefined = cui.contactInfo
-        ? {
-              email: clean.email(cui.contactInfo.email),
-              // don't throw errors as they will of already been
-              // found by validation but this code runs before we return them
-              phone: clean.phone(cui.contactInfo.phone, false),
-          }
-        : undefined
-    const cleanCui: CreateUserInput = {
-        givenName: cui.givenName,
-        familyName: cui.familyName,
-        contactInfo: ci,
-        gender: cui.gender,
-        dateOfBirth: clean.dateOfBirth(cui.dateOfBirth),
-        username: cui.username,
-        alternateEmail: clean.email(cui.alternateEmail),
-        // don't throw errors as they will of already been
-        // found by validation but this code runs before we return them
-        alternatePhone: clean.phone(cui.alternatePhone, false),
-    }
-    return cleanCui
-}
-
-export function keyToPrintableString(key: string): string {
-    const jsonKey = JSON.parse(key)
-    const given = jsonKey['givenName']
-    const family = jsonKey['familyName']
-    const contact = jsonKey['contactInfo']
-
-    return `${given},${family},${contact}`
-}
-
 export class CreateUsers extends CreateMutation<
     User,
     CreateUserInput,
@@ -681,13 +650,12 @@ export class CreateUsers extends CreateMutation<
             userKeys.push(key)
         })
 
-        const matchingPreloadedUserArray = await User.find({
+        const matchingPreloadedUserArray = User.find({
             where: userKeys.map((k) => {
                 const { givenName, familyName, username, email, phone } = k
                 const condition = {
                     given_name: givenName,
                     family_name: familyName,
-                    status: Status.ACTIVE,
                     ...addIdentifierToKey(username, email, phone),
                 }
 
@@ -696,9 +664,8 @@ export class CreateUsers extends CreateMutation<
         })
 
         const conflictingUsers = new ObjMap<ConflictingUserKey, User>()
-        for (const u of matchingPreloadedUserArray) {
+        for (const u of await matchingPreloadedUserArray) {
             const { given_name, family_name, username, email, phone } = u
-
             conflictingUsers.set(
                 {
                     givenName: given_name!,
@@ -734,48 +701,29 @@ export class CreateUsers extends CreateMutation<
         validInputs: { index: number; input: CreateUserInput }[]
         apiErrors: APIError[]
     } {
-        const inputMap = new ObjMap<ConflictingUserKey, number>()
-        const inputErrors = new Map<number, APIError>()
+        const failedDataFormat = validateDataAgainstSchema(
+            inputs,
+            createUserSchema,
+            this.EntityType.name
+        )
 
-        for (const [index, input] of inputs.entries()) {
-            // Checking correct input format
-            const { errors } = validateAPICall(input, createUserSchema, {
-                entity: 'User',
-            })
-
-            if (errors.length) {
-                for (const e of errors) {
-                    const apiErr = new APIError({ ...e, index })
-                    inputErrors.set(index, apiErr)
-                }
-            }
-
-            const key = buildConflictingUserKey(
-                createUserInputToConflictingUserKey(input)
+        const inputValues = inputs.map((i) =>
+            objectToKey(
+                buildConflictingUserKey(createUserInputToConflictingUserKey(i))
             )
+        )
 
-            // Checking input duplicates
-            if (inputMap.has(key)) {
-                inputErrors.set(
-                    index,
-                    createDuplicateAttributeAPIError(
-                        index,
-                        [
-                            'givenName',
-                            'familyName',
-                            'username',
-                            'phone',
-                            'email',
-                        ],
-                        this.inputTypeName
-                    )
-                )
-            } else {
-                inputMap.set(key, index)
-            }
-        }
+        const failedDuplicates = validateNoDuplicate(
+            inputValues,
+            this.inputTypeName,
+            ['givenName', 'familyName', 'username', 'phone', 'email']
+        )
 
-        return filterInvalidInputs(inputs, [inputErrors])
+        return filterInvalidInputs(inputs, [failedDataFormat, failedDuplicates])
+    }
+
+    protected normalize(inputs: CreateUserInput[]): CreateUserInput[] {
+        return Array.from(inputs, (i) => cleanCreateUserInput(i))
     }
 
     validate(
@@ -785,12 +733,10 @@ export class CreateUsers extends CreateMutation<
         maps: CreateUsersEntityMap
     ): APIError[] {
         const errors: APIError[] = []
-        const normalizedInput = cleanCreateUserInput(currentInput)
         const key = buildConflictingUserKey(
-            createUserInputToConflictingUserKey(normalizedInput)
+            createUserInputToConflictingUserKey(currentInput)
         )
 
-        // Checking already existent users
         const conflictingUserId = maps.conflictingUsers.get(key)?.user_id
         if (conflictingUserId) {
             errors.push(
@@ -810,7 +756,6 @@ export class CreateUsers extends CreateMutation<
     }
 
     protected process(currentInput: CreateUserInput) {
-        const normalizedInput = cleanCreateUserInput(currentInput)
         const {
             givenName,
             familyName,
@@ -820,7 +765,7 @@ export class CreateUsers extends CreateMutation<
             contactInfo,
             alternateEmail,
             alternatePhone,
-        } = normalizedInput
+        } = currentInput
 
         const user = new User()
         user.given_name = givenName
@@ -970,7 +915,7 @@ export class UpdateUsers extends CreateMutation<
         const failedDuplicates = validateNoDuplicate(
             inputs.map((i) => i.id),
             this.inputTypeName,
-            'id'
+            ['id']
         )
 
         const inputPersonalInfoMap = new ObjMap<ConflictingUserKey, number>()
@@ -1108,22 +1053,6 @@ export class UpdateUsers extends CreateMutation<
 }
 
 /**
- * Transforms the given CreateUserInput in a ConflictingUserKey
- */
-export function createUserInputToConflictingUserKey(
-    input: CreateUserInput
-): ConflictingUserKey {
-    const { givenName, familyName, username, contactInfo } = input
-    return {
-        givenName,
-        familyName,
-        username: username || undefined,
-        email: contactInfo?.email || undefined,
-        phone: contactInfo?.phone || undefined,
-    }
-}
-
-/**
  * Transforms the given UpdateUserInput in a ConflictingUserKey
  */
 export function updateUserInputToConflictingUserKey(
@@ -1139,34 +1068,4 @@ export function updateUserInputToConflictingUserKey(
         email: email || user?.email,
         phone: phone || user?.phone,
     }
-}
-
-/**
- * Builds a ConflictingUserKey taking the transformed CreateUserInput.
- * This key is built taking givenName, familyName and the first existing value of the following fields in that order: (username, email, phone)
- */
-export function buildConflictingUserKey(
-    inputValues: ConflictingUserKey
-): ConflictingUserKey {
-    const { givenName, familyName, username, email, phone } = inputValues
-    const key = {
-        givenName,
-        familyName,
-        ...addIdentifierToKey(username, email, phone),
-    }
-
-    return key
-}
-
-/**
- * Returns in an Object like format the first value found between (username, email, phone)
- */
-export function addIdentifierToKey(
-    username?: string,
-    email?: string,
-    phone?: string
-) {
-    if (username) return { username }
-    else if (email) return { email }
-    else if (phone) return { phone }
 }

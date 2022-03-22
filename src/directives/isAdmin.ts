@@ -25,6 +25,7 @@ import { School } from '../entities/school'
 import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
+import { scopeHasJoin } from '../utils/typeorm'
 
 //
 // changing permission rules? update the docs: permissions.md
@@ -240,10 +241,9 @@ export const createEntityScope = async ({
  * the appropriate permissions in their org/school memberships
  * otherwise, they can view their user(s)
  * */
-export const nonAdminUserScope: NonAdminScope<User> = async (
-    scope,
-    permissions
-) => {
+export const nonAdminUserScope: NonAdminScope<
+    User | OrganizationMembership | SchoolMembership
+> = async (scope, permissions) => {
     const user_id = permissions.getUserId()
     const user = getRepository(User).create({ user_id })
     const email = permissions.getEmail()
@@ -295,14 +295,13 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     ])
 
     if (userOrgs.length) {
-        scope.leftJoin(
-            'User.memberships',
-            'OrganizationMembership',
-            'OrganizationMembership.organization IN (:...organizations)',
-            { organizations: userOrgs }
-        )
+        if (!scopeHasJoin(scope, OrganizationMembership)) {
+            scope.leftJoin('User.memberships', 'OrganizationMembership')
+        }
         userFilters.push({
-            where: 'OrganizationMembership.user_id IS NOT NULL',
+            where:
+                'OrganizationMembership.organization_id IN (:...organizations)',
+            params: { organizations: userOrgs },
         })
         orgsWithFullAccess.push(...userOrgs)
     }
@@ -331,16 +330,12 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
         )
 
         if (schoolIds.length) {
-            scope.leftJoin(
-                'User.school_memberships',
-                'SchoolMembership',
-                'SchoolMembership.school_id IN (:...schoolIds)',
-                {
-                    schoolIds,
-                }
-            )
+            if (!scopeHasJoin(scope, SchoolMembership)) {
+                scope.leftJoin('User.school_memberships', 'SchoolMembership')
+            }
             userFilters.push({
-                where: 'SchoolMembership.user_id IS NOT NULL',
+                where: 'SchoolMembership.school IN (:...schools)',
+                params: { schools: schoolIds },
             })
         }
     }
@@ -360,9 +355,14 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
                     .select('membership_table.userUserId', 'user_id')
                     .distinct(true)
                     .from(membershipTable, 'membership_table')
-                    .andWhere('membership_table.classClassId IN (:...ids)', {
-                        ids: classesTaught.map(({ class_id }) => class_id),
-                    })
+                    .andWhere(
+                        'membership_table.classClassId IN (:...classIds)',
+                        {
+                            classIds: classesTaught.map(
+                                ({ class_id }) => class_id
+                            ),
+                        }
+                    )
             }
             scope.leftJoin(
                 (qb) => distinctMembers('user_classes_studying_class', qb),
@@ -385,7 +385,7 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
 
     // encase all user filters in brackets to avoid conflicting
     // with subsequent conditions
-    scope.where(
+    scope.andWhere(
         new Brackets((qb) => {
             for (const where of userFilters) {
                 // match users that meet ANY of the conditions
@@ -395,12 +395,10 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     )
 }
 
-export const nonAdminOrganizationScope: NonAdminScope<Organization> = async (
-    scope,
-    permissions
-) => {
+export const nonAdminOrganizationScope: NonAdminScope<
+    Organization | OrganizationMembership
+> = async (scope, permissions) => {
     const orgIds = await permissions.orgMembershipsWithPermissions([])
-    scope.select('Organization').distinct(true)
     if (orgIds.length > 0) {
         scope.andWhere('Organization.organization_id IN (:...orgIds)', {
             orgIds,
@@ -411,20 +409,16 @@ export const nonAdminOrganizationScope: NonAdminScope<Organization> = async (
     }
 }
 
+// nonAdminOrganizationScope + nonAdminUserScope
 export const nonAdminOrganizationMembershipScope: NonAdminScope<OrganizationMembership> = async (
     scope,
     permissions
 ) => {
-    // non admins can view organization memberships in their orgs only
-    // note that permissions for accessing actual user / org info is handled via the corresponding scopes
-    const orgIds = await permissions.orgMembershipsWithPermissions([])
-    if (orgIds.length > 0) {
-        scope.where('OrganizationMembership.organization IN (:...orgIds)', {
-            orgIds,
-        })
-    } else {
-        scope.andWhere('false')
-    }
+    scope.leftJoin('OrganizationMembership.organization', 'Organization')
+    scope.leftJoin('OrganizationMembership.user', 'User')
+
+    await nonAdminOrganizationScope(scope, permissions)
+    await nonAdminUserScope(scope, permissions)
 }
 
 export const nonAdminAgeRangeScope: NonAdminScope<AgeRange> = (
@@ -541,10 +535,9 @@ export const nonAdminProgramScope: NonAdminScope<Program> = (
         )
 }
 
-export const nonAdminSchoolScope: NonAdminScope<School> = async (
-    scope,
-    permissions
-) => {
+export const nonAdminSchoolScope: NonAdminScope<
+    School | SchoolMembership
+> = async (scope, permissions) => {
     const schoolIds = await permissions.schoolMembershipsWithPermissions([]) // all schools the User is a member of
     const [schoolOrgs, mySchoolOrgs] = await Promise.all([
         permissions.orgMembershipsWithPermissions([
@@ -563,14 +556,16 @@ export const nonAdminSchoolScope: NonAdminScope<School> = async (
         // (ability to see all Schools in the Organization) can take precedence, saving JOINs
         !isSubsetOf(mySchoolOrgs, schoolOrgs)
     ) {
-        scope.leftJoin(
-            'School.memberships',
-            'SchoolMembership',
-            'SchoolMembership.schoolSchoolId = School.school_id'
-        )
+        if (!scopeHasJoin(scope, SchoolMembership)) {
+            scope.leftJoin(
+                'School.memberships',
+                'SchoolMembership',
+                'SchoolMembership.schoolSchoolId = School.school_id'
+            )
+        }
 
         if (schoolIds.length > 0) {
-            scope.where(
+            scope.andWhere(
                 // NB: Must be included in brackets to avoid incorrect AND/OR boolean logic with downstream WHERE
                 new Brackets((qb) => {
                     qb.where(
@@ -589,7 +584,7 @@ export const nonAdminSchoolScope: NonAdminScope<School> = async (
                 })
             )
         } else {
-            scope.where(
+            scope.andWhere(
                 new Brackets((qb) => {
                     qb.where(
                         // Schools which the user is not a member of but is allowed to see through orgs
@@ -605,17 +600,19 @@ export const nonAdminSchoolScope: NonAdminScope<School> = async (
             )
         }
     } else if (schoolOrgs.length) {
-        scope.where('School.organization IN (:...schoolOrgs)', {
+        scope.andWhere('School.organization IN (:...schoolOrgs)', {
             schoolOrgs,
         })
     } else if (mySchoolOrgs.length && schoolIds.length > 0) {
-        scope
-            .innerJoin(
+        if (!scopeHasJoin(scope, SchoolMembership)) {
+            scope.innerJoin(
                 'School.memberships',
                 'SchoolMembership',
                 'SchoolMembership.schoolSchoolId = School.school_id'
             )
-            .where('School.organization IN (:...mySchoolOrgs)', {
+        }
+        scope
+            .andWhere('School.organization IN (:...mySchoolOrgs)', {
                 mySchoolOrgs,
             })
             .andWhere('SchoolMembership.schoolSchoolId IN (:...schoolIds)', {
@@ -631,36 +628,10 @@ export const nonAdminSchoolMembershipScope: NonAdminScope<SchoolMembership> = as
     scope,
     permissions
 ) => {
-    // non admins can view memberships of the schools they're a member of
-    // AND all schools in their orgs
-    // note that permissions for accessing actual user / school info is handled via the corresponding scopes
-    const orgIds = await permissions.orgMembershipsWithPermissions([])
-    const schoolIds = await permissions.schoolMembershipsWithPermissions([])
-
-    if (orgIds.length > 0 && schoolIds.length > 0) {
-        scope.innerJoin('SchoolMembership.school', 'School')
-        scope.where(
-            new Brackets((qb) => {
-                qb.where('School.organization IN (:...orgIds)', {
-                    orgIds,
-                })
-                qb.orWhere('SchoolMembership.school IN (:...schoolIds)', {
-                    schoolIds,
-                })
-            })
-        )
-    } else if (orgIds.length > 0) {
-        scope.innerJoin('SchoolMembership.school', 'School')
-        scope.where('School.organization IN (:...orgIds)', {
-            orgIds,
-        })
-    } else if (schoolIds.length > 0) {
-        scope.where('SchoolMembership.school IN (:...schoolIds)', {
-            schoolIds,
-        })
-    } else {
-        scope.andWhere('false')
-    }
+    scope.leftJoin('SchoolMembership.school', 'School')
+    scope.leftJoin('SchoolMembership.user', 'User')
+    await nonAdminUserScope(scope, permissions)
+    await nonAdminSchoolScope(scope, permissions)
 }
 
 export const nonAdminClassScope: NonAdminScope<Class> = async (
@@ -673,12 +644,15 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
     const schoolOrgs = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_school_classes_20117,
     ])
+    const myClassOrgs = await permissions.orgMembershipsWithPermissions([
+        PermissionName.view_my_classes_20118,
+    ])
     let schoolIds: string[] = []
     if (schoolOrgs.length > 0) {
         schoolIds = await permissions.schoolMembershipsWithPermissions([])
     }
 
-    if (!classOrgs.length && !schoolIds.length) {
+    if (!classOrgs.length && !schoolIds.length && !myClassOrgs.length) {
         scope.where('false')
         return
     }
@@ -687,6 +661,40 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
             if (classOrgs.length) {
                 // can view all classes in these orgs
                 qb.where('Class.organization IN (:...classOrgs)', { classOrgs })
+            }
+            if (myClassOrgs.length) {
+                const teachingClassIdsQuery = createQueryBuilder()
+                    .select('teachingClasses.classClassId')
+                    .from('user_classes_teaching_class', 'teachingClasses')
+                    .where('teachingClasses.userUserId = :userId')
+                const studyingClassIdsQuery = createQueryBuilder()
+                    .select('studyingClasses.classClassId')
+                    .from('user_classes_studying_class', 'studyingClasses')
+                    .where('studyingClasses.userUserId = :userId')
+
+                scope.setParameters({
+                    ...scope.getParameters(),
+                    userId: permissions.getUserId(),
+                })
+                qb.orWhere(
+                    new Brackets((subQb) => {
+                        subQb
+                            .where('Class.organization IN (:...myClassOrgs)', {
+                                myClassOrgs,
+                            })
+                            .andWhere(
+                                new Brackets((subQb2) => {
+                                    subQb2
+                                        .where(
+                                            `"Class"."class_id" IN (${teachingClassIdsQuery.getQuery()})`
+                                        )
+                                        .orWhere(
+                                            `"Class"."class_id" IN (${studyingClassIdsQuery.getQuery()})`
+                                        )
+                                })
+                            )
+                    })
+                )
             }
             if (schoolOrgs.length && schoolIds.length) {
                 const classIdsQuery = createQueryBuilder()

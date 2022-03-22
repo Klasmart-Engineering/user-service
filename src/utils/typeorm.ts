@@ -16,7 +16,8 @@ export function scopeHasJoin<E extends BaseEntity>(
     return (
         scope.expressionMap.joinAttributes.find(
             (joinAttribute) => joinAttribute.metadata?.target === joinedEntity
-        ) !== undefined
+        ) !== undefined ||
+        scope.expressionMap.mainAlias?.metadata.target === joinedEntity
     )
 }
 

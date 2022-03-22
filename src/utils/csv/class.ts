@@ -17,6 +17,9 @@ import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
 import { REGEX } from '../../entities/validations/regex'
 import { customErrors } from '../../types/errors/customError'
+import { Subject } from '../../entities/subject'
+import { validateAgeRanges } from './validations/ageRange'
+import { AgeRange } from '../../entities/ageRange'
 
 export const processClassFromCSVRow = async (
     manager: EntityManager,
@@ -27,6 +30,10 @@ export const processClassFromCSVRow = async (
         school_name,
         program_name,
         grade_name,
+        subject_name,
+        age_range_low_value,
+        age_range_high_value,
+        age_range_unit,
     }: ClassRow,
     rowNumber: number,
     fileErrors: CSVError[],
@@ -110,6 +117,14 @@ export const processClassFromCSVRow = async (
             }
         )
     }
+
+    validateAgeRanges(
+        rowErrors,
+        rowNumber,
+        age_range_low_value,
+        age_range_high_value,
+        age_range_unit
+    )
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
     if (rowErrors.length > 0) {
@@ -196,7 +211,6 @@ export const processClassFromCSVRow = async (
     }
 
     const existingSchools = (await c.schools) || []
-
     if (school_name) {
         const school = await School.findOne({
             where: { school_name, organization: org },
@@ -220,9 +234,7 @@ export const processClassFromCSVRow = async (
             return rowErrors
         }
 
-        const existingSchoolNames = existingSchools.map(
-            (school) => school.school_name
-        )
+        const existingSchoolNames = existingSchools.map((s) => s.school_name)
 
         if (existingSchoolNames.includes(school_name)) {
             addCsvError(
@@ -244,7 +256,6 @@ export const processClassFromCSVRow = async (
 
         existingSchools.push(school)
     }
-
     c.schools = Promise.resolve(existingSchools)
 
     const existingPrograms = (await c.programs) || []
@@ -308,14 +319,12 @@ export const processClassFromCSVRow = async (
             existingPrograms.push(programToAdd)
         }
     }
-
     c.programs = Promise.resolve(existingPrograms)
 
     const existingGrades = (await c.grades) || []
-    let gradeToAdd
     if (grade_name) {
-        // does the grade belong to organisation or a system program
-        gradeToAdd = await Grade.findOne({
+        // does the grade belong to organisation or a system grade
+        const gradeToAdd = await Grade.findOne({
             where: [
                 { name: grade_name, organization: org },
                 { name: grade_name, organization: null, system: true },
@@ -361,14 +370,134 @@ export const processClassFromCSVRow = async (
 
         existingGrades.push(gradeToAdd)
     }
+    if (existingGrades.length) c.grades = Promise.resolve(existingGrades)
+
+    const existingSubjects = (await c.subjects) || []
+    if (subject_name) {
+        // does the subject belong to organisation or a system subject
+        const subjectToAdd = await Subject.findOne({
+            where: [
+                { name: subject_name, organization: org },
+                { name: subject_name, organization: null, system: true },
+            ],
+        })
+
+        if (!subjectToAdd) {
+            addCsvError(
+                rowErrors,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                rowNumber,
+                'subject_name',
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                {
+                    name: subject_name,
+                    entity: 'subject',
+                    parent_name: organization_name,
+                    parent_entity: 'organization',
+                }
+            )
+
+            return rowErrors
+        }
+
+        const existingSubjectNames = existingSubjects.map((s) => s.name)
+
+        if (existingSubjectNames.includes(subject_name)) {
+            addCsvError(
+                rowErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                rowNumber,
+                'subject_name',
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    name: subject_name,
+                    entity: 'subject',
+                    parent_name: class_name,
+                    parent_entity: 'class',
+                }
+            )
+            return rowErrors
+        }
+
+        existingSubjects.push(subjectToAdd)
+    }
+    if (existingSubjects.length) c.subjects = Promise.resolve(existingSubjects)
+
+    const existingAgeRanges = (await c.age_ranges) || []
+    if (age_range_low_value && age_range_high_value && age_range_unit) {
+        const ageRangeName = `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`
+
+        // does the age range belong to organisation or a system age range
+        const ageRangeToAdd = await AgeRange.findOne({
+            where: [
+                {
+                    name: ageRangeName,
+                    low_value: age_range_low_value,
+                    high_value: age_range_high_value,
+                    high_value_unit: age_range_unit,
+                    low_value_unit: age_range_unit,
+                    system: false,
+                    status: 'active',
+                    organization: org,
+                },
+                {
+                    name: ageRangeName,
+                    low_value: age_range_low_value,
+                    high_value: age_range_high_value,
+                    high_value_unit: age_range_unit,
+                    low_value_unit: age_range_unit,
+                    system: true,
+                    status: 'active',
+                    organization: null,
+                },
+            ],
+        })
+
+        if (!ageRangeToAdd) {
+            addCsvError(
+                rowErrors,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                rowNumber,
+                'age_range_low_value, age_range_high_value, age_range_unit',
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                {
+                    entity: 'ageRange',
+                    name: ageRangeName,
+                    parent_entity: 'organization',
+                    parent_name: organization_name,
+                }
+            )
+            return rowErrors
+        }
+
+        const existingAgeRangeNames = existingAgeRanges.map((ar) => ar.name)
+
+        if (existingAgeRangeNames.includes(ageRangeName)) {
+            addCsvError(
+                rowErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                rowNumber,
+                'age_range_low_value, age_range_high_value, age_range_unit',
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    entity: 'ageRange',
+                    name: ageRangeName,
+                    parent_entity: 'class',
+                    parent_name: class_name,
+                }
+            )
+            return rowErrors
+        }
+
+        existingAgeRanges.push(ageRangeToAdd)
+    }
+    if (existingAgeRanges.length) {
+        c.age_ranges = Promise.resolve(existingAgeRanges)
+    }
 
     // never save if there are any errors in the file
     if (fileErrors.length > 0 || rowErrors.length > 0) {
         return rowErrors
-    }
-
-    if (existingGrades.length) {
-        c.grades = Promise.resolve(existingGrades)
     }
 
     await manager.save(c)

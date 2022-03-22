@@ -914,6 +914,110 @@ describe('model.csv', () => {
                     const classesCreated = await Class.count()
                     expect(classesCreated).eq(0)
                 })
+
+                it('should throw an error with correct code for non-existent subject', async () => {
+                    const expectedOrg = createOrganization()
+                    expectedOrg.organization_name = 'my-org'
+                    await connection.manager.save(expectedOrg)
+
+                    const expectedSchool = createSchool(
+                        expectedOrg,
+                        'test-school'
+                    )
+                    await connection.manager.save(expectedSchool)
+
+                    const expectedProg = createProgram(expectedOrg)
+                    expectedProg.name = 'outdoor activities'
+                    await connection.manager.save(expectedProg)
+
+                    const expectedGrade = createGrade(expectedOrg)
+                    expectedGrade.name = 'first grade'
+                    await connection.manager.save(expectedGrade)
+
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            1,
+                            'subject_name',
+                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            {
+                                entity: 'subject',
+                                name: 'pilates',
+                                parent_name: 'my-org',
+                                parent_entity: 'organization',
+                            }
+                        ),
+                    ]
+
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                    const classesCreated = await Class.count()
+                    expect(classesCreated).eq(0)
+                })
+
+                it('should throw an error with correct code for non-existent age range', async () => {
+                    const expectedOrg = createOrganization()
+                    expectedOrg.organization_name = 'my-org'
+                    await connection.manager.save(expectedOrg)
+
+                    const expectedSchool = createSchool(
+                        expectedOrg,
+                        'test-school'
+                    )
+                    await connection.manager.save(expectedSchool)
+
+                    const expectedProg = createProgram(expectedOrg)
+                    expectedProg.name = 'outdoor activities'
+                    await connection.manager.save(expectedProg)
+
+                    const expectedGrade = createGrade(expectedOrg)
+                    expectedGrade.name = 'first grade'
+                    await connection.manager.save(expectedGrade)
+
+                    const expectedSubject = createSubject(expectedOrg)
+                    expectedSubject.name = 'pilates'
+                    await connection.manager.save(expectedSubject)
+
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            1,
+                            'age_range_low_value, age_range_high_value, age_range_unit',
+                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            {
+                                entity: 'ageRange',
+                                name: '5 - 7 year(s)',
+                                parent_name: 'my-org',
+                                parent_entity: 'organization',
+                            }
+                        ),
+                    ]
+
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+
+                    const classesCreated = await Class.count()
+                    expect(classesCreated).eq(0)
+                })
             })
 
             context('when input has invalid formatting', () => {
@@ -1071,6 +1175,8 @@ describe('model.csv', () => {
             let noneSpecifiedProg: Program
             let expectedSchool: School
             let expectedGrade: Grade
+            let expectedSubject: Subject
+            let expectedAgeRange: AgeRange
 
             beforeEach(async () => {
                 filename = 'classes.csv'
@@ -1095,6 +1201,16 @@ describe('model.csv', () => {
                 expectedGrade = createGrade(expectedOrg)
                 expectedGrade.name = 'first grade'
                 await connection.manager.save(expectedGrade)
+
+                expectedSubject = createSubject(expectedOrg)
+                expectedSubject.name = 'pilates'
+                await connection.manager.save(expectedSubject)
+
+                expectedAgeRange = createAgeRange(expectedOrg, 5, 7)
+                expectedAgeRange.name = '5 - 7 year(s)'
+                expectedAgeRange.low_value_unit = AgeRangeUnit.YEAR
+                expectedAgeRange.high_value_unit = AgeRangeUnit.YEAR
+                await connection.manager.save(expectedAgeRange)
             })
 
             it('should create classes', async () => {
@@ -1108,10 +1224,13 @@ describe('model.csv', () => {
                 )
                 const dbClass = await Class.findOneOrFail({
                     where: { class_name: 'class1', organization: expectedOrg },
+                    relations: ['programs', 'grades', 'subjects', 'age_ranges'],
                 })
                 const schools = (await dbClass.schools) || []
                 const programs = (await dbClass.programs) || []
                 const grades = (await dbClass.grades) || []
+                const subjects = (await dbClass.subjects) || []
+                const ageRanges = (await dbClass.age_ranges) || []
 
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
@@ -1119,31 +1238,51 @@ describe('model.csv', () => {
                 expect(schools.length).to.equal(1)
                 expect(programs.length).to.equal(1)
                 expect(grades.length).to.equal(1)
+                expect(subjects.length).to.equal(1)
+                expect(ageRanges.length).to.equal(1)
             })
 
-            it('should assign None Specified program but none for grade for unspecified program and grade fields ', async () => {
-                filename = 'classesEmptyNonReqFields.csv'
-                file = fs.createReadStream(
-                    resolve(`tests/fixtures/${filename}`)
-                )
+            context(
+                'when program, grade, subject, and age range are unspecified',
+                () => {
+                    it('should assign None Specified program but none for grade, subject, and age range', async () => {
+                        filename = 'classesEmptyNonReqFields.csv'
+                        file = fs.createReadStream(
+                            resolve(`tests/fixtures/${filename}`)
+                        )
 
-                const result = await uploadClasses(
-                    testClient,
-                    file,
-                    filename,
-                    mimetype,
-                    encoding,
-                    arbitraryUserToken
-                )
-                const dbClass = await Class.findOneOrFail({
-                    where: { class_name: 'class1', organization: expectedOrg },
-                })
-                const programs = (await dbClass.programs) || []
-                const grades = (await dbClass.grades) || []
+                        const result = await uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                        const dbClass = await Class.findOneOrFail({
+                            where: {
+                                class_name: 'class1',
+                                organization: expectedOrg,
+                            },
+                            relations: [
+                                'programs',
+                                'grades',
+                                'subjects',
+                                'age_ranges',
+                            ],
+                        })
+                        const programs = (await dbClass.programs) || []
+                        const grades = (await dbClass.grades) || []
+                        const subjects = (await dbClass.subjects) || []
+                        const ageRanges = (await dbClass.age_ranges) || []
 
-                expect(programs.length).to.equal(1)
-                expect(grades.length).to.equal(0)
-            })
+                        expect(programs.length).to.equal(1)
+                        expect(grades).to.be.empty
+                        expect(subjects).to.be.empty
+                        expect(ageRanges).to.be.empty
+                    })
+                }
+            )
         })
     })
 

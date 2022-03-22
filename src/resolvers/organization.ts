@@ -156,17 +156,17 @@ export class CreateOrganizations extends CreateMutation<
         const duplicateUserErrors = validateNoDuplicate(
             inputs.map((i) => i.userId),
             'CreateOrganizationInput',
-            'userId'
+            ['userId']
         ) // user can only be the owner of one organization
         const duplicateNameErrors = validateNoDuplicate(
             inputs.map((i) => i.organizationName),
             'CreateOrganizationInput',
-            'organizationName'
+            ['organizationName']
         )
         const duplicateShortcodeErrors = validateNoDuplicate(
             inputs.map((i) => i.shortcode!),
             'CreateOrganizationInput',
-            'shortcode'
+            ['shortcode']
         )
         return filterInvalidInputs(inputs, [
             duplicateUserErrors,

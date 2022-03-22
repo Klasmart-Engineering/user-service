@@ -3,6 +3,7 @@ import { SelectQueryBuilder, getConnection } from 'typeorm'
 import { createEntityScope } from '../../../src/directives/isAdmin'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { Permission } from '../../../src/entities/permission'
 import { Role } from '../../../src/entities/role'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
@@ -10,6 +11,7 @@ import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Context } from '../../../src/main'
 import { Model } from '../../../src/model'
 import { organizationMembershipConnectionQuery } from '../../../src/pagination/organizationMembershipsConnection'
+import { PermissionName } from '../../../src/permissions/permissionNames'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import {
     loadOrganizationMembershipsForOrganization,
@@ -169,6 +171,16 @@ describe('organizationMembershipsConnection', () => {
 
         beforeEach(async () => {
             clientUser = await createUser().save()
+
+            const permission = await Permission.findOneOrFail({
+                where: {
+                    permission_name: PermissionName.view_users_40110,
+                },
+            })
+
+            org1Role.permissions = Promise.resolve([permission])
+            org2Role.permissions = Promise.resolve([permission])
+            await Role.save([org1Role, org2Role])
 
             // add the client user to both orgs
             org1Memberships.push(
