@@ -4069,10 +4069,7 @@ describe('user', () => {
 
             it('returns existing users', async () => {
                 const existingUsers = await generateExistingUsers(organization1)
-                const activeUsers = existingUsers.filter(
-                    (eu) => eu.status === Status.ACTIVE
-                )
-                const expectedPairs = activeUsers.map((au) => {
+                const expectedPairs = existingUsers.map((au) => {
                     return {
                         givenName: au.given_name!,
                         familyName: au.family_name!,
@@ -4085,7 +4082,7 @@ describe('user', () => {
                         return {
                             ...ep,
                             gender: 'female',
-                            id: activeUsers[i].user_id,
+                            id: existingUsers[i].user_id,
                         }
                     }),
                     updateUserInputs[0],

@@ -1,16 +1,28 @@
 import { expect } from 'chai'
 import faker from 'faker'
-import { CreateUserInput } from '../../../../src/types/graphQL/user'
+import { User } from '../../../../src/entities/user'
+import {
+    CreateUserInput,
+    UpdateUserInput,
+} from '../../../../src/types/graphQL/user'
 import {
     ConflictingUserKey,
     createUserInputToConflictingUserKey,
     buildConflictingUserKey,
     addIdentifierToKey,
-    makeLookupKey,
     cleanCreateUserInput,
+    updateUserInputToConflictingUserKey,
+    cleanUpdateUserInput,
 } from '../../../../src/utils/resolvers/user'
-import { createUser } from '../../../factories/user.factory'
-import { userToCreateUserInput } from '../../../utils/operations/userOps'
+import { createUser, createUsers } from '../../../factories/user.factory'
+import {
+    userToCreateUserInput,
+    userToUpdateUserInput,
+} from '../../../utils/operations/userOps'
+import {
+    TestConnection,
+    createTestConnection,
+} from '../../../utils/testConnection'
 
 describe('User', () => {
     context('createUserInputToConflictingUserKey', () => {
@@ -73,6 +85,84 @@ describe('User', () => {
             expect(key.username).to.be.undefined
             expect(key.email).to.be.undefined
             expect(key.phone).to.eq(input.contactInfo?.phone)
+        })
+    })
+
+    context('updateUserInputToConflictingUserKey', () => {
+        let connection: TestConnection
+        let users: User[]
+        let usersMap: Map<string, User>
+
+        before(async () => {
+            connection = await createTestConnection()
+        })
+
+        after(async () => {
+            await connection.close()
+        })
+
+        beforeEach(async () => {
+            users = await User.save(createUsers(3))
+            usersMap = new Map(users.map((u) => [u.user_id, u]))
+        })
+
+        const generateInput = (
+            user: User,
+            omit?: (keyof UpdateUserInput)[]
+        ): UpdateUserInput => {
+            return {
+                id: user.user_id,
+                givenName: omit?.includes('givenName')
+                    ? undefined
+                    : faker.name.firstName(),
+                familyName: omit?.includes('familyName')
+                    ? undefined
+                    : faker.name.lastName(),
+                username: omit?.includes('username')
+                    ? undefined
+                    : faker.name.firstName(),
+                email: omit?.includes('email')
+                    ? undefined
+                    : faker.internet.email(),
+                phone: omit?.includes('phone')
+                    ? undefined
+                    : faker.phone.phoneNumber('+44#######'),
+            }
+        }
+
+        it('transforms UpdateUserInput to ConflictingUserKey', () => {
+            const input: UpdateUserInput = generateInput(users[0])
+            const key: ConflictingUserKey = updateUserInputToConflictingUserKey(
+                input,
+                usersMap
+            )
+
+            expect(key.givenName).to.eq(input.givenName)
+            expect(key.familyName).to.eq(input.familyName)
+            expect(key.username).to.eq(input.username)
+            expect(key.email).to.eq(input.email)
+            expect(key.phone).to.eq(input.phone)
+        })
+
+        it('undefined values are found in the map', () => {
+            const input: UpdateUserInput = generateInput(users[0], [
+                'givenName',
+                'familyName',
+                'username',
+            ])
+
+            const key: ConflictingUserKey = updateUserInputToConflictingUserKey(
+                input,
+                usersMap
+            )
+
+            const userInMap = usersMap.get(input.id)
+
+            expect(key.givenName).to.eq(userInMap?.given_name)
+            expect(key.familyName).to.eq(userInMap?.family_name)
+            expect(key.username).to.eq(userInMap?.username)
+            expect(key.email).to.eq(input.email)
+            expect(key.phone).to.eq(input.phone)
         })
     })
 
@@ -383,25 +473,184 @@ describe('User', () => {
         })
     })
 
-    context('makeLookupKey', () => {
-        it('converts params in a JSON stringified string', () => {
-            const givenName = faker.name.firstName()
-            const familyName = faker.name.lastName()
-            const contactInfo = faker.internet.email()
+    context('cleanUpdateUserInput', () => {
+        const validateNonCleanableFields = (
+            result: UpdateUserInput,
+            expected: UpdateUserInput
+        ) => {
+            expect(result.id).to.eq(expected.id)
+            expect(result.givenName).to.eq(expected.givenName)
+            expect(result.familyName).to.eq(expected.familyName)
+            expect(result.gender).to.eq(expected.gender)
+            expect(result.username).to.eq(expected.username)
+            expect(result.avatar).to.eq(expected.avatar)
+            expect(result.primaryUser).to.eq(expected.primaryUser)
+        }
 
-            const stringResult = makeLookupKey(
-                givenName,
-                familyName,
-                contactInfo
-            )
+        context(
+            'when all info is provided and normalization is not needed on any field',
+            () => {
+                it('result should be equal to input', () => {
+                    const input = userToUpdateUserInput(
+                        createUser({
+                            alternate_email: faker.internet
+                                .email()
+                                .toLowerCase(),
+                            alternate_phone: faker.phone.phoneNumber(
+                                '+44#######'
+                            ),
+                        })
+                    )
 
-            const expectedString = JSON.stringify({
-                contactInfo,
-                givenName,
-                familyName,
+                    const result = cleanUpdateUserInput(input)
+
+                    validateNonCleanableFields(result, input)
+                    expect(result.email).to.eq(input.email)
+                    expect(result.phone).to.eq(input.phone)
+                    expect(result.dateOfBirth).to.eq(input.dateOfBirth)
+                    expect(result.alternateEmail).to.eq(input.alternateEmail)
+                    expect(result.alternatePhone).to.eq(input.alternatePhone)
+                })
+            }
+        )
+
+        context('when input emails or phones are empty string', () => {
+            it('those resulting fields should be undefined', () => {
+                const input = userToUpdateUserInput(
+                    createUser({
+                        email: '',
+                        phone: '',
+                        alternate_email: '',
+                        alternate_phone: '',
+                    })
+                )
+
+                const result = cleanUpdateUserInput(input)
+
+                validateNonCleanableFields(result, input)
+                expect(result.email).to.be.undefined
+                expect(result.phone).to.be.undefined
+                expect(result.dateOfBirth).to.eq(input.dateOfBirth)
+                expect(result.alternateEmail).to.be.undefined
+                expect(result.alternatePhone).to.be.undefined
             })
+        })
 
-            expect(stringResult).to.be.eq(expectedString)
+        context('when input emails need to be normalized', () => {
+            it('result emails should be normalized', () => {
+                const user = createUser({
+                    email: 'ﬀmail1@gmail.com',
+                    alternate_email: 'ﬀmail2@gmail.com',
+                    alternate_phone: faker.phone.phoneNumber('+44#######'),
+                })
+
+                const input = userToUpdateUserInput(user)
+                const result = cleanUpdateUserInput(input)
+
+                validateNonCleanableFields(result, input)
+                expect(result.email).to.eq('ffmail1@gmail.com')
+                expect(result.phone).to.eq(input.phone)
+                expect(result.dateOfBirth).to.eq(input.dateOfBirth)
+                expect(result.alternateEmail).to.eq('ffmail2@gmail.com')
+                expect(result.alternatePhone).to.eq(input.alternatePhone)
+            })
+        })
+
+        context('when input emails are sent in upper case', () => {
+            it('result emails should be set in lower case', () => {
+                const user = createUser({
+                    alternate_email: faker.internet.email().toLowerCase(),
+                    alternate_phone: faker.phone.phoneNumber('+44#######'),
+                })
+
+                const expectedValues = { ...user }
+                user.email = user.email?.toUpperCase()
+                user.alternate_email = user.alternate_email?.toUpperCase()
+
+                const input = userToUpdateUserInput(user)
+                const result = cleanUpdateUserInput(input)
+
+                validateNonCleanableFields(result, input)
+                expect(result.email).to.eq(expectedValues.email)
+                expect(result.phone).to.eq(input.phone)
+                expect(result.dateOfBirth).to.eq(input.dateOfBirth)
+                expect(result.alternateEmail).to.eq(
+                    expectedValues.alternate_email
+                )
+                expect(result.alternatePhone).to.eq(input.alternatePhone)
+            })
+        })
+
+        context(
+            'when input emails or phones have spaces at start and/or end',
+            () => {
+                it('fields should be trimmed', () => {
+                    const user = createUser({
+                        alternate_email: faker.internet.email().toLowerCase(),
+                        alternate_phone: faker.phone.phoneNumber('+44#######'),
+                    })
+
+                    const expectedValues = { ...user }
+                    user.email = ` ${user.email} `
+                    user.phone = `  ${user.phone}  `
+                    user.alternate_email = `   ${user.alternate_email}   `
+                    user.alternate_phone = `    ${user.alternate_phone}    `
+
+                    const input = userToUpdateUserInput(user)
+                    const result = cleanUpdateUserInput(input)
+
+                    validateNonCleanableFields(result, input)
+                    expect(result.email).to.eq(expectedValues.email)
+                    expect(result.phone).to.eq(expectedValues.phone)
+                    expect(result.dateOfBirth).to.eq(input.dateOfBirth)
+                    expect(result.alternateEmail).to.eq(
+                        expectedValues.alternate_email
+                    )
+                    expect(result.alternatePhone).to.eq(
+                        expectedValues.alternate_phone
+                    )
+                })
+            }
+        )
+
+        context('when input phones have dashes, spaces or parenthesis', () => {
+            it('dashes, spaces and parenthesis should be removed', () => {
+                const user = createUser({
+                    phone: '+52 (378)-123-4567',
+                    alternate_email: faker.internet.email().toLowerCase(),
+                    alternate_phone: '+52 (378)-789-1234',
+                })
+
+                const input = userToUpdateUserInput(user)
+                const result = cleanUpdateUserInput(input)
+
+                validateNonCleanableFields(result, input)
+                expect(result.email).to.eq(input.email)
+                expect(result.phone).to.eq('+523781234567')
+                expect(result.dateOfBirth).to.eq(input.dateOfBirth)
+                expect(result.alternateEmail).to.eq(input.alternateEmail)
+                expect(result.alternatePhone).to.eq('+523787891234')
+            })
+        })
+
+        context('when input date of birth has not leading zero', () => {
+            it('leading zero should be added', () => {
+                const user = createUser({
+                    date_of_birth: '2/1996',
+                    alternate_email: faker.internet.email().toLowerCase(),
+                    alternate_phone: faker.phone.phoneNumber('+44#######'),
+                })
+
+                const input = userToUpdateUserInput(user)
+                const result = cleanUpdateUserInput(input)
+
+                validateNonCleanableFields(result, input)
+                expect(result.email).to.eq(input.email)
+                expect(result.phone).to.eq(input.phone)
+                expect(result.dateOfBirth).to.eq('02/1996')
+                expect(result.alternateEmail).to.eq(input.alternateEmail)
+                expect(result.alternatePhone).to.eq(input.alternatePhone)
+            })
         })
     })
 })

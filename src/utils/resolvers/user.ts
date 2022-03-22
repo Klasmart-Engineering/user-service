@@ -130,20 +130,3 @@ export function cleanUpdateUserInput(uui: UpdateUserInput): UpdateUserInput {
     }
     return cleanUui
 }
-
-/**
- * We build a key for a map, I am using maps to reduce the looping through arrays to
- * a minimum when looking up values
- */
-export function makeLookupKey(
-    given: string | undefined | null,
-    family: string | undefined | null,
-    contact: string | undefined | null
-): string {
-    const jsonKey = {
-        contactInfo: contact,
-        givenName: given,
-        familyName: family,
-    }
-    return JSON.stringify(jsonKey)
-}
