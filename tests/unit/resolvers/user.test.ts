@@ -1,17 +1,17 @@
 import { expect } from 'chai'
 import faker from 'faker'
 import { User } from '../../../src/entities/user'
+import { updateUserInputToConflictingUserKey } from '../../../src/resolvers/user'
+import {
+    CreateUserInput,
+    UpdateUserInput,
+} from '../../../src/types/graphQL/user'
 import {
     addIdentifierToKey,
     buildConflictingUserKey,
     ConflictingUserKey,
     createUserInputToConflictingUserKey,
-    updateUserInputToConflictingUserKey,
-} from '../../../src/resolvers/user'
-import {
-    CreateUserInput,
-    UpdateUserInput,
-} from '../../../src/types/graphQL/user'
+} from '../../../src/utils/resolvers/user'
 import { createUsers } from '../../factories/user.factory'
 import {
     createTestConnection,
