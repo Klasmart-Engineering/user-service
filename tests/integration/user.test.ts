@@ -95,8 +95,7 @@ import {
     addOrganizationRolesToUsers,
     AddSchoolRolesToUsers,
     AddSchoolRolesToUsersEntityMap,
-    createUsers,
-    makeLookupKey,
+    CreateUsers,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
     updateUsers,
@@ -130,6 +129,9 @@ import {
 import { mapRoleToRoleConnectionNode } from '../../src/pagination/rolesConnection'
 import { APIError } from '../../src/types/errors/apiError'
 import { customErrors } from '../../src/types/errors/customError'
+import { createOrganization as createOrgFactory } from '../factories/organization.factory'
+import { Status } from '../../src/entities/status'
+import { makeLookupKey } from '../../src/utils/resolvers/user'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -1463,7 +1465,7 @@ describe('user', () => {
         })
     })
 
-    describe('createUsers', () => {
+    describe('CreateUsers', () => {
         let idOfUserPerformingOperation: string
         let organizationId: string
         let arbitraryUserToken: string
@@ -1471,15 +1473,14 @@ describe('user', () => {
         let adminToken: string
 
         function createUsersResolver(input: CreateUserInput[], user: User) {
-            return createUsers(
+            return mutate(
+                CreateUsers,
                 { input },
-                {
-                    permissions: new UserPermissions({
-                        id: user.user_id,
-                        email: user.email,
-                        phone: user.phone,
-                    }),
-                }
+                new UserPermissions({
+                    id: user.user_id,
+                    email: user.email,
+                    phone: user.phone,
+                })
             )
         }
 
@@ -1571,7 +1572,7 @@ describe('user', () => {
                     nonAdminUser
                 )
                 const userConNodes = createUsersResult.users
-                expect(connection.logger.count).to.equal(4)
+                expect(connection.logger.count).to.equal(3)
                 expect(userConNodes.length).to.equal(createUserInputs.length)
                 const currentUsers = await connection
                     .getRepository(User)
@@ -1605,7 +1606,7 @@ describe('user', () => {
                         expect(errs).to.have.length(1)
                         expect(errs[0]).to.be.an('error')
                         expect(errs[0].message).to.equal(
-                            'User username/contactInfo is required.'
+                            'On index 25, User username/contactInfo is required.'
                         )
                     }
 
@@ -1770,7 +1771,7 @@ describe('user', () => {
                             'phone',
                             'email',
                         ],
-                        'User'
+                        'CreateUserInput'
                     ),
                 ]
 
@@ -1839,6 +1840,107 @@ describe('user', () => {
                     .getRepository(User)
                     .count()
                 expect(currentUsers).to.equal(previousUsers)
+            })
+        })
+        context('DB calls', () => {
+            const getDbCallCount = async (input: CreateUserInput[]) => {
+                connection.logger.reset()
+                await createUsersResolver(input, adminUser)
+                return connection.logger.count
+            }
+
+            const generateInputs = (quantity: number) =>
+                Array.from(new Array(quantity), () => {
+                    return {
+                        givenName: faker.name.firstName(),
+                        familyName: faker.name.lastName(),
+                        gender: faker.random.arrayElement(['female', 'male']),
+                        username: faker.name.firstName(),
+                    }
+                })
+
+            it('db connections do not increase with number of input elements', async () => {
+                await getDbCallCount(generateInputs(1)) // warm up permissions cache
+
+                const singleCategoryCount = await getDbCallCount(
+                    generateInputs(1)
+                )
+
+                const twoCategoriesCount = await getDbCallCount(
+                    generateInputs(2)
+                )
+
+                expect(twoCategoriesCount).to.be.eq(singleCategoryCount)
+                expect(twoCategoriesCount).to.be.equal(3)
+            })
+        })
+        context('generateEntityMaps', () => {
+            let createUsers: CreateUsers
+            const generateExistingUsers = async (org: Organization) => {
+                const existingUser = await createUser(org).save()
+                const nonPermittedOrgUser = await createUser(
+                    await createOrgFactory().save()
+                ).save()
+
+                const inactiveUser = createUser(org)
+                inactiveUser.status = Status.INACTIVE
+                await inactiveUser.save()
+
+                const inactiveOrg = createOrgFactory()
+                inactiveOrg.status = Status.INACTIVE
+                await inactiveOrg.save()
+                const inactiveOrgUser = await createUser(inactiveOrg).save()
+
+                return [
+                    existingUser,
+                    nonPermittedOrgUser,
+                    inactiveUser,
+                    inactiveOrgUser,
+                ]
+            }
+
+            beforeEach(async () => {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+
+                createUsers = new CreateUsers([], permissions)
+            })
+
+            it('returns existing users', async () => {
+                const existingUsers = await generateExistingUsers(organization1)
+                const expectedPairs = await Promise.all(
+                    existingUsers
+                        .filter((eu) => eu.status === Status.ACTIVE)
+                        .map(async (eu) => {
+                            return {
+                                givenName: eu.given_name!,
+                                familyName: eu.family_name!,
+                                username: eu.username,
+                            }
+                        })
+                )
+
+                const input: CreateUserInput[] = [
+                    ...expectedPairs.map((ep) => {
+                        return {
+                            ...ep,
+                            gender: 'female',
+                        }
+                    }),
+                    {
+                        givenName: 'User',
+                        familyName: 'Test',
+                        gender: 'male',
+                        username: 'usertest',
+                    },
+                ]
+
+                const entityMaps = await createUsers.generateEntityMaps(input)
+
+                expect(
+                    Array.from(entityMaps.conflictingUsers.keys())
+                ).to.deep.equalInAnyOrder(expectedPairs)
             })
         })
     })

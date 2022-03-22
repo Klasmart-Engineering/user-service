@@ -137,7 +137,7 @@ export class CreatePrograms extends CreateMutation<
         const failedDuplicateNames = validateNoDuplicate(
             inputs.map((i) => [i.organizationId, i.name].toString()),
             'program',
-            'name'
+            ['name']
         )
 
         // Checking duplicates and length in ageRangeIds
@@ -405,7 +405,7 @@ export class UpdatePrograms extends UpdateMutation<
         const failedDuplicates = validateNoDuplicate(
             inputs.map((i) => i.id),
             'program',
-            'id'
+            ['id']
         )
 
         const values = []
