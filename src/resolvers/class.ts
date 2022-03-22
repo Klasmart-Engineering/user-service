@@ -582,7 +582,7 @@ export class CreateClasses extends CreateMutation<
         const failedDuplicateShortcodes = validateNoDuplicate(
             inputs.map((i) => [i.organizationId, i.shortcode!].toString()),
             'class',
-            'shortcode'
+            ['shortcode']
         )
 
         errors.push(...failedDuplicateShortcodes.values())
@@ -821,7 +821,7 @@ export class UpdateClasses extends UpdateMutation<
             validateNoDuplicate(
                 inputs.map((cls) => cls.classId),
                 this.inputTypeName,
-                'classId'
+                ['classId']
             )
         )
 
@@ -1089,7 +1089,7 @@ export class AddStudentsToClasses extends AddMutation<
         const classIdErrorMap = validateNoDuplicate(
             inputs.map((cls) => cls.classId),
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
         const studentIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
@@ -1271,7 +1271,7 @@ export class RemoveStudentsFromClasses extends RemoveMutation<
         const classIdErrorMap = validateNoDuplicate(
             inputs.map((cls) => cls.classId),
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
         const studentIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
@@ -1442,7 +1442,7 @@ export class AddTeachersToClasses extends AddMutation<
         const classIdErrorMap = validateNoDuplicate(
             inputs.map((cls) => cls.classId),
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
         const teacherIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
@@ -1623,7 +1623,7 @@ export class RemoveTeachersFromClasses extends RemoveMutation<
         const classIdErrorMap = validateNoDuplicate(
             inputs.map((cls) => cls.classId),
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
         const teacherIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
