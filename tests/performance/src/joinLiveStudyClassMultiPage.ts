@@ -20,7 +20,7 @@ export const options: Options = {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students',
-            duration: '1m',
+            duration: __ENV.DURATION,
         },
     },
     setupTimeout: '5m',
