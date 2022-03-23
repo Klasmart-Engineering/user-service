@@ -22,7 +22,9 @@ export default function (roleType?: string) {
     }
    
     check(res, {
-        'status is 200 meQueryReq3': () => res.status === 200,
+        'status is 403 meQueryReq3': () => res.status === 403,
+        '"meQueryReq3" query returns data': (r) => JSON.parse(r.body as string).data == null,
+        //'"meQueryReq3 message" query returns data': (r) => JSON.parse(r.body as string).label == 'assess_msg_no_permission',
     }, {
         userRoleType: roleType
     });
@@ -32,14 +34,14 @@ export default function (roleType?: string) {
         serverWaitingTime.add(res.timings.waiting);
     } */
     
-    if (res.status >= 200 && res.status <= 299) {
+    /* if (res.status >= 200 && res.status <= 299) {
         counter.add(1);
         
     } else if (res.status >= 400 && res.status <= 499) {
         errorCounter400.add(1);
     } else {
         errorCounter500.add(1);
-    }
+    } */
 
     serverWaitingTime.add(res.timings.waiting);
 }

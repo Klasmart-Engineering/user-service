@@ -23,6 +23,7 @@ export default function (roleType?: string) {
     
     check(res, {
         'status is 200 HOME-ASSESSMENT FOR STUDENT': () => res.status === 200,
+        '"HOME-ASSESSMENT FOR STUDENT" query returns data': (r) => JSON.parse(r.body as string).total !== undefined,
 
     }, {
         userRoleType: roleType

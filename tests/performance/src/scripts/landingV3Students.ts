@@ -53,7 +53,7 @@ export default function(data: { res: any, userId: string }) {
     
     // Order 7
     // Request #2 CMS
-    endPointHomeRequest3();
+    // endPointHomeRequest3();
 
     // Order 8
     // Request #6 User service

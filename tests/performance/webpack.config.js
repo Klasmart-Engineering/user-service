@@ -85,6 +85,8 @@ module.exports = env => ({
         parallelLandingScheduleUniqueConstant: `./parallelLandingScheduleUniqueConstant.ts`,
         parallelLandingHomeUniqueConstantSplitB2c: `./parallelLandingHomeUniqueConstantSplitB2c.ts`,
         parallelLandingScheduleUniqueConstantSplitB2c: `./parallelLandingScheduleUniqueConstantSplitB2c.ts`,
+
+        joinLiveStudyClassMultiPageCopy: `./joinLiveStudyClassMultiPageCopy.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),

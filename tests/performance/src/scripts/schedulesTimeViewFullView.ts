@@ -43,7 +43,7 @@ export default function (roleType?: string) {
     
     check(res, {
         'SCHEDULES_time_view FULL VIEW - status is 200': () => res.status === 200,
-        //'schedule time view FULL VIEW returns data': (r) => JSON.parse(r.body as string).data,
+        'schedule time view FULL VIEW returns data': (r) => JSON.parse(r.body as string).data,
     }, {
         userRoleType: roleType
     });

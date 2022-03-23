@@ -31,7 +31,7 @@ export default function (roleType?: string) {
 
     check(res, {
         'status is 200 myUser singular': () => res.status === 200,
-       // '"myUser singular" query returns data': (r) => JSON.parse(r.body as string).data?.my_user !== undefined,
+       '"myUser singular" query returns data': (r) => JSON.parse(r.body as string).data.myUser.node.id !== undefined,
 
     }, {
         userRoleType: roleType
