@@ -57,6 +57,8 @@ const typeDefs = gql`
 
         """
         Returns a paginated response of the permissions the user has in a given organization.
+
+        If \`count\` is omitted, the max page size is ignored and ALL permissions are returned.
         """
         permissionsInOrganization(
             organizationId: ID!
@@ -69,6 +71,8 @@ const typeDefs = gql`
 
         """
         Returns a paginated response of the permissions the user has in a given school.
+
+        If \`count\` is omitted, the max page size is ignored and ALL permissions are returned.
         """
         permissionsInSchool(
             schoolId: ID!
@@ -296,6 +300,9 @@ export async function paginatePermissions(
     info: GraphQLResolveInfo,
     userPermissions: UserPermissions
 ) {
+    if (args.count == undefined) {
+        args.count = permissions.length
+    }
     if (permissions.length === 0) {
         return getEmptyPaginatedResponse<PermissionConnectionNode>(0)
     }
