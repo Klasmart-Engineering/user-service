@@ -14,6 +14,11 @@ export type ConflictingUserKey = {
     phone?: string
 }
 
+export type OrganizationMembershipKey = {
+    organizationId: string
+    userId: string
+}
+
 /**
  * Transforms the given CreateUserInput in a ConflictingUserKey
  */
