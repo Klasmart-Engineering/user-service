@@ -20,10 +20,10 @@ export const options: Options = {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students',
-            duration: '1m',
+            duration: __ENV.DURATION,
         },
     },
-    setupTimeout: '5m',
+    setupTimeout: '10m',
 };
 
 const params = {
@@ -116,9 +116,9 @@ export function setup() {
     }
 
     let i = 1; // cambie de 0 a 1
-    let l = 10;
+    let l = 20;
 
-    for (i; i < l; i++) {
+    for (i; i <= l; i++) {
         const prefix = i; // reemplace el ('0' + i).slice(-2) por i
         const loginPayload = {
             deviceId: "webpage",

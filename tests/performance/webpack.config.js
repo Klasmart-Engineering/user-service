@@ -71,7 +71,7 @@ module.exports = env => ({
         create20kUsers: `./create20kUsers.ts`,
         joinLiveStudyClassStudent: `./joinLiveStudyClassStudent.ts`,
         joinLiveStudyClassMultiPage: `./joinLiveStudyClassMultiPage.ts`,
-        
+        joinLiveStudyClassMultiPageCopy: `./joinLiveStudyClassMultiPageCopy.ts`,
         create200kUsers: `./create20kUsers.ts`,
         loginV2: `./loginV2.ts`,
         createStudyClass: `./createStudyClass.ts`,
