@@ -1534,6 +1534,27 @@ describe('user', () => {
                 )
             })
         })
+
+        context('.authorize', () => {
+            context('when the user is a super admin', () => {
+                it('completes successfully', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(adminUser)
+                    )
+                    const mutation = new CreateUsers([], permissions)
+                    await expect(mutation.authorize()).to.be.fulfilled
+                })
+            })
+
+            context('when the user is an API key', () => {
+                it('completes successfully', async () => {
+                    const permissions = new UserPermissions(undefined, true)
+                    const mutation = new CreateUsers([], permissions)
+                    await expect(mutation.authorize()).to.be.fulfilled
+                })
+            })
+        })
+
         context('when user has permission', () => {
             beforeEach(async () => {
                 await addUserToOrganizationAndValidate(
@@ -1870,7 +1891,7 @@ describe('user', () => {
                 )
 
                 expect(twoCategoriesCount).to.be.eq(singleCategoryCount)
-                expect(twoCategoriesCount).to.be.equal(3)
+                expect(twoCategoriesCount).to.be.equal(2)
             })
         })
         context('generateEntityMaps', () => {
