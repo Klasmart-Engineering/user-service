@@ -847,15 +847,17 @@ export class UpdateUsers extends CreateMutation<
 
     async authorize(): Promise<void> {
         const isAdmin = this.permissions.isAdmin
-        const updateUsersPermission = PermissionName.edit_users_40330
-        const orgs = await this.permissions.orgMembershipsWithPermissions([
-            updateUsersPermission,
-        ])
+        if (!isAdmin) {
+            const updateUsersPermission = PermissionName.edit_users_40330
+            const orgs = await this.permissions.orgMembershipsWithPermissions([
+                updateUsersPermission,
+            ])
 
-        if (!orgs.length && !isAdmin) {
-            throw new Error(
-                `User(${this.permissions.getUserId()}) does not have Permission(${updateUsersPermission})`
-            )
+            if (!orgs.length) {
+                throw new Error(
+                    `User(${this.permissions.getUserId()}) does not have Permission(${updateUsersPermission})`
+                )
+            }
         }
     }
 
