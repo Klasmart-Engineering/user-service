@@ -88,7 +88,7 @@ module.exports = env => ({
 
         joinLiveStudyClassMultiPageDiferentClasses: `./joinLiveStudyClassMultiPageDiferentClasses.ts`,
 
-        joinLiveStudyClassMultiPage: `./joinLiveStudyClassMultiPage.ts`
+        joinLiveStudyClassMultiPageRepeatAccount: `./joinLiveStudyClassMultiPageRepeatAccount.ts`
     },
     output: {
         path: path.join(__dirname, `dist`),
