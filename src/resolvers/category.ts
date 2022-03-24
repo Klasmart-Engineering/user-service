@@ -1,4 +1,4 @@
-import { getManager, In, getConnection } from 'typeorm'
+import { In } from 'typeorm'
 import { Category } from '../entities/category'
 import { Organization } from '../entities/organization'
 import { Status } from '../entities/status'
@@ -6,409 +6,483 @@ import { Subcategory } from '../entities/subcategory'
 import { Context } from '../main'
 import { mapCategoryToCategoryConnectionNode } from '../pagination/categoriesConnection'
 import { PermissionName } from '../permissions/permissionNames'
-import { APIError, APIErrorCollection } from '../types/errors/apiError'
+import { APIError } from '../types/errors/apiError'
 import {
     CategoriesMutationResult,
     CreateCategoryInput,
     DeleteCategoryInput,
     UpdateCategoryInput,
-    CategorySubcategory,
-    CategoryConnectionNode,
     AddSubcategoriesToCategoryInput,
     RemoveSubcategoriesFromCategoryInput,
 } from '../types/graphQL/category'
-import {
-    createDatabaseSaveAPIError,
-    createDuplicateAttributeAPIError,
-    createEntityAPIError,
-    createInputLengthAPIError,
-    createInputRequiresAtLeastOne,
-    createNonExistentOrInactiveEntityAPIError,
-} from '../utils/resolvers/errors'
-import { config } from '../config/config'
+import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
 import { categoryConnectionNodeFields } from '../pagination/categoriesConnection'
-import { subcategoryConnectionNodeFields } from '../pagination/subcategoriesConnection'
-import { customErrors } from '../types/errors/customError'
 import {
+    AddMutation,
+    CreateMutation,
     DeleteEntityMap,
     DeleteMutation,
+    EntityMap,
+    filterInvalidInputs,
+    ProcessedResult,
+    RemoveMutation,
+    UpdateMutation,
+    validateAtLeastOne,
+    validateNoDuplicate,
+    validateNoDuplicateAttribute,
+    validateSubItemsLengthAndNoDuplicates,
 } from '../utils/mutations/commonStructure'
+import { objectToKey, ObjMap } from '../utils/stringUtils'
+import { ConflictingNameKey, getMap } from '../utils/resolvers/entityMaps'
+import {
+    flagExistentChild,
+    flagNonExistent,
+    flagNonExistentChild,
+    validateSubItemsInOrg,
+} from '../utils/resolvers/inputValidation'
 
-interface InputAndOrgRelation {
-    id: string
-    name?: string
-    orgId?: string
+export type CategoryAndOrg = Category & { __organization__?: Organization }
+
+export interface CreateCategoriesEntityMap extends EntityMap<Category> {
+    organizations: Map<string, Organization>
+    subcategories: Map<string, Subcategory>
+    conflictingNames: ObjMap<ConflictingNameKey, Category>
 }
 
-export async function updateCategories(
-    args: { input: UpdateCategoryInput[] },
-    context: Pick<Context, 'permissions'>
-): Promise<CategoriesMutationResult> {
-    // input length validations
-    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('Category', 'min')
-    }
+export interface UpdateCategoriesEntityMap extends EntityMap<Category> {
+    mainEntity: Map<string, Category>
+    subcategories: Map<string, Subcategory>
+    conflictingNames: ObjMap<ConflictingNameKey, Category>
+    organizationIds: string[]
+}
 
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('Category', 'max')
-    }
+export interface AddSubcategoriesToCategoriesEntityMap
+    extends EntityMap<Category> {
+    mainEntity: Map<string, Category>
+    subcategories: Map<string, Subcategory>
+    categoriesSubcategories: Map<string, Subcategory[]>
+    organizationIds: string[]
+}
 
-    const errors: APIError[] = []
-    const ids = args.input.map((val) => val.id)
-    const subcatIds = args.input.map((val) => val.subcategoryIds).flat()
-    const categoryNames = args.input.map((val) => val.name)
-    const categoryNodes: CategoryConnectionNode[] = []
+export interface RemoveSubcategoriesFromCategoriesEntityMap
+    extends EntityMap<Category> {
+    mainEntity: Map<string, Category>
+    subcategories: Map<string, Subcategory>
+    categoriesSubcategories: Map<string, Subcategory[]>
+    organizationIds: string[]
+}
 
-    // Finding categories by input ids
-    const categories = await Category.createQueryBuilder('Category')
-        .select([
-            ...categoryConnectionNodeFields,
-            'Organization.organization_id',
+export class CreateCategories extends CreateMutation<
+    Category,
+    CreateCategoryInput,
+    CategoriesMutationResult,
+    CreateCategoriesEntityMap
+> {
+    protected readonly EntityType = Category
+    protected inputTypeName = 'CreateCategoryInput'
+    protected output: CategoriesMutationResult = { categories: [] }
+
+    async generateEntityMaps(
+        input: CreateCategoryInput[]
+    ): Promise<CreateCategoriesEntityMap> {
+        const organizationIds: string[] = []
+        const names: string[] = []
+        const allSubcategoryIds: string[] = []
+
+        input.forEach((i) => {
+            organizationIds.push(i.organizationId)
+            names.push(i.name)
+            if (i.subcategoryIds) allSubcategoryIds.push(...i.subcategoryIds)
+        })
+
+        const subcategoryIds = [...new Set(allSubcategoryIds)]
+        const organizations = getMap.organization(organizationIds)
+        const subcategories = getMap.subcategory(subcategoryIds, [
+            'organization',
         ])
-        .leftJoin('Category.organization', 'Organization')
-        .where('Category.id IN (:...ids)', {
-            ids,
-        })
-        .getMany()
 
-    // Finding the categories by input names
-    const namedCategories = await Category.createQueryBuilder('Category')
-        .select([
-            'Category.id',
-            'Category.name',
-            'Organization.organization_id',
-        ])
-        .leftJoin('Category.organization', 'Organization')
-        .where('Category.name IN (:...categoryNames)', {
-            categoryNames,
+        const matchingPreloadedCategoryArray = Category.find({
+            where: {
+                name: In(names),
+                status: Status.ACTIVE,
+                organization: In(organizationIds),
+            },
+            relations: ['organization'],
         })
-        .getMany()
 
-    const organizationIds = []
-    for (const c of categories) {
-        const orgId = (await c.organization)?.organization_id || ''
-        organizationIds.push(orgId)
+        const conflictingNames = new ObjMap<ConflictingNameKey, Category>()
+        for (const c of await matchingPreloadedCategoryArray) {
+            // eslint-disable-next-line no-await-in-loop
+            const organizationId = (await c.organization)!.organization_id
+            const name = c.name
+            conflictingNames.set({ organizationId, name }, c)
+        }
+
+        return {
+            conflictingNames,
+            organizations: await organizations,
+            subcategories: await subcategories,
+        }
     }
 
-    await context.permissions.rejectIfNotAllowed(
-        { organization_ids: organizationIds },
-        PermissionName.edit_subjects_20337
-    )
-
-    // Preloading
-    const preloadedCategoriesByName = new Map()
-    for (const nc of namedCategories) {
-        const orgId = (await nc.organization)?.organization_id
-        preloadedCategoriesByName.set([orgId, nc.name].toString(), nc)
+    authorize(input: CreateCategoryInput[]): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: input.map((i) => i.organizationId) },
+            PermissionName.create_subjects_20227
+        )
     }
 
-    const preloadedCategoriesById = new Map(categories.map((c) => [c.id, c]))
-
-    const inputsAndOrgRelation: InputAndOrgRelation[] = []
-    for (const i of args.input) {
-        const orgId = (
-            await categories.find((o) => o.id === i.id)?.organization
-        )?.organization_id
-
-        inputsAndOrgRelation.push({
-            id: i.id,
-            name: i.name,
-            orgId,
-        })
-    }
-
-    const preloadedSubcategories = new Map(
-        (
-            await Subcategory.findByIds(subcatIds, {
-                where: { status: Status.ACTIVE },
-            })
-        ).map((i) => [i.id, i])
-    )
-
-    // Process inputs
-    for (const [index, subArgs] of args.input.entries()) {
-        const { id, name, subcategoryIds } = subArgs
-        const duplicateInputId = inputsAndOrgRelation.find(
-            (i, findIndex) => i.id === id && findIndex < index
+    validationOverAllInputs(
+        inputs: CreateCategoryInput[]
+    ): {
+        validInputs: { index: number; input: CreateCategoryInput }[]
+        apiErrors: APIError[]
+    } {
+        const failedDuplicateNames = validateNoDuplicate(
+            inputs.map((i) =>
+                objectToKey({ organizationId: i.organizationId, name: i.name })
+            ),
+            this.inputTypeName,
+            ['organizationId', 'name']
         )
 
-        if (duplicateInputId) {
+        const failedSubcategories = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'subcategoryIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            failedDuplicateNames,
+            ...failedSubcategories,
+        ])
+    }
+
+    validate(
+        index: number,
+        _category: undefined,
+        currentInput: CreateCategoryInput,
+        maps: CreateCategoriesEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { organizationId, name, subcategoryIds } = currentInput
+        const conflictNamesMap = maps.conflictingNames
+        const subcategoryMap = maps.subcategories
+
+        const organization = flagNonExistent(
+            Organization,
+            index,
+            [organizationId],
+            maps.organizations
+        )
+        errors.push(...organization.errors)
+
+        const conflictingNameCategoryId = conflictNamesMap.get({
+            organizationId,
+            name,
+        })?.id
+
+        if (conflictingNameCategoryId) {
             errors.push(
-                createDuplicateAttributeAPIError(
-                    index,
-                    ['id'],
-                    'UpdateCategoryInput'
-                )
-            )
-        }
-
-        // Category validations
-        const category = preloadedCategoriesById.get(id)
-
-        if (!category) {
-            errors.push(
-                createEntityAPIError('nonExistent', index, 'Category', id)
-            )
-            continue
-        }
-
-        if (category.status !== Status.ACTIVE) {
-            errors.push(createEntityAPIError('inactive', index, 'Category', id))
-        }
-
-        const categoryOrganizationId =
-            (await category.organization)?.organization_id || ''
-
-        // name arg validations
-        if (name) {
-            const categoryFound = preloadedCategoriesByName.get(
-                [categoryOrganizationId, name].toString()
-            )
-            const categoryExist = categoryFound && categoryFound.id !== id
-
-            if (categoryExist) {
-                errors.push(
-                    createEntityAPIError('existent', index, 'Category', name)
-                )
-            }
-
-            const duplicatedInputName = inputsAndOrgRelation.find(
-                (i, findIndex) =>
-                    i.id !== id &&
-                    i.name === name &&
-                    i.orgId === categoryOrganizationId &&
-                    findIndex < index
-            )
-
-            if (duplicatedInputName) {
-                errors.push(
-                    createDuplicateAttributeAPIError(
-                        index,
-                        ['name'],
-                        'UpdateCategoryInput'
-                    )
-                )
-            }
-
-            if (!categoryExist && !duplicatedInputName) {
-                category.name = name
-            }
-        }
-
-        // subcategories arg validations
-        if (subcategoryIds) {
-            const subcategoriesFound: Subcategory[] = []
-            const missingSubcategoryIds: string[] = []
-
-            subcategoryIds.forEach((val) => {
-                const subcategory = preloadedSubcategories.get(val)
-
-                if (subcategory) {
-                    subcategoriesFound.push(subcategory)
-                } else {
-                    missingSubcategoryIds.push(val)
-                }
-            })
-
-            if (missingSubcategoryIds.length) {
-                errors.push(
-                    createNonExistentOrInactiveEntityAPIError(
-                        index,
-                        ['id'],
-                        'IDs',
-                        'Subcategory',
-                        missingSubcategoryIds.toString()
-                    )
-                )
-            } else {
-                category.subcategories = Promise.resolve(subcategoriesFound)
-            }
-        }
-
-        if (!name && !subcategoryIds) {
-            errors.push(
-                createInputRequiresAtLeastOne(index, 'Category', [
+                createExistentEntityAttributeAPIError(
+                    'Category',
+                    conflictingNameCategoryId,
                     'name',
-                    'subcategories',
-                ])
+                    name,
+                    index
+                )
             )
-        } else {
-            category.updated_at = new Date()
         }
 
-        categoryNodes.push(mapCategoryToCategoryConnectionNode(category))
+        if (subcategoryIds) {
+            const subcategories = flagNonExistent(
+                Subcategory,
+                index,
+                subcategoryIds,
+                subcategoryMap
+            )
+
+            errors.push(...subcategories.errors)
+
+            const invalidSubcategoriesInOrg = validateSubItemsInOrg(
+                Subcategory,
+                subcategories.values.map((s) => s.id),
+                index,
+                maps.subcategories,
+                organizationId
+            )
+
+            errors.push(...invalidSubcategoriesInOrg)
+        }
+
+        return errors
     }
 
-    if (errors.length) throw new APIErrorCollection(errors)
+    protected process(
+        currentInput: CreateCategoryInput,
+        maps: CreateCategoriesEntityMap
+    ) {
+        const { organizationId, name, subcategoryIds } = currentInput
 
-    try {
-        await getManager().save(categories)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw createDatabaseSaveAPIError('Category', message)
+        const category = new Category()
+        category.name = name
+        category.organization = Promise.resolve(
+            maps.organizations.get(organizationId)!
+        )
+
+        if (subcategoryIds) {
+            const categorySubcategories = Array.from(
+                subcategoryIds,
+                (subcategoryId) => maps.subcategories.get(subcategoryId)!
+            )
+
+            category.subcategories = Promise.resolve(categorySubcategories)
+        }
+
+        return { outputEntity: category }
     }
 
-    return { categories: categoryNodes }
+    protected async buildOutput(outputCategory: Category): Promise<void> {
+        const categoryConnectionNode = mapCategoryToCategoryConnectionNode(
+            outputCategory
+        )
+
+        this.output.categories.push(categoryConnectionNode)
+    }
 }
 
-export async function createCategories(
-    args: { input: CreateCategoryInput[] },
-    context: Pick<Context, 'permissions'>
-): Promise<CategoriesMutationResult> {
-    // input length validations
-    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
-        throw createInputLengthAPIError('Category', 'min')
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
-        throw createInputLengthAPIError('Category', 'max')
+export class UpdateCategories extends UpdateMutation<
+    Category,
+    UpdateCategoryInput,
+    CategoriesMutationResult,
+    UpdateCategoriesEntityMap
+> {
+    protected readonly EntityType = Category
+    protected inputTypeName = 'UpdateCategoryInput'
+    protected mainEntityIds: string[] = []
+    protected output: CategoriesMutationResult = { categories: [] }
 
-    const organizationIds = args.input.map((val) => val.organizationId)
-    const subcategoryIds = args.input.map((val) => val.subcategoryIds).flat()
-    const categoryNames = args.input.map((val) => val.name)
-    const organizationIdsAndNames = args.input.map((val) =>
-        [val.organizationId, val.name].toString()
-    )
-
-    await context.permissions.rejectIfNotAllowed(
-        { organization_ids: organizationIds },
-        PermissionName.create_subjects_20227
-    )
-
-    // Preloading
-    const preloadedOrgs = new Map(
-        (
-            await Organization.findByIds(organizationIds, {
-                where: { status: Status.ACTIVE },
-            })
-        ).map((i) => [i.organization_id, i])
-    )
-
-    const categoriesFound = await Category.find({
-        where: {
-            name: In(categoryNames),
-            status: Status.ACTIVE,
-            organization: { organization_id: In(organizationIds) },
-        },
-        relations: ['organization'],
-    })
-
-    const preloadedSubcategories = new Map(
-        (
-            await Subcategory.findByIds(subcategoryIds, {
-                where: { status: Status.ACTIVE },
-            })
-        ).map((i) => [i.id, i])
-    )
-
-    const preloadedCategories = new Map()
-    for (const c of categoriesFound) {
-        const orgId = (await c.organization)?.organization_id || ''
-        preloadedCategories.set([orgId, c.name].toString(), c)
+    constructor(
+        input: UpdateCategoryInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        for (const val of input) {
+            this.mainEntityIds.push(val.id)
+        }
     }
 
-    // Process inputs
-    const categories: Category[] = []
-    const errors: APIError[] = []
+    async generateEntityMaps(
+        input: UpdateCategoryInput[]
+    ): Promise<UpdateCategoriesEntityMap> {
+        const ids: string[] = []
+        const names: string[] = []
+        const subcategoryIds: string[] = []
 
-    for (const [index, subArgs] of args.input.entries()) {
-        const { name, organizationId, subcategoryIds } = subArgs
+        input.forEach((i) => {
+            ids.push(i.id)
+            if (i.name) names.push(i.name)
+            if (i.subcategoryIds) subcategoryIds.push(...i.subcategoryIds)
+        })
 
-        // Organization validation
-        const organization = preloadedOrgs.get(organizationId) as Organization
+        const preloadedCategories = getMap.category(ids, ['organization'])
+        const preloadedSubcategories = getMap.subcategory(subcategoryIds, [
+            'organization',
+        ])
+        const preloadedMatchingNames = Category.find({
+            where: {
+                name: In(names),
+                status: Status.ACTIVE,
+            },
+            relations: ['organization'],
+        })
 
-        if (!organization) {
+        const preloadedOrgIds = preloadedCategories
+            .then((categories) =>
+                Promise.all(
+                    Array.from(categories.values(), (c) =>
+                        c.organization?.then((org) => org?.organization_id)
+                    )
+                )
+            )
+            .then((orgIds) => [
+                ...new Set(
+                    orgIds.filter((id): id is string => id !== undefined)
+                ),
+            ])
+
+        const conflictingNames = new ObjMap<ConflictingNameKey, Category>()
+        for (const p of await preloadedMatchingNames) {
+            // eslint-disable-next-line no-await-in-loop
+            const organizationId = (await p.organization)?.organization_id
+            const categoryName = p.name
+            conflictingNames.set({ organizationId, name: categoryName }, p)
+        }
+
+        return {
+            mainEntity: await preloadedCategories,
+            subcategories: await preloadedSubcategories,
+            conflictingNames,
+            organizationIds: await preloadedOrgIds,
+        }
+    }
+
+    async authorize(
+        _input: UpdateCategoryInput[],
+        maps: UpdateCategoriesEntityMap
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.organizationIds },
+            PermissionName.edit_subjects_20337
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: UpdateCategoryInput[],
+        maps: UpdateCategoriesEntityMap
+    ): {
+        validInputs: { index: number; input: UpdateCategoryInput }[]
+        apiErrors: APIError[]
+    } {
+        const failedAtLeastOne = validateAtLeastOne(
+            inputs,
+            this.inputTypeName,
+            ['name', 'subcategoryIds']
+        )
+
+        const failedDuplicates = validateNoDuplicate(
+            inputs.map((i) => i.id),
+            this.inputTypeName,
+            ['id']
+        )
+
+        const values = []
+        for (const { id, name } of inputs) {
+            const category = maps.mainEntity.get(id) as CategoryAndOrg
+            let organizationId = undefined
+
+            if (category) {
+                /* when category has not organization, which is something common for system categories,
+                the organizationId is setted as '' to have a way to identify the system ones */
+                organizationId =
+                    category.__organization__?.organization_id || ''
+            }
+
+            values.push({ entityId: organizationId, attributeValue: name })
+        }
+
+        const failedDuplicateInOrg = validateNoDuplicateAttribute(
+            values,
+            'Category',
+            'name'
+        )
+
+        const failedSubcategories = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'subcategoryIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            failedAtLeastOne,
+            failedDuplicates,
+            failedDuplicateInOrg,
+            ...failedSubcategories,
+        ])
+    }
+
+    validate(
+        index: number,
+        category: Category,
+        currentInput: UpdateCategoryInput,
+        maps: UpdateCategoriesEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { id, name, subcategoryIds } = currentInput
+
+        const categoryExists = flagNonExistent(
+            Category,
+            index,
+            [id],
+            maps.mainEntity
+        )
+        errors.push(...categoryExists.errors)
+
+        if (!categoryExists.values.length) return errors
+
+        const organizationId = (category as CategoryAndOrg).__organization__
+            ?.organization_id
+
+        if (name) {
+            const conflictingNameCategoryId = maps.conflictingNames.get({
+                organizationId,
+                name,
+            })?.id
+
+            if (conflictingNameCategoryId) {
+                errors.push(
+                    createExistentEntityAttributeAPIError(
+                        'Category',
+                        conflictingNameCategoryId,
+                        'name',
+                        name,
+                        index
+                    )
+                )
+            }
+        }
+
+        if (subcategoryIds) {
+            const subcategories = flagNonExistent(
+                Subcategory,
+                index,
+                subcategoryIds,
+                maps.subcategories
+            )
+
+            errors.push(...subcategories.errors)
             errors.push(
-                createNonExistentOrInactiveEntityAPIError(
+                ...validateSubItemsInOrg(
+                    Subcategory,
+                    subcategories.values.map((s) => s.id),
                     index,
-                    ['organization_id'],
-                    'ID',
-                    'Organization',
+                    maps.subcategories,
                     organizationId
                 )
             )
         }
 
-        // Subcategory validation
-        const subcategoriesFound: Subcategory[] = []
-        const missingSubcategoryIds: string[] = []
-
-        subcategoryIds?.forEach((val) => {
-            const subcategory = preloadedSubcategories.get(val)
-
-            if (subcategory) {
-                subcategoriesFound.push(subcategory)
-            } else {
-                missingSubcategoryIds.push(val)
-            }
-        })
-
-        if (missingSubcategoryIds.length) {
-            errors.push(
-                createNonExistentOrInactiveEntityAPIError(
-                    index,
-                    ['id'],
-                    'IDs',
-                    'Subcategory',
-                    missingSubcategoryIds.toString()
-                )
-            )
-        }
-
-        // Creating category
-        const categoriesInputIsDuplicated = organizationIdsAndNames.some(
-            (item) =>
-                item === [organizationId, name].toString() &&
-                organizationIdsAndNames.indexOf(item) < index
-        )
-
-        if (categoriesInputIsDuplicated) {
-            errors.push(
-                createDuplicateAttributeAPIError(
-                    index,
-                    ['organizationId', 'name'],
-                    'CreateCategoryInput'
-                )
-            )
-        }
-
-        const categoryExist = preloadedCategories.has(
-            [organizationId, name].toString()
-        )
-
-        if (organization && categoryExist) {
-            errors.push(
-                createEntityAPIError(
-                    'existentChild',
-                    index,
-                    'Category',
-                    name,
-                    'Organization',
-                    organizationId,
-                    ['organization_id', 'name']
-                )
-            )
-        }
-
-        if (errors.length > 0) continue
-
-        const category = new Category()
-        category.name = name
-        category.organization = Promise.resolve(organization)
-        category.subcategories = Promise.resolve(subcategoriesFound)
-        categories.push(category)
+        return errors
     }
 
-    if (errors.length > 0) throw new APIErrorCollection(errors)
+    protected process(
+        currentInput: UpdateCategoryInput,
+        maps: UpdateCategoriesEntityMap
+    ): ProcessedResult<Category, Category> {
+        const { id, name, subcategoryIds } = currentInput
+        const category = maps.mainEntity.get(id)!
 
-    try {
-        await getManager().save(categories)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw createDatabaseSaveAPIError('Category', message)
+        category.name = name || category.name
+
+        if (subcategoryIds) {
+            category.subcategories = Promise.resolve(
+                Array.from(
+                    subcategoryIds,
+                    (sid) => maps.subcategories.get(sid)!
+                )
+            )
+        }
+
+        return { outputEntity: category }
     }
 
-    // Build output
-    const output = categories.map((c) => mapCategoryToCategoryConnectionNode(c))
-    return { categories: output }
+    protected async buildOutput(outputCategory: Category): Promise<void> {
+        const categoryConnectionNode = mapCategoryToCategoryConnectionNode(
+            outputCategory
+        )
+
+        this.output.categories.push(categoryConnectionNode)
+    }
 }
 
 export class DeleteCategories extends DeleteMutation<
@@ -463,470 +537,332 @@ export class DeleteCategories extends DeleteMutation<
     }
 }
 
-export async function addSubcategoriesToCategories(
-    args: { input: AddSubcategoriesToCategoryInput[] },
-    context: Context
-): Promise<CategoriesMutationResult> {
-    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
-        throw createInputLengthAPIError('Category', 'min')
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
-        throw createInputLengthAPIError('Category', 'max')
+export class AddSubcategoriesToCategories extends AddMutation<
+    Category,
+    AddSubcategoriesToCategoryInput,
+    CategoriesMutationResult,
+    AddSubcategoriesToCategoriesEntityMap
+> {
+    protected readonly EntityType = Category
+    protected inputTypeName = 'AddSubcategoriesToCategoryInput'
+    protected mainEntityIds: string[]
+    protected output: CategoriesMutationResult = { categories: [] }
 
-    const errors: APIError[] = []
-    const categoryNodes: CategoryConnectionNode[] = []
-    const isAdmin = context.permissions.isAdmin
+    constructor(
+        input: AddSubcategoriesToCategoryInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.categoryId)
+    }
 
-    const {
-        categories,
-        subcategories,
-        preloadedCategories,
-        preloadedSubcategories,
-        preloadedCategoriesSubcategories,
-        categoriesWithExistentSubcategories,
-    } = await getCategoriesAndSubcategoriesData(args.input)
+    async generateEntityMaps(
+        input: AddSubcategoriesToCategoryInput[]
+    ): Promise<AddSubcategoriesToCategoriesEntityMap> {
+        return generateAddRemoveSubcategoriesMaps(input)
+    }
 
-    const organizationsIds = [
-        ...categories.map(
-            (category) => category.__organization__?.organization_id || ``
-        ),
-        ...subcategories.map(
-            (subcategory) => subcategory.__organization__?.organization_id || ``
-        ),
-    ]
-    const organizationsWhereIsPermitted = await context.permissions.organizationsWhereItIsAllowed(
-        organizationsIds,
-        PermissionName.edit_subjects_20337
-    )
-
-    for (const [categoryIndex, subArgs] of args.input.entries()) {
-        const { categoryId, subcategoryIds } = subArgs
-        const category = preloadedCategories.get(categoryId)
-        errors.push(
-            ...validateEntity(
-                categoryIndex,
-                categoryId,
-                category,
-                'Category',
-                organizationsWhereIsPermitted,
-                isAdmin
-            )
+    async authorize(
+        _input: AddSubcategoriesToCategoryInput[],
+        maps: AddSubcategoriesToCategoriesEntityMap
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.organizationIds },
+            PermissionName.edit_subjects_20337
         )
-        if (!category) continue
+    }
 
-        const existentSubcategories = categoriesWithExistentSubcategories.get(
-            categoryId
+    validationOverAllInputs(
+        inputs: AddSubcategoriesToCategoryInput[]
+    ): {
+        validInputs: { index: number; input: AddSubcategoriesToCategoryInput }[]
+        apiErrors: APIError[]
+    } {
+        const categoryIdErrorMap = validateNoDuplicate(
+            inputs.map((cls) => cls.categoryId),
+            this.inputTypeName,
+            ['categoryId']
         )
-        const newSubcategories: Subcategory[] = []
-        for (const subcategoryId of subcategoryIds) {
-            const subcategory = preloadedSubcategories.get(subcategoryId)
-            errors.push(
-                ...validateEntity(
-                    categoryIndex,
-                    subcategoryId,
-                    subcategory,
-                    'Subcategory',
-                    organizationsWhereIsPermitted,
-                    isAdmin
-                )
-            )
-            if (!subcategory) continue
-            errors.push(
-                ...extraValidationForSubcategory(
-                    categoryIndex,
-                    subcategoryId,
-                    subcategory,
-                    category,
-                    preloadedCategoriesSubcategories
-                )
-            )
-            newSubcategories.push(subcategory as Subcategory)
-        }
 
-        ;(category as Category).subcategories = Promise.resolve([
-            ...(existentSubcategories as Subcategory[]),
-            ...newSubcategories,
+        const subcategoryIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'subcategoryIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            categoryIdErrorMap,
+            ...subcategoryIdsErrorMap,
         ])
-        categoryNodes.push(
-            mapCategoryToCategoryConnectionNode(category as Category)
+    }
+
+    validate = (
+        index: number,
+        currentCategory: Category,
+        currentInput: AddSubcategoriesToCategoryInput,
+        maps: AddSubcategoriesToCategoriesEntityMap
+    ): APIError[] => {
+        const errors: APIError[] = []
+        const { categoryId, subcategoryIds } = currentInput
+
+        const categories = flagNonExistent(
+            Category,
+            index,
+            [categoryId],
+            maps.mainEntity
         )
-    }
+        errors.push(...categories.errors)
 
-    if (errors.length) throw new APIErrorCollection(errors)
-
-    try {
-        await getManager().save(categories)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw new APIError({
-            code: customErrors.database_save_error.code,
-            message: customErrors.database_save_error.message,
-            variables: [message],
-            entity: 'Category',
-        })
-    }
-
-    return { categories: categoryNodes }
-}
-
-export async function removeSubcategoriesFromCategories(
-    args: { input: RemoveSubcategoriesFromCategoryInput[] },
-    context: Pick<Context, 'permissions'>
-): Promise<CategoriesMutationResult> {
-    // input length validations
-    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
-        throw createInputLengthAPIError('Category', 'min')
-
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
-        throw createInputLengthAPIError('Category', 'max')
-
-    const errors: APIError[] = []
-    const categoryNodes: CategoryConnectionNode[] = []
-
-    const {
-        categoryIds,
-        categories,
-        preloadedCategories,
-        preloadedSubcategories,
-        preloadedCategoriesSubcategories,
-        categoriesWithExistentSubcategories,
-    } = await getCategoriesAndSubcategoriesData(args.input)
-
-    const organization_ids = categories.map(
-        (c) => c.__organization__?.organization_id || ''
-    )
-    await context.permissions.rejectIfNotAllowed(
-        { organization_ids },
-        PermissionName.edit_subjects_20337
-    )
-
-    for (const [index, subArgs] of args.input.entries()) {
-        const { categoryId, subcategoryIds } = subArgs
-        const category = preloadedCategories.get(categoryId) as Category
-        if (!category) {
-            errors.push(
-                createEntityAPIError(
-                    'nonExistent',
-                    index,
-                    'Category',
-                    categoryId
-                )
-            )
-            continue
-        }
-
-        const inputIdIsDuplicate = categoryIds.some(
-            (item, findIndex) => item === category.id && findIndex < index
+        const subcategories = flagNonExistent(
+            Subcategory,
+            index,
+            subcategoryIds,
+            maps.subcategories
         )
 
-        if (inputIdIsDuplicate) {
-            errors.push(
-                createDuplicateAttributeAPIError(
-                    index,
-                    ['categoryId'],
-                    'RemoveSubcategoriesFromCategoryInput'
-                )
-            )
-        }
+        errors.push(...subcategories.errors)
 
-        if (category.status !== Status.ACTIVE) {
-            errors.push(
-                createEntityAPIError('inactive', index, 'Category', category.id)
-            )
-        }
-
-        const uniqueSubcategoryIds = new Set(subcategoryIds)
-        const subcategoryIdsDuplicate =
-            uniqueSubcategoryIds.size < subcategoryIds.length
-
-        if (subcategoryIdsDuplicate) {
-            errors.push(
-                createDuplicateAttributeAPIError(
-                    index,
-                    ['subcategoryIds'],
-                    'RemoveSubcategoriesFromCategoryInput.subcategoryIds'
-                )
-            )
-            continue
-        }
-
-        const existentSubcategories = categoriesWithExistentSubcategories.get(
-            category.id
-        ) as Subcategory[]
-
-        for (const subcategoryId of subcategoryIds) {
-            const subcategory = preloadedSubcategories.get(subcategoryId)
-
-            if (!subcategory) {
-                errors.push(
-                    createEntityAPIError(
-                        'nonExistent',
-                        index,
-                        'Subcategory',
-                        subcategoryId
-                    )
-                )
-                continue
-            }
-
-            if (subcategory.status !== Status.ACTIVE) {
-                errors.push(
-                    createEntityAPIError(
-                        'inactive',
-                        index,
-                        'Subcategory',
-                        subcategory.id
-                    )
-                )
-            }
-
-            const subcategoryExistInCategory = preloadedCategoriesSubcategories.has(
-                [category.id, subcategory.id].toString()
-            )
-
-            if (!subcategoryExistInCategory) {
-                errors.push(
-                    createEntityAPIError(
-                        'nonExistentChild',
-                        index,
-                        'Subcategory',
-                        subcategory.id,
-                        'Category',
-                        category.id,
-                        ['categoryId', 'subcategoryIds']
-                    )
-                )
-            }
-
-            const currentSubcategoryIndex = existentSubcategories.findIndex(
-                (s) => s.id === subcategory.id
-            )
-
-            if (currentSubcategoryIndex !== -1) {
-                existentSubcategories.splice(currentSubcategoryIndex, 1)
-            }
-        }
-
-        category.subcategories = Promise.resolve(existentSubcategories)
-        categoryNodes.push(mapCategoryToCategoryConnectionNode(category))
-    }
-
-    if (errors.length) throw new APIErrorCollection(errors)
-
-    try {
-        await getManager().save(categories)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw createDatabaseSaveAPIError('Category', message)
-    }
-
-    return { categories: categoryNodes }
-}
-
-interface Entity {
-    id: string
-    name?: string
-    status: Status
-    system: boolean
-    __organization__?: { organization_id: string }
-}
-
-const validateEntity = (
-    index: number,
-    entityId: string,
-    entity: Entity | undefined,
-    entityName: string,
-    organizationsWhereIsPermitted: string[],
-    isAdmin: boolean | undefined
-) => {
-    const errors: APIError[] = []
-    if (!entity) {
-        errors.push(
-            new APIError({
-                code: customErrors.nonexistent_entity.code,
-                message: customErrors.nonexistent_entity.message,
-                variables: ['id'],
-                entity: '',
-                entityName: entityId,
-                attribute: 'ID',
-                otherAttribute: entityId,
-                index,
-            })
+        const invalidSubcategoriesInOrg = validateSubItemsInOrg(
+            Subcategory,
+            subcategories.values.map((s) => s.id),
+            index,
+            maps.subcategories,
+            (currentCategory as CategoryAndOrg)?.__organization__
+                ?.organization_id
         )
+
+        errors.push(...invalidSubcategoriesInOrg)
+
+        const currentCategorySubcategories = new Set(
+            maps.categoriesSubcategories.get(categoryId)?.map((s) => s.id)
+        )
+
+        const alreadyAddedErrors = flagExistentChild(
+            Category,
+            Subcategory,
+            index,
+            categoryId,
+            subcategoryIds,
+            currentCategorySubcategories
+        )
+
+        errors.push(...alreadyAddedErrors)
+
         return errors
     }
-    if (entity.status !== Status.ACTIVE) {
-        errors.push(
-            new APIError({
-                code: customErrors.inactive_status.code,
-                message: customErrors.inactive_status.message,
-                variables: ['id'],
-                entity: entityName,
-                entityName: entity.name,
-                attribute: 'ID',
-                otherAttribute: entityId,
-                index,
-            })
-        )
-    }
-    if (entity.system && !isAdmin) {
-        errors.push(
-            new APIError({
-                code: customErrors.unauthorized.code,
-                message: customErrors.unauthorized.message,
-                variables: ['id'],
-                entity: entityName,
-                entityName: entity.name,
-                attribute: 'ID',
-                otherAttribute: entityId,
-                index,
-            })
-        )
-    }
-    if (!entity.system && !isAdmin) {
-        const isAllowedInTheOrg = organizationsWhereIsPermitted.includes(
-            entity.__organization__?.organization_id || ``
-        )
-        if (!isAllowedInTheOrg) {
-            errors.push(
-                new APIError({
-                    code: customErrors.unauthorized.code,
-                    message: customErrors.unauthorized.message,
-                    variables: ['id'],
-                    entity: entityName,
-                    entityName: entity.name,
-                    attribute: 'ID',
-                    otherAttribute: entityId,
-                    index,
-                })
-            )
-        }
-    }
-    return errors
-}
 
-const extraValidationForSubcategory = (
-    index: number,
-    subcategoryId: string,
-    subcategory: Entity,
-    category: Entity,
-    existentCategoriesSubcategories: Map<string, CategorySubcategory>
-) => {
-    const errors: APIError[] = []
-    if (
-        !category.system &&
-        !subcategory.system &&
-        subcategory.__organization__?.organization_id !==
-            category.__organization__?.organization_id
+    process(
+        currentInput: AddSubcategoriesToCategoryInput,
+        maps: AddSubcategoriesToCategoriesEntityMap,
+        index: number
     ) {
-        errors.push(
-            new APIError({
-                code: customErrors.unauthorized.code,
-                message: customErrors.unauthorized.message,
-                variables: ['id'],
-                entity: 'Subcategory',
-                entityName: subcategory.name,
-                attribute: 'ID',
-                otherAttribute: subcategoryId,
-                index,
-            })
+        const { categoryId, subcategoryIds } = currentInput
+        const currentCategory = maps.mainEntity.get(this.mainEntityIds[index])!
+        const subcategoriesToAdd: Subcategory[] = []
+
+        for (const subcategoryId of subcategoryIds) {
+            const subcategoryToAdd = maps.subcategories.get(subcategoryId)!
+            subcategoriesToAdd.push(subcategoryToAdd)
+        }
+
+        const preExistentSubcategories = maps.categoriesSubcategories.get(
+            categoryId
+        )!
+        currentCategory.subcategories = Promise.resolve([
+            ...preExistentSubcategories,
+            ...subcategoriesToAdd,
+        ])
+        return { outputEntity: currentCategory }
+    }
+
+    protected buildOutput = async (
+        currentCategory: Category
+    ): Promise<void> => {
+        this.output.categories.push(
+            mapCategoryToCategoryConnectionNode(currentCategory)
         )
     }
-    const existentCategorySubcategory = existentCategoriesSubcategories.get(
-        [category.id, subcategoryId].toString()
-    )
-    if (existentCategorySubcategory) {
-        errors.push(
-            new APIError({
-                code: customErrors.existent_child_entity.code,
-                message: customErrors.existent_child_entity.message,
-                variables: ['categoryId', 'subcategoryId'],
-                entity: 'Category',
-                entityName: category.name,
-                attribute: 'ID',
-                otherAttribute: subcategoryId,
-                index,
-            })
-        )
-    }
-    return errors
 }
 
-const getCategoriesAndSubcategoriesData = async (
+export class RemoveSubcategoriesFromCategories extends RemoveMutation<
+    Category,
+    RemoveSubcategoriesFromCategoryInput,
+    CategoriesMutationResult,
+    RemoveSubcategoriesFromCategoriesEntityMap
+> {
+    protected readonly EntityType = Category
+    protected inputTypeName = 'RemoveSubcategoriesFromCategoryInput'
+    protected mainEntityIds: string[]
+    protected output: CategoriesMutationResult = { categories: [] }
+
+    constructor(
+        input: RemoveSubcategoriesFromCategoryInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.categoryId)
+    }
+
+    async generateEntityMaps(
+        input: RemoveSubcategoriesFromCategoryInput[]
+    ): Promise<RemoveSubcategoriesFromCategoriesEntityMap> {
+        return generateAddRemoveSubcategoriesMaps(input)
+    }
+
+    async authorize(
+        _input: RemoveSubcategoriesFromCategoryInput[],
+        maps: RemoveSubcategoriesFromCategoriesEntityMap
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.organizationIds },
+            PermissionName.edit_subjects_20337
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: RemoveSubcategoriesFromCategoryInput[]
+    ): {
+        validInputs: {
+            index: number
+            input: RemoveSubcategoriesFromCategoryInput
+        }[]
+        apiErrors: APIError[]
+    } {
+        const categoryIdErrorMap = validateNoDuplicate(
+            inputs.map((i) => i.categoryId),
+            this.inputTypeName,
+            ['categoryId']
+        )
+
+        const subcategoryIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'subcategoryIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            categoryIdErrorMap,
+            ...subcategoryIdsErrorMap,
+        ])
+    }
+
+    validate(
+        index: number,
+        currentCategory: Category,
+        currentInput: RemoveSubcategoriesFromCategoryInput,
+        maps: RemoveSubcategoriesFromCategoriesEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { categoryId, subcategoryIds } = currentInput
+
+        const categories = flagNonExistent(
+            Category,
+            index,
+            [categoryId],
+            maps.mainEntity
+        )
+        errors.push(...categories.errors)
+
+        const subcategories = flagNonExistent(
+            Subcategory,
+            index,
+            subcategoryIds,
+            maps.subcategories
+        )
+        errors.push(...subcategories.errors)
+
+        if (currentCategory) {
+            const currentCategorySubcategories = new Map(
+                maps.categoriesSubcategories
+                    .get(categoryId)
+                    ?.map((c) => [c.id, c])
+            )
+
+            const subcategoryInCategoryErrors = flagNonExistentChild(
+                Category,
+                Subcategory,
+                index,
+                categoryId,
+                subcategories.values.map((s) => s.id),
+                new Set(
+                    Array.from(currentCategorySubcategories.values()).map(
+                        (subcategory) => subcategory.id
+                    )
+                )
+            )
+
+            errors.push(...subcategoryInCategoryErrors)
+        }
+
+        return errors
+    }
+
+    process(
+        currentInput: RemoveSubcategoriesFromCategoryInput,
+        maps: RemoveSubcategoriesFromCategoriesEntityMap,
+        index: number
+    ) {
+        const { categoryId, subcategoryIds } = currentInput
+        const currentCategory = maps.mainEntity.get(this.mainEntityIds[index])!
+        const subcategoryIdsSet = new Set(subcategoryIds)
+        const preExistentSubcategories = maps.categoriesSubcategories.get(
+            categoryId
+        )!
+
+        const keptSubcategories = preExistentSubcategories.filter(
+            (subcategory) => !subcategoryIdsSet.has(subcategory.id)
+        )
+
+        currentCategory.subcategories = Promise.resolve(keptSubcategories)
+        return { outputEntity: currentCategory }
+    }
+
+    protected buildOutput = async (
+        currentCategory: Category
+    ): Promise<void> => {
+        this.output.categories.push(
+            mapCategoryToCategoryConnectionNode(currentCategory)
+        )
+    }
+}
+
+async function generateAddRemoveSubcategoriesMaps(
     input:
         | AddSubcategoriesToCategoryInput[]
         | RemoveSubcategoriesFromCategoryInput[]
-) => {
-    const categoryIds: string[] = input.map((val) => val.categoryId)
-    const subcategoryIds: string[] = input
-        .map((val) => val.subcategoryIds)
-        .flat()
+) {
+    const categoryIds = input.map((i) => i.categoryId)
+    const categoryMap = getMap.category(categoryIds, [
+        'organization',
+        'subcategories',
+    ])
 
-    const categoriesPromise: Promise<Entity[]> = Category.createQueryBuilder()
-        .select([
-            ...categoryConnectionNodeFields,
-            `Organization.organization_id`,
+    const preloadedOrgIds = categoryMap
+        .then((categories) =>
+            Promise.all(
+                Array.from(categories.values(), (c) =>
+                    c.organization?.then((org) => org?.organization_id)
+                )
+            )
+        )
+        .then((orgIds) => [
+            ...new Set(orgIds.filter((id): id is string => id !== undefined)),
         ])
-        .leftJoin(`Category.organization`, `Organization`)
-        .where(`Category.id IN (:...categoryIds)`, {
-            categoryIds,
-        })
-        .getMany()
 
-    const subcategoriesPromise: Promise<
-        Entity[]
-    > = Subcategory.createQueryBuilder()
-        .select([
-            ...subcategoryConnectionNodeFields,
-            `Organization.organization_id`,
-        ])
-        .leftJoin(`Subcategory.organization`, `Organization`)
-        .where(`Subcategory.id IN (:...subcategoryIds)`, {
-            subcategoryIds,
-        })
-        .getMany()
+    const subcategoryIds = input.flatMap((i) => i.subcategoryIds)
+    const subcategoryMap = getMap.subcategory(subcategoryIds, ['organization'])
 
-    const allExistentSubcategoriesPromise: Promise<
-        (Entity & CategorySubcategory)[]
-    > = getConnection().query(
-        `SELECT "categoryId", "subcategoryId",
-            id, name, system, status, organization_id 
-            FROM category_subcategories_subcategory 
-            JOIN subcategory s ON id = "subcategoryId" 
-            WHERE "categoryId" IN (${"'" + (categoryIds.join("','") + "'")})`
-    )
-
-    const categories = await categoriesPromise
-    const subcategories = await subcategoriesPromise
-    const allExistentSubcategories = await allExistentSubcategoriesPromise
-    const preloadedCategories = new Map(categories.map((i) => [i.id, i]))
-    const preloadedSubcategories = new Map(subcategories.map((i) => [i.id, i]))
-    const preloadedCategoriesSubcategories = new Map(
-        allExistentSubcategories.map((i) => [
-            [i.categoryId, i.subcategoryId].toString(),
-            i,
-        ])
-    )
-    const categoriesWithExistentSubcategories = new Map<string, Entity[]>(
-        categories.map((i) => [i.id, []])
-    )
-    for (const c of allExistentSubcategories) {
-        categoriesWithExistentSubcategories.get(c.categoryId)?.push({
-            id: c.id,
-            name: c.name,
-            system: c.system,
-            status: c.status,
-        })
+    const categoriesSubcategories = new Map<string, Subcategory[]>()
+    for (const category of (await categoryMap).values()) {
+        // eslint-disable-next-line no-await-in-loop
+        const subcategories = (await category.subcategories) || []
+        categoriesSubcategories.set(category.id, subcategories)
     }
 
     return {
-        categoryIds,
-        subcategoryIds,
-        categories,
-        subcategories,
-        allExistentSubcategories,
-        preloadedCategories,
-        preloadedSubcategories,
-        preloadedCategoriesSubcategories,
-        categoriesWithExistentSubcategories,
+        mainEntity: await categoryMap,
+        subcategories: await subcategoryMap,
+        categoriesSubcategories,
+        organizationIds: await preloadedOrgIds,
     }
 }

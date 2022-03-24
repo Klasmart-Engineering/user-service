@@ -1536,6 +1536,27 @@ describe('user', () => {
                 )
             })
         })
+
+        context('.authorize', () => {
+            context('when the user is a super admin', () => {
+                it('completes successfully', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(adminUser)
+                    )
+                    const mutation = new CreateUsers([], permissions)
+                    await expect(mutation.authorize()).to.be.fulfilled
+                })
+            })
+
+            context('when the user is an API key', () => {
+                it('completes successfully', async () => {
+                    const permissions = new UserPermissions(undefined, true)
+                    const mutation = new CreateUsers([], permissions)
+                    await expect(mutation.authorize()).to.be.fulfilled
+                })
+            })
+        })
+
         context('when user has permission', () => {
             beforeEach(async () => {
                 await addUserToOrganizationAndValidate(
@@ -1872,7 +1893,7 @@ describe('user', () => {
                 )
 
                 expect(twoCategoriesCount).to.be.eq(singleCategoryCount)
-                expect(twoCategoriesCount).to.be.equal(3)
+                expect(twoCategoriesCount).to.be.equal(2)
             })
         })
         context('generateEntityMaps', () => {
@@ -3863,6 +3884,26 @@ describe('user', () => {
             )
         }
 
+        context('.authorize', () => {
+            context('when the user is a super admin', () => {
+                it('completes successfully', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(adminUser)
+                    )
+                    const mutation = new UpdateUsers([], permissions)
+                    await expect(mutation.authorize()).to.be.fulfilled
+                })
+            })
+
+            context('when the user is an API key', () => {
+                it('completes successfully', async () => {
+                    const permissions = new UserPermissions(undefined, true)
+                    const mutation = new UpdateUsers([], permissions)
+                    await expect(mutation.authorize()).to.be.fulfilled
+                })
+            })
+        })
+
         context('when not authorized', () => {
             it('it fails to update users', async () => {
                 await expect(
@@ -4273,22 +4314,21 @@ describe('user', () => {
             }
 
             it('db connections increase in one with number of input elements', async () => {
-                const singleProgramExpectedCalls = 5
+                const singleUserExpectedCalls = 4
                 await getDbCallCount([updateUserInputs[0]]) // warm up permissions cache
 
-                const singleProgramCount = await getDbCallCount([
+                const singleUserCount = await getDbCallCount([
                     updateUserInputs[1],
                 ])
 
-                const twoProgramsCount = await getDbCallCount([
+                const twoUsersCount = await getDbCallCount([
+                    updateUserInputs[1],
                     updateUserInputs[2],
                     updateUserInputs[3],
                 ])
 
-                expect(singleProgramCount).to.be.eq(singleProgramExpectedCalls)
-                expect(twoProgramsCount).to.be.eq(
-                    singleProgramExpectedCalls + 1
-                )
+                expect(singleUserCount).to.be.eq(singleUserExpectedCalls)
+                expect(twoUsersCount).to.be.eq(singleUserExpectedCalls + 1)
             })
         })
         context('generateEntityMaps', () => {

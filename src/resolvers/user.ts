@@ -41,6 +41,7 @@ import {
     filterInvalidInputs,
     ProcessedResult,
     RemoveMutation,
+    UpdateMutation,
     validateAtLeastOne,
     validateDataAgainstSchema,
     validateNoDuplicate,
@@ -69,17 +70,12 @@ import {
     updateUserInputToConflictingUserKey,
 } from '../utils/resolvers/user'
 
-export interface CreateUsersEntityMap extends EntityMap<User> {
+interface CreateUsersEntityMap extends EntityMap<User> {
     conflictingUsers: ObjMap<ConflictingUserKey, User>
 }
 
-export interface CreateUsersEntityMap extends EntityMap<User> {
-    conflictingUsers: ObjMap<ConflictingUserKey, User>
-}
-
-export interface UpdateUsersEntityMap extends EntityMap<User> {
+interface UpdateUsersEntityMap extends CreateUsersEntityMap {
     mainEntity: Map<string, User>
-    conflictingUsers: ObjMap<ConflictingUserKey, User>
 }
 
 export interface AddOrganizationRolesToUsersEntityMap extends EntityMap<User> {
@@ -95,6 +91,14 @@ export interface AddSchoolRolesToUsersEntityMap
     extends RemoveSchoolRolesFromUsersEntityMap {
     schoolOrg: Map<string, Organization>
     orgRoles: Map<string, Role[]>
+}
+
+interface RemoveSchoolRolesFromUsersEntityMap extends EntityMap<User> {
+    mainEntity: Map<string, User>
+    schools: Map<string, School>
+    roles: Map<string, Role>
+    memberships: SchoolMembershipMap
+    membershipRoles: ObjMap<{ schoolId: string; userId: string }, Role[]>
 }
 
 export class AddSchoolRolesToUsers extends AddMutation<
@@ -669,14 +673,6 @@ async function modifyOrganizationRoles(
     return { users: output }
 }
 
-export interface RemoveSchoolRolesFromUsersEntityMap extends EntityMap<User> {
-    mainEntity: Map<string, User>
-    schools: Map<string, School>
-    roles: Map<string, Role>
-    memberships: SchoolMembershipMap
-    membershipRoles: ObjMap<{ schoolId: string; userId: string }, Role[]>
-}
-
 export class RemoveSchoolRolesFromUsers extends RemoveMutation<
     User,
     RemoveSchoolRolesFromUserInput,
@@ -909,15 +905,17 @@ export class CreateUsers extends CreateMutation<
 
     async authorize(): Promise<void> {
         const isAdmin = this.permissions.isAdmin
-        const createUsersPermission = PermissionName.create_users_40220
-        const orgs = await this.permissions.orgMembershipsWithPermissions([
-            createUsersPermission,
-        ])
+        if (!isAdmin) {
+            const createUsersPermission = PermissionName.create_users_40220
+            const orgs = await this.permissions.orgMembershipsWithPermissions([
+                createUsersPermission,
+            ])
 
-        if (!orgs.length && !isAdmin) {
-            throw new Error(
-                `User(${this.permissions.getUserId()}) does not have Permission(${createUsersPermission})`
-            )
+            if (!orgs.length) {
+                throw new Error(
+                    `User(${this.permissions.getUserId()}) does not have Permission(${createUsersPermission})`
+                )
+            }
         }
     }
 
@@ -1013,7 +1011,7 @@ export class CreateUsers extends CreateMutation<
     }
 }
 
-export class UpdateUsers extends CreateMutation<
+export class UpdateUsers extends UpdateMutation<
     User,
     UpdateUserInput,
     UsersMutationResult,
@@ -1021,14 +1019,12 @@ export class UpdateUsers extends CreateMutation<
 > {
     protected readonly EntityType = User
     protected inputTypeName = 'UpdateUserInput'
-    protected mainEntityIds: string[] = []
+    protected mainEntityIds: string[]
     protected output: UsersMutationResult = { users: [] }
 
     constructor(input: UpdateUserInput[], permissions: Context['permissions']) {
         super(input, permissions)
-        for (const val of input) {
-            this.mainEntityIds.push(val.id)
-        }
+        this.mainEntityIds = input.map((val) => val.id)
     }
 
     async generateEntityMaps(
@@ -1076,15 +1072,17 @@ export class UpdateUsers extends CreateMutation<
 
     async authorize(): Promise<void> {
         const isAdmin = this.permissions.isAdmin
-        const updateUsersPermission = PermissionName.edit_users_40330
-        const orgs = await this.permissions.orgMembershipsWithPermissions([
-            updateUsersPermission,
-        ])
+        if (!isAdmin) {
+            const updateUsersPermission = PermissionName.edit_users_40330
+            const orgs = await this.permissions.orgMembershipsWithPermissions([
+                updateUsersPermission,
+            ])
 
-        if (!orgs.length && !isAdmin) {
-            throw new Error(
-                `User(${this.permissions.getUserId()}) does not have Permission(${updateUsersPermission})`
-            )
+            if (!orgs.length) {
+                throw new Error(
+                    `User(${this.permissions.getUserId()}) does not have Permission(${updateUsersPermission})`
+                )
+            }
         }
     }
 

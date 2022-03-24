@@ -524,7 +524,6 @@ describe('inputValidation', () => {
         let organization: Organization
         let subItemsMap: Map<string, AgeRange>
         const subItemsCount = 5
-        const index = 0
 
         before(async () => {
             connection = await createTestConnection()
@@ -539,8 +538,10 @@ describe('inputValidation', () => {
         })
 
         context('when the sub items are system', () => {
+            let subItems: AgeRange[]
+
             beforeEach(async () => {
-                const subItems = await AgeRange.save(
+                subItems = await AgeRange.save(
                     createAgeRanges(
                         subItemsCount,
                         undefined,
@@ -559,6 +560,7 @@ describe('inputValidation', () => {
             it('should return an errors empty array', () => {
                 const errors = validateSubItemsInOrg(
                     AgeRange,
+                    subItems.map((s) => s.id),
                     index,
                     subItemsMap,
                     organization.organization_id
@@ -572,8 +574,10 @@ describe('inputValidation', () => {
             context(
                 'and those sub items belong to the organization specified',
                 () => {
+                    let subItems: AgeRange[]
+
                     beforeEach(async () => {
-                        const subItems = await AgeRange.save(
+                        subItems = await AgeRange.save(
                             createAgeRanges(subItemsCount, organization)
                         )
 
@@ -586,6 +590,7 @@ describe('inputValidation', () => {
                     it('should return an errors empty array', () => {
                         const errors = validateSubItemsInOrg(
                             AgeRange,
+                            subItems.map((s) => s.id),
                             index,
                             subItemsMap,
                             organization.organization_id
@@ -599,9 +604,11 @@ describe('inputValidation', () => {
             context(
                 'and those sub items does not belong to the organization specified',
                 () => {
+                    let subItems: AgeRange[]
+
                     beforeEach(async () => {
                         const anotherOrg = await createOrganization().save()
-                        const subItems = await AgeRange.save(
+                        subItems = await AgeRange.save(
                             createAgeRanges(subItemsCount, anotherOrg)
                         )
 
@@ -614,6 +621,7 @@ describe('inputValidation', () => {
                     it('should return an errors filled array', () => {
                         const errors = validateSubItemsInOrg(
                             AgeRange,
+                            subItems.map((s) => s.id),
                             index,
                             subItemsMap,
                             organization.organization_id
