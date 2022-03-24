@@ -78,7 +78,7 @@ interface UpdateUsersEntityMap extends CreateUsersEntityMap {
     mainEntity: Map<string, User>
 }
 
-export interface AddOrganizationRolesToUsersEntityMap extends EntityMap<User> {
+interface AddOrganizationRolesToUsersEntityMap extends EntityMap<User> {
     mainEntity: Map<string, User>
     organizations: Map<string, Organization>
     roles: Map<string, Role>
