@@ -4057,22 +4057,21 @@ describe('user', () => {
             }
 
             it('db connections increase in one with number of input elements', async () => {
-                const singleProgramExpectedCalls = 4
+                const singleUserExpectedCalls = 4
                 await getDbCallCount([updateUserInputs[0]]) // warm up permissions cache
 
-                const singleProgramCount = await getDbCallCount([
+                const singleUserCount = await getDbCallCount([
                     updateUserInputs[1],
                 ])
 
-                const twoProgramsCount = await getDbCallCount([
+                const twoUsersCount = await getDbCallCount([
+                    updateUserInputs[1],
                     updateUserInputs[2],
                     updateUserInputs[3],
                 ])
 
-                expect(singleProgramCount).to.be.eq(singleProgramExpectedCalls)
-                expect(twoProgramsCount).to.be.eq(
-                    singleProgramExpectedCalls + 1
-                )
+                expect(singleUserCount).to.be.eq(singleUserExpectedCalls)
+                expect(twoUsersCount).to.be.eq(singleUserExpectedCalls + 1)
             })
         })
         context('generateEntityMaps', () => {
