@@ -1,4 +1,9 @@
-import { CreateUserInput, UserContactInfo } from '../../types/graphQL/user'
+import { User } from '../../entities/user'
+import {
+    CreateUserInput,
+    UpdateUserInput,
+    UserContactInfo,
+} from '../../types/graphQL/user'
 import clean from '../clean'
 
 export type ConflictingUserKey = {
@@ -7,6 +12,11 @@ export type ConflictingUserKey = {
     username?: string
     email?: string
     phone?: string
+}
+
+export type OrganizationMembershipKey = {
+    organizationId: string
+    userId: string
 }
 
 /**
@@ -22,6 +32,24 @@ export function createUserInputToConflictingUserKey(
         username: username || undefined,
         email: contactInfo?.email || undefined,
         phone: contactInfo?.phone || undefined,
+    }
+}
+
+/**
+ * Transforms the given UpdateUserInput in a ConflictingUserKey
+ */
+export function updateUserInputToConflictingUserKey(
+    input: UpdateUserInput,
+    usersMap: Map<string, User>
+): ConflictingUserKey {
+    const { id, givenName, familyName, username, email, phone } = input
+    const user = usersMap.get(id)
+    return {
+        givenName: givenName || user?.given_name || '',
+        familyName: familyName || user?.family_name || '',
+        username: username || user?.username,
+        email: email || user?.email,
+        phone: phone || user?.phone,
     }
 }
 
@@ -84,18 +112,26 @@ export function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
 }
 
 /**
- * We build a key for a map, I am using maps to reduce the looping through arrays to
- * a minimum when looking up values
+ * Normalizes and clean the input fields using the "clean.xxxx()" calls
  */
-export function makeLookupKey(
-    given: string | undefined | null,
-    family: string | undefined | null,
-    contact: string | undefined | null
-): string {
-    const jsonKey = {
-        contactInfo: contact,
-        givenName: given,
-        familyName: family,
+export function cleanUpdateUserInput(uui: UpdateUserInput): UpdateUserInput {
+    const cleanUui: UpdateUserInput = {
+        id: uui.id,
+        email: clean.email(uui.email) || undefined,
+        // don't throw errors as they will of already been
+        // found by validation but this code runs before we return them
+        phone: clean.phone(uui.phone, false) || undefined,
+        givenName: uui.givenName,
+        familyName: uui.familyName,
+        gender: uui.gender,
+        username: uui.username,
+        dateOfBirth: clean.dateOfBirth(uui.dateOfBirth),
+        alternateEmail: clean.email(uui.alternateEmail) || undefined,
+        // don't throw errors as they will of already been
+        // found by validation but this code runs before we return them
+        alternatePhone: clean.phone(uui.alternatePhone, false) || undefined,
+        avatar: uui.avatar,
+        primaryUser: uui.primaryUser,
     }
-    return JSON.stringify(jsonKey)
+    return cleanUui
 }
