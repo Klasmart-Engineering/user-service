@@ -710,7 +710,7 @@ export class RemoveOrganizationRolesFromUsers extends RemoveMutation<
             Role,
             index,
             organizationId,
-            roleIds,
+            roles.values.map((r) => r.role_id),
             new Set(existingRoles.map((r) => r.role_id))
         )
 

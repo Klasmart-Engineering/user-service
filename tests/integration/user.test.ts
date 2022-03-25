@@ -65,10 +65,7 @@ import { SHORTCODE_DEFAULT_MAXLEN } from '../../src/utils/shortcode'
 import { Subject } from '../../src/entities/subject'
 import { createClass as classFactory } from '../factories/class.factory'
 import { createSubject } from '../factories/subject.factory'
-import {
-    createOrganization as organizationFactory,
-    createOrganizations,
-} from '../factories/organization.factory'
+import { createOrganization as organizationFactory } from '../factories/organization.factory'
 import {
     createSchool as schoolFactory,
     createSchools,
@@ -96,7 +93,7 @@ import {
     AddSchoolRolesToUsers,
     AddSchoolRolesToUsersEntityMap,
     CreateUsers,
-    removeOrganizationRolesFromUsers,
+    RemoveOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
     UpdateUsers,
 } from '../../src/resolvers/user'
@@ -1967,147 +1964,6 @@ describe('user', () => {
         })
     })
 
-    describe('.modifyOrganizationRoles', () => {
-        let organization2: Organization
-        let organization3: Organization
-        let user1: User
-        let user2: User
-        let user3: User
-        let role2: Role
-        let role3: Role
-        let input:
-            | AddOrganizationRolesToUserInput[]
-            | RemoveOrganizationRolesFromUserInput[]
-        let initialRoles: Role[][]
-
-        /**
-         * Use inputs to generate the roles a membership is expected to have
-         * and check that it matches with what is in the databse
-         */
-        async function checkDbHasExpectedValues(
-            modifyRolesFn: (
-                currentRoles: Role[],
-                idsToModify: string[]
-            ) => string[]
-        ) {
-            const dbMemberships = await getMap.membership.organization(
-                input.map((i) => i.organizationId),
-                input.map((i) => i.userId),
-                ['roles']
-            )
-            for (const [idx, val] of input.entries()) {
-                const { organizationId, userId, roleIds } = val
-                const dbMembership = dbMemberships.get({
-                    organizationId,
-                    userId,
-                })
-                expect(dbMembership).to.not.be.undefined
-                if (dbMembership === undefined) continue
-
-                // eslint-disable-next-line no-await-in-loop
-                const dbRoleIds = (await dbMembership.roles) // already fetched
-                    ?.map((r) => r.role_id)
-                    .sort()
-                const expectedRoleIds = modifyRolesFn(
-                    initialRoles[idx],
-                    roleIds
-                )
-                expect(expectedRoleIds).to.deep.equalInAnyOrder(dbRoleIds)
-            }
-        }
-
-        beforeEach(async () => {
-            ;[
-                organization1,
-                organization2,
-                organization3,
-            ] = await Organization.save(createOrganizations(3))
-            ;[user1, user2, user3] = await User.save(userFactory(3))
-            ;[role1, role2, role3] = await Role.save(
-                ['1', '2', '3'].map((num) => roleFactory(`Role ${num}`))
-            )
-
-            input = [
-                {
-                    organizationId: organization1.organization_id,
-                    userId: user1.user_id,
-                    roleIds: [role1.role_id, role2.role_id],
-                },
-                {
-                    organizationId: organization2.organization_id,
-                    userId: user2.user_id,
-                    roleIds: [role2.role_id, role3.role_id],
-                },
-                {
-                    organizationId: organization3.organization_id,
-                    userId: user3.user_id,
-                    roleIds: [role3.role_id],
-                },
-            ]
-        })
-
-        // There is only one test specifically for .removeOrganizationRolesFromUsers, all common tests are done with .addOrganizationRolesToUsers
-        context('when called by .removeOrganizationRolesFromUsers', () => {
-            function removeOrgRoles(authUser = adminUser) {
-                const permissions = new UserPermissions(userToPayload(authUser))
-                const ctx = { permissions }
-                return removeOrganizationRolesFromUsers({ input: input }, ctx)
-            }
-
-            function checkRolesRemoved() {
-                return checkDbHasExpectedValues(
-                    (currentRoles: Role[], roleIdsToRemove: string[]) => {
-                        const expectedRolesArray = currentRoles.filter(
-                            (cr) =>
-                                !roleIdsToRemove.find(
-                                    (rid) => cr.role_id === rid
-                                )
-                        )
-                        return [
-                            ...new Set(
-                                expectedRolesArray.map((r) => r.role_id).sort()
-                            ),
-                        ]
-                    }
-                )
-            }
-
-            beforeEach(async () => {
-                initialRoles = [
-                    [role1, role2, role3],
-                    [role2, role3],
-                    [role1, role2, role3],
-                ]
-                await OrganizationMembership.save([
-                    createOrganizationMembership({
-                        user: user1,
-                        organization: organization1,
-                        roles: initialRoles[0],
-                    }),
-                    createOrganizationMembership({
-                        user: user2,
-                        organization: organization2,
-                        roles: initialRoles[1],
-                    }),
-                    createOrganizationMembership({
-                        user: user3,
-                        organization: organization3,
-                        roles: initialRoles[2],
-                    }),
-                ])
-            })
-
-            context('and caller has permissions to add roles to user', () => {
-                context('and all attributes are valid', () => {
-                    it('adds all the roles', async () => {
-                        await expect(removeOrgRoles()).to.be.fulfilled
-                        await checkRolesRemoved()
-                    })
-                })
-            })
-        })
-    })
-
     describe('AddOrganizationRolesToUsers', () => {
         let org: Organization
         let orgUsers: User[]
@@ -2654,6 +2510,503 @@ describe('user', () => {
                                 0,
                                 'Role',
                                 orgRoles[0].role_id,
+                                'Organization',
+                                org.organization_id
+                            ),
+                        ]
+
+                        compareMultipleErrors(result, expectedErrors)
+                    })
+                }
+            )
+        })
+    })
+
+    describe('RemoveOrganizationRolesFromUsers', () => {
+        let org: Organization
+        let orgUsers: User[]
+        let orgRoles: Role[]
+        let admin: User
+        const usersCount = 5
+        const rolesCount = 3
+
+        beforeEach(async () => {
+            admin = await createAdminUser(testClient)
+            org = await createOrgFactory().save()
+            orgUsers = await User.save(createUsers(usersCount))
+            orgRoles = await Role.save(createRoles(rolesCount, org))
+
+            await OrganizationMembership.save(
+                createOrganizationMemberships(orgUsers, org, orgRoles)
+            )
+        })
+
+        function buildSingleInput(
+            organization: Organization,
+            user: User,
+            roles: Role[]
+        ): RemoveOrganizationRolesFromUserInput {
+            return {
+                organizationId: organization.organization_id,
+                userId: user.user_id,
+                roleIds: roles.map((r) => r.role_id),
+            }
+        }
+
+        function buildInputsForSameOrg(
+            organization: Organization,
+            users: User[],
+            roles: Role[]
+        ): RemoveOrganizationRolesFromUserInput[] {
+            return Array.from(users, (u) =>
+                buildSingleInput(organization, u, roles)
+            )
+        }
+
+        function buildDefaultInputs() {
+            return buildInputsForSameOrg(org, orgUsers, orgRoles)
+        }
+
+        function getRemoveOrganizationRolesFromUsers(
+            input: RemoveOrganizationRolesFromUserInput[],
+            clientUser = admin
+        ) {
+            const permissions = new UserPermissions(userToPayload(clientUser))
+            return new RemoveOrganizationRolesFromUsers(input, permissions)
+        }
+
+        async function checkRolesRemoved(
+            input: RemoveOrganizationRolesFromUserInput[]
+        ) {
+            const membershipRoles = await Promise.all(
+                Array.from(input, (i) =>
+                    OrganizationMembership.findOneOrFail({
+                        where: {
+                            organization_id: i.organizationId,
+                            user_id: i.userId,
+                            status: Status.ACTIVE,
+                        },
+                    }).then((m) => m.roles!)
+                )
+            )
+
+            input.forEach((i, index) => {
+                const roles = membershipRoles[index]
+                expect(roles).to.exist
+                expect(roles).to.not.have.lengthOf(i.roleIds.length)
+                expect(roles.map((r) => r.role_id)).to.not.have.same.members(
+                    i.roleIds
+                )
+            })
+        }
+
+        async function checkNoChangesMade(
+            input: RemoveOrganizationRolesFromUserInput[]
+        ) {
+            const membershipRoles = await Promise.all(
+                Array.from(input, (i) =>
+                    OrganizationMembership.findOneOrFail({
+                        where: {
+                            organization_id: i.organizationId,
+                            user_id: i.userId,
+                            status: Status.ACTIVE,
+                        },
+                    }).then((m) => m.roles!)
+                )
+            )
+
+            input.forEach((_, index) => {
+                const roles = membershipRoles[index]
+                expect(roles).to.exist
+                expect(roles).to.have.lengthOf(rolesCount)
+            })
+        }
+
+        context('.run', () => {
+            it('can remove roles from organization memberships', async () => {
+                const input = buildDefaultInputs()
+                await expect(getRemoveOrganizationRolesFromUsers(input).run())
+                    .to.be.fulfilled
+
+                await checkRolesRemoved(input)
+            })
+
+            it('makes the expected number of db calls', async () => {
+                const input = buildDefaultInputs()
+                connection.logger.reset()
+                await getRemoveOrganizationRolesFromUsers(input).run()
+
+                expect(connection.logger.count).to.equal(
+                    8,
+                    'preload: 4, authorize: 1, save: 3'
+                )
+            })
+        })
+
+        context('.authorize', () => {
+            context('when caller is admin', () => {
+                it('does not raise an error', async () => {
+                    const input = buildDefaultInputs()
+                    const mutation = getRemoveOrganizationRolesFromUsers(input)
+                    await expect(mutation.authorize(input)).to.be.fulfilled
+                })
+            })
+
+            context('when caller is not admin, but has permissions', () => {
+                let userWithPermissions: User
+
+                beforeEach(async () => {
+                    const permission = PermissionName.edit_users_40330
+                    const roleWithPermission = await roleFactory(
+                        'Edit Users',
+                        org,
+                        { permissions: [permission] }
+                    ).save()
+
+                    userWithPermissions = await createUser().save()
+                    await createOrganizationMembership({
+                        user: userWithPermissions,
+                        organization: org,
+                        roles: [roleWithPermission],
+                    }).save()
+                })
+
+                it('does not raise an error', async () => {
+                    const input = buildDefaultInputs()
+                    const mutation = getRemoveOrganizationRolesFromUsers(
+                        input,
+                        userWithPermissions
+                    )
+
+                    await expect(mutation.authorize(input)).to.be.fulfilled
+                })
+            })
+
+            context('when caller does not have permissions', () => {
+                let userWithoutPermissions: User
+
+                beforeEach(async () => {
+                    const permission = PermissionName.create_users_40220
+                    const roleWithoutPermission = await roleFactory(
+                        'Create Users',
+                        org,
+                        { permissions: [permission] }
+                    ).save()
+
+                    userWithoutPermissions = await createUser().save()
+                    await createOrganizationMembership({
+                        user: userWithoutPermissions,
+                        organization: org,
+                        roles: [roleWithoutPermission],
+                    }).save()
+                })
+
+                it('returns a permission error', async () => {
+                    const input = buildDefaultInputs()
+                    const mutation = getRemoveOrganizationRolesFromUsers(
+                        input,
+                        userWithoutPermissions
+                    )
+
+                    await expect(mutation.authorize(input)).to.be.rejectedWith(
+                        buildPermissionError(
+                            PermissionName.edit_users_40330,
+                            userWithoutPermissions,
+                            [org]
+                        )
+                    )
+
+                    await checkNoChangesMade(input)
+                })
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            let orgMemberships: OrganizationMembership[]
+            let otherOrgMemberships: OrganizationMembership[]
+            let otherOrg: Organization
+            let otherRoles: Role[]
+            let otherUsers: User[]
+
+            beforeEach(async () => {
+                otherOrg = await createOrgFactory().save()
+                otherRoles = await Role.save(createRoles(rolesCount, otherOrg))
+
+                otherUsers = await User.save(createUsers(usersCount))
+                otherOrgMemberships = await OrganizationMembership.save(
+                    Array.from(otherUsers, (u, i) =>
+                        createOrganizationMembership({
+                            user: u,
+                            organization: otherOrg,
+                            roles: otherRoles,
+                        })
+                    )
+                )
+
+                orgMemberships = await OrganizationMembership.find({
+                    where: { organization_id: org.organization_id },
+                })
+
+                orgMemberships.forEach((m, i) => {
+                    m.roles = Promise.resolve(orgRoles)
+                })
+
+                await OrganizationMembership.save(orgMemberships)
+            })
+
+            it('returns membership roles', async () => {
+                const expectedMap = new ObjMap<
+                    OrganizationMembershipKey,
+                    Role[]
+                >()
+
+                const allMemberships = [
+                    ...orgMemberships,
+                    ...otherOrgMemberships,
+                ]
+
+                allMemberships.forEach(async (m) => {
+                    const roles = await m.roles!
+                    expectedMap.set(
+                        {
+                            organizationId: m.organization_id,
+                            userId: m.user_id,
+                        },
+                        roles
+                    )
+                })
+
+                const input = buildDefaultInputs()
+                input.push(
+                    ...buildInputsForSameOrg(otherOrg, otherUsers, otherRoles)
+                )
+
+                const mutation = getRemoveOrganizationRolesFromUsers(input)
+                const entityMaps = await mutation.generateEntityMaps(input)
+                const membershipRoles = entityMaps.membershipRoles
+                expect(membershipRoles.size).to.eq(expectedMap.size)
+
+                Array.from(membershipRoles.keys()).forEach((k) => {
+                    const mapValue = membershipRoles.get(k)
+                    const expectedValue = expectedMap.get(k)
+
+                    expect(expectedValue).to.exist
+                    expect(
+                        mapValue?.map((v) => v.role_id)
+                    ).to.deep.equalInAnyOrder(
+                        expectedValue?.map((v) => v.role_id)
+                    )
+                })
+            })
+        })
+
+        context('.validateOverAllInputs', () => {
+            async function validateOverAllInputs(
+                input: RemoveOrganizationRolesFromUserInput[]
+            ) {
+                const mutation = getRemoveOrganizationRolesFromUsers(input)
+                return mutation.validationOverAllInputs(input)
+            }
+
+            it('produces error for organizationId and userId combination duplicates', async () => {
+                const input = [
+                    buildSingleInput(org, orgUsers[0], [orgRoles[0]]),
+                    buildSingleInput(org, orgUsers[0], [orgRoles[1]]),
+                ]
+
+                const result = await validateOverAllInputs(input)
+                const expectedErrors = [
+                    createDuplicateInputAttributeAPIError(
+                        1,
+                        'Organization',
+                        org.organization_id,
+                        'userId',
+                        orgUsers[0].user_id
+                    ),
+                ]
+
+                compareMultipleErrors(result.apiErrors, expectedErrors)
+                expect(result.validInputs).to.have.lengthOf(1)
+            })
+
+            it('produces error for roleIds incorrect length', async () => {
+                const input = [buildSingleInput(org, orgUsers[0], [])]
+
+                const result = await validateOverAllInputs(input)
+                const expectedErrors = [
+                    createInputLengthAPIError(
+                        'RemoveOrganizationRolesFromUserInput',
+                        'min',
+                        'roleIds',
+                        0
+                    ),
+                ]
+
+                compareMultipleErrors(result.apiErrors, expectedErrors)
+                expect(result.validInputs).to.have.lengthOf(0)
+            })
+
+            it('produces error for roleIds duplicates', async () => {
+                const input = [
+                    buildSingleInput(org, orgUsers[0], [
+                        orgRoles[0],
+                        orgRoles[0],
+                    ]),
+                ]
+
+                const result = await validateOverAllInputs(input)
+                const expectedErrors = [
+                    createDuplicateAttributeAPIError(
+                        0,
+                        ['roleIds'],
+                        'RemoveOrganizationRolesFromUserInput'
+                    ),
+                ]
+
+                compareMultipleErrors(result.apiErrors, expectedErrors)
+                expect(result.validInputs).to.have.lengthOf(0)
+            })
+        })
+
+        context('.validate', () => {
+            async function validate(
+                input: RemoveOrganizationRolesFromUserInput[]
+            ) {
+                const mutation = getRemoveOrganizationRolesFromUsers(
+                    input,
+                    admin
+                )
+
+                const maps = await mutation.generateEntityMaps(input)
+                return input.flatMap((i, index) =>
+                    mutation.validate(
+                        index,
+                        maps.mainEntity.get(i.userId)!,
+                        i,
+                        maps
+                    )
+                )
+            }
+
+            it('produces error for non existent organization', async () => {
+                const input = [
+                    buildSingleInput(org, orgUsers[0], [orgRoles[0]]),
+                ]
+
+                const nonValidId = uuid_v4()
+                input[0].organizationId = nonValidId
+
+                const result = await validate(input)
+                const expectedErrors = [
+                    createEntityAPIError(
+                        'nonExistent',
+                        0,
+                        'Organization',
+                        nonValidId
+                    ),
+                ]
+
+                compareMultipleErrors(result, expectedErrors)
+            })
+
+            it('produces error for non existent user', async () => {
+                const input = [
+                    buildSingleInput(org, orgUsers[0], [orgRoles[0]]),
+                ]
+
+                const nonValidId = uuid_v4()
+                input[0].userId = nonValidId
+
+                const result = await validate(input)
+                const expectedErrors = [
+                    createEntityAPIError('nonExistent', 0, 'User', nonValidId),
+                ]
+
+                compareMultipleErrors(result, expectedErrors)
+            })
+
+            it('produces error for non existent role', async () => {
+                const input = [
+                    buildSingleInput(org, orgUsers[0], [orgRoles[0]]),
+                ]
+
+                const nonValidId = uuid_v4()
+                input[0].roleIds = [nonValidId]
+
+                const result = await validate(input)
+                const expectedErrors = [
+                    createEntityAPIError('nonExistent', 0, 'Role', nonValidId),
+                ]
+
+                compareMultipleErrors(result, expectedErrors)
+            })
+
+            context(
+                'when the given user is not member of the given organization',
+                () => {
+                    let otherUser: User
+
+                    beforeEach(async () => {
+                        otherUser = await createUser().save()
+                    })
+
+                    it('produces error for non existent organization membership', async () => {
+                        const input = [
+                            buildSingleInput(org, otherUser, [orgRoles[0]]),
+                        ]
+
+                        const result = await validate(input)
+                        const expectedErrors = [
+                            createEntityAPIError(
+                                'nonExistentChild',
+                                0,
+                                'User',
+                                otherUser.user_id,
+                                'Organization',
+                                org.organization_id
+                            ),
+                        ]
+
+                        compareMultipleErrors(result, expectedErrors)
+                    })
+                }
+            )
+
+            context(
+                'when the given role does not exist for the given user in the given organization',
+                () => {
+                    let nonExistentRoleInMembership: Role
+
+                    beforeEach(async () => {
+                        const membership = await OrganizationMembership.findOneOrFail(
+                            {
+                                where: {
+                                    organization_id: org.organization_id,
+                                    user_id: orgUsers[0].user_id,
+                                },
+                            }
+                        )!
+
+                        const membershipRoles = await membership.roles!
+                        nonExistentRoleInMembership = membershipRoles.pop()!
+                        membership.roles = Promise.resolve(membershipRoles)
+                        await membership.save()
+                    })
+
+                    it('produces error for a non existing role in the given organization membership', async () => {
+                        const input = [
+                            buildSingleInput(org, orgUsers[0], [
+                                nonExistentRoleInMembership,
+                            ]),
+                        ]
+
+                        const result = await validate(input)
+                        const expectedErrors = [
+                            createEntityAPIError(
+                                'nonExistentChild',
+                                0,
+                                'Role',
+                                nonExistentRoleInMembership.role_id,
                                 'Organization',
                                 org.organization_id
                             ),
