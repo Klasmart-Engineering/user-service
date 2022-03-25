@@ -22,7 +22,7 @@ import {
     AddOrganizationRolesToUsers,
     AddSchoolRolesToUsers,
     CreateUsers,
-    removeOrganizationRolesFromUsers,
+    RemoveOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
     UpdateUsers,
 } from '../resolvers/user'
@@ -491,7 +491,11 @@ export default function getDefault(
                 addOrganizationRolesToUsers: (_parent, args, ctx, _info) =>
                     mutate(AddOrganizationRolesToUsers, args, ctx.permissions),
                 removeOrganizationRolesFromUsers: (_parent, args, ctx, _info) =>
-                    removeOrganizationRolesFromUsers(args, ctx),
+                    mutate(
+                        RemoveOrganizationRolesFromUsers,
+                        args,
+                        ctx.permissions
+                    ),
                 addSchoolRolesToUsers: (
                     _parent,
                     args: { input: AddSchoolRolesToUserInput[] },
