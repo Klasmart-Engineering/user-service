@@ -9541,4 +9541,141 @@ describe('class', () => {
             }
         )
     })
+
+    describe('moveUsersToClassAuthorization', () => {
+        let org: Organization
+        let students: User[]
+        let classes: Class[]
+        let schools: School[]
+        let nonAdminUser: User
+        const permissions = [
+            PermissionName.add_students_to_class_20225,
+            PermissionName.delete_student_from_class_roster_20445,
+        ]
+        beforeEach(async () => {
+            const users = createUsers(1)
+            nonAdminUser = await User.save(users[0])
+            org = await createOrganization().save()
+        })
+        context(
+            'when user has permissions to add and remove students from all classes',
+            () => {
+                beforeEach(async () => {
+                    const nonAdminRole = await createRoleFactory(
+                        'Non Admin Role',
+                        org,
+                        { permissions: permissions }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: org,
+                        roles: [nonAdminRole],
+                    }).save()
+                    students = await User.save(createUsers(3))
+                    classes = createClasses(2, org)
+                    schools = await School.save(createSchools(1, org))
+                    classes[0].students = Promise.resolve([
+                        students[0],
+                        students[1],
+                    ])
+                    classes[1].students = Promise.resolve([students[2]])
+                    classes[0].schools = Promise.resolve([schools[0]])
+                    classes[1].schools = Promise.resolve([schools[0]])
+                    await Class.save(classes)
+                    await OrganizationMembership.save(
+                        Array.from(students, (student) =>
+                            createOrganizationMembership({
+                                user: student,
+                                organization: org,
+                                roles: [],
+                            })
+                        )
+                    )
+                    await SchoolMembership.save(
+                        Array.from(students, (student) =>
+                            createSchoolMembership({
+                                user: student,
+                                school: schools[0],
+                            })
+                        )
+                    )
+                })
+                it('succeeds in authenticating the user', async () => {
+                    await expect(
+                        moveUsersToClassAuthorization(
+                            classes[0],
+                            moveUsersTypeToClass.students,
+                            {
+                                permissions: new UserPermissions({
+                                    id: nonAdminUser.user_id,
+                                    email: nonAdminUser.email,
+                                    phone: nonAdminUser.phone,
+                                }),
+                            }
+                        )
+                    ).to.be.fulfilled
+                })
+            }
+        )
+        context(
+            'when user does not have permissions to add and remove students from all classes',
+            () => {
+                beforeEach(async () => {
+                    const nonAdminRole = await createRoleFactory(
+                        'Non Admin Role',
+                        org,
+                        { permissions: [] }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: org,
+                        roles: [nonAdminRole],
+                    }).save()
+                    students = await User.save(createUsers(3))
+                    classes = createClasses(2, org)
+                    schools = await School.save(createSchools(1, org))
+                    classes[0].students = Promise.resolve([
+                        students[0],
+                        students[1],
+                    ])
+                    classes[1].students = Promise.resolve([students[2]])
+                    classes[0].schools = Promise.resolve([schools[0]])
+                    classes[1].schools = Promise.resolve([schools[0]])
+                    await Class.save(classes)
+                    await OrganizationMembership.save(
+                        Array.from(students, (student) =>
+                            createOrganizationMembership({
+                                user: student,
+                                organization: org,
+                                roles: [],
+                            })
+                        )
+                    )
+                    await SchoolMembership.save(
+                        Array.from(students, (student) =>
+                            createSchoolMembership({
+                                user: student,
+                                school: schools[0],
+                            })
+                        )
+                    )
+                })
+                it('fails authenticating the user', async () => {
+                    const res = await expect(
+                        moveUsersToClassAuthorization(
+                            classes[0],
+                            moveUsersTypeToClass.students,
+                            {
+                                permissions: new UserPermissions({
+                                    id: nonAdminUser.user_id,
+                                    email: nonAdminUser.email,
+                                    phone: nonAdminUser.phone,
+                                }),
+                            }
+                        )
+                    ).to.be.rejected
+                })
+            }
+        )
+    })
 })
