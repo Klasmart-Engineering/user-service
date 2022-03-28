@@ -9678,4 +9678,282 @@ describe('class', () => {
             }
         )
     })
+    describe('moveUsersToClassValidation', () => {
+        let org: Organization
+        let students: User[]
+        let classes: Class[]
+        let schools: School[]
+        let nonAdminUser: User
+        const permissions = [
+            PermissionName.add_students_to_class_20225,
+            PermissionName.delete_student_from_class_roster_20445,
+        ]
+        beforeEach(async () => {
+            const users = createUsers(1)
+            nonAdminUser = await User.save(users[0])
+            org = await createOrganization().save()
+        })
+
+        context('when the from and to classes are in different schools', () => {
+            beforeEach(async () => {
+                const nonAdminRole = await createRoleFactory(
+                    'Non Admin Role',
+                    org,
+                    { permissions: permissions }
+                ).save()
+                await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [nonAdminRole],
+                }).save()
+                students = await User.save(createUsers(3))
+                classes = createClasses(2, org)
+                schools = await School.save(createSchools(2, org))
+                classes[0].students = Promise.resolve([
+                    students[0],
+                    students[1],
+                ])
+                classes[1].students = Promise.resolve([students[2]])
+                classes[0].schools = Promise.resolve([schools[0]])
+                classes[1].schools = Promise.resolve([schools[1]])
+                await Class.save(classes)
+                await OrganizationMembership.save(
+                    Array.from(students, (student) =>
+                        createOrganizationMembership({
+                            user: student,
+                            organization: org,
+                            roles: [],
+                        })
+                    )
+                )
+                const membership = Array.from(students, (student) =>
+                    createSchoolMembership({
+                        user: student,
+                        school: schools[0],
+                    })
+                )
+
+                await SchoolMembership.save(
+                    membership.concat(
+                        Array.from(students, (student) =>
+                            createSchoolMembership({
+                                user: student,
+                                school: schools[1],
+                            })
+                        )
+                    )
+                )
+            })
+
+            it('fails miserably', async () => {
+                const checkstudents = (await classes[0].students) || []
+                const checkIds = checkstudents.map((u) => u.user_id)
+                const checkPreviousstudents = (await classes[1].students) || []
+
+                const error = (await expect(
+                    moveUsersToClassValidation(
+                        classes[0].class_id,
+                        classes[1].class_id
+                    )
+                ).to.be.rejected) as APIErrorCollection
+                const errs = error.errors
+                expect(errs[0].code).to.equal(
+                    'SOURCE_AND_DESTINATION_DONT_MATCH'
+                )
+                expect(errs[0].message).to.equal(
+                    `On index 1, Class: ${classes[1].class_id} and Class: ${classes[0].class_id} mismatch in schools in relation`
+                )
+            })
+        })
+        context('when one of the classes has more than one school', () => {
+            beforeEach(async () => {
+                const nonAdminRole = await createRoleFactory(
+                    'Non Admin Role',
+                    org,
+                    { permissions: permissions }
+                ).save()
+                await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [nonAdminRole],
+                }).save()
+                students = await User.save(createUsers(3))
+                classes = createClasses(2, org)
+                schools = await School.save(createSchools(2, org))
+                classes[0].students = Promise.resolve([
+                    students[0],
+                    students[1],
+                ])
+                classes[1].students = Promise.resolve([students[2]])
+                classes[0].schools = Promise.resolve([schools[0]])
+                classes[1].schools = Promise.resolve(schools)
+                await Class.save(classes)
+                await OrganizationMembership.save(
+                    Array.from(students, (student) =>
+                        createOrganizationMembership({
+                            user: student,
+                            organization: org,
+                            roles: [],
+                        })
+                    )
+                )
+                const membership = Array.from(students, (student) =>
+                    createSchoolMembership({
+                        user: student,
+                        school: schools[0],
+                    })
+                )
+
+                await SchoolMembership.save(
+                    membership.concat(
+                        Array.from(students, (student) =>
+                            createSchoolMembership({
+                                user: student,
+                                school: schools[1],
+                            })
+                        )
+                    )
+                )
+            })
+
+            it('fails miserably', async () => {
+                const checkstudents = (await classes[0].students) || []
+                const checkIds = checkstudents.map((u) => u.user_id)
+                const checkPreviousstudents = (await classes[1].students) || []
+
+                const error = (await expect(
+                    moveUsersToClassValidation(
+                        classes[0].class_id,
+                        classes[1].class_id
+                    )
+                ).to.be.rejected) as APIErrorCollection
+
+                const errs = error.errors
+                expect(errs[0].message).to.equal(
+                    `On index 1, Class ${classes[1].class_id} has too many schools relations`
+                )
+                expect(errs[0].code).to.equal('TOO_MANY_RELATIONS')
+            })
+        })
+
+        context('when the destination class does not exist', () => {
+            beforeEach(async () => {
+                const nonAdminRole = await createRoleFactory(
+                    'Non Admin Role',
+                    org,
+                    { permissions: permissions }
+                ).save()
+                await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [nonAdminRole],
+                }).save()
+                students = await User.save(createUsers(2))
+                classes = createClasses(1, org)
+                schools = await School.save(createSchools(1, org))
+                classes[0].students = Promise.resolve([
+                    students[0],
+                    students[1],
+                ])
+                classes[0].schools = Promise.resolve([schools[0]])
+                await Class.save(classes)
+                await OrganizationMembership.save(
+                    Array.from(students, (student) =>
+                        createOrganizationMembership({
+                            user: student,
+                            organization: org,
+                            roles: [],
+                        })
+                    )
+                )
+                await SchoolMembership.save(
+                    Array.from(students, (student) =>
+                        createSchoolMembership({
+                            user: student,
+                            school: schools[0],
+                        })
+                    )
+                )
+            })
+
+            it('fails miserably', async () => {
+                const checkstudents = (await classes[0].students) || []
+                const checkIds = checkstudents.map((u) => u.user_id)
+
+                const error = (await expect(
+                    moveUsersToClassValidation(
+                        classes[0].class_id,
+                        nonAdminUser.user_id
+                    )
+                ).to.be.rejected) as APIErrorCollection
+                const errs = error.errors
+                expect(errs[0].code).to.equal('ERR_NON_EXISTENT_ENTITY')
+                expect(errs[0].message).to.equal(
+                    `On index 1, Class ${nonAdminUser.user_id} doesn't exist.`
+                )
+            })
+        })
+        context(
+            'when the destination class is the same as the source class',
+            () => {
+                beforeEach(async () => {
+                    const nonAdminRole = await createRoleFactory(
+                        'Non Admin Role',
+                        org,
+                        { permissions: permissions }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: org,
+                        roles: [nonAdminRole],
+                    }).save()
+                    students = await User.save(createUsers(2))
+                    classes = createClasses(1, org)
+                    schools = await School.save(createSchools(1, org))
+                    classes[0].students = Promise.resolve([
+                        students[0],
+                        students[1],
+                    ])
+                    classes[0].schools = Promise.resolve([schools[0]])
+                    await Class.save(classes)
+                    await OrganizationMembership.save(
+                        Array.from(students, (student) =>
+                            createOrganizationMembership({
+                                user: student,
+                                organization: org,
+                                roles: [],
+                            })
+                        )
+                    )
+                    await SchoolMembership.save(
+                        Array.from(students, (student) =>
+                            createSchoolMembership({
+                                user: student,
+                                school: schools[0],
+                            })
+                        )
+                    )
+                })
+
+                it('fails miserably', async () => {
+                    const checkstudents = (await classes[0].students) || []
+                    const checkIds = checkstudents.map((u) => u.user_id)
+
+                    const error = (await expect(
+                        moveUsersToClassValidation(
+                            classes[0].class_id,
+                            classes[0].class_id
+                        )
+                    ).to.be.rejected) as APIErrorCollection
+                    const errs = error.errors
+                    expect(errs[0].code).to.equal(
+                        'ERR_DUPLICATE_INPUT_ATTRIBUTE_VALUE'
+                    )
+                    expect(errs[0].message).to.equal(
+                        `On index 1, fromClassId ${classes[0].class_id} with toClassId ${classes[0].class_id} is repeated in the inputs.`
+                    )
+                })
+            }
+        )
+    })
 })
