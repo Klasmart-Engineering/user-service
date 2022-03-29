@@ -98,7 +98,7 @@ import {
     CreateUsers,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
-    updateUsers,
+    UpdateUsers,
 } from '../../src/resolvers/user'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
@@ -124,14 +124,13 @@ import {
     createDuplicateInputAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
-    createUnauthorizedAPIError,
+    createInputRequiresAtLeastOne,
 } from '../../src/utils/resolvers/errors'
 import { mapRoleToRoleConnectionNode } from '../../src/pagination/rolesConnection'
 import { APIError } from '../../src/types/errors/apiError'
 import { customErrors } from '../../src/types/errors/customError'
 import { createOrganization as createOrgFactory } from '../factories/organization.factory'
 import { Status } from '../../src/entities/status'
-import { makeLookupKey } from '../../src/utils/resolvers/user'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -3616,43 +3615,55 @@ describe('user', () => {
             }
         })
 
+        function updateUsersResolver(input: UpdateUserInput[], user: User) {
+            return mutate(
+                UpdateUsers,
+                { input },
+                new UserPermissions({
+                    id: user.user_id,
+                    email: user.email,
+                    phone: user.phone,
+                })
+            )
+        }
+
+        context('.authorize', () => {
+            context('when the user is a super admin', () => {
+                it('completes successfully', async () => {
+                    const permissions = new UserPermissions(
+                        userToPayload(adminUser)
+                    )
+                    const mutation = new UpdateUsers([], permissions)
+                    await expect(mutation.authorize()).to.be.fulfilled
+                })
+            })
+
+            context('when the user is an API key', () => {
+                it('completes successfully', async () => {
+                    const permissions = new UserPermissions(undefined, true)
+                    const mutation = new UpdateUsers([], permissions)
+                    await expect(mutation.authorize()).to.be.fulfilled
+                })
+            })
+        })
+
         context('when not authorized', () => {
             it('it fails to update users', async () => {
-                const errorCollection = await expect(
-                    updateUsers(
-                        { input: updateUserInputs },
-                        {
-                            permissions: new UserPermissions({
-                                id: userPerformingOperation.user_id,
-                                email: userPerformingOperation.email,
-                                phone: userPerformingOperation.phone,
-                            }),
-                        }
+                await expect(
+                    updateUsersResolver(
+                        updateUserInputs,
+                        userPerformingOperation
                     )
-                ).to.be.rejected
-
-                const expectedErrors: APIError[] = [
-                    createUnauthorizedAPIError(
-                        'User',
-                        'userId',
-                        userPerformingOperation.user_id
-                    ),
-                ]
-
-                compareMultipleErrors(errorCollection.errors, expectedErrors)
+                ).to.be.rejectedWith(
+                    `User(${userPerformingOperation.user_id}) does not have Permission(edit_users_40330)`
+                )
             })
         })
         context('when admin', () => {
             it('updates users', async () => {
-                const updateUserResult = await updateUsers(
-                    { input: updateUserInputs },
-                    {
-                        permissions: new UserPermissions({
-                            id: adminUser.user_id,
-                            email: adminUser.email,
-                            phone: adminUser.phone,
-                        }),
-                    }
+                const updateUserResult = await updateUsersResolver(
+                    updateUserInputs,
+                    adminUser
                 )
 
                 const userConNodes = updateUserResult.users
@@ -3707,16 +3718,11 @@ describe('user', () => {
             })
             it('updates users', async () => {
                 connection.logger.reset()
-                const updateUserResult = await updateUsers(
-                    { input: updateUserInputs },
-                    {
-                        permissions: new UserPermissions({
-                            id: userPerformingOperation.user_id,
-                            email: userPerformingOperation.email,
-                            phone: userPerformingOperation.phone,
-                        }),
-                    }
+                const updateUserResult = await updateUsersResolver(
+                    updateUserInputs,
+                    userPerformingOperation
                 )
+
                 const userConNodes = updateUserResult.users
                 expect(userConNodes.length).to.equal(updateUserInputs.length)
                 expect(connection.logger.count).to.equal(54)
@@ -3745,16 +3751,11 @@ describe('user', () => {
                 for (const u of updateUserInputs) {
                     u.avatar = faker.internet.url()
                 }
-                const updateUserResult = await updateUsers(
-                    { input: updateUserInputs },
-                    {
-                        permissions: new UserPermissions({
-                            id: userPerformingOperation.user_id,
-                            email: userPerformingOperation.email,
-                            phone: userPerformingOperation.phone,
-                        }),
-                    }
+                const updateUserResult = await updateUsersResolver(
+                    updateUserInputs,
+                    userPerformingOperation
                 )
+
                 const inputAvatars = updateUserInputs.map((a) => a.avatar)
                 const userConNodes = updateUserResult.users
                 const outputAvatars = userConNodes.map((a) => a.avatar)
@@ -3785,15 +3786,9 @@ describe('user', () => {
                         faker.datatype.number({ min: 1950, max: 2021 })
                     u.primaryUser = faker.datatype.boolean()
                 }
-                const updateUserResult = await updateUsers(
-                    { input: updateUserInputs },
-                    {
-                        permissions: new UserPermissions({
-                            id: userPerformingOperation.user_id,
-                            email: userPerformingOperation.email,
-                            phone: userPerformingOperation.phone,
-                        }),
-                    }
+                const updateUserResult = await updateUsersResolver(
+                    updateUserInputs,
+                    userPerformingOperation
                 )
 
                 const userConNodes = updateUserResult.users
@@ -3835,24 +3830,16 @@ describe('user', () => {
                 updateUserInputs.push(userToUpdateUserInput(u))
             })
             it('it fails to update users', async () => {
-                const errorCollection = await expect(
-                    updateUsers(
-                        { input: updateUserInputs },
-                        {
-                            permissions: new UserPermissions({
-                                id: adminUser.user_id,
-                                email: adminUser.email,
-                                phone: adminUser.phone,
-                            }),
-                        }
-                    )
+                const error = await expect(
+                    updateUsersResolver(updateUserInputs, adminUser)
                 ).to.be.rejected
 
-                const expectedErrors: APIError[] = [
-                    createInputLengthAPIError('User', 'max'),
-                ]
+                const expectedError: APIError = createInputLengthAPIError(
+                    'User',
+                    'max'
+                )
 
-                compareMultipleErrors(errorCollection.errors, expectedErrors)
+                compareErrors(error, expectedError)
             })
         })
         context('when there is a validation failure', () => {
@@ -3861,16 +3848,7 @@ describe('user', () => {
             })
             it('it fails to update users', async () => {
                 const errorCollection = await expect(
-                    updateUsers(
-                        { input: updateUserInputs },
-                        {
-                            permissions: new UserPermissions({
-                                id: adminUser.user_id,
-                                email: adminUser.email,
-                                phone: adminUser.phone,
-                            }),
-                        }
-                    )
+                    updateUsersResolver(updateUserInputs, adminUser)
                 ).to.be.rejected
 
                 const expectedErrors: APIError[] = [
@@ -3880,10 +3858,10 @@ describe('user', () => {
                         variables: ['email'],
                         entity: 'User',
                         attribute: 'email',
+                        index: 2,
                     }),
                 ]
 
-                expectedErrors[0].index = 2
                 compareMultipleErrors(errorCollection.errors, expectedErrors)
             })
         })
@@ -3897,29 +3875,15 @@ describe('user', () => {
 
             it('it fails to update users', async () => {
                 const errorCollection = await expect(
-                    updateUsers(
-                        { input: updateUserInputs },
-                        {
-                            permissions: new UserPermissions({
-                                id: adminUser.user_id,
-                                email: adminUser.email,
-                                phone: adminUser.phone,
-                            }),
-                        }
-                    )
+                    updateUsersResolver(updateUserInputs, adminUser)
                 ).to.be.rejected
 
                 const expectedErrors: APIError[] = [
-                    new APIError({
-                        code: customErrors.duplicate_input_value.code,
-                        message: customErrors.duplicate_input_value.message,
-                        variables: ['givenName', 'familyName', 'id'],
-                        entity: 'User',
-                        attribute: 'ID',
-                        entityName: inputToFail.id,
-                        otherAttribute: `${inputToFail.id}`,
-                        index: 3,
-                    }),
+                    createDuplicateAttributeAPIError(
+                        3,
+                        ['id'],
+                        'UpdateUserInput'
+                    ),
                 ]
 
                 compareMultipleErrors(errorCollection.errors, expectedErrors)
@@ -3940,34 +3904,21 @@ describe('user', () => {
                 })
                 it('it fails to update users', async () => {
                     const errorCollection = await expect(
-                        updateUsers(
-                            { input: updateUserInputs },
-                            {
-                                permissions: new UserPermissions({
-                                    id: adminUser.user_id,
-                                    email: adminUser.email,
-                                    phone: adminUser.phone,
-                                }),
-                            }
-                        )
+                        updateUsersResolver(updateUserInputs, adminUser)
                     ).to.be.rejected
 
-                    const key = makeLookupKey(
-                        inputToFail.givenName,
-                        inputToFail.familyName,
-                        inputToFail.username
-                    )
-
                     const expectedErrors: APIError[] = [
-                        new APIError({
-                            code: customErrors.duplicate_input_value.code,
-                            message: customErrors.duplicate_input_value.message,
-                            variables: ['givenName', 'familyName'],
-                            entity: 'User',
-                            attribute: 'ID',
-                            entityName: inputToFail.id,
-                            index: 3,
-                        }),
+                        createDuplicateAttributeAPIError(
+                            3,
+                            [
+                                'givenName',
+                                'familyName',
+                                'username',
+                                'phone',
+                                'email',
+                            ],
+                            'UpdateUserInput'
+                        ),
                     ]
 
                     compareMultipleErrors(
@@ -3983,21 +3934,16 @@ describe('user', () => {
                 let u1: User
                 let u2: User
 
-                const createExistentError = (user: User, index: number) => {
-                    return new APIError({
-                        code: customErrors.existent_entity.code,
-                        message: customErrors.existent_entity.message,
-                        variables: [
-                            'givenName',
-                            'familyName',
-                            'username',
-                            'email',
-                        ],
-                        entity: 'User',
-                        entityName: user.user_id,
+                const createExistentError = (user: User, index: number) =>
+                    createEntityAPIError(
+                        'existent',
                         index,
-                    })
-                }
+                        'User',
+                        user.user_id,
+                        undefined,
+                        undefined,
+                        ['givenName', 'familyName', 'username', 'email']
+                    )
 
                 beforeEach(async () => {
                     u1 = createUser()
@@ -4023,16 +3969,7 @@ describe('user', () => {
 
                 it('it fails to create users', async () => {
                     const errorCollection = await expect(
-                        updateUsers(
-                            { input: updateUserInputs },
-                            {
-                                permissions: new UserPermissions({
-                                    id: adminUser.user_id,
-                                    email: adminUser.email,
-                                    phone: adminUser.phone,
-                                }),
-                            }
-                        )
+                        updateUsersResolver(updateUserInputs, adminUser)
                     ).to.be.rejected
 
                     const expectedErrors: APIError[] = [
@@ -4053,29 +3990,16 @@ describe('user', () => {
             })
             it('it fails to update users', async () => {
                 const errorCollection = await expect(
-                    updateUsers(
-                        { input: updateUserInputs },
-                        {
-                            permissions: new UserPermissions({
-                                id: adminUser.user_id,
-                                email: adminUser.email,
-                                phone: adminUser.phone,
-                            }),
-                        }
-                    )
+                    updateUsersResolver(updateUserInputs, adminUser)
                 ).to.be.rejected
 
                 const expectedErrors: APIError[] = [
-                    new APIError({
-                        code: customErrors.nonexistent_entity.code,
-                        message: customErrors.nonexistent_entity.message,
-                        variables: ['id'],
-                        entity: 'User',
-                        attribute: 'user_id',
-                        entityName: updateUserInputs[23].id,
-                        otherAttribute: updateUserInputs[23].id,
-                        index: 23,
-                    }),
+                    createEntityAPIError(
+                        'nonExistent',
+                        23,
+                        'User',
+                        updateUserInputs[23].id
+                    ),
                 ]
 
                 compareMultipleErrors(errorCollection.errors, expectedErrors)
@@ -4084,24 +4008,164 @@ describe('user', () => {
         context('when the input array is empty', () => {
             const emptyInputs: UpdateUserInput[] = []
             it('it fails to update users', async () => {
+                const error = await expect(
+                    updateUsersResolver(emptyInputs, adminUser)
+                ).to.be.rejected
+
+                const expectedError: APIError = createInputLengthAPIError(
+                    'User',
+                    'min'
+                )
+
+                compareErrors(error, expectedError)
+            })
+        })
+        context('when any field to update is provided', () => {
+            beforeEach(async () => {
+                updateUserInputs[23] = { id: updateUserInputs[23].id }
+            })
+
+            it('fails to update users', async () => {
                 const errorCollection = await expect(
-                    updateUsers(
-                        { input: emptyInputs },
-                        {
-                            permissions: new UserPermissions({
-                                id: adminUser.user_id,
-                                email: adminUser.email,
-                                phone: adminUser.phone,
-                            }),
-                        }
-                    )
+                    updateUsersResolver(updateUserInputs, adminUser)
                 ).to.be.rejected
 
                 const expectedErrors: APIError[] = [
-                    createInputLengthAPIError('User', 'min'),
+                    createInputRequiresAtLeastOne(23, 'UpdateUserInput', [
+                        'givenName',
+                        'familyName',
+                        'email',
+                        'phone',
+                        'username',
+                        'dateOfBirth',
+                        'gender',
+                        'avatar',
+                        'alternateEmail',
+                        'alternatePhone',
+                        'primaryUser',
+                    ]),
                 ]
 
                 compareMultipleErrors(errorCollection.errors, expectedErrors)
+            })
+        })
+        context('DB calls', () => {
+            const getDbCallCount = async (input: UpdateUserInput[]) => {
+                connection.logger.reset()
+                await updateUsersResolver(input, adminUser)
+                return connection.logger.count
+            }
+
+            it('db connections increase in one with number of input elements', async () => {
+                const singleUserExpectedCalls = 4
+                await getDbCallCount([updateUserInputs[0]]) // warm up permissions cache
+
+                const singleUserCount = await getDbCallCount([
+                    updateUserInputs[1],
+                ])
+
+                const twoUsersCount = await getDbCallCount([
+                    updateUserInputs[1],
+                    updateUserInputs[2],
+                    updateUserInputs[3],
+                ])
+
+                expect(singleUserCount).to.be.eq(singleUserExpectedCalls)
+                expect(twoUsersCount).to.be.eq(singleUserExpectedCalls + 1)
+            })
+        })
+        context('generateEntityMaps', () => {
+            let updateUsers: UpdateUsers
+            const generateExistingUsers = async (org: Organization) => {
+                const existingUser = await createUser(org).save()
+                const nonPermittedOrgUser = await createUser(
+                    await createOrgFactory().save()
+                ).save()
+
+                const inactiveUser = createUser(org)
+                inactiveUser.status = Status.INACTIVE
+                await inactiveUser.save()
+
+                const nonIdentifyingFieldsUser = createUser(org)
+                nonIdentifyingFieldsUser.given_name = undefined
+                nonIdentifyingFieldsUser.family_name = undefined
+                nonIdentifyingFieldsUser.username = undefined
+                nonIdentifyingFieldsUser.email = undefined
+                nonIdentifyingFieldsUser.phone = undefined
+                await nonIdentifyingFieldsUser.save()
+
+                const noNamesUser = createUser(org)
+                noNamesUser.given_name = undefined
+                noNamesUser.family_name = undefined
+                await noNamesUser.save()
+
+                const inactiveOrg = createOrgFactory()
+                inactiveOrg.status = Status.INACTIVE
+                await inactiveOrg.save()
+                const inactiveOrgUser = await createUser(inactiveOrg).save()
+
+                return [
+                    existingUser,
+                    nonPermittedOrgUser,
+                    inactiveUser,
+                    inactiveOrgUser,
+                    nonIdentifyingFieldsUser,
+                    noNamesUser,
+                ]
+            }
+
+            beforeEach(async () => {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+
+                updateUsers = new UpdateUsers([], permissions)
+            })
+
+            it('returns existing users', async () => {
+                const existingUsers = await generateExistingUsers(organization1)
+                const expectedPairs = existingUsers
+                    .filter((eu) => {
+                        const {
+                            given_name,
+                            family_name,
+                            username,
+                            email,
+                            phone,
+                        } = eu
+                        return (
+                            given_name &&
+                            family_name &&
+                            (username || email || phone)
+                        )
+                    })
+                    .map((eu) => {
+                        return {
+                            givenName: eu.given_name,
+                            familyName: eu.family_name,
+                            username: eu.username,
+                        }
+                    })
+
+                const input: UpdateUserInput[] = [
+                    ...existingUsers.map((eu) => {
+                        return {
+                            id: eu.user_id,
+                            givenName: eu.given_name,
+                            familyName: eu.family_name,
+                            username: eu.username,
+                            email: eu.email,
+                            phone: eu.phone,
+                        }
+                    }),
+                    updateUserInputs[0],
+                ]
+
+                const entityMaps = await updateUsers.generateEntityMaps(input)
+
+                expect(
+                    Array.from(entityMaps.conflictingUsers.keys())
+                ).to.deep.equalInAnyOrder(expectedPairs)
             })
         })
     })

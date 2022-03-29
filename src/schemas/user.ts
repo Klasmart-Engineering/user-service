@@ -24,7 +24,7 @@ import {
     CreateUsers,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
-    updateUsers,
+    UpdateUsers,
 } from '../resolvers/user'
 import {
     AddSchoolRolesToUserInput,
@@ -503,7 +503,7 @@ export default function getDefault(
                 createUsers: (_parent, args, ctx, _info) =>
                     mutate(CreateUsers, args, ctx.permissions),
                 updateUsers: (_parent, args, ctx, _info) =>
-                    updateUsers(args, ctx),
+                    mutate(UpdateUsers, args, ctx.permissions),
             },
             Query: {
                 me: (_parent, _args, ctx: Context, _info) => {
