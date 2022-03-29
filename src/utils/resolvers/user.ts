@@ -7,8 +7,8 @@ import {
 import clean from '../clean'
 
 export type ConflictingUserKey = {
-    givenName: string
-    familyName: string
+    givenName?: string
+    familyName?: string
     username?: string
     email?: string
     phone?: string
@@ -45,8 +45,8 @@ export function updateUserInputToConflictingUserKey(
     const { id, givenName, familyName, username, email, phone } = input
     const user = usersMap.get(id)
     return {
-        givenName: givenName || user?.given_name || '',
-        familyName: familyName || user?.family_name || '',
+        givenName: givenName || user?.given_name,
+        familyName: familyName || user?.family_name,
         username: username || user?.username,
         email: email || user?.email,
         phone: phone || user?.phone,

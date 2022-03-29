@@ -1114,13 +1114,16 @@ export class UpdateUsers extends UpdateMutation<
     ): Promise<UpdateUsersEntityMap> {
         const ids: string[] = input.map((i) => i.id)
         const mainEntity = await getMap.user(ids)
-
         const userKeys: ConflictingUserKey[] = input.map((i) =>
             updateUserInputToConflictingUserKey(i, mainEntity)
         )
 
-        const matchingPreloadedUserArray = await User.find({
-            where: userKeys.map((k) => {
+        const findUsersConditions = userKeys
+            .filter((k) => {
+                const { givenName, familyName, username, email, phone } = k
+                return givenName && familyName && (username || email || phone)
+            })
+            .map((k) => {
                 const { givenName, familyName, username, email, phone } = k
                 const condition = {
                     given_name: givenName,
@@ -1129,8 +1132,14 @@ export class UpdateUsers extends UpdateMutation<
                 }
 
                 return condition
-            }),
-        })
+            })
+
+        let matchingPreloadedUserArray: User[] = []
+        if (findUsersConditions.length) {
+            matchingPreloadedUserArray = await User.find({
+                where: findUsersConditions,
+            })
+        }
 
         const conflictingUsers = new ObjMap<ConflictingUserKey, User>()
         for (const u of matchingPreloadedUserArray) {
@@ -1138,8 +1147,8 @@ export class UpdateUsers extends UpdateMutation<
 
             conflictingUsers.set(
                 {
-                    givenName: given_name!,
-                    familyName: family_name!,
+                    givenName: given_name,
+                    familyName: family_name,
                     ...addIdentifierToKey(username, email, phone),
                 },
                 u

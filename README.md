@@ -202,7 +202,7 @@ The user-service uses [TypeORM migrations](https://github.com/typeorm/typeorm/bl
 
 TypeORM can also attempt to automatically generate SQL required for migrations:
 
-- Run `npm run typeorm migration:generate -- -n <MigrationName>`
+- Run `npm run typeorm migration:generate -- -p -n <MigrationName>`
 - Check the generated SQL _very_ carefully and make any required changes
 - Note that only schema changes are generated - any changes to existing data will require manual migration
 

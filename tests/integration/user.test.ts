@@ -4696,6 +4696,19 @@ describe('user', () => {
                 inactiveUser.status = Status.INACTIVE
                 await inactiveUser.save()
 
+                const nonIdentifyingFieldsUser = createUser(org)
+                nonIdentifyingFieldsUser.given_name = undefined
+                nonIdentifyingFieldsUser.family_name = undefined
+                nonIdentifyingFieldsUser.username = undefined
+                nonIdentifyingFieldsUser.email = undefined
+                nonIdentifyingFieldsUser.phone = undefined
+                await nonIdentifyingFieldsUser.save()
+
+                const noNamesUser = createUser(org)
+                noNamesUser.given_name = undefined
+                noNamesUser.family_name = undefined
+                await noNamesUser.save()
+
                 const inactiveOrg = createOrgFactory()
                 inactiveOrg.status = Status.INACTIVE
                 await inactiveOrg.save()
@@ -4706,6 +4719,8 @@ describe('user', () => {
                     nonPermittedOrgUser,
                     inactiveUser,
                     inactiveOrgUser,
+                    nonIdentifyingFieldsUser,
+                    noNamesUser,
                 ]
             }
 
@@ -4719,20 +4734,38 @@ describe('user', () => {
 
             it('returns existing users', async () => {
                 const existingUsers = await generateExistingUsers(organization1)
-                const expectedPairs = existingUsers.map((au) => {
-                    return {
-                        givenName: au.given_name!,
-                        familyName: au.family_name!,
-                        username: au.username,
-                    }
-                })
+                const expectedPairs = existingUsers
+                    .filter((eu) => {
+                        const {
+                            given_name,
+                            family_name,
+                            username,
+                            email,
+                            phone,
+                        } = eu
+                        return (
+                            given_name &&
+                            family_name &&
+                            (username || email || phone)
+                        )
+                    })
+                    .map((eu) => {
+                        return {
+                            givenName: eu.given_name,
+                            familyName: eu.family_name,
+                            username: eu.username,
+                        }
+                    })
 
                 const input: UpdateUserInput[] = [
-                    ...expectedPairs.map((ep, i) => {
+                    ...existingUsers.map((eu) => {
                         return {
-                            ...ep,
-                            gender: 'female',
-                            id: existingUsers[i].user_id,
+                            id: eu.user_id,
+                            givenName: eu.given_name,
+                            familyName: eu.family_name,
+                            username: eu.username,
+                            email: eu.email,
+                            phone: eu.phone,
                         }
                     }),
                     updateUserInputs[0],
