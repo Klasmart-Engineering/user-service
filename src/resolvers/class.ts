@@ -1,9 +1,8 @@
-import { Brackets, getConnection, getManager, In } from 'typeorm'
+import { Brackets, getConnection, In } from 'typeorm'
 import { Context } from '../main'
 import {
     DeleteClassInput,
     ClassesMutationResult,
-    ClassConnectionNode,
     AddProgramsToClassInput,
     RemoveProgramsFromClassInput,
     CreateClassInput,
@@ -13,20 +12,15 @@ import {
     AddTeachersToClassInput,
     RemoveTeachersFromClassInput,
 } from '../types/graphQL/class'
-import { APIError, APIErrorCollection } from '../types/errors/apiError'
-import { customErrors } from '../types/errors/customError'
-import { Status } from '../entities/status'
+import { APIError } from '../types/errors/apiError'
 import { Class } from '../entities/class'
 import { PermissionName } from '../permissions/permissionNames'
 import {
-    createDuplicateAttributeAPIError,
     createDuplicateChildEntityAttributeAPIError,
     createEntityAPIError,
-    createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../utils/resolvers/errors'
 import { mapClassToClassConnectionNode } from '../pagination/classesConnection'
-import { config } from '../config/config'
 import { Program } from '../entities/program'
 import {
     AddMutation,
@@ -39,6 +33,8 @@ import {
     UpdateMutation,
     filterInvalidInputs,
     validateNoDuplicateAttribute,
+    DeleteEntityMap,
+    DeleteMutation,
 } from '../utils/mutations/commonStructure'
 import { Organization } from '../entities/organization'
 import {
@@ -62,95 +58,49 @@ import logger from '../logging'
 import { User } from '../entities/user'
 import { OrganizationMembership } from '../entities/organizationMembership'
 
-export async function deleteClasses(
-    args: { input: DeleteClassInput[] },
-    context: Pick<Context, 'permissions'>
-): Promise<ClassesMutationResult> {
-    // Input length validations
-    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('User', 'min')
-    }
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('User', 'max')
+export class DeleteClasses extends DeleteMutation<
+    Class,
+    DeleteClassInput,
+    ClassesMutationResult
+> {
+    protected readonly EntityType = Class
+    protected readonly inputTypeName = 'DeleteClassInput'
+    protected readonly output: ClassesMutationResult = { classes: [] }
+    protected readonly mainEntityIds: string[]
+
+    constructor(
+        input: DeleteClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.id)
     }
 
-    // Preload Data
-    const classIds = args.input.map((val) => val.id)
-    const preloadedData = await Class.createQueryBuilder('Class')
-        .select(['Class.class_id', 'ClassOrganization.organization_id'])
-        .leftJoin('Class.organization', 'ClassOrganization')
-        .where('Class.class_id IN (:...classIds)', { classIds })
-        .andWhere('Class.status = :status', { status: Status.ACTIVE })
-        .getMany()
-    const preloadedClasses = new Map(preloadedData.map((c) => [c.class_id, c]))
-
-    // Check Permissions
-    const orgIdSet = new Set<string>()
-    for (const c of preloadedClasses.values()) {
-        // eslint-disable-next-line no-await-in-loop
-        const org = await c.organization
-        if (org) orgIdSet.add(org.organization_id)
+    protected async generateEntityMaps(): Promise<DeleteEntityMap<Class>> {
+        const mainEntity = await getMap.class(this.mainEntityIds, [
+            'organization',
+        ])
+        return { mainEntity }
     }
-    await context.permissions.rejectIfNotAllowed(
-        { organization_ids: [...orgIdSet] },
-        PermissionName.delete_class_20444
-    )
 
-    // Process Inputs
-    const errors: APIError[] = []
-    const output: ClassConnectionNode[] = []
-    const partialClass = {
-        status: Status.INACTIVE,
-        deleted_at: new Date(),
-    }
-    for (const [index, classId] of classIds.entries()) {
-        const dbClass = preloadedClasses.get(classId)
-
-        // Validations
-        const inputIdIsDuplicate = classIds.some(
-            (item, findIndex) => item === classId && findIndex < index
+    protected async authorize(
+        _input: DeleteClassInput[],
+        entityMaps: DeleteEntityMap<Class>
+    ) {
+        const organizationIds = await Promise.all(
+            Array.from(entityMaps.mainEntity.values())
+                .map((c) => c.organization?.then((org) => org.organization_id))
+                .filter((o): o is Promise<string> => o !== undefined)
         )
-        if (inputIdIsDuplicate) {
-            errors.push(
-                createDuplicateAttributeAPIError(
-                    index,
-                    ['id'],
-                    'DeleteClassInput'
-                )
-            )
-            continue
-        }
-        if (!dbClass) {
-            errors.push(
-                createEntityAPIError('inactive', index, 'Class', classId)
-            )
-            continue
-        }
-
-        // Build output
-        Object.assign(dbClass, partialClass)
-        output.push(mapClassToClassConnectionNode(dbClass))
+        await this.permissions.rejectIfNotAllowed(
+            { organization_ids: organizationIds },
+            PermissionName.delete_class_20444
+        )
     }
 
-    if (errors.length > 0) throw new APIErrorCollection(errors)
-    try {
-        await getManager()
-            .createQueryBuilder()
-            .update(Class)
-            .set(partialClass)
-            .where({ class_id: In(classIds) })
-            .execute()
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw new APIError({
-            code: customErrors.database_save_error.code,
-            message: customErrors.database_save_error.message,
-            variables: [message],
-            entity: 'Class',
-        })
+    protected async buildOutput(currentEntity: Class): Promise<void> {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
     }
-
-    return { classes: output }
 }
 
 export interface EntityMapAddRemovePrograms extends EntityMap<Class> {
