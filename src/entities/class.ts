@@ -12,6 +12,7 @@ import {
     PrimaryGeneratedColumn,
     In,
     RelationId,
+    JoinColumn,
 } from 'typeorm'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
@@ -27,6 +28,7 @@ import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 import { CustomBaseEntity } from './customBaseEntity'
 import logger from '../logging'
 import { reportError } from '../utils/resolvers/errors'
+import { AcademicTerm } from './academicTerm'
 
 @Entity()
 @Check(`"class_name" <> ''`)
@@ -45,7 +47,7 @@ export class Class extends CustomBaseEntity {
     public organization?: Promise<Organization>
 
     @RelationId((_class: Class) => _class.organization)
-    public organizationId!: string
+    public readonly organizationId!: string
 
     @ManyToMany(() => School, (school) => school.classes)
     public schools?: Promise<School[]>
@@ -71,6 +73,13 @@ export class Class extends CustomBaseEntity {
     @ManyToMany(() => Subject, (subject) => subject.classes)
     @JoinTable()
     public subjects?: Promise<Subject[]>
+
+    @ManyToOne(() => AcademicTerm)
+    @JoinColumn({ name: 'academic_term_id' })
+    public academicTerm?: Promise<AcademicTerm>
+
+    @RelationId((class_: Class) => class_.academicTerm)
+    public readonly academic_term_id!: string
 
     public async set(
         { class_name, shortcode }: { class_name: string; shortcode: string },
