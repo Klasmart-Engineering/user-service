@@ -28,6 +28,7 @@ import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 import { CustomBaseEntity } from './customBaseEntity'
 import logger from '../logging'
 import { reportError } from '../utils/resolvers/errors'
+import { AcademicTerm } from './academicTerm'
 @Entity()
 @Check(`"school_name" <> ''`)
 export class School extends CustomBaseEntity {
@@ -68,11 +69,14 @@ export class School extends CustomBaseEntity {
     public classes?: Promise<Class[]>
 
     @RelationId((school: School) => school.organization)
-    public organizationId!: string
+    public readonly organizationId!: string
 
     @ManyToMany(() => Program, (program) => program.schools)
     @JoinTable()
     public programs?: Promise<Program[]>
+
+    @OneToMany(() => AcademicTerm, (term) => term.school)
+    public academicTerms?: Promise<AcademicTerm[]>
 
     public async set(
         { school_name, shortcode }: { school_name: string; shortcode: string },
