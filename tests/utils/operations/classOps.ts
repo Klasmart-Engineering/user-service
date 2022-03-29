@@ -255,47 +255,6 @@ export const DELETE_CLASS = `
     }
 `
 
-export const MOVE_TEACHERS_TO_CLASS = gql`
-    mutation MoveTeachersToClass($theClassIds: MoveUsersToClassInput!) {
-        moveStudentsToClass(input: $theClassIds) {
-            fromClass {
-                name
-                id
-                teachersConnection {
-                    edges {
-                        node {
-                            id
-                            givenName
-                            familyName
-                            contactInfo {
-                                email
-                                phone
-                            }
-                        }
-                    }
-                }
-            }
-            toClass {
-                name
-                id
-                teachersConnection {
-                    edges {
-                        node {
-                            id
-                            givenName
-                            familyName
-                            contactInfo {
-                                email
-                                phone
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-`
-
 const CLASSES_MUTATION_RESULT = `classes {
                 id
                 name
@@ -305,6 +264,49 @@ const CLASSES_MUTATION_RESULT = `classes {
                     name
                 }
             }
+`
+
+const MOVE_CLASSES_RESULT = `{
+    fromClass {
+        name
+        id
+        teachersConnection {
+            edges {
+                node {
+                    id
+                    givenName
+                    familyName
+                    contactInfo {
+                        email
+                        phone
+                    }
+                }
+            }
+        }
+    }
+    toClass {
+        name
+        id
+        teachersConnection {
+            edges {
+                node {
+                    id
+                    givenName
+                    familyName
+                    contactInfo {
+                        email
+                        phone
+                    }
+                }
+            }
+        }
+    }
+}`
+
+export const MOVE_TEACHERS_TO_CLASS = gql`
+    mutation myMutation($input: MoveUsersToClassInput!) {
+        moveStudentsToClass(input: $input)  ${MOVE_CLASSES_RESULT}
+    }
 `
 
 export const MOVE_TEACHERS_TO_CLASS = gql`
