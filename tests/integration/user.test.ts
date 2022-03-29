@@ -2315,7 +2315,7 @@ describe('user', () => {
                 const result = await validateOverAllInputs(input)
                 const expectedErrors = [
                     createInputLengthAPIError(
-                        'AddOrganizationRolesToUsersInput',
+                        'AddOrganizationRolesToUserInput',
                         'min',
                         'roleIds',
                         0
@@ -2339,7 +2339,7 @@ describe('user', () => {
                     createDuplicateAttributeAPIError(
                         0,
                         ['roleIds'],
-                        'AddOrganizationRolesToUsersInput'
+                        'AddOrganizationRolesToUserInput'
                     ),
                 ]
 
