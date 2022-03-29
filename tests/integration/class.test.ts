@@ -9746,10 +9746,6 @@ describe('class', () => {
             })
 
             it('fails miserably', async () => {
-                const checkstudents = (await classes[0].students) || []
-                const checkIds = checkstudents.map((u) => u.user_id)
-                const checkPreviousstudents = (await classes[1].students) || []
-
                 const error = (await expect(
                     moveUsersToClassValidation(
                         classes[0].class_id,
@@ -9817,10 +9813,6 @@ describe('class', () => {
             })
 
             it('fails miserably', async () => {
-                const checkstudents = (await classes[0].students) || []
-                const checkIds = checkstudents.map((u) => u.user_id)
-                const checkPreviousstudents = (await classes[1].students) || []
-
                 const error = (await expect(
                     moveUsersToClassValidation(
                         classes[0].class_id,
@@ -9877,9 +9869,6 @@ describe('class', () => {
             })
 
             it('fails miserably', async () => {
-                const checkstudents = (await classes[0].students) || []
-                const checkIds = checkstudents.map((u) => u.user_id)
-
                 const error = (await expect(
                     moveUsersToClassValidation(
                         classes[0].class_id,
@@ -9936,9 +9925,6 @@ describe('class', () => {
                 })
 
                 it('fails miserably', async () => {
-                    const checkstudents = (await classes[0].students) || []
-                    const checkIds = checkstudents.map((u) => u.user_id)
-
                     const error = (await expect(
                         moveUsersToClassValidation(
                             classes[0].class_id,

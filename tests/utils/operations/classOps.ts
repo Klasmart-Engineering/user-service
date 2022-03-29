@@ -255,6 +255,47 @@ export const DELETE_CLASS = `
     }
 `
 
+export const MOVE_TEACHERS_TO_CLASS = gql`
+    mutation MoveTeachersToClass($theClassIds: MoveUsersToClassInput!) {
+        moveStudentsToClass(input: $theClassIds) {
+            fromClass {
+                name
+                id
+                teachersConnection {
+                    edges {
+                        node {
+                            id
+                            givenName
+                            familyName
+                            contactInfo {
+                                email
+                                phone
+                            }
+                        }
+                    }
+                }
+            }
+            toClass {
+                name
+                id
+                teachersConnection {
+                    edges {
+                        node {
+                            id
+                            givenName
+                            familyName
+                            contactInfo {
+                                email
+                                phone
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
 const CLASSES_MUTATION_RESULT = `classes {
                 id
                 name
