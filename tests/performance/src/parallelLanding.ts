@@ -1,4 +1,5 @@
 import landingV2 from './scripts/landingV2';
+import landingV3Students from './scripts/landingV3Students';
 import { Options } from 'k6/options';
 import { sleep } from 'k6';
 import http from 'k6/http';
@@ -90,7 +91,8 @@ export const options: Options = {
             gracefulStop: '5s',
             stages:  generateStages(stages),
         }, */
-    }
+    },
+    setupTimeout: '5m',
 };
 
 
@@ -233,7 +235,7 @@ export function student00(data: { [key: string]: { res: any, userId: string }}) 
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.student00);
+    landingV3Students(data.student00);
     sleep(5);
 }
 export function student01(data: { [key: string]: { res: any, userId: string }}) {
@@ -245,8 +247,8 @@ export function student01(data: { [key: string]: { res: any, userId: string }}) 
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.student01);
-    sleep(5);
+    landingV3Students(data.student01);
+    sleep(1);
 }/* 
 export function student02(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -282,8 +284,8 @@ export function student04(data: { [key: string]: { res: any, userId: string }}) 
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV2(data.student04);
-    sleep(5);
+    landingV3Students(data.student04);
+    sleep(1);
 /* 
 export function student04(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();

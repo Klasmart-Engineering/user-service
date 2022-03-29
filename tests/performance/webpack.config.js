@@ -87,7 +87,9 @@ module.exports = env => ({
         parallelLandingScheduleUniqueConstantSplitB2c: `./parallelLandingScheduleUniqueConstantSplitB2c.ts`,
 
 
-        joinLiveStudyClassMultiPageRepeatAccount: `./joinLiveStudyClassMultiPageRepeatAccount.ts`
+        joinLiveStudyClassMultiPageRepeatAccount: `./joinLiveStudyClassMultiPageRepeatAccount.ts`,
+        joinLiveStudyClassMultiPageDiferentClasses:  `./joinLiveStudyClassMultiPageDiferentClasses.ts`
+
     },
     output: {
         path: path.join(__dirname, `dist`),
