@@ -187,7 +187,7 @@ export function students(data: { [key: string]: { res: any, userId: string } }) 
 
     console.log(`Refresh ID for ${process.env.B2C_USERNAME}${random}${process.env.B2C_DOMAIN}: ${refreshId}`);
     
-    sleep(__VU * 0.5);
+    sleep(__VU * 0.1);
 
     const token = getLiveClassToken(data.classId as unknown as string);
     const liveClassPayload = {
@@ -223,7 +223,7 @@ export function students1(data: { [key: string]: { res: any, userId: string } })
 
     console.log(`Refresh ID for ${process.env.B2C_USERNAME}${random}@${process.env.B2C_DOMAIN}: ${refreshId}`);
     
-    sleep(__VU * 0.5);
+    sleep(__VU * 0.1);
 
     const token = getLiveClassToken(data.classId2 as unknown as string);
     const liveClassPayload2 = {
