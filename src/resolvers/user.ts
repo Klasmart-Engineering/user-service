@@ -26,6 +26,7 @@ import {
 } from '../utils/mutations/validations/user'
 import {
     createEntityAPIError,
+    createExistentEntityAttributesAPIError,
     createInputLengthAPIError,
 } from '../utils/resolvers/errors'
 import { getMap, SchoolMembershipMap } from '../utils/resolvers/entityMaps'
@@ -733,14 +734,11 @@ export class CreateUsers extends CreateMutation<
         const conflictingUserId = maps.conflictingUsers.get(key)?.user_id
         if (conflictingUserId) {
             errors.push(
-                createEntityAPIError(
-                    'existent',
+                createExistentEntityAttributesAPIError(
                     index,
                     'User',
                     conflictingUserId,
-                    undefined,
-                    undefined,
-                    ['user_id']
+                    key
                 )
             )
         }

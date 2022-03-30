@@ -123,6 +123,7 @@ import {
     createDuplicateAttributeAPIError,
     createDuplicateInputAttributeAPIError,
     createEntityAPIError,
+    createExistentEntityAttributesAPIError,
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
 } from '../../src/utils/resolvers/errors'
@@ -1807,14 +1808,15 @@ describe('user', () => {
             let duplicateUsers: User[]
 
             const createExistentError = (user: User, index: number) => {
-                return createEntityAPIError(
-                    'existent',
+                return createExistentEntityAttributesAPIError(
                     index,
                     'User',
                     user.user_id,
-                    undefined,
-                    undefined,
-                    ['givenName', 'familyName', 'username']
+                    {
+                        givenName: user.given_name!,
+                        familyName: user.family_name!,
+                        username: user.username!,
+                    }
                 )
             }
 
