@@ -6,6 +6,7 @@ import { AgeRangeConnectionNode } from './ageRange'
 import { GradeSummaryNode } from './grade'
 import { SchoolSummaryNode } from './school'
 import { UserConnectionNode } from './user'
+import { AcademicTermConnectionNode } from './academicTerm'
 export interface ClassConnectionNode {
     id: string
     name?: string
@@ -16,6 +17,7 @@ export interface ClassConnectionNode {
     grades?: GradeSummaryNode[]
     subjects?: CoreSubjectConnectionNode[]
     programs?: CoreProgramConnectionNode[]
+    academicTerm?: AcademicTermConnectionNode
 
     studentsConnection?: IPaginatedResponse<UserConnectionNode>
     teachersConnection?: IPaginatedResponse<UserConnectionNode>

@@ -15,6 +15,9 @@ import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
 import { CoreSubjectConnectionNode } from '../pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../pagination/programsConnection'
+import { AcademicTermConnectionNode } from '../types/graphQL/academicTerm'
+import { mapAcademicTermToAcademicTermNode } from '../pagination/academicTermConnection'
+import { AcademicTerm } from '../entities/academicTerm'
 
 export interface IClassesConnectionLoaders {
     schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
@@ -22,6 +25,9 @@ export interface IClassesConnectionLoaders {
     grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
     subjects: Lazy<DataLoader<string, CoreSubjectConnectionNode[]>>
     programs: Lazy<DataLoader<string, CoreProgramConnectionNode[]>>
+    academicTerm: Lazy<
+        DataLoader<string, AcademicTermConnectionNode | undefined>
+    >
 }
 
 export interface IClassNodeDataLoaders {
@@ -117,6 +123,48 @@ export const subjectsForClasses = async (
     ) as Promise<CoreSubjectConnectionNode[][]>
 
     return classSubjects
+}
+
+export const academicTermForClasses = async (
+    classIds: readonly string[]
+): Promise<(AcademicTermConnectionNode | undefined)[]> => {
+    const coreAcademicTermNodeFields: (keyof AcademicTerm)[] = [
+        'id',
+        'name',
+        'start_date',
+        'end_date',
+        'status',
+    ]
+
+    const scope = baseClassQuery(classIds)
+        .leftJoin('Class.academicTerm', 'AcademicTerm')
+        .addSelect(
+            coreAcademicTermNodeFields.map((field) => `AcademicTerm.${field}`)
+        )
+
+    const classToAcademicTerms = new Map()
+
+    for (const academicTerm of await scope.getMany()) {
+        classToAcademicTerms.set(
+            academicTerm.class_id,
+            // eslint-disable-next-line no-await-in-loop
+            await academicTerm.academicTerm
+        )
+    }
+
+    const academicTermsInLoadedOrder = []
+
+    for (const classId of classIds) {
+        const academicTerm = classToAcademicTerms.get(classId)
+
+        academicTermsInLoadedOrder.push(
+            academicTerm
+                ? mapAcademicTermToAcademicTermNode(academicTerm)
+                : undefined
+        )
+    }
+
+    return Promise.resolve(academicTermsInLoadedOrder)
 }
 
 export const programsForClasses = async (

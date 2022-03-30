@@ -8,6 +8,7 @@ import _class from './class'
 import { module as complexity } from './complexity'
 import utils from './utils'
 import grade from './grade'
+import academicTerm from './academicTerm'
 import organization from './organization'
 import permission from './permission'
 import pagination from './pagination'
@@ -53,6 +54,7 @@ export default function getDefault(
         myUser(model),
         schoolMembership(model),
         organizationMembership(model, context),
+        academicTerm(),
         ...enums,
         ...directives,
         ...scalars,
