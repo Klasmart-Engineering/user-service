@@ -6,7 +6,7 @@ import {
 import { expect } from 'chai'
 import { InitialState1628677180503 } from '../../migrations/1628677180503-InitialState'
 
-async function getDatabaseTables(connection: Connection) {
+export async function getDatabaseTables(connection: Connection) {
     const tables = (await connection.createQueryRunner().query(`
         SELECT table_name
             FROM information_schema.tables

@@ -130,7 +130,7 @@ export class CreateSubjects extends CreateMutation<
         const failedDuplicateNames = validateNoDuplicate(
             inputs.map((i) => [i.organizationId, i.name].toString()),
             'subject',
-            'name'
+            ['name']
         )
 
         errors.push(...failedDuplicateNames.values())
@@ -360,7 +360,7 @@ export class UpdateSubjects extends UpdateMutation<
         const failedDuplicates = validateNoDuplicate(
             inputs.map((i) => i.id),
             'subject',
-            'id'
+            ['id']
         )
 
         errors.push(...failedDuplicates.values())

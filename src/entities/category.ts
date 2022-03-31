@@ -25,7 +25,7 @@ export class Category extends CustomBaseEntity {
     public id!: string
 
     @Column({ nullable: false })
-    public name?: string
+    public name!: string
 
     @Column({ nullable: false, default: false })
     public system!: boolean

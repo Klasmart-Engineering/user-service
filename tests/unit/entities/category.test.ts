@@ -51,17 +51,6 @@ describe('Category', () => {
             })
         })
 
-        context('when name is not defined', () => {
-            beforeEach(async () => {
-                category.name = undefined
-                await manager.save(org)
-            })
-
-            it('raises an error', async () => {
-                await expect(manager.save(category)).to.be.rejected
-            })
-        })
-
         context('when all details are correct', () => {
             beforeEach(async () => {
                 await manager.save(org)
