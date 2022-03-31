@@ -1,9 +1,15 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { Connection, QueryRunner } from 'typeorm'
+import {
+    DeletingDuplicatedSystemRoles1647009770308,
+    rolesToDeleteIds,
+} from '../../migrations/1647009770308-DeletingDuplicatedSystemRoles'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Role } from '../../src/entities/role'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { User } from '../../src/entities/user'
+import RoleInitializer from '../../src/initializers/roles'
 import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
 import { parentRole } from '../../src/permissions/parent'
 import { schoolAdminRole } from '../../src/permissions/schoolAdmin'
@@ -18,16 +24,14 @@ import { createUser } from '../factories/user.factory'
 import {
     createMigrationsTestConnection,
     createTestConnection,
+    TestConnection,
 } from '../utils/testConnection'
-import RoleInitializer from '../../src/initializers/roles'
-import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { rolesToDeleteIds } from '../../migrations/1647009770308-DeletingDuplicatedSystemRoles'
 
 use(deepEqualInAnyOrder)
 
 describe('DeletingDuplicatedSystemRoles', () => {
     let baseConnection: Connection
-    let migrationsConnection: Connection
+    let migrationsConnection: TestConnection
     let originalSystemRoles: Role[]
     let duplicatedSystemRoles: Role[]
 
@@ -39,13 +43,14 @@ describe('DeletingDuplicatedSystemRoles', () => {
         await baseConnection?.close()
     })
 
-    beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            true,
-            'migrations'
+    const runMigration = async (runner: QueryRunner) => {
+        const migration = migrationsConnection.migrations.find(
+            (m) => m.name === DeletingDuplicatedSystemRoles1647009770308.name
         )
+        return migration!.up(runner)
+    }
 
+    async function createDuplicateRoles() {
         const systemRolesData = [
             organizationAdminRole,
             schoolAdminRole,
@@ -94,7 +99,15 @@ describe('DeletingDuplicatedSystemRoles', () => {
                 })
             )
         )
+    }
 
+    beforeEach(async () => {
+        migrationsConnection = await createMigrationsTestConnection(
+            true,
+            true,
+            'migrations'
+        )
+        await createDuplicateRoles()
         await migrationsConnection.runMigrations()
     })
 
@@ -157,5 +170,19 @@ describe('DeletingDuplicatedSystemRoles', () => {
                 expect(duplicateRoleIds).to.not.include(r.role_id)
             })
         }
+    })
+
+    it('executes a fixed number of queries', async () => {
+        // 1 for roles to delete
+        // 1 for roles to persist
+        // 10 (5x2) for updating each role in each membership table
+        // 1 to delete roles
+        const numQueries = 13
+
+        await createDuplicateRoles()
+
+        migrationsConnection.logger.reset()
+        await runMigration(migrationsConnection.createQueryRunner())
+        expect(migrationsConnection.logger.count).to.eq(numQueries)
     })
 })
