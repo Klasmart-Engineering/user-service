@@ -1,14 +1,5 @@
-import {
-    EntityManager,
-    In,
-    MigrationInterface,
-    Not,
-    QueryRunner,
-    WhereExpression,
-} from 'typeorm'
-import { OrganizationMembership } from '../src/entities/organizationMembership'
+import { In, MigrationInterface, Not, QueryRunner } from 'typeorm'
 import { Role } from '../src/entities/role'
-import { SchoolMembership } from '../src/entities/schoolMembership'
 import logger from '../src/logging'
 import { organizationAdminRole } from '../src/permissions/organizationAdmin'
 import { parentRole } from '../src/permissions/parent'
