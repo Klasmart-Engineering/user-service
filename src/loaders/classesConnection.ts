@@ -164,7 +164,7 @@ export const academicTermForClasses = async (
         )
     }
 
-    return Promise.resolve(academicTermsInLoadedOrder)
+    return academicTermsInLoadedOrder
 }
 
 export const programsForClasses = async (
