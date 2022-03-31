@@ -65,7 +65,7 @@ export class DeletingDuplicatedSystemRoles1647009770308
 
         if (
             rolesToDelete.length !== rolesToDeleteIds.length ||
-            rolesToPersist.length !== systemRoleNames.length
+            rolesToPersist.length !== rolesToDelete.length
         ) {
             logger.error(
                 `Unexpected number of roles to delete ${rolesToDelete.length} or persist ${rolesToPersist.length}. Aborting the migration.`
@@ -93,6 +93,8 @@ export class DeletingDuplicatedSystemRoles1647009770308
         ]
 
         // migrate memberships for each role one by one
+        logger.info('Updating membership tables.')
+
         for (const roleName in rolesByName) {
             const fromId = rolesByName[roleName].from
             const toId = rolesByName[roleName].to
@@ -102,21 +104,22 @@ export class DeletingDuplicatedSystemRoles1647009770308
             for (const table of tables) {
                 const query = `UPDATE ${table} SET "roleRoleId" = '${toId}' WHERE "roleRoleId" = '${fromId}'`
                 logger.info(`Running query: ${query}`)
+                // eslint-disable-next-line no-await-in-loop
                 await queryRunner.query(query)
             }
         }
 
-        // Once these roles are not in any organization or school membership, they can be removed
-        const deleteRoleIds = Array.from(rolesToDelete.values())
-            .flat()
-            .map((r) => r.role_id)
+        // Once these roles are not in any organization or school membership, they can be hard deleted
+        await manager.delete(Role, rolesToDeleteIds)
 
-        await manager.delete(Role, deleteRoleIds)
+        logger.info(
+            'DeletingDuplicatedSystemRoles1647009770308 ran successfully.'
+        )
     }
 
     public async down(_queryRunner: QueryRunner): Promise<void> {
         logger.warn(
-            'This is a data migration for remove duplications. Down the migration would mean create duplications'
+            'Skipping DeletingDuplicatedSystemRoles1647009770308 down migration - not applicable.'
         )
     }
 }
