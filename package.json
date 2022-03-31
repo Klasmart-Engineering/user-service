@@ -31,8 +31,7 @@
     "coverage:integration": "nyc --all --require ts-node/register -n src --reporter=lcov --reporter=json-summary --reporter=text-summary --report-dir ./coverage_integration npm run test:integration",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm",
     "release": "standard-version",
-    "prepare": "husky install",
-    "alert-sync": "ts-node \"src/alerts-poc/alertSync.ts\""
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
