@@ -206,6 +206,11 @@ export const customErrors = {
         code: 'ERR_USER_CANNOT_APPLY_CHANGE_TO_SELF',
         message: 'user {userId} cannot apply this change to themselves.',
     },
+    must_have_exactly_n: {
+        code: 'ERR_MUST_HAVE_EXACTLY_N',
+        message:
+            '{entity} {entityName} must have exactly {count} {parentEntity}.',
+    },
 
     // auth
     unauthorized: {
