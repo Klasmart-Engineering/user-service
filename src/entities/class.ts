@@ -47,7 +47,7 @@ export class Class extends CustomBaseEntity {
     public organization?: Promise<Organization>
 
     @RelationId((_class: Class) => _class.organization)
-    public readonly organizationId!: string
+    public readonly organization_id?: string
 
     @ManyToMany(() => School, (school) => school.classes)
     public schools?: Promise<School[]>

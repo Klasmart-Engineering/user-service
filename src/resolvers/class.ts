@@ -1713,7 +1713,7 @@ export class SetAcademicTermsOfClasses extends SetMutation<
         const organization_ids: string[] = []
         const school_ids: string[] = []
         for (const cls of maps.mainEntity.values()) {
-            if (cls.organizationId) organization_ids.push(cls.organizationId)
+            if (cls.organization_id) organization_ids.push(cls.organization_id)
             // eslint-disable-next-line no-await-in-loop
             for (const school of (await cls.schools) || []) {
                 school_ids.push(school.school_id)
@@ -1801,7 +1801,7 @@ export class SetAcademicTermsOfClasses extends SetMutation<
             )
         }
 
-        if (!cls.organizationId) {
+        if (!cls.organization_id) {
             errors.push(
                 createMustHaveExactlyNAPIError(
                     'Class',
@@ -1814,7 +1814,7 @@ export class SetAcademicTermsOfClasses extends SetMutation<
             return errors
         }
 
-        if (schools[0].organizationId !== cls.organizationId) {
+        if (schools[0].organizationId !== cls.organization_id) {
             errors.push(
                 createEntityAPIError(
                     'nonExistentChild',
@@ -1822,7 +1822,7 @@ export class SetAcademicTermsOfClasses extends SetMutation<
                     'School',
                     schoolId,
                     'Organization',
-                    cls.organizationId
+                    cls.organization_id
                 )
             )
         }

@@ -211,6 +211,11 @@ export const customErrors = {
         message:
             '{entity} {entityName} must have exactly {count} {parentEntity}.',
     },
+    class_has_academic_term: {
+        code: 'ERR_CLASS_HAS_ACADEMIC_TERM',
+        message:
+            'Remove AcademicTerm before moving Class {entityName} to or from a School.',
+    },
 
     // auth
     unauthorized: {
