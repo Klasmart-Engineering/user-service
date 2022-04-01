@@ -5,6 +5,7 @@ import {
     DeletingDuplicatedSystemRoles1647009770308,
     rolesToDeleteIds,
 } from '../../migrations/1647009770308-DeletingDuplicatedSystemRoles'
+import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Role } from '../../src/entities/role'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
@@ -34,6 +35,7 @@ describe('DeletingDuplicatedSystemRoles', () => {
     let migrationsConnection: TestConnection
     let originalSystemRoles: Role[]
     let duplicatedSystemRoles: Role[]
+    let organization: Organization
 
     before(async () => {
         baseConnection = await createTestConnection()
@@ -74,7 +76,7 @@ describe('DeletingDuplicatedSystemRoles', () => {
             })
         )
 
-        const organization = await createOrganization().save()
+        organization = await createOrganization().save()
         const school = await createSchool().save()
         const users = await User.save(
             Array.from(originalSystemRoles, () => createUser())
@@ -175,14 +177,47 @@ describe('DeletingDuplicatedSystemRoles', () => {
     it('executes a fixed number of queries', async () => {
         // 1 for roles to delete
         // 1 for roles to persist
+        // 10 (5x2) for updating memberships with both original & dupe role assigned
         // 10 (5x2) for updating each role in each membership table
         // 1 to delete roles
-        const numQueries = 13
+        const numQueries = 23
 
         await createDuplicateRoles()
 
         migrationsConnection.logger.reset()
         await runMigration(migrationsConnection.createQueryRunner())
         expect(migrationsConnection.logger.count).to.eq(numQueries)
+    })
+
+    context('when a user has both the original and duplicated role', () => {
+        let membership: OrganizationMembership
+        let originalRole: Role
+        beforeEach(async () => {
+            await createDuplicateRoles()
+            const user = await createUser().save()
+
+            originalRole = originalSystemRoles.find(
+                (r) => r.role_name === organizationAdminRole.role_name
+            )!
+            const dupe = duplicatedSystemRoles.find(
+                (r) => r.role_name === organizationAdminRole.role_name
+            )
+
+            membership = await createOrganizationMembership({
+                user,
+                organization,
+                roles: [originalRole!, dupe!],
+            }).save()
+        })
+        it('deletes the dupe', async () => {
+            await expect(runMigration(migrationsConnection.createQueryRunner()))
+                .to.be.fulfilled
+
+            await membership.reload()
+            const roles = await membership.roles
+            expect(roles).to.have.lengthOf(1)
+            expect(roles![0].role_name).eq(organizationAdminRole.role_name)
+            expect(roles![0].role_id).eq(originalRole.role_id)
+        })
     })
 })
