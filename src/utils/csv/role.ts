@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, Equal } from 'typeorm'
 import { Organization } from '../../entities/organization'
 import { Permission } from '../../entities/permission'
 import { Role } from '../../entities/role'
@@ -7,6 +7,7 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { Status } from '../../entities/status'
 
 export const processRoleFromCSVRow = async (
     manager: EntityManager,
@@ -110,9 +111,9 @@ export const processRoleFromCSVRow = async (
     role = await manager.findOne(Role, {
         where: {
             role_name,
-            status: 'active',
+            status: Status.ACTIVE,
             system_role: false,
-            organization,
+            organization: Equal(organization),
         },
     })
 

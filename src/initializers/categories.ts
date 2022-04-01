@@ -824,9 +824,10 @@ export class CategoriesInitializer {
                     where: { id: In(systemCategory.subcategories) },
                 })) || []
 
-            const category = await Category.findOneOrFail({
+            const category = await Category.findOneByOrFail({
                 id: systemCategory.id,
             })
+
             category.subcategories = Promise.resolve(subcategories)
             await category.save()
         }

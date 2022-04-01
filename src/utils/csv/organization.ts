@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, Equal, IsNull } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 import { accountUUID, User } from '../../entities/user'
 import { OrganizationRow } from '../../types/csv/organizationRow'
@@ -22,7 +22,7 @@ async function getUserByEmailOrPhone(
 ) {
     const hashSource = email || phone
     const user_id = accountUUID(hashSource)
-    return manager.findOne(User, { user_id })
+    return manager.findOneBy(User, { user_id })
 }
 
 async function createOrganizationOwner(
@@ -92,7 +92,7 @@ async function createOrganization(
             where: {
                 role_name: 'Organization Admin',
                 system_role: true,
-                organization: { organization_id: null },
+                organization: Equal({ organization_id: IsNull() }),
             },
         }),
     ]
@@ -187,7 +187,7 @@ export const processOrganizationFromCSVRow = async (
         return rowErrors
     }
 
-    const organizationExists = await Organization.findOne({
+    const organizationExists = await Organization.findOneBy({
         organization_name,
     })
 
@@ -229,8 +229,8 @@ export const processOrganizationFromCSVRow = async (
 
     const ownerUploaded = await manager.findOne(User, {
         where: [
-            { email: owner_email, phone: null },
-            { email: null, phone: owner_phone },
+            { email: owner_email, phone: IsNull() },
+            { email: IsNull(), phone: owner_phone },
             { email: owner_email, phone: owner_phone },
         ],
     })

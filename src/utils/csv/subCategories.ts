@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, Equal } from 'typeorm'
 import { Organization } from '../../entities/organization'
 import { Subcategory } from '../../entities/subcategory'
 import { SubCategoryRow } from '../../types/csv/subCategoryRow'
@@ -48,7 +48,7 @@ export const processSubCategoriesFromCSVRow = async (
         return rowErrors
     }
 
-    const org = await Organization.findOne({ organization_name })
+    const org = await Organization.findOneBy({ organization_name })
 
     if (!org) {
         addCsvError(
@@ -67,7 +67,7 @@ export const processSubCategoriesFromCSVRow = async (
     }
 
     const subCategoryExists = await manager.findOne(Subcategory, {
-        where: { name: subcategory_name, organization: org },
+        where: { name: subcategory_name, organization: Equal(org) },
     })
 
     if (subCategoryExists) {

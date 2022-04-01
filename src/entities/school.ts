@@ -115,7 +115,7 @@ export class School extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
     }
 
@@ -142,7 +142,7 @@ export class School extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail(user_id)
+            const user = await getRepository(User).findOneByOrFail({ user_id })
 
             await OrganizationMembership.findOneOrFail({
                 where: { organization_id: organizationId, user_id: user_id },
@@ -228,7 +228,7 @@ export class School extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
         return false
     }

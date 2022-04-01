@@ -88,7 +88,7 @@ export class Role extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
     }
 
@@ -109,9 +109,10 @@ export class Role extends CustomBaseEntity {
         )
 
         try {
-            const permission = await getRepository(Permission).findOneOrFail({
+            const permission = await getRepository(Permission).findOneByOrFail({
                 permission_name,
             })
+
             return permission
         } catch (e) {
             logger.warn(e)
@@ -273,7 +274,7 @@ export class Role extends CustomBaseEntity {
 
             return permissionEntities
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
     }
 
@@ -363,7 +364,7 @@ export class Role extends CustomBaseEntity {
             })
             return true
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
         return false
     }

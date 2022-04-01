@@ -116,7 +116,7 @@ export class Class extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
     }
 
@@ -229,9 +229,10 @@ export class Class extends CustomBaseEntity {
 
             const newTeachers = await Promise.all(
                 teacher_ids.map(async (teacher_id: string) => {
-                    const teacher = await getRepository(User).findOneOrFail({
+                    const teacher = await getRepository(User).findOneByOrFail({
                         user_id: teacher_id,
                     })
+
                     const classes = (await teacher.classesTeaching) || []
                     classes.push(this)
                     teacher.classesTeaching = Promise.resolve(classes)
@@ -272,7 +273,7 @@ export class Class extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail({ user_id })
+            const user = await getRepository(User).findOneByOrFail({ user_id })
             const classes = (await user.classesTeaching) || []
             classes.push(this)
             user.classesTeaching = Promise.resolve(classes)
@@ -308,7 +309,7 @@ export class Class extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail({ user_id })
+            const user = await getRepository(User).findOneByOrFail({ user_id })
             const classes = (await user.classesTeaching) || []
             user.classesTeaching = Promise.resolve(
                 classes.filter(({ class_id }) => class_id !== this.class_id)
@@ -365,9 +366,10 @@ export class Class extends CustomBaseEntity {
 
             const newStudents = await Promise.all(
                 student_ids.map(async (student_id: string) => {
-                    const student = await getRepository(User).findOneOrFail({
+                    const student = await getRepository(User).findOneByOrFail({
                         user_id: student_id,
                     })
+
                     const classes = (await student.classesStudying) || []
                     classes.push(this)
                     student.classesStudying = Promise.resolve(classes)
@@ -408,7 +410,7 @@ export class Class extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail({ user_id })
+            const user = await getRepository(User).findOneByOrFail({ user_id })
             const classes = (await user.classesStudying) || []
             classes.push(this)
             user.classesStudying = Promise.resolve(classes)
@@ -444,7 +446,7 @@ export class Class extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail({ user_id })
+            const user = await getRepository(User).findOneByOrFail({ user_id })
             const classes = (await user.classesStudying) || []
             user.classesStudying = Promise.resolve(
                 classes.filter(({ class_id }) => class_id !== this.class_id)
@@ -501,7 +503,7 @@ export class Class extends CustomBaseEntity {
 
             const newSchools = await Promise.all(
                 school_ids.map(async (school_id: string) => {
-                    const school = await getRepository(School).findOneOrFail({
+                    const school = await getRepository(School).findOneByOrFail({
                         school_id,
                     })
                     const classes = (await school.classes) || []
@@ -544,7 +546,7 @@ export class Class extends CustomBaseEntity {
         )
 
         try {
-            const school = await getRepository(School).findOneOrFail({
+            const school = await getRepository(School).findOneByOrFail({
                 school_id,
             })
             const classes = (await school.classes) || []
@@ -582,9 +584,10 @@ export class Class extends CustomBaseEntity {
         )
 
         try {
-            const school = await getRepository(School).findOneOrFail({
+            const school = await getRepository(School).findOneByOrFail({
                 school_id,
             })
+
             const classes = (await school.classes) || []
             school.classes = Promise.resolve(
                 classes.filter(({ class_id }) => class_id !== this.class_id)
@@ -777,7 +780,7 @@ export class Class extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
         return false
     }

@@ -132,7 +132,7 @@ export class OrganizationMembership extends CustomBaseEntity {
                 return results
             }
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
     }
 
@@ -148,7 +148,7 @@ export class OrganizationMembership extends CustomBaseEntity {
                 })
                 .getMany()
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
     }
 
@@ -180,7 +180,7 @@ export class OrganizationMembership extends CustomBaseEntity {
             ) {
                 return null
             }
-            const role = await getRepository(Role).findOneOrFail({ role_id })
+            const role = await getRepository(Role).findOneByOrFail({ role_id })
             const memberships = (await role.memberships) || []
             const roleOrganization = await role.organization
             if (
@@ -217,7 +217,7 @@ export class OrganizationMembership extends CustomBaseEntity {
             }
 
             const rolePromises = role_ids.map(async (role_id) => {
-                const role = await getRepository(Role).findOneOrFail({
+                const role = await getRepository(Role).findOneByOrFail({
                     role_id,
                 })
                 const memberships = (await role.memberships) || []
@@ -255,7 +255,7 @@ export class OrganizationMembership extends CustomBaseEntity {
                 return null
             }
 
-            const role = await getRepository(Role).findOneOrFail({ role_id })
+            const role = await getRepository(Role).findOneByOrFail({ role_id })
             const memberships = await role.memberships
             if (memberships) {
                 const newMemberships = memberships.filter(
@@ -285,7 +285,7 @@ export class OrganizationMembership extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            reportError(e)
+            reportError(e as Error)
         }
         return false
     }

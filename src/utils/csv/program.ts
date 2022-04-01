@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, Equal, IsNull } from 'typeorm'
 import { AgeRange } from '../../entities/ageRange'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
@@ -10,6 +10,7 @@ import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { validateAgeRanges } from './validations/ageRange'
+import { Status } from '../../entities/status'
 
 export const processProgramFromCSVRow = async (
     manager: EntityManager,
@@ -19,10 +20,10 @@ export const processProgramFromCSVRow = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let ageRange: AgeRange | undefined
-    let grade: Grade | undefined
-    let subject: Subject | undefined
-    let program: Program | undefined
+    let ageRange: AgeRange | null
+    let grade: Grade | null
+    let subject: Subject | null
+    let program: Program | null
     let programAgeRanges: AgeRange[] = []
     let programGrades: Grade[] = []
     let programSubjects: Subject[] = []
@@ -103,8 +104,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                status: 'active',
-                organization: null,
+                status: Status.ACTIVE,
+                organization: IsNull(),
             },
         })
     } else {
@@ -112,23 +113,23 @@ export const processProgramFromCSVRow = async (
             where: [
                 {
                     name: ageRangeName,
-                    low_value: age_range_low_value,
-                    high_value: age_range_high_value,
+                    low_value: Number(age_range_low_value),
+                    high_value: Number(age_range_high_value),
                     high_value_unit: age_range_unit,
                     low_value_unit: age_range_unit,
                     system: false,
-                    status: 'active',
-                    organization,
+                    status: Status.ACTIVE,
+                    organization: Equal(organization),
                 },
                 {
                     name: ageRangeName,
-                    low_value: age_range_low_value,
-                    high_value: age_range_high_value,
+                    low_value: Number(age_range_low_value),
+                    high_value: Number(age_range_high_value),
                     high_value_unit: age_range_unit,
                     low_value_unit: age_range_unit,
                     system: true,
-                    status: 'active',
-                    organization: null,
+                    status: Status.ACTIVE,
+                    organization: IsNull(),
                 },
             ],
         })
@@ -155,8 +156,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                status: 'active',
-                organization: null,
+                status: Status.ACTIVE,
+                organization: IsNull(),
             },
         })
     } else {
@@ -164,8 +165,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: grade_name,
                 system: false,
-                status: 'active',
-                organization,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             },
         })
     }
@@ -191,8 +192,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                status: 'active',
-                organization: null,
+                status: Status.ACTIVE,
+                organization: IsNull(),
             },
         })
     } else {
@@ -200,8 +201,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: subject_name,
                 system: false,
-                status: 'active',
-                organization,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             },
         })
     }
@@ -230,8 +231,8 @@ export const processProgramFromCSVRow = async (
         where: {
             name: program_name,
             system: false,
-            status: 'active',
-            organization,
+            status: Status.ACTIVE,
+            organization: Equal(organization),
         },
     })
 

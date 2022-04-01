@@ -395,9 +395,10 @@ export const nonAdminUserScope: NonAdminScope<
     )
 }
 
-export const nonAdminOrganizationScope: NonAdminScope<
-    Organization | OrganizationMembership
-> = async (scope, permissions) => {
+export const nonAdminOrganizationScope: NonAdminScope<Organization> = async (
+    scope,
+    permissions
+) => {
     const orgIds = await permissions.orgMembershipsWithPermissions([])
     if (orgIds.length > 0) {
         scope.andWhere('Organization.organization_id IN (:...orgIds)', {
@@ -417,8 +418,15 @@ export const nonAdminOrganizationMembershipScope: NonAdminScope<OrganizationMemb
     scope.leftJoin('OrganizationMembership.organization', 'Organization')
     scope.leftJoin('OrganizationMembership.user', 'User')
 
-    await nonAdminOrganizationScope(scope, permissions)
-    await nonAdminUserScope(scope, permissions)
+    await nonAdminOrganizationScope(
+        (scope as unknown) as SelectQueryBuilder<Organization>,
+        permissions
+    )
+
+    await nonAdminUserScope(
+        (scope as unknown) as SelectQueryBuilder<User>,
+        permissions
+    )
 }
 
 export const nonAdminAgeRangeScope: NonAdminScope<AgeRange> = (

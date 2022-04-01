@@ -168,7 +168,9 @@ export async function validateToken(
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, { reason: e.message })!,
+                message: stringInject(message, {
+                    reason: (e as Error).message,
+                })!,
             })
         }
     } else {
@@ -179,7 +181,9 @@ export async function validateToken(
 
             return res.status(401).send({
                 code,
-                message: stringInject(message, { reason: e.message })!,
+                message: stringInject(message, {
+                    reason: (e as Error).message,
+                })!,
             })
         }
     }

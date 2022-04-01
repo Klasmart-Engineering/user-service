@@ -42,8 +42,11 @@ export async function createSubcategories(
 
     const preloadedOrgs = new Map(
         (
-            await Organization.findByIds(organizationIds, {
-                where: { status: Status.ACTIVE },
+            await Organization.find({
+                where: {
+                    organization_id: In(organizationIds),
+                    status: Status.ACTIVE,
+                },
             })
         ).map((i) => [i.organization_id, i])
     )

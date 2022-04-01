@@ -1,4 +1,4 @@
-import { EntityManager, In } from 'typeorm'
+import { EntityManager, Equal, In, IsNull } from 'typeorm'
 
 import { Class } from '../../entities/class'
 import { Organization } from '../../entities/organization'
@@ -283,10 +283,10 @@ export const processUserFromCSVRow = async (
     }
 
     // Now check dynamic constraints
-    let org: Organization | undefined
-    let organizationRole: Role | undefined
-    let school: School | undefined
-    let cls: Class | undefined
+    let org: Organization | undefined | null
+    let organizationRole: Role | undefined | null
+    let school: School | undefined | null
+    let cls: Class | undefined | null
 
     // Does the organization exist? And is the client user part of it?
     org = queryResultCache.validatedOrgs.get(row.organization_name)
@@ -353,11 +353,13 @@ export const processUserFromCSVRow = async (
                 {
                     role_name: row.organization_role_name,
                     system_role: true,
-                    organization: null,
+                    organization: IsNull(),
                 },
                 {
                     role_name: row.organization_role_name,
-                    organization: { organization_id: org.organization_id },
+                    organization: Equal({
+                        organization_id: org.organization_id,
+                    }),
                 },
             ],
         })
@@ -600,7 +602,16 @@ export const processUserFromCSVRow = async (
         return { rowErrors }
     }
 
-    return { rowErrors, entities: { user, cls, org, organizationRole, school } }
+    return {
+        rowErrors,
+        entities: {
+            user,
+            cls: cls || undefined,
+            org,
+            organizationRole: organizationRole || undefined,
+            school: school || undefined,
+        },
+    }
 }
 
 export const createOrUpdateMemberships = async (
@@ -643,7 +654,7 @@ export const createOrUpdateMemberships = async (
         }
     }
 
-    let schoolMembership: SchoolMembership | undefined
+    let schoolMembership: SchoolMembership | undefined | null
 
     if (school) {
         schoolMembership = await manager.findOne(SchoolMembership, {
@@ -662,7 +673,10 @@ export const createOrUpdateMemberships = async (
         }
     }
 
-    return { organizationMembership, schoolMembership }
+    return {
+        organizationMembership,
+        schoolMembership: schoolMembership || undefined,
+    }
 }
 
 export async function addUserToClass(

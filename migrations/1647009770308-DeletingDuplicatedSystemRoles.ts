@@ -1,10 +1,10 @@
 import {
     EntityManager,
+    Equal,
     In,
     MigrationInterface,
     Not,
     QueryRunner,
-    WhereExpression,
 } from 'typeorm'
 import { OrganizationMembership } from '../src/entities/organizationMembership'
 import { Role } from '../src/entities/role'
@@ -124,10 +124,8 @@ export class DeletingDuplicatedSystemRoles1647009770308
                     roles: 'OrgMembership.roles',
                 },
             },
-            where: (qb: WhereExpression) => {
-                qb.where('roles.role_id IN (:...roleIds)', {
-                    roleIds: rolesToDeleteIds,
-                })
+            where: {
+                roles: Equal({ role_id: In(rolesToDeleteIds) }),
             },
         })
 
@@ -138,10 +136,8 @@ export class DeletingDuplicatedSystemRoles1647009770308
                     roles: 'SchoolMembership.roles',
                 },
             },
-            where: (qb: WhereExpression) => {
-                qb.where('roles.role_id IN (:...roleIds)', {
-                    roleIds: rolesToDeleteIds,
-                })
+            where: {
+                roles: Equal({ role_id: In(rolesToDeleteIds) }),
             },
         })
 

@@ -1,5 +1,6 @@
-import { Connection, EntityMetadata, EntityTarget, Table } from 'typeorm'
-import { BaseConnectionOptions } from 'typeorm/connection/BaseConnectionOptions'
+import { DataSource, EntityMetadata, EntityTarget, Table } from 'typeorm'
+import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions'
+
 import { View } from 'typeorm/schema-builder/view/View'
 
 export const NIL_UUID = '00000000-0000-0000-0000-000000000000'
@@ -37,7 +38,7 @@ function escapePath(
  * - https://github.com/django/django/blob/3f2170f720fe1e2b1030887684c18dc2fc20116b/django/db/backends/postgresql/operations.py#L122
  */
 export async function truncateTables(
-    connection: Connection,
+    connection: DataSource,
     entities?: EntityTarget<any>[]
 ): Promise<void> {
     if (entities && entities.length === 0) {
@@ -56,7 +57,7 @@ export async function truncateTables(
 
     // TypeORM stores the driver as an abstract base type, but PostgresConnectionOptions (and some
     // other drivers) include a `schema` option. This cast is safer than to `any`
-    const schema = (connection.driver.options as BaseConnectionOptions & {
+    const schema = (connection.driver.options as BaseDataSourceOptions & {
         schema?: string
     })?.schema
 

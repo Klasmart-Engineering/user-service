@@ -1,3 +1,5 @@
+import { AgeRangeUnit } from '../../entities/ageRangeUnit'
+
 export interface ClassRow {
     organization_name: string
     class_name: string
@@ -8,5 +10,5 @@ export interface ClassRow {
     subject_name?: string
     age_range_low_value?: string
     age_range_high_value?: string
-    age_range_unit?: string
+    age_range_unit?: AgeRangeUnit
 }

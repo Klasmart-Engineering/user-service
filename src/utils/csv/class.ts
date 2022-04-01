@@ -1,4 +1,4 @@
-import { EntityManager, Not } from 'typeorm'
+import { EntityManager, Equal, IsNull, Not } from 'typeorm'
 import { Organization } from '../../entities/organization'
 import { Class } from '../../entities/class'
 import { School } from '../../entities/school'
@@ -20,6 +20,7 @@ import { customErrors } from '../../types/errors/customError'
 import { Subject } from '../../entities/subject'
 import { validateAgeRanges } from './validations/ageRange'
 import { AgeRange } from '../../entities/ageRange'
+import { Status } from '../../entities/status'
 
 export const processClassFromCSVRow = async (
     manager: EntityManager,
@@ -131,7 +132,7 @@ export const processClassFromCSVRow = async (
         return rowErrors
     }
 
-    const org = await Organization.findOne({ organization_name })
+    const org = await Organization.findOneBy({ organization_name })
 
     if (!org) {
         addCsvError(
@@ -149,8 +150,8 @@ export const processClassFromCSVRow = async (
         return rowErrors
     }
 
-    const classInDatabase = await Class.findOne({
-        where: { organization: org, class_name },
+    const classInDatabase = await Class.find({
+        where: { organization: Equal(org), class_name },
     })
 
     if (classInDatabase) {
@@ -172,7 +173,7 @@ export const processClassFromCSVRow = async (
     const classExist = await manager.findOne(Class, {
         where: {
             shortcode: class_shortcode,
-            organization: org,
+            organization: Equal(org),
             class_name: Not(class_name),
         },
     })
@@ -197,7 +198,7 @@ export const processClassFromCSVRow = async (
 
     // check if class exists in manager
     const classInManager = await manager.findOne(Class, {
-        where: { class_name, organization: org },
+        where: { class_name, organization: Equal(org) },
     })
 
     let c
@@ -213,7 +214,7 @@ export const processClassFromCSVRow = async (
     const existingSchools = (await c.schools) || []
     if (school_name) {
         const school = await School.findOne({
-            where: { school_name, organization: org },
+            where: { school_name, organization: Equal(org) },
         })
 
         if (!school) {
@@ -264,8 +265,8 @@ export const processClassFromCSVRow = async (
         // does the program belong to organisation or a system program
         programToAdd = await Program.findOne({
             where: [
-                { name: program_name, organization: org },
-                { name: program_name, organization: null, system: true },
+                { name: program_name, organization: Equal(org) },
+                { name: program_name, organization: IsNull(), system: true },
             ],
         })
 
@@ -326,8 +327,8 @@ export const processClassFromCSVRow = async (
         // does the grade belong to organisation or a system grade
         const gradeToAdd = await Grade.findOne({
             where: [
-                { name: grade_name, organization: org },
-                { name: grade_name, organization: null, system: true },
+                { name: grade_name, organization: Equal(org) },
+                { name: grade_name, organization: IsNull(), system: true },
             ],
         })
 
@@ -377,8 +378,8 @@ export const processClassFromCSVRow = async (
         // does the subject belong to organisation or a system subject
         const subjectToAdd = await Subject.findOne({
             where: [
-                { name: subject_name, organization: org },
-                { name: subject_name, organization: null, system: true },
+                { name: subject_name, organization: Equal(org) },
+                { name: subject_name, organization: IsNull(), system: true },
             ],
         })
 
@@ -432,23 +433,23 @@ export const processClassFromCSVRow = async (
             where: [
                 {
                     name: ageRangeName,
-                    low_value: age_range_low_value,
-                    high_value: age_range_high_value,
+                    low_value: Number(age_range_low_value),
+                    high_value: Number(age_range_high_value),
                     high_value_unit: age_range_unit,
                     low_value_unit: age_range_unit,
                     system: false,
-                    status: 'active',
-                    organization: org,
+                    status: Status.ACTIVE,
+                    organization: Equal(org),
                 },
                 {
                     name: ageRangeName,
-                    low_value: age_range_low_value,
-                    high_value: age_range_high_value,
+                    low_value: Number(age_range_low_value),
+                    high_value: Number(age_range_high_value),
                     high_value_unit: age_range_unit,
                     low_value_unit: age_range_unit,
                     system: true,
-                    status: 'active',
-                    organization: null,
+                    status: Status.ACTIVE,
+                    organization: IsNull(),
                 },
             ],
         })
