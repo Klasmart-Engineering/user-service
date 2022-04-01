@@ -31,6 +31,7 @@ export interface CreateClassInput {
     organizationId: string
     name: string
     shortcode?: string
+    academicTermId?: string
 }
 
 export interface UpdateClassInput {

@@ -239,6 +239,19 @@ export function createMustHaveExactlyNAPIError(
     })
 }
 
+export function createClassHasAcademicTermAPIError(
+    entityName: string,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.class_has_academic_term.code,
+        message: customErrors.class_has_academic_term.message,
+        variables: ['class_id', 'academic_term_id'],
+        entityName,
+        index,
+    })
+}
+
 export function createEntityAPIError(
     errorType: entityErrorType,
     index: number,
