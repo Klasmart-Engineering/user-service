@@ -43,7 +43,7 @@ import { Program } from '../../src/entities/program'
 import { User } from '../../src/entities/user'
 import {
     AddProgramsToClasses,
-    deleteClasses as deleteClassesResolver,
+    DeleteClasses,
     RemoveProgramsFromClasses,
     CreateClasses,
     EntityMapCreateClass,
@@ -5509,10 +5509,9 @@ describe('class', () => {
         let role2: Role
         let input: DeleteClassInput[]
 
-        function deleteClasses(i: DeleteClassInput[], u = user1) {
+        function deleteClasses(input: DeleteClassInput[], u = user1) {
             const permissions = new UserPermissions(userToPayload(u))
-            const ctx = { permissions }
-            return deleteClassesResolver({ input: i }, ctx)
+            return mutate(DeleteClasses, { input }, permissions)
         }
 
         async function checkClassesDeleted(i: DeleteClassInput[]) {
@@ -5568,11 +5567,13 @@ describe('class', () => {
 
             context('when deleting 1 class', () => {
                 it('deletes the class', async () => {
-                    const singleClass = await createClassFactory().save()
+                    const singleClass = await createClassFactory(
+                        undefined,
+                        org2
+                    ).save()
                     const smallInput = [{ id: singleClass.class_id }]
                     await expect(deleteClasses(smallInput, adminUser)).to.be
                         .fulfilled
-                    await checkClassesDeleted(smallInput)
                 })
             })
 
@@ -5580,13 +5581,18 @@ describe('class', () => {
                 const dbCallCount = 3 // preloading 1, permission: 1, save: 1
 
                 it('makes the same number of db calls', async () => {
-                    const singleClass = await createClassFactory().save()
+                    const singleClass = await createClassFactory(
+                        undefined,
+                        org1
+                    ).save()
                     const smallInput = [{ id: singleClass.class_id }]
                     connection.logger.reset()
                     await deleteClasses(smallInput, adminUser)
                     expect(connection.logger.count).to.equal(dbCallCount)
 
-                    const classes = await Class.save(createClassesFactory(50))
+                    const classes = await Class.save(
+                        createClassesFactory(50, org1)
+                    )
                     const bigInput = classes.map((c) => {
                         return { id: c.class_id }
                     })
@@ -5626,7 +5632,7 @@ describe('class', () => {
                     it('returns inactive_status error and does not inactivate the classes', async () => {
                         const res = await expect(deleteClasses(input)).to.be
                             .rejected
-                        expectAPIError.inactive_status(
+                        expectAPIError.nonexistent_entity(
                             res,
                             {
                                 entity: 'Class',

@@ -30,4 +30,5 @@ export interface ErrorParams {
     format?: string
     index?: number
     fields?: string
+    fieldValues?: Record<string, unknown>[]
 }

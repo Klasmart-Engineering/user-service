@@ -3,7 +3,12 @@ import { config } from '../../config/config'
 import { CustomBaseEntity } from '../../entities/customBaseEntity'
 import { Status } from '../../entities/status'
 import { Context } from '../../main'
-import { APIError, APIErrorCollection } from '../../types/errors/apiError'
+import { APISchema } from '../../types/api'
+import {
+    APIError,
+    APIErrorCollection,
+    validateAPICall,
+} from '../../types/errors/apiError'
 import {
     createDatabaseSaveAPIError,
     createDuplicateAttributeAPIError,
@@ -67,7 +72,7 @@ export function validateNoDuplicateAttribute(
 export function validateNoDuplicate(
     values: string[],
     inputTypeName: string,
-    attributeName: string
+    attributeNames: string[]
 ): Map<number, APIError> {
     const valueSet = new Set<string>()
     const errors = new Map<number, APIError>()
@@ -77,7 +82,7 @@ export function validateNoDuplicate(
                 index,
                 createDuplicateAttributeAPIError(
                     index,
-                    [attributeName],
+                    attributeNames,
                     inputTypeName
                 )
             )
@@ -227,11 +232,9 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     )
     errors.push(...failedActiveInputs.values())
 
-    const failedDuplicateInputs = validateNoDuplicate(
-        ids,
-        inputTypeName,
-        idName
-    )
+    const failedDuplicateInputs = validateNoDuplicate(ids, inputTypeName, [
+        idName,
+    ])
     errors.push(...failedDuplicateInputs.values())
 
     return [failedActiveInputs, failedDuplicateInputs]
@@ -244,7 +247,9 @@ export function validateNoDuplicates<A>(
 ): Map<number, APIError>[] {
     const errors: APIError[] = []
     const ids = inputs.map((_, index) => mainEntityIds[index])
-    const failedDuplicateInputs = validateNoDuplicate(ids, inputTypeName, 'id')
+    const failedDuplicateInputs = validateNoDuplicate(ids, inputTypeName, [
+        'id',
+    ])
     errors.push(...failedDuplicateInputs.values())
 
     return [failedDuplicateInputs]
@@ -277,6 +282,26 @@ export function validateSubItemsLengthAndNoDuplicates<
     )
 
     return [failedSubItemsLength, failedSubItemDuplicates]
+}
+
+export function validateDataAgainstSchema<InputType>(
+    inputs: InputType[],
+    schema: APISchema<InputType>,
+    entityName: string
+) {
+    const inputErrors: Map<number, APIError> = new Map()
+    inputs.forEach((input, index) => {
+        const { errors } = validateAPICall(input, schema, {
+            entity: entityName,
+        })
+
+        errors.forEach((e) => {
+            const apiErr = new APIError({ ...e, index })
+            inputErrors.set(index, apiErr)
+        })
+    })
+
+    return inputErrors
 }
 
 /**

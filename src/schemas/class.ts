@@ -12,7 +12,7 @@ import {
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
 import {
-    deleteClasses,
+    DeleteClasses,
     AddProgramsToClasses,
     RemoveProgramsFromClasses,
     CreateClasses,
@@ -546,7 +546,7 @@ export default function getDefault(
             },
             Mutation: {
                 deleteClasses: (_parent, args, ctx, _info) =>
-                    deleteClasses(args, ctx),
+                    mutate(DeleteClasses, args, ctx.permissions),
                 createClasses: (_parent, args, ctx, _info) =>
                     mutate(CreateClasses, args, ctx.permissions),
                 updateClasses: (_parent, args, ctx, _info) =>

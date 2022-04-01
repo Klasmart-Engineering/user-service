@@ -278,3 +278,30 @@ export function createEntityAPIError(
 
     return new APIError(errorDetails)
 }
+
+export function createExistentEntityAttributesAPIError(
+    index: number,
+    entity: string,
+    entityName: string,
+    fieldValues: Record<string, string>
+) {
+    const keys = Object.keys(fieldValues)
+    const keyValues = keys.map((k) => {
+        return {
+            field: k,
+            value: fieldValues[k],
+        }
+    })
+
+    const fields = keyValues.map((kv) => `${kv.field} ${kv.value}`).join(', ')
+    return new APIError({
+        index,
+        entity,
+        entityName,
+        code: customErrors.existent_entity_attributes.code,
+        message: customErrors.existent_entity_attributes.message,
+        variables: Object.keys(fieldValues),
+        fieldValues: keyValues,
+        fields,
+    })
+}

@@ -21,10 +21,10 @@ import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import {
     addOrganizationRolesToUsers,
     AddSchoolRolesToUsers,
-    createUsers,
+    CreateUsers,
     removeOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
-    updateUsers,
+    UpdateUsers,
 } from '../resolvers/user'
 import {
     AddSchoolRolesToUserInput,
@@ -501,9 +501,9 @@ export default function getDefault(
                 removeSchoolRolesFromUsers: (_parent, args, ctx, _info) =>
                     mutate(RemoveSchoolRolesFromUsers, args, ctx.permissions),
                 createUsers: (_parent, args, ctx, _info) =>
-                    createUsers(args, ctx),
+                    mutate(CreateUsers, args, ctx.permissions),
                 updateUsers: (_parent, args, ctx, _info) =>
-                    updateUsers(args, ctx),
+                    mutate(UpdateUsers, args, ctx.permissions),
             },
             Query: {
                 me: (_parent, _args, ctx: Context, _info) => {
