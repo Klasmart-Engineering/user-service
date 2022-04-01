@@ -6,6 +6,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    RelationId,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -22,7 +23,7 @@ export class Subcategory extends CustomBaseEntity {
     public id!: string
 
     @Column({ nullable: false })
-    public name?: string
+    public name!: string
 
     @Column({ nullable: false, default: false })
     public system!: boolean
@@ -30,6 +31,9 @@ export class Subcategory extends CustomBaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @RelationId((subcategory: Subcategory) => subcategory.organization)
+    public organization_id?: string
 
     @ManyToMany(() => Category, (category) => category.subcategories)
     public categories?: Promise<Category[]>

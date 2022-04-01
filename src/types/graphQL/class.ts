@@ -31,6 +31,7 @@ export interface CreateClassInput {
     organizationId: string
     name: string
     shortcode?: string
+    academicTermId?: string
 }
 
 export interface UpdateClassInput {
@@ -71,4 +72,9 @@ export interface AddTeachersToClassInput {
 export interface RemoveTeachersFromClassInput {
     classId: string
     teacherIds: string[]
+}
+
+export interface SetAcademicTermOfClassInput {
+    classId: string
+    academicTermId?: string | null
 }

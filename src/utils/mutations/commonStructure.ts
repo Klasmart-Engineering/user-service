@@ -674,6 +674,7 @@ export abstract class AddRemoveMutation<
 }
 export const AddMutation = AddRemoveMutation
 export const RemoveMutation = AddRemoveMutation
+export const SetMutation = AddRemoveMutation
 
 /**
  * This abstract class is a variation on AddMutation for when
