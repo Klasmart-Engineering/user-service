@@ -64,6 +64,10 @@ export class DeletingDuplicatedSystemRoles1647009770308
             return
         }
 
+        // first remove any memberships with both the original and dupe roles
+        // to avoid violating the unique constraint on the role_id+userId+organizationId/schoolId
+        await this.deleteDupeMembershipRoles(rolesToDelete, queryRunner)
+
         // map role by name to from & to ID
         const rolesByName: {
             [name: string]: { from?: string; to?: string }
@@ -112,5 +116,46 @@ export class DeletingDuplicatedSystemRoles1647009770308
         logger.warn(
             'Skipping DeletingDuplicatedSystemRoles1647009770308 down migration - not applicable.'
         )
+    }
+
+    // deletes the dupe role for users that have a membership with both the original and dupe role
+    private async deleteDupeMembershipRoles(
+        rolesToDelete: Role[],
+        queryRunner: QueryRunner
+    ) {
+        for (const role of rolesToDelete) {
+            const orgQuery = `
+                delete from "role_memberships_organization_membership" 
+
+                where "role_memberships_organization_membership"."roleRoleId" = '${role.role_id}'
+                
+                and "role_memberships_organization_membership"."organizationMembershipUserId" in (
+                    select "role_memberships_organization_membership"."organizationMembershipUserId" from role_memberships_organization_membership
+                        inner join role on "role"."role_id" = "role_memberships_organization_membership"."roleRoleId"
+                        group by "role_memberships_organization_membership"."organizationMembershipUserId", "role_memberships_organization_membership"."organizationMembershipOrganizationId","role"."role_name"
+                    having count(*) > 1
+                    and "role"."role_name" = '${role.role_name}'
+                )
+            `
+
+            const schoolQuery = `
+                delete from "role_school_memberships_school_membership" 
+
+                where "role_school_memberships_school_membership"."roleRoleId" = '${role.role_id}'
+                
+                and "role_school_memberships_school_membership"."schoolMembershipUserId" in (
+                    select "role_school_memberships_school_membership"."schoolMembershipUserId" from role_memberships_organization_membership
+                        inner join role on "role"."role_id" = "role_school_memberships_school_membership"."roleRoleId"
+                        group by "role_school_memberships_school_membership"."schoolMembershipUserId", "role_school_memberships_school_membership"."schoolMembershipSchoolId","role"."role_name"
+                    having count(*) > 1
+                    and "role"."role_name" = '${role.role_name}'
+                )
+            `
+
+            // eslint-disable-next-line no-await-in-loop
+            await queryRunner.query(orgQuery)
+            // eslint-disable-next-line no-await-in-loop
+            await queryRunner.query(schoolQuery)
+        }
     }
 }
