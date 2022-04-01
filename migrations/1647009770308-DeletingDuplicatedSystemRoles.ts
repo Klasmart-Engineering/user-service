@@ -1,14 +1,5 @@
-import {
-    EntityManager,
-    In,
-    MigrationInterface,
-    Not,
-    QueryRunner,
-    WhereExpression,
-} from 'typeorm'
-import { OrganizationMembership } from '../src/entities/organizationMembership'
+import { In, MigrationInterface, Not, QueryRunner } from 'typeorm'
 import { Role } from '../src/entities/role'
-import { SchoolMembership } from '../src/entities/schoolMembership'
 import logger from '../src/logging'
 import { organizationAdminRole } from '../src/permissions/organizationAdmin'
 import { parentRole } from '../src/permissions/parent'
@@ -39,154 +30,132 @@ export class DeletingDuplicatedSystemRoles1647009770308
     name = 'DeletingDuplicatedSystemRoles1647009770308'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+        logger.info(
+            'Running up migration: DeletingDuplicatedSystemRoles1647009770308'
+        )
         const manager = queryRunner.manager
-        // Searching for the roles that will be deleted
-        const rolesToDelete = await this.getRolesMapByIds(
-            manager,
-            'in',
-            rolesToDeleteIds,
-            'role_id'
-        )
-
-        // Searching for the roles that will replace the deleted ones
-        const rolesToPersist = await this.getRolesMapByIds(
-            manager,
-            'not-in',
-            rolesToDeleteIds,
-            'role_name'
-        )
-
-        if (
-            rolesToDelete.size === rolesToDeleteIds.length &&
-            rolesToPersist.size === rolesToDeleteIds.length
-        ) {
-            // Getting the memberships involved in roles to delete
-            const {
-                orgMemberships,
-                schoolMemberships,
-            } = await this.getMembershipsToMigrate(manager)
-
-            // Migrating roles to be removed to the persisting ones in the org memberships involved
-            await this.migrateMemberships(
-                manager,
-                orgMemberships,
-                rolesToDelete,
-                rolesToPersist
-            )
-
-            // Migrating roles to be removed to the persisting ones in the school memberships involved
-            await this.migrateMemberships(
-                manager,
-                schoolMemberships,
-                rolesToDelete,
-                rolesToPersist
-            )
-
-            // Once these roles are not in any organization or school membership, they can be removed
-            const deleteRoleIds = Array.from(rolesToDelete.values())
-                .flat()
-                .map((r) => r.role_id)
-
-            await manager.delete(Role, deleteRoleIds)
-        }
-    }
-
-    public async down(_queryRunner: QueryRunner): Promise<void> {
-        logger.warn(
-            'This is a data migration for remove duplications. Down the migration would mean create duplications'
-        )
-    }
-
-    private async getRolesMapByIds(
-        manager: EntityManager,
-        operator: 'in' | 'not-in',
-        ids: string[],
-        key: 'role_id' | 'role_name'
-    ) {
-        const preloadedRolesToDelete = manager.find(Role, {
+        const rolesToDelete = await manager.find(Role, {
             where: {
-                role_id: operator === 'in' ? In(ids) : Not(In(ids)),
+                role_id: In(rolesToDeleteIds),
+                role_name: In(systemRoleNames),
+                system_role: true,
+            },
+        })
+        if (!rolesToDelete.length) {
+            logger.info('No roles to delete, aborting the migration.')
+            return
+        }
+
+        const rolesToPersist = await manager.find(Role, {
+            where: {
+                role_id: Not(In(rolesToDeleteIds)),
                 role_name: In(systemRoleNames),
                 system_role: true,
             },
         })
 
-        return new Map<string, Role>(
-            (await preloadedRolesToDelete).map((r) => [r[key]!, r])
-        )
-    }
-
-    private async getMembershipsToMigrate(manager: EntityManager) {
-        const orgMemberships = await manager.find(OrganizationMembership, {
-            join: {
-                alias: 'OrgMembership',
-                innerJoin: {
-                    roles: 'OrgMembership.roles',
-                },
-            },
-            where: (qb: WhereExpression) => {
-                qb.where('roles.role_id IN (:...roleIds)', {
-                    roleIds: rolesToDeleteIds,
-                })
-            },
-        })
-
-        const schoolMemberships = await manager.find(SchoolMembership, {
-            join: {
-                alias: 'SchoolMembership',
-                innerJoin: {
-                    roles: 'SchoolMembership.roles',
-                },
-            },
-            where: (qb: WhereExpression) => {
-                qb.where('roles.role_id IN (:...roleIds)', {
-                    roleIds: rolesToDeleteIds,
-                })
-            },
-        })
-
-        return {
-            orgMemberships,
-            schoolMemberships,
-        }
-    }
-
-    private async migrateMemberships(
-        manager: EntityManager,
-        memberships: OrganizationMembership[] | SchoolMembership[],
-        rolesToDelete: Map<string, Role>,
-        rolesToPersist: Map<string, Role>
-    ) {
-        const allRoles = await Promise.all(
-            memberships.map(
-                (m: OrganizationMembership | SchoolMembership) => m.roles
+        if (
+            rolesToDelete.length !== rolesToDeleteIds.length ||
+            rolesToPersist.length !== rolesToDelete.length
+        ) {
+            logger.error(
+                `Unexpected number of roles to delete ${rolesToDelete.length} or persist ${rolesToPersist.length}. Aborting the migration.`
             )
-        )
-
-        for (const [i, m] of memberships.entries()) {
-            const roles = allRoles[i] || []
-            const newRoles: Role[] = []
-
-            for (const r of roles) {
-                let roleToPush = r
-                if (r.role_name) {
-                    const roleToDelete = rolesToDelete.get(r.role_id)
-
-                    if (roleToDelete) {
-                        const roleToReplace = rolesToPersist.get(
-                            roleToDelete.role_name!
-                        )!
-
-                        roleToPush = roleToReplace
-                    }
-                }
-
-                newRoles.push(roleToPush)
-            }
-
-            m.roles = Promise.resolve(newRoles)
+            return
         }
 
-        await manager.save(memberships)
+        // first remove any memberships with both the original and dupe roles
+        // to avoid violating the unique constraint on the role_id+userId+organizationId/schoolId
+        await this.deleteDupeMembershipRoles(rolesToDelete, queryRunner)
+
+        // map role by name to from & to ID
+        const rolesByName: {
+            [name: string]: { from?: string; to?: string }
+        } = {}
+
+        for (const roleName of systemRoleNames) {
+            rolesByName[roleName] = {
+                from: rolesToDelete.find((r) => r.role_name === roleName)
+                    ?.role_id,
+                to: rolesToPersist.find((r) => r.role_name === roleName)
+                    ?.role_id,
+            }
+        }
+
+        const tables = [
+            'role_memberships_organization_membership',
+            'role_school_memberships_school_membership',
+        ]
+
+        // migrate memberships for each role one by one
+        logger.info('Updating membership tables.')
+
+        for (const roleName in rolesByName) {
+            const fromId = rolesByName[roleName].from
+            const toId = rolesByName[roleName].to
+            if (!fromId || !toId) {
+                throw new Error(`Could not find role ID for ${roleName}`) // should never happen
+            }
+            for (const table of tables) {
+                const query = `UPDATE ${table} SET "roleRoleId" = '${toId}' WHERE "roleRoleId" = '${fromId}'`
+                logger.info(`Running query: ${query}`)
+                // eslint-disable-next-line no-await-in-loop
+                await queryRunner.query(query)
+            }
+        }
+
+        // Once these roles are not in any organization or school membership, they can be hard deleted
+        await manager.delete(Role, rolesToDeleteIds)
+
+        logger.info(
+            'DeletingDuplicatedSystemRoles1647009770308 ran successfully.'
+        )
+    }
+
+    public async down(_queryRunner: QueryRunner): Promise<void> {
+        logger.warn(
+            'Skipping DeletingDuplicatedSystemRoles1647009770308 down migration - not applicable.'
+        )
+    }
+
+    // deletes the dupe role for users that have a membership with both the original and dupe role
+    private async deleteDupeMembershipRoles(
+        rolesToDelete: Role[],
+        queryRunner: QueryRunner
+    ) {
+        for (const role of rolesToDelete) {
+            const orgQuery = `
+                delete from "role_memberships_organization_membership" 
+
+                where "role_memberships_organization_membership"."roleRoleId" = '${role.role_id}'
+                
+                and "role_memberships_organization_membership"."organizationMembershipUserId" in (
+                    select "role_memberships_organization_membership"."organizationMembershipUserId" from role_memberships_organization_membership
+                        inner join role on "role"."role_id" = "role_memberships_organization_membership"."roleRoleId"
+                        group by "role_memberships_organization_membership"."organizationMembershipUserId", "role_memberships_organization_membership"."organizationMembershipOrganizationId","role"."role_name"
+                    having count(*) > 1
+                    and "role"."role_name" = '${role.role_name}'
+                )
+            `
+
+            const schoolQuery = `
+                delete from "role_school_memberships_school_membership" 
+
+                where "role_school_memberships_school_membership"."roleRoleId" = '${role.role_id}'
+                
+                and "role_school_memberships_school_membership"."schoolMembershipUserId" in (
+                    select "role_school_memberships_school_membership"."schoolMembershipUserId" from role_memberships_organization_membership
+                        inner join role on "role"."role_id" = "role_school_memberships_school_membership"."roleRoleId"
+                        group by "role_school_memberships_school_membership"."schoolMembershipUserId", "role_school_memberships_school_membership"."schoolMembershipSchoolId","role"."role_name"
+                    having count(*) > 1
+                    and "role"."role_name" = '${role.role_name}'
+                )
+            `
+
+            // eslint-disable-next-line no-await-in-loop
+            await queryRunner.query(orgQuery)
+            // eslint-disable-next-line no-await-in-loop
+            await queryRunner.query(schoolQuery)
+        }
     }
 }
