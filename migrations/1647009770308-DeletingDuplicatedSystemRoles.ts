@@ -152,7 +152,9 @@ export class DeletingDuplicatedSystemRoles1647009770308
                 )
             `
 
+            // eslint-disable-next-line no-await-in-loop
             await queryRunner.query(orgQuery)
+            // eslint-disable-next-line no-await-in-loop
             await queryRunner.query(schoolQuery)
         }
     }
