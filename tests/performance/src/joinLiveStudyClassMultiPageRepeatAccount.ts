@@ -90,7 +90,7 @@ export const options: Options = {
             duration: '10m',
           },
    },
-    setupTimeout: '5m',
+    setupTimeout: '120m',
 };
 
 const params = {
