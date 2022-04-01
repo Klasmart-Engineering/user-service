@@ -76,10 +76,10 @@ export class Class extends CustomBaseEntity {
 
     @ManyToOne(() => AcademicTerm)
     @JoinColumn({ name: 'academic_term_id' })
-    public academicTerm?: Promise<AcademicTerm>
+    public academicTerm?: Promise<AcademicTerm | null>
 
     @RelationId((class_: Class) => class_.academicTerm)
-    public readonly academic_term_id!: string
+    public readonly academic_term_id?: string
 
     public async set(
         { class_name, shortcode }: { class_name: string; shortcode: string },

@@ -220,6 +220,25 @@ export function createApplyingChangeToSelfAPIError(
     })
 }
 
+export function createMustHaveExactlyNAPIError(
+    entity: string,
+    entityName: string,
+    parentEntity: string,
+    count: number,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.must_have_exactly_n.code,
+        message: customErrors.must_have_exactly_n.message,
+        variables: [],
+        entity,
+        entityName,
+        parentEntity,
+        count,
+        index,
+    })
+}
+
 export function createEntityAPIError(
     errorType: entityErrorType,
     index: number,

@@ -14,6 +14,7 @@ import { AgeRange } from '../../entities/ageRange'
 import { Subject } from '../../entities/subject'
 import { SchoolMembership } from '../../entities/schoolMembership'
 import { Grade } from '../../entities/grade'
+import { AcademicTerm } from '../../entities/academicTerm'
 
 export type Entities =
     | User
@@ -27,6 +28,7 @@ export type Entities =
     | AgeRange
     | Subject
     | Grade
+    | AcademicTerm
 
 export type SystemEntities =
     | AgeRange

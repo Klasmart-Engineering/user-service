@@ -25,3 +25,21 @@ export function createAcademicTerm(
     academicTerm.classes = Promise.resolve(classes ?? [])
     return academicTerm
 }
+
+export function createSuccessiveAcademicTerms(count: number, school: School) {
+    return Array(count)
+        .fill(null)
+        .map((_, index, array: AcademicTerm[]) => {
+            const prevTerm = index ? array[index - 1] : undefined
+            return createAcademicTerm(school, {
+                name: `${school.school_name} term ${index}`,
+                start_date: prevTerm
+                    ? new Date(
+                          prevTerm.start_date.getFullYear(),
+                          prevTerm.start_date.getMonth(),
+                          prevTerm.start_date.getDate() + 1
+                      )
+                    : undefined,
+            })
+        })
+}
