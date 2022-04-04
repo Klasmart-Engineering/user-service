@@ -27,26 +27,26 @@ In SQL:
 ```sql
 CREATE TYPE academic_term_status_enum AS ENUM('active', 'inactive');
 
-CREATE TABLE academic_term(
-   academic_term_id uuid DEFAULT uuid_generate_v4() CONSTRAINT "PK_2joiw3rzox3wqqnpth410tbm4hn" PRIMARY KEY,
-   name character varying NOT NULL,
-   start_date date NOT NULL,
-   end_date date NOT NULL,
-   school_id uuid NOT NULL REFERENCES school(school_id),
-   status academic_term_status_enum NOT NULL DEFAULT 'active'::academic_term_status_enum,
-   created_at timestamp(3) without time zone NOT NULL DEFAULT now(),
-   updated_at timestamp(3) without time zone NOT NULL DEFAULT now(),
-   deleted_at timestamp(3) without time zone,
-   CONSTRAINT "UQ_7jb3vrvbwies45rlxm8lg1n41pj" UNIQUE (name, school_id)
+CREATE TABLE "academic_term" (
+      "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
+      "updated_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
+      "deleted_at" TIMESTAMP(3),
+      "status" "academic_term_status_enum" NOT NULL DEFAULT 'active',
+      "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+      "name" character varying NOT NULL,
+      "start_date" TIMESTAMP(3) NOT NULL,
+      "end_date" TIMESTAMP(3) NOT NULL,
+      "school_id" uuid NOT NULL,
+      CONSTRAINT "PK_7b17dac59645103012db5b168e5" PRIMARY KEY ("id")
 );
 ```
 
 Create the file `src/entities/academicTerm.ts` with the appropriate columns, make sure to include:
 
 ```typescript
-@ManyToOne(() => School)
+@ManyToOne(() => School, { nullable: false })
 @JoinColumn({ name: 'school_id' })
-public school?: Promise<School>
+public school!: Promise<School>
 ```
 
 In `src/entities/school.ts`, add:
@@ -69,7 +69,10 @@ In `src/entities/class.ts`, add:
 ```typescript
 @ManyToOne(() => AcademicTerm)
 @JoinColumn({ name: 'academic_term_id' })
-public academicTerm?: Promise<AcademicTerm>
+public academicTerm?: Promise<AcademicTerm | null>
+
+@RelationId((class_: Class) => class_.academicTerm)
+public readonly academic_term_id?: string
 ```
 
 In `src/entities/academicTerm.ts`, add:
