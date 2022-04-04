@@ -137,7 +137,7 @@ export class CreatePrograms extends CreateMutation<
         const failedDuplicateNames = validateNoDuplicate(
             inputs.map((i) => [i.organizationId, i.name].toString()),
             'program',
-            'name'
+            ['name']
         )
 
         // Checking duplicates and length in ageRangeIds
@@ -210,35 +210,48 @@ export class CreatePrograms extends CreateMutation<
             )
         }
 
-        errors.push(
-            ...flagNonExistent(AgeRange, index, ageRangeIds, maps.ageRanges)
-                .errors
+        const ageRanges = flagNonExistent(
+            AgeRange,
+            index,
+            ageRangeIds,
+            maps.ageRanges
         )
 
+        errors.push(...ageRanges.errors)
         errors.push(
             ...validateSubItemsInOrg(
                 AgeRange,
+                ageRanges.values.map((ar) => ar.id),
                 index,
                 maps.ageRanges,
                 organizationId
             )
         )
 
+        const grades = flagNonExistent(Grade, index, gradeIds, maps.grades)
+        errors.push(...grades.errors)
         errors.push(
-            ...flagNonExistent(Grade, index, gradeIds, maps.grades).errors
+            ...validateSubItemsInOrg(
+                Grade,
+                grades.values.map((g) => g.id),
+                index,
+                maps.grades,
+                organizationId
+            )
         )
 
-        errors.push(
-            ...validateSubItemsInOrg(Grade, index, maps.grades, organizationId)
+        const subjects = flagNonExistent(
+            Subject,
+            index,
+            subjectIds,
+            maps.subjects
         )
 
-        errors.push(
-            ...flagNonExistent(Subject, index, subjectIds, maps.subjects).errors
-        )
-
+        errors.push(...subjects.errors)
         errors.push(
             ...validateSubItemsInOrg(
                 Subject,
+                subjects.values.map((s) => s.id),
                 index,
                 maps.subjects,
                 organizationId
@@ -405,7 +418,7 @@ export class UpdatePrograms extends UpdateMutation<
         const failedDuplicates = validateNoDuplicate(
             inputs.map((i) => i.id),
             'program',
-            'id'
+            ['id']
         )
 
         const values = []
@@ -503,15 +516,20 @@ export class UpdatePrograms extends UpdateMutation<
 
         if (ageRangeIds) {
             // Checking that the age ranges already exist
-            errors.push(
-                ...flagNonExistent(AgeRange, index, ageRangeIds, maps.ageRanges)
-                    .errors
+            const ageRanges = flagNonExistent(
+                AgeRange,
+                index,
+                ageRangeIds,
+                maps.ageRanges
             )
+
+            errors.push(...ageRanges.errors)
 
             // Checking that these age ranges also exists for the same organization or are system
             errors.push(
                 ...validateSubItemsInOrg(
                     AgeRange,
+                    ageRanges.values.map((ar) => ar.id),
                     index,
                     maps.ageRanges,
                     organizationId
@@ -521,14 +539,14 @@ export class UpdatePrograms extends UpdateMutation<
 
         if (gradeIds) {
             // Checking that the grades already exist
-            errors.push(
-                ...flagNonExistent(Grade, index, gradeIds, maps.grades).errors
-            )
+            const grades = flagNonExistent(Grade, index, gradeIds, maps.grades)
+            errors.push(...grades.errors)
 
             // Checking that these grades also exists for the same organization or are system
             errors.push(
                 ...validateSubItemsInOrg(
                     Grade,
+                    grades.values.map((g) => g.id),
                     index,
                     maps.grades,
                     organizationId
@@ -538,15 +556,20 @@ export class UpdatePrograms extends UpdateMutation<
 
         if (subjectIds) {
             // Checking that the subjects already exist
-            errors.push(
-                ...flagNonExistent(Subject, index, subjectIds, maps.subjects)
-                    .errors
+            const subjects = flagNonExistent(
+                Subject,
+                index,
+                subjectIds,
+                maps.subjects
             )
+
+            errors.push(...subjects.errors)
 
             // Checking that these subjects also exists for the same organization or are system
             errors.push(
                 ...validateSubItemsInOrg(
                     Subject,
+                    subjects.values.map((s) => s.id),
                     index,
                     maps.subjects,
                     organizationId

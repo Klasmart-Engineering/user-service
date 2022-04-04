@@ -334,6 +334,12 @@ export const REMOVE_PROGRAMS_FROM_CLASSES = gql`
     }
 `
 
+export const SET_ACADEMIC_TERMS_OF_CLASSES = gql`mutation($input: [SetAcademicTermOfClassInput!]!) {
+    setAcademicTermsOfClasses(input: $input) {
+        ${CLASSES_MUTATION_RESULT}
+    }
+}`
+
 export async function updateClass(
     testClient: ApolloServerTestClient,
     classId: string,

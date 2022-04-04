@@ -86,6 +86,10 @@ export const customErrors = {
         message:
             '{entity} {entityName} with the same {attribute} of {attributeValue} already exists.',
     },
+    existent_entity_attributes: {
+        code: 'ERR_DUPLICATE_ENTITY_ATTRIBUTES',
+        message: '{entity} {entityName} with the same {fields} already exists.',
+    },
     duplicate_child_entity_attribute: {
         code: 'ERR_DUPLICATE_CHILD_ENTITY_ATTRIBUTE',
         message:
@@ -201,6 +205,16 @@ export const customErrors = {
     applying_change_to_self: {
         code: 'ERR_USER_CANNOT_APPLY_CHANGE_TO_SELF',
         message: 'user {userId} cannot apply this change to themselves.',
+    },
+    must_have_exactly_n: {
+        code: 'ERR_MUST_HAVE_EXACTLY_N',
+        message:
+            '{entity} {entityName} must have exactly {count} {parentEntity}.',
+    },
+    class_has_academic_term: {
+        code: 'ERR_CLASS_HAS_ACADEMIC_TERM',
+        message:
+            'Remove AcademicTerm before moving Class {entityName} to or from a School.',
     },
 
     // auth

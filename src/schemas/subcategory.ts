@@ -4,10 +4,11 @@ import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { subcategoriesConnectionResolver } from '../pagination/subcategoriesConnection'
 import {
-    deleteSubcategories,
-    updateSubcategories,
-    createSubcategories,
+    DeleteSubcategories,
+    UpdateSubcategories,
+    CreateSubcategories,
 } from '../resolvers/subcategory'
+import { mutate } from '../utils/mutations/commonStructure'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -130,19 +131,19 @@ export default function getDefault(
         typeDefs,
         resolvers: {
             Mutation: {
-                subcategory: (_parent, args, ctx, _info) =>
+                subcategory: (_parent, args, ctx) =>
                     model.getSubcategory(args, ctx),
                 uploadSubCategoriesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSubCategoriesFromCSV(args, ctx, info),
-                deleteSubcategories: (_parent, args, ctx, info) =>
-                    deleteSubcategories(args, ctx),
-                updateSubcategories: (_parent, args, ctx, _info) =>
-                    updateSubcategories(args, ctx),
-                createSubcategories: (_parent, args, ctx, _info) =>
-                    createSubcategories(args, ctx),
+                deleteSubcategories: (_parent, args, ctx) =>
+                    mutate(DeleteSubcategories, args, ctx.permissions),
+                updateSubcategories: (_parent, args, ctx) =>
+                    mutate(UpdateSubcategories, args, ctx.permissions),
+                createSubcategories: (_parent, args, ctx) =>
+                    mutate(CreateSubcategories, args, ctx.permissions),
             },
             Query: {
-                subcategory: (_parent, args, ctx, _info) =>
+                subcategory: (_parent, args, ctx) =>
                     model.getSubcategory(args, ctx),
                 subcategoriesConnection: (_parent, args, ctx, info) =>
                     subcategoriesConnectionResolver(info, ctx, args),

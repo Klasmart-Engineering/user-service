@@ -1,9 +1,8 @@
-import { Brackets, getConnection, getManager, In } from 'typeorm'
+import { Brackets, getConnection, In } from 'typeorm'
 import { Context } from '../main'
 import {
     DeleteClassInput,
     ClassesMutationResult,
-    ClassConnectionNode,
     AddProgramsToClassInput,
     RemoveProgramsFromClassInput,
     CreateClassInput,
@@ -12,21 +11,18 @@ import {
     RemoveStudentsFromClassInput,
     AddTeachersToClassInput,
     RemoveTeachersFromClassInput,
+    SetAcademicTermOfClassInput,
 } from '../types/graphQL/class'
-import { APIError, APIErrorCollection } from '../types/errors/apiError'
-import { customErrors } from '../types/errors/customError'
-import { Status } from '../entities/status'
+import { APIError } from '../types/errors/apiError'
 import { Class } from '../entities/class'
 import { PermissionName } from '../permissions/permissionNames'
 import {
-    createDuplicateAttributeAPIError,
     createDuplicateChildEntityAttributeAPIError,
     createEntityAPIError,
-    createInputLengthAPIError,
+    createMustHaveExactlyNAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../utils/resolvers/errors'
 import { mapClassToClassConnectionNode } from '../pagination/classesConnection'
-import { config } from '../config/config'
 import { Program } from '../entities/program'
 import {
     AddMutation,
@@ -39,6 +35,9 @@ import {
     UpdateMutation,
     filterInvalidInputs,
     validateNoDuplicateAttribute,
+    DeleteEntityMap,
+    DeleteMutation,
+    SetMutation,
 } from '../utils/mutations/commonStructure'
 import { Organization } from '../entities/organization'
 import {
@@ -61,96 +60,52 @@ import {
 import logger from '../logging'
 import { User } from '../entities/user'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { AcademicTerm } from '../entities/academicTerm'
+import { School } from '../entities/school'
 
-export async function deleteClasses(
-    args: { input: DeleteClassInput[] },
-    context: Pick<Context, 'permissions'>
-): Promise<ClassesMutationResult> {
-    // Input length validations
-    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('User', 'min')
+export class DeleteClasses extends DeleteMutation<
+    Class,
+    DeleteClassInput,
+    ClassesMutationResult
+> {
+    protected readonly EntityType = Class
+    protected readonly inputTypeName = 'DeleteClassInput'
+    protected readonly output: ClassesMutationResult = { classes: [] }
+    protected readonly mainEntityIds: string[]
+
+    constructor(
+        input: DeleteClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.id)
     }
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
-        throw createInputLengthAPIError('User', 'max')
+
+    protected async generateEntityMaps(): Promise<DeleteEntityMap<Class>> {
+        const mainEntity = await getMap.class(this.mainEntityIds, [
+            'organization',
+        ])
+        return { mainEntity }
     }
 
-    // Preload Data
-    const classIds = args.input.map((val) => val.id)
-    const preloadedData = await Class.createQueryBuilder('Class')
-        .select(['Class.class_id', 'ClassOrganization.organization_id'])
-        .leftJoin('Class.organization', 'ClassOrganization')
-        .where('Class.class_id IN (:...classIds)', { classIds })
-        .andWhere('Class.status = :status', { status: Status.ACTIVE })
-        .getMany()
-    const preloadedClasses = new Map(preloadedData.map((c) => [c.class_id, c]))
-
-    // Check Permissions
-    const orgIdSet = new Set<string>()
-    for (const c of preloadedClasses.values()) {
-        // eslint-disable-next-line no-await-in-loop
-        const org = await c.organization
-        if (org) orgIdSet.add(org.organization_id)
-    }
-    await context.permissions.rejectIfNotAllowed(
-        { organization_ids: [...orgIdSet] },
-        PermissionName.delete_class_20444
-    )
-
-    // Process Inputs
-    const errors: APIError[] = []
-    const output: ClassConnectionNode[] = []
-    const partialClass = {
-        status: Status.INACTIVE,
-        deleted_at: new Date(),
-    }
-    for (const [index, classId] of classIds.entries()) {
-        const dbClass = preloadedClasses.get(classId)
-
-        // Validations
-        const inputIdIsDuplicate = classIds.some(
-            (item, findIndex) => item === classId && findIndex < index
+    protected async authorize(
+        _input: DeleteClassInput[],
+        entityMaps: DeleteEntityMap<Class>
+    ) {
+        const organizationIds = await Promise.all(
+            Array.from(entityMaps.mainEntity.values())
+                .map((c) => c.organization?.then((org) => org.organization_id))
+                .filter((o): o is Promise<string> => o !== undefined)
         )
-        if (inputIdIsDuplicate) {
-            errors.push(
-                createDuplicateAttributeAPIError(
-                    index,
-                    ['id'],
-                    'DeleteClassInput'
-                )
-            )
-            continue
-        }
-        if (!dbClass) {
-            errors.push(
-                createEntityAPIError('inactive', index, 'Class', classId)
-            )
-            continue
-        }
-
-        // Build output
-        Object.assign(dbClass, partialClass)
-        output.push(mapClassToClassConnectionNode(dbClass))
+        await this.permissions.rejectIfNotAllowed(
+            { organization_ids: organizationIds },
+            PermissionName.delete_class_20444
+        )
     }
 
-    if (errors.length > 0) throw new APIErrorCollection(errors)
-    try {
-        await getManager()
-            .createQueryBuilder()
-            .update(Class)
-            .set(partialClass)
-            .where({ class_id: In(classIds) })
-            .execute()
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw new APIError({
-            code: customErrors.database_save_error.code,
-            message: customErrors.database_save_error.message,
-            variables: [message],
-            entity: 'Class',
-        })
+    protected async buildOutput(currentEntity: Class): Promise<void> {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
     }
-
-    return { classes: output }
 }
 
 export interface EntityMapAddRemovePrograms extends EntityMap<Class> {
@@ -475,9 +430,9 @@ export class CreateClasses extends CreateMutation<
     async generateEntityMaps(
         input: CreateClassInput[]
     ): Promise<EntityMapCreateClass> {
-        const orgs = input.map(({ organizationId }) => organizationId)
+        const orgIds = input.map((i) => i.organizationId)
+        const orgMap = getMap.organization(orgIds)
 
-        const preloadedOrgArray = getMap.organization(orgs)
         const names = input.map(({ name }) => name)
         const validShortcodes = input
             .map(({ shortcode }) => shortcode)
@@ -515,18 +470,13 @@ export class CreateClasses extends CreateMutation<
             // `organizationOrganizationId` is not a property of the class entity
             // don't filter out inactive orgs, as we have a db constraint on
             // (organization_id, class_name)
-            .andWhere('class.organizationOrganizationId IN (:...orgs)', {
-                orgs,
+            .andWhere('class.organizationOrganizationId IN (:...orgIds)', {
+                orgIds,
             })
             .getRawMany()
 
         return {
-            organizations: new Map(
-                [...(await preloadedOrgArray).values()].map((org) => [
-                    org.organization_id,
-                    org,
-                ])
-            ),
+            organizations: await orgMap,
             conflictingNames: new ObjMap(
                 (await conflictingClasses)!.map(
                     ({ name, organization_id, class_id }) => {
@@ -582,7 +532,7 @@ export class CreateClasses extends CreateMutation<
         const failedDuplicateShortcodes = validateNoDuplicate(
             inputs.map((i) => [i.organizationId, i.shortcode!].toString()),
             'class',
-            'shortcode'
+            ['shortcode']
         )
 
         errors.push(...failedDuplicateShortcodes.values())
@@ -821,7 +771,7 @@ export class UpdateClasses extends UpdateMutation<
             validateNoDuplicate(
                 inputs.map((cls) => cls.classId),
                 this.inputTypeName,
-                'classId'
+                ['classId']
             )
         )
 
@@ -1089,7 +1039,7 @@ export class AddStudentsToClasses extends AddMutation<
         const classIdErrorMap = validateNoDuplicate(
             inputs.map((cls) => cls.classId),
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
         const studentIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
@@ -1271,7 +1221,7 @@ export class RemoveStudentsFromClasses extends RemoveMutation<
         const classIdErrorMap = validateNoDuplicate(
             inputs.map((cls) => cls.classId),
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
         const studentIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
@@ -1442,7 +1392,7 @@ export class AddTeachersToClasses extends AddMutation<
         const classIdErrorMap = validateNoDuplicate(
             inputs.map((cls) => cls.classId),
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
         const teacherIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
@@ -1623,7 +1573,7 @@ export class RemoveTeachersFromClasses extends RemoveMutation<
         const classIdErrorMap = validateNoDuplicate(
             inputs.map((cls) => cls.classId),
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
         const teacherIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
@@ -1706,4 +1656,196 @@ export class RemoveTeachersFromClasses extends RemoveMutation<
 
 type ClassAndOrg = Class & {
     __organization__?: Organization
+}
+
+export interface SetAcademicTermEntityMap extends EntityMap<Class> {
+    mainEntity: Map<string, Class>
+    academicTerm: Map<string, AcademicTerm>
+    classSchools: Map<string, School[]>
+}
+
+export class SetAcademicTermsOfClasses extends SetMutation<
+    Class,
+    SetAcademicTermOfClassInput,
+    ClassesMutationResult,
+    SetAcademicTermEntityMap
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'SetAcademicTermOfClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: SetAcademicTermOfClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    async generateEntityMaps(
+        input: SetAcademicTermOfClassInput[]
+    ): Promise<SetAcademicTermEntityMap> {
+        const termIds = input
+            .map((i) => i.academicTermId)
+            .filter((id): id is string => !!id)
+        const termMap = getMap.academicTerm(termIds)
+        const classIds = input.map((i) => i.classId)
+        const classMap = await getMap.class(classIds, ['schools'])
+
+        const classSchools = new Map<string, School[]>()
+        for (const class_ of classMap.values()) {
+            // eslint-disable-next-line no-await-in-loop
+            classSchools.set(class_.class_id, (await class_.schools) || [])
+        }
+
+        return {
+            mainEntity: classMap,
+            academicTerm: await termMap,
+            classSchools: classSchools,
+        }
+    }
+
+    async authorize(
+        _input: SetAcademicTermOfClassInput[],
+        maps: SetAcademicTermEntityMap
+    ): Promise<void> {
+        const organization_ids: string[] = []
+        const school_ids: string[] = []
+        for (const cls of maps.mainEntity.values()) {
+            if (cls.organization_id) organization_ids.push(cls.organization_id)
+            // eslint-disable-next-line no-await-in-loop
+            for (const school of (await cls.schools) || []) {
+                school_ids.push(school.school_id)
+            }
+        }
+
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids, school_ids },
+            PermissionName.edit_class_20334
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: SetAcademicTermOfClassInput[]
+    ): {
+        validInputs: { index: number; input: SetAcademicTermOfClassInput }[]
+        apiErrors: APIError[]
+    } {
+        return filterInvalidInputs(inputs, [
+            validateNoDuplicate(
+                inputs.map((c) => c.classId),
+                this.inputTypeName,
+                ['classId']
+            ),
+        ])
+    }
+
+    validate(
+        index: number,
+        _currentClass: Class | undefined,
+        currentInput: SetAcademicTermOfClassInput,
+        maps: SetAcademicTermEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { classId, academicTermId } = currentInput
+
+        const cls = maps.mainEntity.get(classId)
+        if (!cls) {
+            errors.push(
+                createEntityAPIError('nonExistent', index, 'Class', classId)
+            )
+            return errors
+        }
+
+        const schools = maps.classSchools.get(classId)
+        if (schools?.length !== 1) {
+            errors.push(
+                createMustHaveExactlyNAPIError(
+                    'Class',
+                    cls.class_id,
+                    'School',
+                    1,
+                    index
+                )
+            )
+            return errors
+        }
+
+        if (!academicTermId) return errors
+
+        const academicTerm = maps.academicTerm.get(academicTermId)
+        if (!academicTerm) {
+            errors.push(
+                createEntityAPIError(
+                    'nonExistent',
+                    index,
+                    'AcademicTerm',
+                    academicTermId
+                )
+            )
+            return errors
+        }
+
+        const schoolId = schools[0].school_id
+        if (schoolId !== academicTerm.school_id) {
+            errors.push(
+                createEntityAPIError(
+                    'nonExistentChild',
+                    index,
+                    'AcademicTerm',
+                    academicTermId,
+                    'School',
+                    schoolId
+                )
+            )
+        }
+
+        if (!cls.organization_id) {
+            errors.push(
+                createMustHaveExactlyNAPIError(
+                    'Class',
+                    cls.class_id,
+                    'Organization',
+                    1,
+                    index
+                )
+            )
+            return errors
+        }
+
+        if (schools[0].organizationId !== cls.organization_id) {
+            errors.push(
+                createEntityAPIError(
+                    'nonExistentChild',
+                    index,
+                    'School',
+                    schoolId,
+                    'Organization',
+                    cls.organization_id
+                )
+            )
+        }
+
+        return errors
+    }
+
+    protected process(
+        currentInput: SetAcademicTermOfClassInput,
+        maps: SetAcademicTermEntityMap,
+        _index: number
+    ) {
+        const { classId, academicTermId } = currentInput
+
+        const currentClass = maps.mainEntity.get(classId)!
+        currentClass.academicTerm = Promise.resolve(
+            academicTermId ? maps.academicTerm.get(academicTermId)! : null
+        )
+
+        return { outputEntity: currentClass }
+    }
+
+    protected buildOutput = async (currentClass: Class): Promise<void> => {
+        this.output.classes.push(mapClassToClassConnectionNode(currentClass))
+    }
 }
