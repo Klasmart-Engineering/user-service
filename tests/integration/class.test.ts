@@ -52,6 +52,7 @@ import {
     RemoveStudentsFromClasses,
     AddTeachersToClasses,
     RemoveTeachersFromClasses,
+    SetAcademicTermsOfClasses,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -87,9 +88,9 @@ import {
 } from '../factories/user.factory'
 import {
     createClass as createClassFactory,
-    createClasses,
     createClasses as createClassesFactory,
 } from '../factories/class.factory'
+import { createSchool as createSchoolFactory } from '../factories/school.factory'
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
@@ -108,6 +109,7 @@ import {
     RemoveStudentsFromClassInput,
     AddTeachersToClassInput,
     RemoveTeachersFromClassInput,
+    SetAcademicTermOfClassInput,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
@@ -127,6 +129,7 @@ import {
     createEntityAPIError,
     createDuplicateInputAttributeAPIError,
     createInputLengthAPIError,
+    createMustHaveExactlyNAPIError,
 } from '../../src/utils/resolvers/errors'
 import { NIL_UUID } from '../utils/database'
 import { generateShortCode, validateShortCode } from '../../src/utils/shortcode'
@@ -137,6 +140,10 @@ import { mapClassToClassConnectionNode } from '../../src/pagination/classesConne
 import { config } from '../../src/config/config'
 import { compareMultipleEntities } from '../utils/assertions'
 import { sortObjectArray } from '../../src/utils/array'
+import { AcademicTerm } from '../../src/entities/academicTerm'
+import { createSuccessiveAcademicTerms } from '../factories/academicTerm.factory'
+import { getMap } from '../../src/utils/resolvers/entityMaps'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
 
 type ClassSpecs = {
     class: Class
@@ -162,7 +169,7 @@ describe('class', () => {
         testClient = await createTestClient(server)
     })
 
-    describe('createClasses', () => {
+    describe('CreateClasses', () => {
         let ctx: { permissions: UserPermissions }
         let org: Organization
         let org2: Organization
@@ -6383,7 +6390,7 @@ describe('class', () => {
             adminUser = await createAdminUser(testClient)
             org = await createOrganization().save()
             students = createUsers(3)
-            classes = createClasses(3)
+            classes = createClassesFactory(3)
             classes.forEach((c) => (c.organization = Promise.resolve(org)))
             await connection.manager.save([...students, ...classes])
 
@@ -6823,7 +6830,7 @@ describe('class', () => {
             adminUser = await createAdminUser(testClient)
             org = await createOrganization().save()
             students = createUsers(3)
-            classes = createClasses(3)
+            classes = createClassesFactory(3)
             classes.forEach((c) => (c.organization = Promise.resolve(org)))
             await connection.manager.save([...students, ...classes])
 
@@ -7255,7 +7262,7 @@ describe('class', () => {
             adminUser = await createAdminUser(testClient)
             org = await createOrganization().save()
             teachers = await User.save(createUsers(3))
-            classes = await Class.save(createClasses(3, org))
+            classes = await Class.save(createClassesFactory(3, org))
 
             await OrganizationMembership.save(
                 Array.from(teachers, (teacher) =>
@@ -7687,7 +7694,7 @@ describe('class', () => {
             adminUser = await createAdminUser(testClient)
             org = await createOrganization().save()
             teachers = await User.save(createUsers(3))
-            classes = await Class.save(createClasses(3, org))
+            classes = await Class.save(createClassesFactory(3, org))
             classes[0].teachers = Promise.resolve([teachers[0], teachers[1]])
             classes[1].teachers = Promise.resolve([teachers[1], teachers[2]])
             classes[2].teachers = Promise.resolve([
@@ -8088,6 +8095,475 @@ describe('class', () => {
                     await originalClass.teachers
                 )
             })
+        })
+    })
+
+    describe('SetAcademicTermsOfClasses', () => {
+        let input: SetAcademicTermOfClassInput[]
+        let classes: Class[]
+        let school: School
+        let org: Organization
+        let terms: AcademicTerm[]
+        let adminUser: User
+        let nonAdminUser: User
+
+        function setTerms(
+            mutationInput: SetAcademicTermOfClassInput[] = [],
+            authUser = adminUser
+        ) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new SetAcademicTermsOfClasses(mutationInput, permissions)
+        }
+
+        function buildInput(
+            inputClass: Class,
+            inputTerm: AcademicTerm | null
+        ): SetAcademicTermOfClassInput {
+            return {
+                classId: inputClass.class_id,
+                academicTermId: inputTerm ? inputTerm.id : null,
+            }
+        }
+
+        beforeEach(async () => {
+            adminUser = await adminUserFactory().save()
+            nonAdminUser = await createUser().save()
+            org = await createOrganization().save()
+            school = await createSchoolFactory(org).save()
+            terms = await AcademicTerm.save(
+                createSuccessiveAcademicTerms(5, school)
+            )
+            classes = await Class.save(
+                [...Array(5)].map(() => createClassFactory([school], org))
+            )
+        })
+
+        context('.run', () => {
+            context('when setting an academic term', () => {
+                it('add terms to classes', async () => {
+                    classes[2].academicTerm = Promise.resolve(terms[2])
+                    await classes[2].save()
+                    input = [
+                        buildInput(classes[0], terms[0]),
+                        buildInput(classes[1], terms[1]),
+                        buildInput(classes[2], terms[0]),
+                    ]
+                    await expect(setTerms(input).run()).to.be.fulfilled
+
+                    const classIds = classes.slice(0, 3).map((c) => c.class_id)
+                    const dbClasses = await getMap.class(classIds, [
+                        'academicTerm',
+                    ])
+
+                    expect(
+                        (await dbClasses.get(classIds[0])?.academicTerm)!.id
+                    ).to.eq(terms[0].id)
+                    expect(
+                        (await dbClasses.get(classIds[1])?.academicTerm)!.id
+                    ).to.eq(terms[1].id)
+                    expect(
+                        (await dbClasses.get(classIds[2])?.academicTerm)!.id
+                    ).to.eq(terms[0].id)
+                })
+
+                it('returns the expected output', async () => {
+                    input = [
+                        buildInput(classes[3], terms[0]),
+                        buildInput(classes[4], terms[1]),
+                        buildInput(classes[2], terms[3]),
+                    ]
+                    const res: ClassesMutationResult = await expect(
+                        setTerms(input).run()
+                    ).to.be.fulfilled
+
+                    expect(res.classes).to.have.length(input.length)
+                    for (const [i, cls] of res.classes.entries()) {
+                        expect(cls.id).to.equal(input[i].classId)
+                        expect(cls.status).to.equal(Status.ACTIVE)
+                    }
+                })
+
+                it('makes the expected number of db connections', async () => {
+                    input = [buildInput(classes[0], terms[0])]
+                    connection.logger.reset()
+                    await setTerms(input).run()
+                    expect(connection.logger.count).to.equal(6)
+                })
+
+                it('makes an extra db connection per input', async () => {
+                    input = [buildInput(classes[0], terms[0])]
+                    connection.logger.reset()
+                    await setTerms(input).run()
+                    const dbCountForOne = connection.logger.count
+
+                    input = [
+                        buildInput(classes[1], terms[1]),
+                        buildInput(classes[2], terms[1]),
+                        buildInput(classes[3], terms[3]),
+                        buildInput(classes[4], terms[3]),
+                    ]
+                    connection.logger.reset()
+                    await setTerms(input).run()
+                    expect(connection.logger.count).to.equal(dbCountForOne + 3)
+                })
+            })
+
+            context('when removing an academic term', () => {
+                beforeEach(async () => {
+                    classes[0].academicTerm = Promise.resolve(terms[0])
+                    classes[1].academicTerm = Promise.resolve(terms[1])
+                    await Class.save([classes[0], classes[1]])
+                })
+
+                it('removes terms from classes', async () => {
+                    input = [
+                        buildInput(classes[0], null),
+                        buildInput(classes[1], null),
+                    ]
+                    await expect(setTerms(input).run()).to.be.fulfilled
+                    const classIds = classes.slice(0, 2).map((c) => c.class_id)
+                    const dbClasses = await getMap.class(classIds, [
+                        'academicTerm',
+                    ])
+                    expect(await dbClasses.get(classIds[0])?.academicTerm).to.be
+                        .null
+                    expect(await dbClasses.get(classIds[1])?.academicTerm).to.be
+                        .null
+                })
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            it('returns the schools a class belongs to', async () => {
+                const extraSchool = await createSchoolFactory().save()
+                classes[3].schools = Promise.resolve([extraSchool, school])
+                await classes[3].save()
+                input = [
+                    buildInput(classes[3], terms[0]),
+                    buildInput(classes[1], terms[0]),
+                ]
+
+                const maps = await setTerms().generateEntityMaps(input)
+
+                const class1SchoolIds = maps.classSchools
+                    .get(classes[1].class_id)
+                    ?.map((s) => s.school_id)
+                expect(class1SchoolIds).to.deep.equal([school.school_id])
+
+                const class3SchoolIds = maps.classSchools
+                    .get(classes[3].class_id)
+                    ?.map((s) => s.school_id)
+                expect(class3SchoolIds).to.deep.equalInAnyOrder([
+                    school.school_id,
+                    extraSchool.school_id,
+                ])
+            })
+        })
+
+        context('.authorize', () => {
+            let otherSchool: School
+            const permission = PermissionName.edit_class_20334
+
+            async function authorize(
+                i: SetAcademicTermOfClassInput[],
+                authUser = adminUser
+            ) {
+                const mutation = setTerms(i, authUser)
+                const maps = await mutation.generateEntityMaps(i)
+                return mutation.authorize(i, maps)
+            }
+
+            beforeEach(async () => {
+                otherSchool = await createSchoolFactory(org).save()
+                classes[0] = await createClassFactory([school]).save()
+                classes[3] = await createClassFactory([
+                    otherSchool,
+                    school,
+                ]).save()
+
+                input = [
+                    buildInput(classes[0], terms[0]),
+                    buildInput(classes[3], terms[0]),
+                ]
+            })
+
+            context('when user has permissions to edit classes in org', () => {
+                beforeEach(async () => {
+                    const nonAdminRole = await createRoleFactory(
+                        'Non Admin Role',
+                        org,
+                        { permissions: [permission] }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: org,
+                        roles: [nonAdminRole],
+                    }).save()
+                })
+
+                context('and none of the classes are in an org', () => {
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(input, nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(permission, nonAdminUser)
+                        )
+                    })
+                })
+
+                context('and at least one class is in the org', () => {
+                    beforeEach(async () => {
+                        classes[0].organization = Promise.resolve(org)
+                        await Class.save([classes[0]])
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(input, nonAdminUser)).to.be
+                            .fulfilled
+                    })
+                })
+            })
+
+            context(
+                'when user does not have permissions to edit classes in all schools',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createSchoolMembership({
+                            user: nonAdminUser,
+                            school,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(input, nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(
+                                permission,
+                                nonAdminUser,
+                                undefined,
+                                [otherSchool]
+                            )
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validateOverAllInputs', () => {
+            it('produces errors for duplicate classes', async () => {
+                input = [
+                    buildInput(classes[0], terms[3]),
+                    buildInput(classes[1], terms[3]),
+                    buildInput(classes[2], terms[4]),
+                    buildInput(classes[3], terms[1]),
+                    buildInput(classes[4], terms[2]),
+                    buildInput(classes[3], terms[2]),
+                ]
+                const result = setTerms().validationOverAllInputs(input)
+                const xErrors = [
+                    createDuplicateAttributeAPIError(
+                        input.length - 1,
+                        ['classId'],
+                        'SetAcademicTermOfClassInput'
+                    ),
+                ]
+                compareMultipleErrors(result.apiErrors, xErrors)
+                expect(result.validInputs).to.have.length(5)
+            })
+        })
+
+        context('.validate', () => {
+            async function validate(i: SetAcademicTermOfClassInput[]) {
+                const mutation = setTerms(i)
+                const maps = await mutation.generateEntityMaps(i)
+                return i.flatMap((val, index) =>
+                    mutation.validate(
+                        index,
+                        maps.mainEntity.get(val.classId)!,
+                        val,
+                        maps
+                    )
+                )
+            }
+
+            beforeEach(async () => {
+                classes[2].academicTerm = Promise.resolve(terms[4])
+                await classes[2].save()
+                input = [
+                    buildInput(classes[0], terms[0]),
+                    buildInput(classes[1], terms[2]),
+                    buildInput(classes[2], null),
+                ]
+            })
+
+            context('when a class is inactive', () => {
+                beforeEach(() => classes[1].inactivate(getManager()))
+
+                it('returns a nonexistent_entity error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when a class has no schools', async () => {
+                beforeEach(async () => {
+                    classes[1].schools = Promise.resolve([])
+                    await classes[1].save()
+                })
+
+                it('return a must_have_exactly_n error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createMustHaveExactlyNAPIError(
+                            'Class',
+                            classes[1].class_id,
+                            'School',
+                            1,
+                            1
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when a class has more than one school', async () => {
+                beforeEach(async () => {
+                    const otherSchool = await createSchoolFactory(org).save()
+                    classes[1].schools = Promise.resolve([school, otherSchool])
+                    await classes[1].save()
+                })
+
+                it('return a must_have_exactly_n error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createMustHaveExactlyNAPIError(
+                            'Class',
+                            classes[1].class_id,
+                            'School',
+                            1,
+                            1
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of the academic terms is inactive', async () => {
+                beforeEach(async () => {
+                    await terms[2].inactivate(getManager())
+                })
+
+                it('returns a nonexistent_entity error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'AcademicTerm',
+                            terms[2].id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context(
+                'when an academic term does not belong to the same school as the class',
+                async () => {
+                    let otherSchoolId: string
+
+                    beforeEach(async () => {
+                        const otherSchool = await createSchoolFactory(
+                            org
+                        ).save()
+                        otherSchoolId = otherSchool.school_id
+                        classes[1].schools = Promise.resolve([otherSchool])
+                        await classes[1].save()
+                    })
+
+                    it('returns a nonexistent_child error', async () => {
+                        const errors = await validate(input)
+                        const xErrors = [
+                            createEntityAPIError(
+                                'nonExistentChild',
+                                1,
+                                'AcademicTerm',
+                                terms[2].id,
+                                'School',
+                                otherSchoolId
+                            ),
+                        ]
+                        compareMultipleErrors(errors, xErrors)
+                    })
+                }
+            )
+
+            context('when a class has no organization', async () => {
+                beforeEach(async () => {
+                    classes[1] = await createClassFactory([school]).save()
+                    input[1].classId = classes[1].class_id
+                })
+
+                it('returns a must_have_exactly_n error', async () => {
+                    const errors = await validate(input)
+                    const xErrors = [
+                        createMustHaveExactlyNAPIError(
+                            'Class',
+                            classes[1].class_id,
+                            'Organization',
+                            1,
+                            1
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context(
+                'when a class and its school have different orgs',
+                async () => {
+                    let otherOrg: Organization
+
+                    beforeEach(async () => {
+                        otherOrg = await createOrganization().save()
+                        classes[1] = await createClassFactory(
+                            [school],
+                            otherOrg
+                        ).save()
+                        input[1].classId = classes[1].class_id
+                    })
+
+                    it('returns a nonexistent_child error', async () => {
+                        const errors = await validate(input)
+                        const xErrors = [
+                            createEntityAPIError(
+                                'nonExistentChild',
+                                1,
+                                'School',
+                                school.school_id,
+                                'Organization',
+                                otherOrg.organization_id
+                            ),
+                        ]
+                        compareMultipleErrors(errors, xErrors)
+                    })
+                }
+            )
         })
     })
 })

@@ -8,6 +8,7 @@ import { Status } from '../../src/entities/status'
 import { User } from '../../src/entities/user'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import {
+    SetAcademicTermOfClassInput,
     AddProgramsToClassInput,
     AddStudentsToClassInput,
     AddTeachersToClassInput,
@@ -37,6 +38,7 @@ import {
     inviteUserToOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import {
+    SET_ACADEMIC_TERMS_OF_CLASSES,
     ADD_PROGRAMS_TO_CLASSES,
     ADD_STUDENTS_TO_CLASSES,
     ADD_TEACHERS_TO_CLASSES,
@@ -72,6 +74,7 @@ import {
     createClass as createClassFactory,
     createClasses,
 } from '../factories/class.factory'
+import { createSchool as createSchoolFactory } from '../factories/school.factory'
 import { NIL_UUID } from '../utils/database'
 import { generateShortCode } from '../../src/utils/shortcode'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
@@ -79,6 +82,9 @@ import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { TestConnection } from '../utils/testConnection'
+import { createSuccessiveAcademicTerms } from '../factories/academicTerm.factory'
+import { School } from '../../src/entities/school'
+import { AcademicTerm } from '../../src/entities/academicTerm'
 
 use(deepEqualInAnyOrder)
 
@@ -1637,6 +1643,65 @@ describe('acceptance.class', () => {
             )
             expect(response.body.errors[1].message).to.contain(
                 'Field "teacherIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('setAcademicTermsOfClasses', () => {
+        let adminUser: User
+        let input: SetAcademicTermOfClassInput[]
+        let school: School
+        let classes: Class[]
+        let terms: AcademicTerm[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            school = await createSchoolFactory(org).save()
+            classes = await Class.save([
+                createClassFactory([school], org),
+                createClassFactory([school], org),
+                createClassFactory([school], org),
+            ])
+            terms = await AcademicTerm.save(
+                createSuccessiveAcademicTerms(2, school)
+            )
+            classes[2].academicTerm = Promise.resolve(terms[0])
+            await connection.manager.save(classes)
+
+            input = [
+                { classId: classes[0].class_id, academicTermId: terms[0].id },
+                { classId: classes[1].class_id, academicTermId: terms[1].id },
+                { classId: classes[2].class_id, academicTermId: null },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(SET_ACADEMIC_TERMS_OF_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.setAcademicTermsOfClasses.classes
+            expect(resClasses).to.have.length(classes.length)
+        })
+
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(SET_ACADEMIC_TERMS_OF_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
             )
         })
     })

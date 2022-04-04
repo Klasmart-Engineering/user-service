@@ -56,7 +56,7 @@ describe('Subcategory', () => {
 
         context('when name is not defined', () => {
             beforeEach(async () => {
-                subcategory.name = undefined
+                ;(subcategory as any).name = undefined
                 await manager.save(org)
             })
 

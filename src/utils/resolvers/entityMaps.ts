@@ -15,6 +15,7 @@ import { AgeRange } from '../../entities/ageRange'
 import { ObjMap } from '../stringUtils'
 import { Subject } from '../../entities/subject'
 import { Grade } from '../../entities/grade'
+import { AcademicTerm } from '../../entities/academicTerm'
 
 export type ConflictingNameKey = {
     organizationId?: string
@@ -132,5 +133,6 @@ export const getMap = {
     ageRange: idToEntityMap<AgeRange>(AgeRange),
     subject: idToEntityMap<Subject>(Subject),
     grade: idToEntityMap<Grade>(Grade),
+    academicTerm: idToEntityMap<AcademicTerm>(AcademicTerm),
     membership,
 }

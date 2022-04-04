@@ -31,4 +31,5 @@ export interface ErrorParams {
     index?: number
     fields?: string
     fieldValues?: Record<string, unknown>[]
+    count?: number
 }

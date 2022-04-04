@@ -43,6 +43,7 @@ import {
 } from '../utils/mutations/commonStructure'
 import { Class } from '../entities/class'
 import {
+    createClassHasAcademicTermAPIError,
     createEntityAPIError,
     createNonExistentOrInactiveEntityAPIError,
 } from '../utils/resolvers/errors'
@@ -897,55 +898,49 @@ export class AddClassesToSchools extends AddMutation<
         maps: AddRemoveClassesToFromSchoolsEntityMap
     ): APIError[] => {
         const errors: APIError[] = []
-        const { schoolId: itemId, classIds: subitemIds } = currentInput
-        const mainEntityName = 'School'
-        const subEntityName = 'Class'
-        const mainEntityKeyName = 'school_id'
-        const subEntityKeyName = 'class_id'
+        const { schoolId, classIds } = currentInput
 
         const schoolClasses = new Set(
-            maps.schoolsClasses.get(itemId)?.map((p) => p.class_id)
+            maps.schoolsClasses.get(schoolId)?.map((p) => p.class_id)
         )
-        const schoolOrganizationId = maps.mainEntity.get(itemId)?.organizationId
+        const schoolOrganizationId = maps.mainEntity.get(schoolId)
+            ?.organizationId
 
-        for (const subitemId of subitemIds) {
-            const subitem = maps.classes.get(subitemId)
-            if (!subitem) {
+        for (const classId of classIds) {
+            const cls = maps.classes.get(classId)
+            if (!cls) {
                 errors.push(
-                    createEntityAPIError(
-                        'nonExistent',
-                        index,
-                        subEntityName,
-                        subitemId
-                    )
+                    createEntityAPIError('nonExistent', index, 'Class', classId)
                 )
             }
-            if (!subitem) continue
-            if (subitem.organizationId != schoolOrganizationId) {
+            if (!cls) continue
+            if (cls.organization_id != schoolOrganizationId) {
                 errors.push(
                     new APIError({
                         code: customErrors.unauthorized.code,
                         message: customErrors.unauthorized.message,
                         variables: ['id'],
-                        entity: subEntityName,
-                        entityName: subEntityName,
-                        attribute: 'ID',
-                        otherAttribute: subitemId,
+                        entity: 'Class',
+                        entityName: classId,
                         index,
                     })
                 )
             }
-            const itemHasSubitem = schoolClasses.has(subitemId)
-            if (itemHasSubitem) {
+            if (schoolClasses.has(classId)) {
                 errors.push(
                     createEntityAPIError(
                         'existentChild',
                         index,
-                        subEntityName,
-                        subitem[subEntityKeyName],
-                        mainEntityName,
-                        currentEntity[mainEntityKeyName]
+                        'Class',
+                        cls['class_id'],
+                        'School',
+                        currentEntity['school_id']
                     )
+                )
+            }
+            if (cls.academic_term_id) {
+                errors.push(
+                    createClassHasAcademicTermAPIError(cls.class_id, index)
                 )
             }
         }
@@ -957,21 +952,18 @@ export class AddClassesToSchools extends AddMutation<
         maps: AddRemoveClassesToFromSchoolsEntityMap,
         index: number
     ) {
-        const { schoolId: itemId, classIds: subitemIds } = currentInput
+        const { schoolId, classIds } = currentInput
 
-        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+        const school = maps.mainEntity.get(this.mainEntityIds[index])!
 
-        const newSubitems: Class[] = []
-        for (const subitemId of subitemIds) {
-            const subitem = maps.classes.get(subitemId)!
-            newSubitems.push(subitem)
+        const classes: Class[] = []
+        for (const classId of classIds) {
+            const subitem = maps.classes.get(classId)!
+            classes.push(subitem)
         }
-        const preExistentSubitems = maps.schoolsClasses.get(itemId)!
-        currentEntity.classes = Promise.resolve([
-            ...preExistentSubitems,
-            ...newSubitems,
-        ])
-        return { outputEntity: currentEntity }
+        const preExistentClasses = maps.schoolsClasses.get(schoolId)!
+        school.classes = Promise.resolve([...preExistentClasses, ...classes])
+        return { outputEntity: school }
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
@@ -1451,17 +1443,15 @@ export class RemoveClassesFromSchools extends RemoveMutation<
             [schoolId],
             maps.mainEntity
         )
-
         errors.push(...school.errors)
 
         const _class = flagNonExistent(Class, index, classIds, classMap)
         errors.push(..._class.errors)
-
         if (!school.values.length || !_class.values.length) return errors
+
         const schoolClassIds = new Set(
             maps.schoolsClasses.get(schoolId)?.map((p) => p.class_id)
         )
-
         const schoolChildErrors = flagNonExistentChild(
             School,
             Class,
@@ -1470,8 +1460,15 @@ export class RemoveClassesFromSchools extends RemoveMutation<
             _class.values.map((c) => c.class_id),
             schoolClassIds
         )
-
         errors.push(...schoolChildErrors)
+
+        for (const cls of _class.values) {
+            if (cls.academic_term_id) {
+                errors.push(
+                    createClassHasAcademicTermAPIError(cls.class_id, index)
+                )
+            }
+        }
 
         return errors
     }
@@ -1488,10 +1485,9 @@ export class RemoveClassesFromSchools extends RemoveMutation<
             (_class) => !classIds.includes(_class.class_id)
         )
 
-        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
-
-        currentEntity.classes = Promise.resolve(classes)
-        return { outputEntity: currentEntity }
+        const school = maps.mainEntity.get(this.mainEntityIds[index])!
+        school.classes = Promise.resolve(classes)
+        return { outputEntity: school }
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {

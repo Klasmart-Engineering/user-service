@@ -347,17 +347,17 @@ export class SubcategoriesInitializer {
                 id: systemSubcategory.id,
                 name: systemSubcategory.name,
                 system: true,
-                organization_id: null,
                 status: Status.ACTIVE,
             }
 
+            // eslint-disable-next-line no-await-in-loop
             await Subcategory.createQueryBuilder()
                 .insert()
                 .into(Subcategory)
                 .values(subcategoryAttributes)
                 .orUpdate({
                     conflict_target: ['id'],
-                    overwrite: ['name', 'system', 'organization_id', 'status'],
+                    overwrite: ['name', 'system', 'status'],
                 })
                 .execute()
         }

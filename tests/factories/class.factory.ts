@@ -39,3 +39,8 @@ export const createClasses = (length: number, org?: Organization) =>
     Array(length)
         .fill(undefined)
         .map(() => (org ? createClass(undefined, org) : createClass()))
+
+export const createSchoolClasses = (length: number, schools: School[]) =>
+    Array(length)
+        .fill(undefined)
+        .map(() => createClass(schools))

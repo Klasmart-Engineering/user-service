@@ -1,5 +1,9 @@
 import { Headers } from 'node-mocks-http'
-import { UpdateSubcategoryInput } from '../../../src/types/graphQL/subcategory'
+import { Subcategory } from '../../../src/entities/subcategory'
+import {
+    DeleteSubcategoryInput,
+    UpdateSubcategoryInput,
+} from '../../../src/types/graphQL/subcategory'
 
 import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
@@ -51,4 +55,12 @@ export function buildUpdateSubcategoryInputArray(
             avoidNames ? undefined : `Modified Subcategory ${i + 1}`
         )
     )
+}
+
+export function buildDeleteSubcategoryInputArray(
+    subcategories: Subcategory[]
+): DeleteSubcategoryInput[] {
+    return Array.from(subcategories, (s) => {
+        return { id: s.id }
+    })
 }

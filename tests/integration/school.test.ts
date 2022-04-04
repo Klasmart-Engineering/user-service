@@ -104,6 +104,7 @@ import {
 } from '../utils/apiError'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import {
+    createClassHasAcademicTermAPIError,
     createDuplicateAttributeAPIError,
     createEntityAPIError,
     createInputLengthAPIError,
@@ -113,27 +114,12 @@ import { NIL_UUID } from '../utils/database'
 import { Role } from '../../src/entities/role'
 import { v4 as uuid_v4 } from 'uuid'
 import { ObjMap } from '../../src/utils/stringUtils'
+import { getMap } from '../../src/utils/resolvers/entityMaps'
+import { customErrors } from '../../src/types/errors/customError'
+import { createAcademicTerm } from '../factories/academicTerm.factory'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
-
-interface OrgData {
-    org: Organization
-    admin: User
-    schools: School[]
-    schoolMembers: User[]
-}
-
-interface SchoolData {
-    school: School
-    members: User[]
-}
-
-interface SpecialAdminData {
-    admin: User
-    schoolMembershipsData: SchoolData[]
-    orgMembershipsData?: OrgData[]
-}
 
 const expectAPIErrorCollection = async (
     resolverCall: Promise<any>,
@@ -142,8 +128,7 @@ const expectAPIErrorCollection = async (
     const { errors } = (await expect(resolverCall).to.be
         .rejected) as APIErrorCollection
     expect(errors).to.exist
-    for (let x = 0; x < errors.length; x++)
-        compareErrors(errors[x], expectedErrors.errors[x])
+    compareMultipleErrors(errors, expectedErrors.errors)
 }
 
 function intersection<T>(setA: Set<T>, setB: Set<T>) {
@@ -1826,7 +1811,6 @@ describe('school', () => {
     describe('AddClassesToSchools', () => {
         let adminUser: User
         let nonAdminUser: User
-        let organization: Organization
         let schools: School[]
         let classes: Class[]
         let input: AddClassesToSchoolInput[]
@@ -1837,21 +1821,17 @@ describe('school', () => {
         }
 
         async function checkClassesAddedToSchools() {
-            for (const schoolInputs of input) {
-                const { schoolId, classIds } = schoolInputs
-
-                const school = await School.findOneBy({ school_id: schoolId })
-                const dbClasses = await school?.classes
-
-                const dbClassIds = new Set(
-                    dbClasses?.map((val) => val.class_id)
-                )
-                const classIdsSet = new Set(classIds)
-
-                expect(dbClassIds.size).to.equal(classIdsSet.size)
-                dbClassIds.forEach(
-                    (val) => expect(classIdsSet.has(val)).to.be.true
-                )
+            const schoolMap = await getMap.school(
+                input.map((i) => i.schoolId),
+                ['classes']
+            )
+            for (const { schoolId, classIds } of input) {
+                // eslint-disable-next-line no-await-in-loop
+                const dbClasses = await schoolMap.get(schoolId)?.classes
+                const dbClassIds = [
+                    ...new Set(dbClasses?.map((val) => val.class_id)),
+                ]
+                expect(dbClassIds).to.deep.equalInAnyOrder(classIds)
             }
         }
 
@@ -1964,7 +1944,7 @@ describe('school', () => {
             })
 
             context(
-                'and one of the classes is belongs to the wrong organization',
+                'and one of the classes belongs to the wrong organization',
                 async () => {
                     let otherClass: Class
                     beforeEach(async () => {
@@ -1976,19 +1956,16 @@ describe('school', () => {
                         input[0].classIds.push(otherClass.class_id)
                     })
 
-                    it('returns a unauthorized error', async () => {
+                    it('returns an unauthorized error', async () => {
                         await expectAPIErrorCollection(
                             addClasses(),
                             new APIErrorCollection([
                                 new APIError({
-                                    code: 'UNAUTHORIZED',
-                                    message:
-                                        'You are unauthorized to perform this action.',
+                                    code: customErrors.unauthorized.code,
+                                    message: customErrors.unauthorized.message,
                                     variables: ['id'],
                                     entity: 'Class',
-                                    entityName: 'Class',
-                                    attribute: 'ID',
-                                    otherAttribute: otherClass.class_id,
+                                    entityName: otherClass.class_id,
                                     index: 0,
                                 }),
                             ])
@@ -2023,6 +2000,36 @@ describe('school', () => {
 
                 await checkNoChangesMade()
             })
+
+            context(
+                'and the one of the classes has an academic term',
+                async () => {
+                    let otherClass: Class
+
+                    beforeEach(async () => {
+                        otherClass = await createFactoryClass(
+                            [schools[1]],
+                            organization
+                        ).save()
+                        const academicTerm = await createAcademicTerm(
+                            schools[1]
+                        ).save()
+                        otherClass.academicTerm = Promise.resolve(academicTerm)
+                        await otherClass.save()
+                        input[2].classIds.push(otherClass.class_id)
+                    })
+
+                    it('returns an academic term error', async () => {
+                        const { errors } = await expect(addClasses()).to.be
+                            .rejected
+                        const xError = createClassHasAcademicTermAPIError(
+                            otherClass.class_id,
+                            2
+                        )
+                        compareMultipleErrors(errors, [xError])
+                    })
+                }
+            )
 
             context('when adding 1 class then 20 classes', () => {
                 it('makes the same number of database calls', async () => {
@@ -3302,6 +3309,32 @@ describe('school', () => {
 
                     await checkNoChangesMade()
                 })
+
+                context(
+                    'and the one of the classes has an academic term',
+                    async () => {
+                        beforeEach(async () => {
+                            const academicTerm = await createAcademicTerm(
+                                schools[1]
+                            ).save()
+                            classes[1].academicTerm = Promise.resolve(
+                                academicTerm
+                            )
+                            await classes[1].save()
+                        })
+
+                        it('returns an academic term error', async () => {
+                            const { errors } = await expect(
+                                removeClasses(input)
+                            ).to.be.rejected
+                            const xError = createClassHasAcademicTermAPIError(
+                                classes[1].class_id,
+                                1
+                            )
+                            compareMultipleErrors(errors, [xError])
+                        })
+                    }
+                )
 
                 context('when removing 1 class then 20 classes', () => {
                     it('makes the same number of database calls', async () => {
