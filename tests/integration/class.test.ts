@@ -168,6 +168,22 @@ interface OrgsData {
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
+async function makeUserWithViewUsersPerm(organization: Organization) {
+    const clientUser = await createUser().save()
+
+    const role = await createRoleFactory(undefined, organization, {
+        permissions: [PermissionName.view_users_40110],
+    }).save()
+
+    await createOrganizationMembership({
+        user: clientUser,
+        organization: organization,
+        roles: [role],
+    }).save()
+
+    return clientUser
+}
+
 describe('class', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
@@ -1139,6 +1155,8 @@ describe('class', () => {
                 let studentRoleId: string
                 let classId: string
                 let organizationId: string
+                let organization: Organization
+                let clientToken: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
                 let arbitraryUserToken: string
@@ -1157,12 +1175,12 @@ describe('class', () => {
                     studentId = (
                         await createUserAndValidate(testClient, studentInfo)
                     )?.user_id
-                    organizationId = (
-                        await createOrganizationAndValidate(
-                            testClient,
-                            orgOwnerId
-                        )
-                    )?.organization_id
+                    organization = await createOrganization(orgOwner).save()
+                    const clientUser = await makeUserWithViewUsersPerm(
+                        organization
+                    )
+                    clientToken = generateToken(userToPayload(clientUser))
+                    organizationId = organization.organization_id
                     await addUserToOrganizationAndValidate(
                         testClient,
                         teacherId,
@@ -1237,7 +1255,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: clientToken }
                         )
 
                         const userIds = gqlTeachers
@@ -1283,7 +1301,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: clientToken }
                         )
 
                         const userIds = gqlTeachers
@@ -1302,27 +1320,27 @@ describe('class', () => {
                 let teacherId: string
                 let teacherRoleId: string
                 let classId: string
+                let organization: Organization
+                let clientToken: string
                 let organizationId: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
-                let arbitraryUserToken: string
 
                 beforeEach(async () => {
                     const orgOwner = await createAdminUser(testClient)
                     orgOwnerId = orgOwner?.user_id
                     orgOwnerToken = generateToken(userToPayload(orgOwner))
                     await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                     const teacherInfo = { email: 'teacher@gmail.com' } as User
                     teacherId = (
                         await createUserAndValidate(testClient, teacherInfo)
                     )?.user_id
-                    organizationId = (
-                        await createOrganizationAndValidate(
-                            testClient,
-                            orgOwnerId
-                        )
-                    )?.organization_id
+                    organization = await createOrganization(orgOwner).save()
+                    const clientUser = await makeUserWithViewUsersPerm(
+                        organization
+                    )
+                    clientToken = generateToken(userToPayload(clientUser))
+                    organizationId = organization.organization_id
                     await addUserToOrganizationAndValidate(
                         testClient,
                         teacherId,
@@ -1360,7 +1378,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: orgOwnerToken }
                         )
 
                         const userIds = gqlTeachers
@@ -1396,7 +1414,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: clientToken }
                         )
 
                         const userIds = gqlTeachers
@@ -1418,17 +1436,16 @@ describe('class', () => {
                 let teacherRoleId: string
                 let studentRoleId: string
                 let classId: string
+                let organization: Organization
                 let organizationId: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
-                let arbitraryUserToken: string
 
                 beforeEach(async () => {
                     const orgOwner = await createAdminUser(testClient)
                     orgOwnerId = orgOwner?.user_id
                     orgOwnerToken = generateToken(userToPayload(orgOwner))
                     await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                     const teacherInfo = { email: 'teacher@gmail.com' } as User
                     const studentInfo = { email: 'student@gmail.com' } as User
                     teacherId = (
@@ -1437,12 +1454,8 @@ describe('class', () => {
                     studentId = (
                         await createUserAndValidate(testClient, studentInfo)
                     )?.user_id
-                    organizationId = (
-                        await createOrganizationAndValidate(
-                            testClient,
-                            orgOwnerId
-                        )
-                    )?.organization_id
+                    organization = await createOrganization(orgOwner).save()
+                    organizationId = organization.organization_id
                     await addUserToOrganizationAndValidate(
                         testClient,
                         teacherId,
@@ -1517,7 +1530,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: orgOwnerToken }
                         )
 
                         const userIds = gqlStudents
@@ -1563,7 +1576,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: orgOwnerToken }
                         )
 
                         const userIds = gqlStudents
@@ -1582,6 +1595,8 @@ describe('class', () => {
                 let studentId: string
                 let studentRoleId: string
                 let classId: string
+                let organization: Organization
+                let clientToken: string
                 let organizationId: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
@@ -1597,12 +1612,12 @@ describe('class', () => {
                     studentId = (
                         await createUserAndValidate(testClient, studentInfo)
                     )?.user_id
-                    organizationId = (
-                        await createOrganizationAndValidate(
-                            testClient,
-                            orgOwnerId
-                        )
-                    )?.organization_id
+                    organization = await createOrganization(orgOwner).save()
+                    const clientUser = await makeUserWithViewUsersPerm(
+                        organization
+                    )
+                    clientToken = generateToken(userToPayload(clientUser))
+                    organizationId = organization.organization_id
                     await addUserToOrganizationAndValidate(
                         testClient,
                         studentId,
@@ -1640,7 +1655,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: clientToken }
                         )
 
                         const userIds = gqlStudents
@@ -1676,7 +1691,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: clientToken }
                         )
 
                         const userIds = gqlStudents
@@ -1689,17 +1704,16 @@ describe('class', () => {
         )
         context('when an org has multiple schools', () => {
             let org: Organization
+            let clientToken: string
             let schools: School[] = []
             let students: User[] = []
             let teachers: User[] = []
             let class1: Class
             let studentRole: Role
             let teacherRole: Role
-            let arbitraryUserToken: string
 
             beforeEach(async () => {
                 await createNonAdminUser(testClient)
-                arbitraryUserToken = getNonAdminAuthToken()
                 schools = []
                 students = []
                 teachers = []
@@ -1708,6 +1722,8 @@ describe('class', () => {
                     testClient,
                     orgOwner.user_id
                 )
+                const clientUser = await makeUserWithViewUsersPerm(org)
+                clientToken = generateToken(userToPayload(clientUser))
                 class1 = (await createClass(
                     testClient,
                     org.organization_id
@@ -1822,7 +1838,7 @@ describe('class', () => {
                 const gqlStudents = await eligibleStudents(
                     testClient,
                     class1.class_id,
-                    { authorization: arbitraryUserToken }
+                    { authorization: clientToken }
                 )
                 expect(gqlStudents.length).to.eq(2)
             })
@@ -1831,7 +1847,7 @@ describe('class', () => {
                 const gqlStudents = await eligibleTeachers(
                     testClient,
                     class1.class_id,
-                    { authorization: arbitraryUserToken }
+                    { authorization: clientToken }
                 )
                 expect(gqlStudents.length).to.eq(3) // 2 teachers, 1 org admin
             })
@@ -1849,7 +1865,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: clientToken,
                     }
                 )
                 expect(gqlStudents.length).to.eq(1)
@@ -1866,7 +1882,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: clientToken,
                     }
                 )
                 expect(gqlStudents.length).to.eq(2)
@@ -1885,9 +1901,10 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: clientToken,
                     }
                 )
+
                 expect(gqlTeachers.length).to.eq(2) // 1 teacher, 1 org admin
 
                 await addSchoolToClass(
@@ -1902,7 +1919,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: clientToken,
                     }
                 )
                 expect(gqlTeachers.length).to.eq(3) // 2 teachers, 1 org admin
