@@ -14,6 +14,7 @@ import { AgeRange } from '../../entities/ageRange'
 import { Subject } from '../../entities/subject'
 import { SchoolMembership } from '../../entities/schoolMembership'
 import { Grade } from '../../entities/grade'
+import { AcademicTerm } from '../../entities/academicTerm'
 
 export type Entities =
     | User
@@ -27,6 +28,7 @@ export type Entities =
     | AgeRange
     | Subject
     | Grade
+    | AcademicTerm
 
 export type SystemEntities =
     | AgeRange
@@ -45,24 +47,34 @@ export type SystemEntityAndOrg = SystemEntities & {
  */
 export function validateSubItemsInOrg<T extends SystemEntityAndOrg>(
     subItemClass: new () => T,
+    subItemIds: string[],
     index: number,
     map: Map<string, T>,
     organizationId?: string
 ) {
-    return Array.from(map.values())
-        .filter((si) => {
-            const isSystem = si.system
-            const isInOrg =
-                si.__organization__?.organization_id === organizationId
+    return subItemIds
+        .filter((id) => {
+            const subItem = map.get(id)
 
-            return !isSystem && !isInOrg
+            if (subItem) {
+                let isInOrg = true
+                const isSystem = subItem.system
+
+                if (organizationId) {
+                    isInOrg =
+                        subItem.__organization__?.organization_id ===
+                        organizationId
+                }
+
+                return !isSystem && !isInOrg
+            }
         })
-        .map((si) =>
+        .map((id) =>
             createEntityAPIError(
                 'nonExistentChild',
                 index,
                 subItemClass.name,
-                si.id,
+                id,
                 'Organization',
                 organizationId
             )

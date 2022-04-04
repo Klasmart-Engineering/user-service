@@ -12,7 +12,7 @@ import {
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
 import {
-    deleteClasses,
+    DeleteClasses,
     AddProgramsToClasses,
     RemoveProgramsFromClasses,
     CreateClasses,
@@ -21,6 +21,7 @@ import {
     RemoveStudentsFromClasses,
     AddTeachersToClasses,
     RemoveTeachersFromClasses,
+    SetAcademicTermsOfClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -54,6 +55,12 @@ const typeDefs = gql`
         ): ClassesMutationResult
         removeTeachersFromClasses(
             input: [RemoveTeachersFromClassInput!]!
+        ): ClassesMutationResult
+        """
+        Note: A null or undefined academicTermId will remove the AcademicTerm from the class
+        """
+        setAcademicTermsOfClasses(
+            input: [SetAcademicTermOfClassInput!]!
         ): ClassesMutationResult
     }
 
@@ -320,6 +327,11 @@ const typeDefs = gql`
         classId: ID!
         teacherIds: [ID!]!
     }
+
+    input SetAcademicTermOfClassInput {
+        classId: ID!
+        academicTermId: ID
+    }
 `
 
 export async function subjectsChildConnectionResolver(
@@ -546,7 +558,7 @@ export default function getDefault(
             },
             Mutation: {
                 deleteClasses: (_parent, args, ctx, _info) =>
-                    deleteClasses(args, ctx),
+                    mutate(DeleteClasses, args, ctx.permissions),
                 createClasses: (_parent, args, ctx, _info) =>
                     mutate(CreateClasses, args, ctx.permissions),
                 updateClasses: (_parent, args, ctx, _info) =>
@@ -567,6 +579,8 @@ export default function getDefault(
                     mutate(AddTeachersToClasses, args, ctx.permissions),
                 removeTeachersFromClasses: (_parent, args, ctx) =>
                     mutate(RemoveTeachersFromClasses, args, ctx.permissions),
+                setAcademicTermsOfClasses: (_parent, args, ctx) =>
+                    mutate(SetAcademicTermsOfClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),

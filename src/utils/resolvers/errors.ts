@@ -220,6 +220,38 @@ export function createApplyingChangeToSelfAPIError(
     })
 }
 
+export function createMustHaveExactlyNAPIError(
+    entity: string,
+    entityName: string,
+    parentEntity: string,
+    count: number,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.must_have_exactly_n.code,
+        message: customErrors.must_have_exactly_n.message,
+        variables: [],
+        entity,
+        entityName,
+        parentEntity,
+        count,
+        index,
+    })
+}
+
+export function createClassHasAcademicTermAPIError(
+    entityName: string,
+    index: number
+) {
+    return new APIError({
+        code: customErrors.class_has_academic_term.code,
+        message: customErrors.class_has_academic_term.message,
+        variables: ['class_id', 'academic_term_id'],
+        entityName,
+        index,
+    })
+}
+
 export function createEntityAPIError(
     errorType: entityErrorType,
     index: number,
@@ -277,4 +309,31 @@ export function createEntityAPIError(
     }
 
     return new APIError(errorDetails)
+}
+
+export function createExistentEntityAttributesAPIError(
+    index: number,
+    entity: string,
+    entityName: string,
+    fieldValues: Record<string, string>
+) {
+    const keys = Object.keys(fieldValues)
+    const keyValues = keys.map((k) => {
+        return {
+            field: k,
+            value: fieldValues[k],
+        }
+    })
+
+    const fields = keyValues.map((kv) => `${kv.field} ${kv.value}`).join(', ')
+    return new APIError({
+        index,
+        entity,
+        entityName,
+        code: customErrors.existent_entity_attributes.code,
+        message: customErrors.existent_entity_attributes.message,
+        variables: Object.keys(fieldValues),
+        fieldValues: keyValues,
+        fields,
+    })
 }
