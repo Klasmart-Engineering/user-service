@@ -27,6 +27,8 @@ import { Subject } from '../entities/subject'
 import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
 import { mutate } from '../utils/mutations/commonStructure'
+import { Class } from '../entities/class'
+import { isAdminUserScopeWrapper } from '../directives/isAdminUtils'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -220,8 +222,8 @@ const typeDefs = gql`
         #connections
         organization: Organization
         schools: [School]
-        teachers: [User]
-        students: [User]
+        teachers: [User] @isAdmin(entity: "user")
+        students: [User] @isAdmin(entity: "user")
         # schedule: [ScheduleEntry]
 
         # query
@@ -230,10 +232,12 @@ const typeDefs = gql`
         grades: [Grade!]
         subjects: [Subject!]
         eligibleTeachers: [User]
+            @isAdmin(entity: "user")
             @deprecated(
                 reason: "Sunset Date: 31/03/2022 Details: [https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2478735554]"
             )
         eligibleStudents: [User]
+            @isAdmin(entity: "user")
             @deprecated(
                 reason: "Sunset Date: 31/03/2022 Details: [https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2478735554]"
             )
@@ -543,6 +547,34 @@ export default function getDefault(
                 subjectsConnection: subjectsChildConnectionResolver,
                 programsConnection: programsChildConnectionResolver,
                 ageRangesConnection: ageRangesChildConnectionResolver,
+            },
+            Class: {
+                students: async (parent: Class, args) => {
+                    return isAdminUserScopeWrapper(args.scope, parent.students)
+                },
+                teachers: async (parent: Class, args) => {
+                    return isAdminUserScopeWrapper(args.scope, parent.teachers)
+                },
+                eligibleStudents: async (parent: Class, args) => {
+                    return isAdminUserScopeWrapper(
+                        args.scope,
+                        parent
+                            .eligibleStudents()
+                            .then((eligibleStudents) =>
+                                Array.from(eligibleStudents)
+                            )
+                    )
+                },
+                eligibleTeachers: async (parent: Class, args) => {
+                    return isAdminUserScopeWrapper(
+                        args.scope,
+                        parent
+                            .eligibleTeachers()
+                            .then((eligibleTeachers) =>
+                                Array.from(eligibleTeachers)
+                            )
+                    )
+                },
             },
             Mutation: {
                 deleteClasses: (_parent, args, ctx, _info) =>
