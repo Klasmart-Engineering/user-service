@@ -556,24 +556,10 @@ export default function getDefault(
                     return isAdminUserScopeWrapper(args.scope, parent.teachers)
                 },
                 eligibleStudents: async (parent: Class, args) => {
-                    return isAdminUserScopeWrapper(
-                        args.scope,
-                        parent
-                            .eligibleStudents()
-                            .then((eligibleStudents) =>
-                                Array.from(eligibleStudents)
-                            )
-                    )
+                    return parent.eligibleStudents(args.scope)
                 },
                 eligibleTeachers: async (parent: Class, args) => {
-                    return isAdminUserScopeWrapper(
-                        args.scope,
-                        parent
-                            .eligibleTeachers()
-                            .then((eligibleTeachers) =>
-                                Array.from(eligibleTeachers)
-                            )
-                    )
+                    return parent.eligibleTeachers(args.scope)
                 },
             },
             Mutation: {
