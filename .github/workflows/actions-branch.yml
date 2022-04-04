@@ -59,6 +59,7 @@ jobs:
       - name: "Unit tests"
         run: npm run coverage:unit
       - name: Upload unit test coverage to Codecov
+        if: github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -71,6 +72,7 @@ jobs:
       - name: "Migration tests"
         run: npm run coverage:migrations
       - name: Upload migration test coverage to Codecov
+        if: github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -83,6 +85,7 @@ jobs:
       - name: "Integration tests"
         run: npm run coverage:integration
       - name: Upload integration test coverage to Codecov
+        if: github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -112,6 +115,7 @@ jobs:
           docker stop -t 2 user-service
           npx nyc report --require ts-node/register --reporter=lcov --reporter=json-summary --reporter=text-summary --report-dir ./coverage_acceptance
       - name: Upload acceptance test coverage to Codecov
+        if: github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
