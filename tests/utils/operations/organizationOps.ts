@@ -1061,7 +1061,7 @@ export async function listClasses(
 }
 
 export async function getSystemRoleIds() {
-    const dbRoles = await Role.find({ system_role: true })
+    const dbRoles = await Role.findBy({ system_role: true })
 
     let result: any
 

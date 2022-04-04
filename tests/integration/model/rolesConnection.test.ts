@@ -262,7 +262,7 @@ describe('rolesConnection', () => {
         })
 
         it('supports filtering by status', async () => {
-            const filterStatus = 'inactive'
+            const filterStatus = Status.INACTIVE
             const inactiveRoles = await Role.find({
                 where: { status: filterStatus },
             })

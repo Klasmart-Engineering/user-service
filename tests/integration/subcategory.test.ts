@@ -433,8 +433,10 @@ describe('subcategory', () => {
                         .rejected) as APIErrorCollection
 
                     const subcategoryName = input[0].name
-                    const subcategoryOrganization = await Organization.findOne(
-                        input[0].organizationId
+                    const subcategoryOrganization = await Organization.findOneBy(
+                        {
+                            organization_id: input[0].organizationId,
+                        }
                     )
                     const organizationName =
                         subcategoryOrganization?.organization_name

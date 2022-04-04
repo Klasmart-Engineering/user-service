@@ -65,9 +65,9 @@ describe('AgeRangesInitializer', () => {
 
                 await AgeRangesInitializer.run()
 
-                organization = await Organization.findOneOrFail(
-                    organization.organization_id
-                )
+                organization = await Organization.findOneByOrFail({
+                    organization_id: organization.organization_id,
+                })
                 const gqlNewAgeRanges = await listAgeRanges(
                     testClient,
                     organization.organization_id,

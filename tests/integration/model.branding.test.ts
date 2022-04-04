@@ -3,7 +3,7 @@ import fs from 'fs'
 import { stub, restore } from 'sinon'
 import { resolve } from 'path'
 import { expect, use } from 'chai'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -225,7 +225,7 @@ describe('model.branding', () => {
 
                     const images = await BrandingImage.find({
                         where: {
-                            branding: brandings[0],
+                            branding: Equal(brandings[0]),
                             status: Status.ACTIVE,
                         },
                     })
@@ -281,7 +281,7 @@ describe('model.branding', () => {
 
                         const images = await BrandingImage.find({
                             where: {
-                                branding: brandings[0],
+                                branding: Equal(brandings[0]),
                                 status: Status.ACTIVE,
                             },
                         })
@@ -330,7 +330,7 @@ describe('model.branding', () => {
 
                         const images = await BrandingImage.find({
                             where: {
-                                branding: brandings[0],
+                                branding: Equal(brandings[0]),
                                 status: Status.ACTIVE,
                             },
                         })
@@ -371,7 +371,7 @@ describe('model.branding', () => {
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: Equal(branding), tag: type },
                 })
 
                 await expect(
@@ -418,7 +418,7 @@ describe('model.branding', () => {
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: Equal(branding), tag: type },
                 })
 
                 await expect(
@@ -472,7 +472,7 @@ describe('model.branding', () => {
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: Equal(branding), tag: type },
                 })
 
                 await expect(func()).to.be.eventually.rejected
@@ -521,7 +521,7 @@ describe('model.branding', () => {
                     })
 
                     const brandingImage = await BrandingImage.findOne({
-                        where: { branding, tag: type },
+                        where: { branding: Equal(branding), tag: type },
                     })
 
                     await expect(func()).to.be.eventually.rejected
@@ -581,7 +581,7 @@ describe('model.branding', () => {
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: Equal(branding), tag: type },
                 })
 
                 await expect(func()).to.be.eventually.rejected
@@ -625,7 +625,7 @@ describe('model.branding', () => {
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: Equal(branding), tag: type },
                 })
 
                 expect(result).eq(true)
@@ -637,7 +637,7 @@ describe('model.branding', () => {
     })
 
     describe('deleteBrandingColor', () => {
-        let branding: Branding | undefined
+        let branding: Branding | null
         const primaryColor = '#cd657b'
 
         it('removes any set colour while leaving other properties unchanged', async () => {
@@ -657,7 +657,7 @@ describe('model.branding', () => {
             branding = await Branding.findOne({
                 relations: ['images'],
                 where: {
-                    organization: { organization_id: organizationId },
+                    organization: Equal({ organization_id: organizationId }),
                 },
             })
             expect(branding).to.exist

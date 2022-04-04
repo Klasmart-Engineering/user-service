@@ -63,7 +63,7 @@ describe('model', () => {
         await GradesInitializer.run()
 
         systemGrades = await Grade.find({
-            where: { system: true, status: 'active' },
+            where: { system: true, status: Status.ACTIVE },
         })
 
         admin = await createAdminUser(testClient)

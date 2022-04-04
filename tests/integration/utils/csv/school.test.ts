@@ -1,6 +1,6 @@
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection, IsNull } from 'typeorm'
 import { Organization } from '../../../../src/entities/organization'
 import { Program } from '../../../../src/entities/program'
 import { School } from '../../../../src/entities/school'
@@ -25,6 +25,7 @@ import { TestConnection } from '../../../utils/testConnection'
 import { User } from '@sentry/node'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -91,12 +92,10 @@ describe('processSchoolFromCSVRow', () => {
                 'On row number 1, organization name is required.'
             )
 
-            const school = await School.findOne({
-                where: {
-                    school_name: row.school_name,
-                    status: 'active',
-                    organization,
-                },
+            const school = await School.findOneBy({
+                school_name: row.school_name,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             })
 
             expect(school).to.be.undefined
@@ -124,12 +123,10 @@ describe('processSchoolFromCSVRow', () => {
                 'On row number 1, school name is required.'
             )
 
-            const school = await School.findOne({
-                where: {
-                    school_name: row.school_name,
-                    status: 'active',
-                    organization,
-                },
+            const school = await School.findOneBy({
+                school_name: row.school_name,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             })
 
             expect(school).to.be.undefined
@@ -163,12 +160,10 @@ describe('processSchoolFromCSVRow', () => {
                     'On row number 1, school name must not be greater than 120 characters.'
                 )
 
-                const school = await School.findOne({
-                    where: {
-                        school_name: row.school_name,
-                        status: 'active',
-                        organization,
-                    },
+                const school = await School.findOneBy({
+                    school_name: row.school_name,
+                    status: Status.ACTIVE,
+                    organization: Equal(organization),
                 })
 
                 expect(school).to.be.undefined
@@ -197,12 +192,10 @@ describe('processSchoolFromCSVRow', () => {
                 'On row number 1, school name must only contain letters and numbers.'
             )
 
-            const school = await School.findOne({
-                where: {
-                    school_name: row.school_name,
-                    status: 'active',
-                    organization,
-                },
+            const school = await School.findOneBy({
+                school_name: row.school_name,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             })
 
             expect(school).to.be.undefined
@@ -230,12 +223,10 @@ describe('processSchoolFromCSVRow', () => {
                 'On row number 1, school shortcode must only contain letters and numbers.'
             )
 
-            const school = await School.findOne({
-                where: {
-                    school_name: row.school_name,
-                    status: 'active',
-                    organization,
-                },
+            const school = await School.findOneBy({
+                school_name: row.school_name,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             })
 
             expect(school).to.be.undefined
@@ -269,12 +260,10 @@ describe('processSchoolFromCSVRow', () => {
                     `On row number 1, "${row.school_shortcode}" shortcode already exists for "${sameShortcodeAnotherSchoolName}" school.`
                 )
 
-                const school = await School.findOne({
-                    where: {
-                        school_name: row.school_name,
-                        status: 'active',
-                        organization,
-                    },
+                const school = await School.findOneBy({
+                    school_name: row.school_name,
+                    status: Status.ACTIVE,
+                    organization: Equal(organization),
                 })
 
                 expect(school).to.be.undefined
@@ -296,12 +285,10 @@ describe('processSchoolFromCSVRow', () => {
                 adminPermissions
             )
 
-            const school = await School.findOneOrFail({
-                where: {
-                    school_name: row.school_name,
-                    status: 'active',
-                    organization,
-                },
+            const school = await School.findOneByOrFail({
+                school_name: row.school_name,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             })
 
             const organizationInSchool = await school.organization
@@ -338,12 +325,10 @@ describe('processSchoolFromCSVRow', () => {
                 `On row number 1, "${row.organization_name}" organization matches 0, it should match one organization.`
             )
 
-            const school = await School.findOne({
-                where: {
-                    school_name: row.school_name,
-                    status: 'active',
-                    organization,
-                },
+            const school = await School.findOneBy({
+                school_name: row.school_name,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             })
 
             expect(school).to.be.undefined
@@ -373,12 +358,10 @@ describe('processSchoolFromCSVRow', () => {
                 `On row number 1, "${row.program_name}" program doesn't exist for "${row.organization_name}" organization.`
             )
 
-            const school = await School.findOne({
-                where: {
-                    school_name: row.school_name,
-                    status: 'active',
-                    organization,
-                },
+            const school = await School.findOneBy({
+                school_name: row.school_name,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             })
 
             expect(school).to.be.undefined
@@ -422,12 +405,10 @@ describe('processSchoolFromCSVRow', () => {
                     `On row number 1, "${row.program_name}" program already exists for "${row.school_name}" school.`
                 )
 
-                const school = await School.findOne({
-                    where: {
-                        school_name: row.school_name,
-                        status: 'active',
-                        organization,
-                    },
+                const school = await School.findOneBy({
+                    school_name: row.school_name,
+                    status: Status.ACTIVE,
+                    organization: Equal(organization),
                 })
 
                 expect(school).to.exist
@@ -445,21 +426,20 @@ describe('processSchoolFromCSVRow', () => {
                 adminPermissions
             )
 
-            const school = await School.findOneOrFail({
-                where: {
-                    school_name: row.school_name,
-                    status: 'active',
-                    organization,
-                },
+            const school = await School.findOneByOrFail({
+                school_name: row.school_name,
+                status: Status.ACTIVE,
+                organization: Equal(organization),
             })
 
-            const programDB = await connection.manager.findOneOrFail(Program, {
-                where: {
+            const programDB = await connection.manager.findOneByOrFail(
+                Program,
+                {
                     name: row.program_name,
                     system: true,
-                    organization: null,
-                },
-            })
+                    organization: IsNull(),
+                }
+            )
 
             const organizationInSchool = await school.organization
             const programsInSchool = (await school.programs) || []
@@ -506,22 +486,18 @@ describe('processSchoolFromCSVRow', () => {
                         adminPermissions
                     )
 
-                    const school = await School.findOneOrFail({
-                        where: {
-                            school_name: row.school_name,
-                            status: 'active',
-                            organization,
-                        },
+                    const school = await School.findOneByOrFail({
+                        school_name: row.school_name,
+                        status: Status.ACTIVE,
+                        organization: Equal(organization),
                     })
 
-                    const programDB = await connection.manager.findOneOrFail(
+                    const programDB = await connection.manager.findOneByOrFail(
                         Program,
                         {
-                            where: {
-                                name: row.program_name,
-                                system: true,
-                                organization: null,
-                            },
+                            name: row.program_name,
+                            system: true,
+                            organization: IsNull(),
                         }
                     )
 

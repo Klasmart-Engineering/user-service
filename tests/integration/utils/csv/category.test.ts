@@ -1,6 +1,6 @@
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import { Category } from '../../../../src/entities/category'
 import { Organization } from '../../../../src/entities/organization'
 import { Subcategory } from '../../../../src/entities/subcategory'
@@ -19,6 +19,7 @@ import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -86,9 +87,9 @@ describe('processCategoryFromCSVRow', () => {
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
-                    status: 'active',
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -120,9 +121,9 @@ describe('processCategoryFromCSVRow', () => {
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
-                    status: 'active',
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -154,9 +155,9 @@ describe('processCategoryFromCSVRow', () => {
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
-                    status: 'active',
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -188,9 +189,9 @@ describe('processCategoryFromCSVRow', () => {
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
-                    status: 'active',
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -233,9 +234,9 @@ describe('processCategoryFromCSVRow', () => {
                 const category = await Category.findOne({
                     where: {
                         name: row.category_name,
-                        status: 'active',
+                        status: Status.ACTIVE,
                         system: false,
-                        organization,
+                        organization: Equal(organization),
                     },
                 })
 
@@ -258,9 +259,9 @@ describe('processCategoryFromCSVRow', () => {
                 const category = await Category.findOneOrFail({
                     where: {
                         name: row.category_name,
-                        status: 'active',
+                        status: Status.ACTIVE,
                         system: false,
-                        organization,
+                        organization: Equal(organization),
                     },
                 })
 
@@ -305,9 +306,9 @@ describe('processCategoryFromCSVRow', () => {
                 const category = await Category.findOneOrFail({
                     where: {
                         name: row.category_name,
-                        status: 'active',
+                        status: Status.ACTIVE,
                         system: false,
-                        organization,
+                        organization: Equal(organization),
                     },
                 })
 

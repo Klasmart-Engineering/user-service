@@ -1437,7 +1437,7 @@ describe('user', () => {
                         { authorization: arbitraryUserToken }
                     )
                     expect(membership).to.exist
-                    await SchoolMembership.findOneOrFail({
+                    await SchoolMembership.findOneByOrFail({
                         user_id: idOfUserJoiningSchool,
                         school_id: schoolId,
                     })
@@ -1455,7 +1455,7 @@ describe('user', () => {
                             { authorization: arbitraryUserToken }
                         )
                         expect(membership).to.exist
-                        await SchoolMembership.findOneOrFail({
+                        await SchoolMembership.findOneByOrFail({
                             user_id: idOfUserJoiningSchool,
                             school_id: schoolId,
                         })
@@ -3015,7 +3015,7 @@ describe('user', () => {
                     { modifiedEntity: [memberships[0]] },
                 ])
                 const dbMembership = (
-                    await SchoolMembership.find({
+                    await SchoolMembership.findBy({
                         user_id: memberships[0].user_id,
                         school_id: memberships[0].school_id,
                     })

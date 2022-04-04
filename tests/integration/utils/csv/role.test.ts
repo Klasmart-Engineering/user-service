@@ -1,6 +1,6 @@
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import { Organization } from '../../../../src/entities/organization'
 import { Permission } from '../../../../src/entities/permission'
 import { Role } from '../../../../src/entities/role'
@@ -18,6 +18,7 @@ import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -77,13 +78,11 @@ describe('processRoleFromCSVRow', () => {
                 'On row number 1, organization name is required.'
             )
 
-            const role = await Role.findOne({
-                where: {
-                    role_name: row.role_name,
-                    status: 'active',
-                    system_role: false,
-                    organization,
-                },
+            const role = await Role.findOneBy({
+                role_name: row.role_name,
+                status: Status.ACTIVE,
+                system_role: false,
+                organization: Equal(organization),
             })
 
             expect(role).to.be.undefined
@@ -111,13 +110,11 @@ describe('processRoleFromCSVRow', () => {
                 'On row number 1, role name is required.'
             )
 
-            const role = await Role.findOne({
-                where: {
-                    role_name: row.role_name,
-                    status: 'active',
-                    system_role: false,
-                    organization,
-                },
+            const role = await Role.findOneBy({
+                role_name: row.role_name,
+                status: Status.ACTIVE,
+                system_role: false,
+                organization: Equal(organization),
             })
 
             expect(role).to.be.undefined
@@ -145,13 +142,11 @@ describe('processRoleFromCSVRow', () => {
                 'On row number 1, permission id is required.'
             )
 
-            const role = await Role.findOne({
-                where: {
-                    role_name: row.role_name,
-                    status: 'active',
-                    system_role: false,
-                    organization,
-                },
+            const role = await Role.findOneBy({
+                role_name: row.role_name,
+                status: Status.ACTIVE,
+                system_role: false,
+                organization: Equal(organization),
             })
 
             expect(role).to.be.undefined
@@ -179,13 +174,11 @@ describe('processRoleFromCSVRow', () => {
                 `On row number 1, "${row.organization_name}" organization doesn't exist.`
             )
 
-            const role = await Role.findOne({
-                where: {
-                    role_name: row.role_name,
-                    status: 'active',
-                    system_role: false,
-                    organization,
-                },
+            const role = await Role.findOneBy({
+                role_name: row.role_name,
+                status: Status.ACTIVE,
+                system_role: false,
+                organization: Equal(organization),
             })
 
             expect(role).to.be.undefined
@@ -213,13 +206,11 @@ describe('processRoleFromCSVRow', () => {
                 `On row number 1, "${row.permission_id}" permission doesn't exist.`
             )
 
-            const role = await Role.findOne({
-                where: {
-                    role_name: row.role_name,
-                    status: 'active',
-                    system_role: false,
-                    organization,
-                },
+            const role = await Role.findOneBy({
+                role_name: row.role_name,
+                status: Status.ACTIVE,
+                system_role: false,
+                organization: Equal(organization),
             })
 
             expect(role).to.be.undefined
@@ -231,9 +222,9 @@ describe('processRoleFromCSVRow', () => {
         () => {
             beforeEach(async () => {
                 const permissions: Permission[] = []
-                const permissionFound = await Permission.findOneOrFail(
-                    row.permission_id
-                )
+                const permissionFound = await Permission.findOneByOrFail({
+                    permission_name: row.permission_id,
+                })
                 const role = new Role()
 
                 permissions.push(permissionFound)
@@ -261,13 +252,11 @@ describe('processRoleFromCSVRow', () => {
                     `On row number 1, "${row.permission_id}" permission already exists for "${row.role_name}" role.`
                 )
 
-                const role = await Role.findOne({
-                    where: {
-                        role_name: row.role_name,
-                        status: 'active',
-                        system_role: false,
-                        organization,
-                    },
+                const role = await Role.findOneBy({
+                    role_name: row.role_name,
+                    status: Status.ACTIVE,
+                    system_role: false,
+                    organization: Equal(organization),
                 })
 
                 expect(role).to.exist
@@ -285,13 +274,11 @@ describe('processRoleFromCSVRow', () => {
                 adminPermissions
             )
 
-            const role = await Role.findOneOrFail({
-                where: {
-                    role_name: row.role_name,
-                    status: 'active',
-                    system_role: false,
-                    organization,
-                },
+            const role = await Role.findOneByOrFail({
+                role_name: row.role_name,
+                status: Status.ACTIVE,
+                system_role: false,
+                organization: Equal(organization),
             })
 
             const organizationInRole = await role.organization

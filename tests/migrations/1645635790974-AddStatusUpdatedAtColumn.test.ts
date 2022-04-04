@@ -105,10 +105,10 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
             )
             await runMigration()
 
-            const updatedOrgMemb = await OrganizationMembership.findOne({
+            const updatedOrgMemb = await OrganizationMembership.findOneBy({
                 status_updated_at: deletedAtDate,
             })
-            const updatedSchoolMemb = await SchoolMembership.findOne({
+            const updatedSchoolMemb = await SchoolMembership.findOneBy({
                 status_updated_at: deletedAtDate,
             })
 

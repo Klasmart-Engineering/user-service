@@ -133,8 +133,8 @@ describe('program', () => {
                                     })
 
                                     it('deletes the expected program', async () => {
-                                        let dbProgram = await Program.findOneOrFail(
-                                            program.id
+                                        let dbProgram = await Program.findOneByOrFail(
+                                            { id: program.id }
                                         )
 
                                         expect(dbProgram.status).to.eq(
@@ -151,8 +151,8 @@ describe('program', () => {
                                         )
 
                                         expect(gqlBool).to.be.true
-                                        dbProgram = await Program.findOneOrFail(
-                                            program.id
+                                        dbProgram = await Program.findOneByOrFail(
+                                            { id: program.id }
                                         )
                                         expect(dbProgram.status).to.eq(
                                             Status.INACTIVE
@@ -184,8 +184,8 @@ describe('program', () => {
                                                 )
 
                                                 expect(gqlBool).to.be.false
-                                                const dbProgram = await Program.findOneOrFail(
-                                                    program.id
+                                                const dbProgram = await Program.findOneByOrFail(
+                                                    { id: program.id }
                                                 )
                                                 expect(dbProgram.status).to.eq(
                                                     Status.INACTIVE
@@ -211,8 +211,8 @@ describe('program', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbProgram = await Program.findOneOrFail(
-                                            program.id
+                                        const dbProgram = await Program.findOneByOrFail(
+                                            { id: program.id }
                                         )
 
                                         expect(dbProgram.status).to.eq(
@@ -254,8 +254,8 @@ describe('program', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbProgram = await Program.findOneOrFail(
-                                            program.id
+                                        const dbProgram = await Program.findOneByOrFail(
+                                            { id: program.id }
                                         )
 
                                         expect(dbProgram.status).to.eq(
@@ -279,8 +279,8 @@ describe('program', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbProgram = await Program.findOneOrFail(
-                                            program.id
+                                        const dbProgram = await Program.findOneByOrFail(
+                                            { id: program.id }
                                         )
 
                                         expect(dbProgram.status).to.eq(
@@ -300,9 +300,9 @@ describe('program', () => {
                     'and does not belong to the organization from the program',
                     () => {
                         it('deletes the expected program', async () => {
-                            let dbProgram = await Program.findOneOrFail(
-                                program.id
-                            )
+                            let dbProgram = await Program.findOneByOrFail({
+                                id: program.id,
+                            })
 
                             expect(dbProgram.status).to.eq(Status.ACTIVE)
                             expect(dbProgram.deleted_at).to.be.null
@@ -314,7 +314,10 @@ describe('program', () => {
                             )
 
                             expect(gqlBool).to.be.true
-                            dbProgram = await Program.findOneOrFail(program.id)
+                            dbProgram = await Program.findOneByOrFail({
+                                id: program.id,
+                            })
+
                             expect(dbProgram.status).to.eq(Status.INACTIVE)
                             expect(dbProgram.deleted_at).not.to.be.null
                         })
@@ -335,9 +338,9 @@ describe('program', () => {
 
                         context('with a non system program', () => {
                             it('deletes the expected program', async () => {
-                                let dbProgram = await Program.findOneOrFail(
-                                    program.id
-                                )
+                                let dbProgram = await Program.findOneByOrFail({
+                                    id: program.id,
+                                })
 
                                 expect(dbProgram.status).to.eq(Status.ACTIVE)
                                 expect(dbProgram.deleted_at).to.be.null
@@ -349,9 +352,10 @@ describe('program', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbProgram = await Program.findOneOrFail(
-                                    program.id
-                                )
+                                dbProgram = await Program.findOneByOrFail({
+                                    id: program.id,
+                                })
+
                                 expect(dbProgram.status).to.eq(Status.INACTIVE)
                                 expect(dbProgram.deleted_at).not.to.be.null
                             })
@@ -373,8 +377,8 @@ describe('program', () => {
                                     )
 
                                     expect(gqlBool).to.be.false
-                                    const dbProgram = await Program.findOneOrFail(
-                                        program.id
+                                    const dbProgram = await Program.findOneByOrFail(
+                                        { id: program.id }
                                     )
                                     expect(dbProgram.status).to.eq(
                                         Status.INACTIVE
@@ -391,9 +395,9 @@ describe('program', () => {
                             })
 
                             it('deletes the expected program', async () => {
-                                let dbProgram = await Program.findOneOrFail(
-                                    program.id
-                                )
+                                let dbProgram = await Program.findOneByOrFail({
+                                    id: program.id,
+                                })
 
                                 expect(dbProgram.status).to.eq(Status.ACTIVE)
                                 expect(dbProgram.deleted_at).to.be.null
@@ -405,9 +409,10 @@ describe('program', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbProgram = await Program.findOneOrFail(
-                                    program.id
-                                )
+                                dbProgram = await Program.findOneByOrFail({
+                                    id: program.id,
+                                })
+
                                 expect(dbProgram.status).to.eq(Status.INACTIVE)
                                 expect(dbProgram.deleted_at).not.to.be.null
                             })
@@ -429,9 +434,10 @@ describe('program', () => {
                                     )
 
                                     expect(gqlBool).to.be.false
-                                    const dbProgram = await Program.findOneOrFail(
-                                        program.id
+                                    const dbProgram = await Program.findOneByOrFail(
+                                        { id: program.id }
                                     )
+
                                     expect(dbProgram.status).to.eq(
                                         Status.INACTIVE
                                     )
@@ -509,7 +515,10 @@ describe('program', () => {
                 })
 
                 it('edits the program age ranges', async () => {
-                    let dbProgram = await Program.findOneOrFail(program.id)
+                    let dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
+
                     let dbAgeRanges = (await dbProgram.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
 
@@ -520,7 +529,10 @@ describe('program', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbProgram = await Program.findOneOrFail(program.id)
+                    dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
+
                     dbAgeRanges = (await dbProgram.age_ranges) || []
                     expect(dbAgeRanges).not.to.be.empty
                     expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(
@@ -533,7 +545,11 @@ describe('program', () => {
                         [],
                         { authorization: getNonAdminAuthToken() }
                     )
-                    dbProgram = await Program.findOneOrFail(program.id)
+
+                    dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
+
                     dbAgeRanges = (await dbProgram.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
                 })
@@ -623,7 +639,10 @@ describe('program', () => {
                 })
 
                 it('edits the program grades', async () => {
-                    let dbProgram = await Program.findOneOrFail(program.id)
+                    let dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
+
                     let dbGrades = (await dbProgram.grades) || []
                     expect(dbGrades).to.be.empty
 
@@ -634,7 +653,10 @@ describe('program', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbProgram = await Program.findOneOrFail(program.id)
+                    dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
+
                     dbGrades = (await dbProgram.grades) || []
                     expect(dbGrades).not.to.be.empty
                     expect(dbGrades.map(gradeInfo)).to.deep.equalInAnyOrder(
@@ -644,7 +666,10 @@ describe('program', () => {
                     gqlGrades = await editGrades(testClient, program.id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbProgram = await Program.findOneOrFail(program.id)
+                    dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
+
                     dbGrades = (await dbProgram.grades) || []
                     expect(dbGrades).to.be.empty
                 })
@@ -734,7 +759,9 @@ describe('program', () => {
                 })
 
                 it('edits the program subjects', async () => {
-                    let dbProgram = await Program.findOneOrFail(program.id)
+                    let dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
                     let dbSubjects = (await dbProgram.subjects) || []
                     expect(dbSubjects).to.be.empty
 
@@ -745,7 +772,10 @@ describe('program', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbProgram = await Program.findOneOrFail(program.id)
+                    dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
+
                     dbSubjects = (await dbProgram.subjects) || []
                     expect(dbSubjects).not.to.be.empty
                     expect(dbSubjects.map(subjectInfo)).to.deep.equalInAnyOrder(
@@ -758,7 +788,10 @@ describe('program', () => {
                         [],
                         { authorization: getNonAdminAuthToken() }
                     )
-                    dbProgram = await Program.findOneOrFail(program.id)
+                    dbProgram = await Program.findOneByOrFail({
+                        id: program.id,
+                    })
+
                     dbSubjects = (await dbProgram.subjects) || []
                     expect(dbSubjects).to.be.empty
                 })

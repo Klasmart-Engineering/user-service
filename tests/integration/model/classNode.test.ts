@@ -44,6 +44,7 @@ import { userToPayload } from '../../utils/operations/userOps'
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
+import { WhereClauseCondition } from 'typeorm/query-builder/WhereClause'
 
 use(deepEqualInAnyOrder)
 
@@ -391,7 +392,7 @@ describe('classNode', () => {
 
     context('permissions', () => {
         let aliases: string[]
-        let conditions: string[]
+        let conditions: WhereClauseCondition[]
 
         beforeEach(async () => {
             const orgOwner = await createUser().save()

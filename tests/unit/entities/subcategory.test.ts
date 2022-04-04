@@ -44,9 +44,9 @@ describe('Subcategory', () => {
             })
 
             it('creates the subcategory as not a system subcategory', async () => {
-                const dbSubcategory = await Subcategory.findOneOrFail(
-                    subcategory.id
-                )
+                const dbSubcategory = await Subcategory.findOneByOrFail({
+                    id: subcategory.id,
+                })
 
                 expect(dbSubcategory.id).to.eq(subcategory.id)
                 expect(dbSubcategory.name).to.eq(subcategory.name)
@@ -72,9 +72,9 @@ describe('Subcategory', () => {
             })
 
             it('creates the subcategory', async () => {
-                const dbSubcategory = await Subcategory.findOneOrFail(
-                    subcategory.id
-                )
+                const dbSubcategory = await Subcategory.findOneByOrFail({
+                    id: subcategory.id,
+                })
 
                 expect(dbSubcategory.id).to.eq(subcategory.id)
                 expect(dbSubcategory.name).to.eq(subcategory.name)

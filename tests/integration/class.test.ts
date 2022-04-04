@@ -978,7 +978,9 @@ describe('class', () => {
                         authorization: undefined,
                     })
                 ).to.be.rejected
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 expect(dbClass.class_name).to.equal(originalClassName)
             })
         })
@@ -1027,7 +1029,9 @@ describe('class', () => {
                         authorization: getNonAdminAuthToken(),
                     })
                 ).to.be.rejected
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 expect(dbClass.class_name).to.equal(originalClassName)
             })
         })
@@ -1084,7 +1088,9 @@ describe('class', () => {
                 )
                 expect(gqlClass).to.exist
                 expect(gqlClass.class_name).to.equal(newClassName)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 expect(dbClass.class_name).to.equal(newClassName)
             })
 
@@ -1106,7 +1112,9 @@ describe('class', () => {
                     )
 
                     expect(gqlClass).to.be.null
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     expect(dbClass.class_name).to.equal(originalClassName)
                 })
             })
@@ -1925,8 +1933,12 @@ describe('class', () => {
                         { authorization: undefined }
                     )
                 ).to.be.rejected
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = await dbClass.teachers
                 const classesTeaching = await dbTeacher.classesTeaching
                 expect(classesTeaching).to.be.empty

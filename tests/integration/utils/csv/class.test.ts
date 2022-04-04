@@ -1,5 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 import { Model } from '../../../../src/model'
 import { createServer } from '../../../../src/utils/createServer'
@@ -124,8 +124,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class1', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class1',
+            organization: Equal(expectedOrg),
         })
         const schools = (await dbClass.schools) || []
         const programs = (await dbClass.programs) || []
@@ -150,8 +151,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class2', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class2',
+            organization: Equal(expectedOrg),
         })
 
         const schools = (await dbClass.schools) || []
@@ -173,8 +175,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class3', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class3',
+            organization: Equal(expectedOrg),
         })
         const schools = (await dbClass.schools) || []
         const programs = (await dbClass.programs) || []
@@ -200,8 +203,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class4', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class4',
+            organization: Equal(expectedOrg),
         })
         const schools = (await dbClass.schools) || []
         const programs = (await dbClass.programs) || []
@@ -224,8 +228,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class40', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class40',
+            organization: Equal(expectedOrg),
         })
         const organizationInClass = await dbClass.organization
 

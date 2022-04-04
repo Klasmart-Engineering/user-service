@@ -1,5 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 import faker from 'faker'
 
@@ -1637,15 +1637,17 @@ describe('processUserFromCSVRow', async () => {
             expect(dbUser.date_of_birth).to.eq(row.user_date_of_birth)
             expect(dbUser.gender).to.eq(row.user_gender)
 
-            const orgMembership = await OrganizationMembership.findOneOrFail({
-                where: { user: dbUser, organization: organization },
+            const orgMembership = await OrganizationMembership.findOneByOrFail({
+                user: Equal(dbUser),
+                organization: Equal(organization),
             })
             expect(orgMembership.shortcode).to.eq(row.user_shortcode)
             const orgRoles = (await orgMembership.roles) || []
             expect(orgRoles.map(roleInfo)).to.deep.eq([role].map(roleInfo))
 
-            const schoolMembership = await SchoolMembership.findOneOrFail({
-                where: { user: dbUser, school: school },
+            const schoolMembership = await SchoolMembership.findOneByOrFail({
+                user: Equal(dbUser),
+                school: Equal(school),
             })
             const schoolRoles = (await schoolMembership.roles) || []
             expect(schoolRoles).to.deep.eq([])
@@ -1666,9 +1668,9 @@ describe('processUserFromCSVRow', async () => {
                 where: { email: normalizedLowercaseTrimmed(row.user_email) },
             })
 
-            const schoolMembership = await SchoolMembership.findOneOrFail({
+            const [schoolMembership] = await SchoolMembership.find({
                 relations: [`roles`],
-                where: { user: dbUser, school: school },
+                where: { user: Equal(dbUser), school: Equal(school) },
             })
             expect(await schoolMembership.roles).to.deep.eq([])
         })
@@ -1714,9 +1716,9 @@ describe('processUserFromCSVRow', async () => {
                 where: { email: normalizedLowercaseTrimmed(row.user_email) },
             })
 
-            const schoolMembership = await SchoolMembership.findOneOrFail({
+            const [schoolMembership] = await SchoolMembership.find({
                 relations: [`roles`],
-                where: { user: dbUser, school: school },
+                where: { user: Equal(dbUser), school: Equal(school) },
             })
             expect(await schoolMembership.roles).to.deep.eq([])
         })

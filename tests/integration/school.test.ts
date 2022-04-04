@@ -963,7 +963,9 @@ describe('school', () => {
                     })
                 ).to.be.rejected
 
-                const dbSchool = await School.findOneOrFail(school.school_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
                 expect(dbSchool.status).to.eq(Status.ACTIVE)
                 expect(dbSchool.deleted_at).to.be.null
             })
@@ -993,9 +995,9 @@ describe('school', () => {
                             })
                         ).to.be.rejected
 
-                        const dbSchool = await School.findOneOrFail(
-                            school.school_id
-                        )
+                        const dbSchool = await School.findOneByOrFail({
+                            school_id: school.school_id,
+                        })
                         expect(dbSchool.status).to.eq(Status.ACTIVE)
                         expect(dbSchool.deleted_at).to.be.null
                     })
@@ -1029,9 +1031,9 @@ describe('school', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlSchool).to.be.true
-                    const dbSchool = await School.findOneOrFail(
-                        school.school_id
-                    )
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
                     expect(dbSchool.status).to.eq(Status.INACTIVE)
                     expect(dbSchool.deleted_at).not.to.be.null
                 })
@@ -1043,9 +1045,6 @@ describe('school', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlSchool).to.be.true
-                    const dbSchool = await School.findOneOrFail(
-                        school.school_id
-                    )
                     const dbSchoolMemberships = await SchoolMembership.find({
                         where: { school_id: school.school_id },
                     })
@@ -1066,9 +1065,9 @@ describe('school', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlSchool).to.be.true
-                    const dbSchool = await School.findOneOrFail(
-                        school.school_id
-                    )
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
                     const dbClasses = (await dbSchool.classes) || []
 
                     expect(dbClasses).to.satisfy((classes: Class[]) => {
@@ -1092,9 +1091,9 @@ describe('school', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlSchool).to.be.null
-                        const dbSchool = await School.findOneOrFail(
-                            school.school_id
-                        )
+                        const dbSchool = await School.findOneByOrFail({
+                            school_id: school.school_id,
+                        })
                         expect(dbSchool.status).to.eq(Status.INACTIVE)
                         expect(dbSchool.deleted_at).not.to.be.null
                     })
@@ -1294,7 +1293,9 @@ describe('school', () => {
                 })
 
                 it('edits the school programs', async () => {
-                    let dbSchool = await School.findOneOrFail(school.school_id)
+                    let dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
                     let dbPrograms = (await dbSchool.programs) || []
                     expect(dbPrograms).to.be.empty
 
@@ -1305,7 +1306,9 @@ describe('school', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbSchool = await School.findOneOrFail(school.school_id)
+                    dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
                     dbPrograms = (await dbSchool.programs) || []
                     expect(dbPrograms).not.to.be.empty
                     expect(dbPrograms.map(programInfo)).to.deep.equalInAnyOrder(
@@ -1318,7 +1321,9 @@ describe('school', () => {
                         [],
                         { authorization: getNonAdminAuthToken() }
                     )
-                    dbSchool = await School.findOneOrFail(school.school_id)
+                    dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
                     dbPrograms = (await dbSchool.programs) || []
                     expect(dbPrograms).to.be.empty
                 })
@@ -1835,7 +1840,7 @@ describe('school', () => {
             for (const schoolInputs of input) {
                 const { schoolId, classIds } = schoolInputs
 
-                const school = await School.findOne(schoolId)
+                const school = await School.findOneBy({ school_id: schoolId })
                 const dbClasses = await school?.classes
 
                 const dbClassIds = new Set(
@@ -2604,7 +2609,7 @@ describe('school', () => {
             for (const schoolInputs of input) {
                 const { schoolId, programIds } = schoolInputs
 
-                const sch = await School.findOne(schoolId)
+                const sch = await School.findOneBy({ school_id: schoolId })
                 const dbPrograms = await sch?.programs
 
                 const dbProgramIds = new Set(dbPrograms?.map((val) => val.id))
@@ -2845,7 +2850,7 @@ describe('school', () => {
             for (const schoolInputs of input) {
                 const { schoolId, programIds } = schoolInputs
                 const programIdsSet = new Set(programIds)
-                const sch = await School.findOne(schoolId)
+                const sch = await School.findOneBy({ school_id: schoolId })
                 const dbPrograms = await sch?.programs
 
                 const dbProgramIds = new Set(dbPrograms?.map((val) => val.id))
@@ -3111,7 +3116,7 @@ describe('school', () => {
             for (const schoolInputs of input) {
                 const { schoolId, classIds } = schoolInputs
                 // eslint-disable-next-line no-await-in-loop
-                const school1 = await School.findOne(schoolId)
+                const school1 = await School.findOneBy({ school_id: schoolId })
                 // eslint-disable-next-line no-await-in-loop
                 const dbClasses = await school1?.classes
 

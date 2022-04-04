@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import { AgeRange } from '../../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
 import { Organization } from '../../../../src/entities/organization'
@@ -19,6 +19,7 @@ import { TestConnection } from '../../../utils/testConnection'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { User } from '../../../../src/entities/user'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -34,7 +35,7 @@ describe('processAgeRangeFromCSVRow', () => {
         organization_name: 'Company 1',
         age_range_low_value: '6',
         age_range_high_value: '7',
-        age_range_unit: 'year',
+        age_range_unit: AgeRangeUnit.YEAR,
     }
 
     before(async () => {
@@ -84,11 +85,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -122,11 +123,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -160,11 +161,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -174,7 +175,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
     context('when the age range unit is not provided', () => {
         beforeEach(() => {
-            row = { ...row, age_range_unit: '' }
+            row = { ...row, age_range_unit: '' as AgeRangeUnit }
         })
 
         it('returns rowErrors containing an ERR_CSV_MISSING_REQUIRED code and appropriate message', async () => {
@@ -198,11 +199,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -236,11 +237,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -274,11 +275,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -321,11 +322,11 @@ describe('processAgeRangeFromCSVRow', () => {
                         name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                         low_value: Number(rowModel.age_range_low_value),
                         high_value: Number(rowModel.age_range_high_value),
-                        low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                        high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                        status: 'active',
+                        low_value_unit: rowModel.age_range_unit,
+                        high_value_unit: rowModel.age_range_unit,
+                        status: Status.ACTIVE,
                         system: false,
-                        organization,
+                        organization: Equal(organization),
                     },
                 })
 
@@ -336,7 +337,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
     context('when the age range unit is not valid', () => {
         beforeEach(() => {
-            row = { ...row, age_range_unit: 'week' }
+            row = { ...row, age_range_unit: 'week' as AgeRangeUnit }
         })
 
         it('returns rowErrors containing an ERR_CSV_INVALID_ENUM code and appropriate message', async () => {
@@ -360,11 +361,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -398,11 +399,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -443,11 +444,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 
@@ -470,11 +471,11 @@ describe('processAgeRangeFromCSVRow', () => {
                     name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
-                    low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
-                    status: 'active',
+                    low_value_unit: rowModel.age_range_unit,
+                    high_value_unit: rowModel.age_range_unit,
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: Equal(organization),
                 },
             })
 

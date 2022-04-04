@@ -18,7 +18,7 @@ export async function loadFixtures(
         )
         items = file['fixtures']
     } catch (e) {
-        logger.error(e, 'seeding data error')
+        logger.error(e as string, 'seeding data error')
     }
 
     if (!items) {

@@ -74,7 +74,7 @@ describe('model', () => {
         await AgeRangesInitializer.run()
 
         systemAgeRanges = await AgeRange.find({
-            where: { system: true, status: 'active' },
+            where: { system: true, status: Status.ACTIVE },
         })
 
         admin = await createAdminUser(testClient)

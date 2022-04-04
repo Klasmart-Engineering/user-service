@@ -65,7 +65,7 @@ describe('organizationsConnection loaders', async () => {
                     for (const owner of owners) {
                         const ownership = await getRepository(
                             OrganizationOwnership
-                        ).findOneOrFail({
+                        ).findOneByOrFail({
                             user_id: usersList[index].user_id,
                             organization_id: orgId,
                         })

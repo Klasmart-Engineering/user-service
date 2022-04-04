@@ -1,5 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 
 import { Model } from '../../../../src/model'
@@ -60,8 +60,9 @@ describe('processSubCategoriesFromCSVRow', () => {
             adminPermissions
         )
 
-        await Subcategory.findOneOrFail({
-            where: { name: 'sc1', organization: expectedOrg },
+        await Subcategory.findOneByOrFail({
+            name: 'sc1',
+            organization: Equal(expectedOrg),
         })
     })
 

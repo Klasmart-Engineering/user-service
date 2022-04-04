@@ -127,7 +127,9 @@ describe('acceptance.category', () => {
             })
         }
 
-        const org = await Organization.findOneOrFail(orgId)
+        const org = await Organization.findOneByOrFail({
+            organization_id: orgId,
+        })
 
         const subcategories = await Subcategory.save(
             Array.from(new Array(subcategoriesCount), () =>

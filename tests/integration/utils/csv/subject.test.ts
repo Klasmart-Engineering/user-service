@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import { Organization } from '../../../../src/entities/organization'
 import { Category } from '../../../../src/entities/category'
 import { Subject } from '../../../../src/entities/subject'
@@ -19,6 +19,7 @@ import { CSVError } from '../../../../src/types/csv/csvError'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
 
 describe('processSubjectFromCSVRow', () => {
     let connection: TestConnection
@@ -77,13 +78,11 @@ describe('processSubjectFromCSVRow', () => {
                 'On row number 1, organization name is required.'
             )
 
-            const subject = await Subject.findOne({
-                where: {
-                    name: row.subject_name,
-                    status: 'active',
-                    system: false,
-                    organization: organization,
-                },
+            const subject = await Subject.findOneBy({
+                name: row.subject_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: Equal(organization),
             })
 
             expect(subject).to.be.undefined
@@ -111,13 +110,11 @@ describe('processSubjectFromCSVRow', () => {
                 'On row number 1, subject name is required.'
             )
 
-            const subject = await Subject.findOne({
-                where: {
-                    name: row.subject_name,
-                    status: 'active',
-                    system: false,
-                    organization: organization,
-                },
+            const subject = await Subject.findOneBy({
+                name: row.subject_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: Equal(organization),
             })
 
             expect(subject).to.be.undefined
@@ -138,13 +135,11 @@ describe('processSubjectFromCSVRow', () => {
                 adminPermissions
             )
 
-            const subject = await Subject.findOne({
-                where: {
-                    name: row.subject_name,
-                    status: 'active',
-                    system: false,
-                    organization: organization,
-                },
+            const subject = await Subject.findOneBy({
+                name: row.subject_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: Equal(organization),
             })
             const organizationInSubject = await subject?.organization
 
@@ -185,13 +180,11 @@ describe('processSubjectFromCSVRow', () => {
                 `On row number 1, "${row.organization_name}" organization matches 0, it should match one organization.`
             )
 
-            const subject = await Subject.findOne({
-                where: {
-                    name: row.subject_name,
-                    status: 'active',
-                    system: false,
-                    organization: organization,
-                },
+            const subject = await Subject.findOneBy({
+                name: row.subject_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: Equal(organization),
             })
 
             expect(subject).to.be.undefined
@@ -219,13 +212,11 @@ describe('processSubjectFromCSVRow', () => {
                 `On row number 1, "${row.category_name}" category doesn't exist for "${row.organization_name}" organization.`
             )
 
-            const subject = await Subject.findOne({
-                where: {
-                    name: row.subject_name,
-                    status: 'active',
-                    system: false,
-                    organization: organization,
-                },
+            const subject = await Subject.findOneBy({
+                name: row.subject_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: Equal(organization),
             })
 
             expect(subject).to.be.undefined
@@ -283,12 +274,10 @@ describe('processSubjectFromCSVRow', () => {
                 adminPermissions
             )
 
-            const subject = await Subject.findOneOrFail({
-                where: {
-                    name: row.subject_name,
-                    status: 'active',
-                    system: false,
-                },
+            const subject = await Subject.findOneByOrFail({
+                name: row.subject_name,
+                status: Status.ACTIVE,
+                system: false,
             })
 
             const organizationInSubject = await subject.organization

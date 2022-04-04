@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised'
 import { resolve } from 'path'
 import { ReadStream } from 'fs'
 import { expect, use } from 'chai'
-import { getConnection } from 'typeorm'
+import { Equal, getConnection } from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -1223,7 +1223,10 @@ describe('model.csv', () => {
                     arbitraryUserToken
                 )
                 const dbClass = await Class.findOneOrFail({
-                    where: { class_name: 'class1', organization: expectedOrg },
+                    where: {
+                        class_name: 'class1',
+                        organization: Equal(expectedOrg),
+                    },
                     relations: ['programs', 'grades', 'subjects', 'age_ranges'],
                 })
                 const schools = (await dbClass.schools) || []
@@ -1262,7 +1265,7 @@ describe('model.csv', () => {
                         const dbClass = await Class.findOneOrFail({
                             where: {
                                 class_name: 'class1',
-                                organization: expectedOrg,
+                                organization: Equal(expectedOrg),
                             },
                             relations: [
                                 'programs',
@@ -1451,7 +1454,7 @@ describe('model.csv', () => {
                 )
 
                 const dbSubcategory = await Subcategory.findOneOrFail({
-                    where: { name: 'sc1', organization: expectedOrg },
+                    where: { name: 'sc1', organization: Equal(expectedOrg) },
                 })
 
                 expect(result.filename).eq(filename)
