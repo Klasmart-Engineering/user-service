@@ -660,7 +660,7 @@ describe('acceptance.user', () => {
         beforeEach(async () => {
             const roles = []
             for (let i = 0; i < rolesCount; i++) {
-                roles.push(createRole(`Role ${i}`))
+                roles.push(createRole(`Role ${i}`, organization))
             }
             await Role.save(roles)
 
