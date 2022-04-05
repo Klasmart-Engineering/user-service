@@ -6,14 +6,11 @@ import { Role } from '../../src/entities/role'
 import { School } from '../../src/entities/school'
 import { User } from '../../src/entities/user'
 import { PermissionName } from '../../src/permissions/permissionNames'
-import { superAdminRole } from '../../src/permissions/superAdmin'
+import { studentRole } from '../../src/permissions/student'
 import { OrganizationConnectionNode } from '../../src/types/graphQL/organization'
 import { PermissionConnectionNode } from '../../src/types/graphQL/permission'
 import { ISchoolsConnectionNode } from '../../src/types/graphQL/school'
-import {
-    IPaginatedResponse,
-    MAX_PAGE_SIZE,
-} from '../../src/utils/pagination/paginate'
+import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
@@ -475,13 +472,10 @@ describe('acceptance.myUser', () => {
     })
     context('MyUser.permissionsInOrganization', () => {
         const query = `
-            query PermissionsInOrganization($organizationId: ID!, $filter: PermissionFilter, $count: PageSize){
+            query PermissionsInOrganization($organizationId: ID!, $filter: PermissionFilter){
                 myUser {
-                    permissionsInOrganization(organizationId: $organizationId, filter: $filter, count: $count) {
+                    permissionsInOrganization(organizationId: $organizationId, filter: $filter) {
                         totalCount
-                        pageInfo {
-                            hasNextPage
-                        }
                         edges {
                             node {
                                 id
@@ -506,7 +500,7 @@ describe('acceptance.myUser', () => {
             clientUser = await createUser().save()
             organization = await createOrganization().save()
             const role = await createRole(undefined, undefined, {
-                permissions: superAdminRole.permissions,
+                permissions: studentRole.permissions,
             }).save()
 
             await createOrganizationMembership({
@@ -524,38 +518,19 @@ describe('acceptance.myUser', () => {
         it('returns a paginated response of a users permissions in organizations', async () => {
             const data = await getResult({
                 organizationId: organization.organization_id,
-                count: 10,
             })
+            expect(data.totalCount).to.eq(studentRole.permissions.length)
             const permissionIds = data.edges.map((edge) => edge.node.id)
-            expect(data.totalCount).to.eq(superAdminRole.permissions.length)
-            expect(data.edges.length).to.eq(10)
-            expect(superAdminRole.permissions).to.include.members(permissionIds)
-            expect(data.pageInfo.hasNextPage).to.be.true
-        })
-        it('ignores default max page size if count is omitted', async () => {
-            expect(superAdminRole.permissions.length).to.be.above(MAX_PAGE_SIZE)
-            const data = await getResult({
-                organizationId: organization.organization_id,
-            })
-            const permissionIds = data.edges.map((edge) => edge.node.id)
-            expect(data.totalCount).to.eq(superAdminRole.permissions.length)
-            expect(data.edges.length).to.eq(superAdminRole.permissions.length)
-            expect(permissionIds).to.have.same.members(
-                superAdminRole.permissions
-            )
-            expect(data.pageInfo.hasNextPage).to.be.false
+            expect(permissionIds).to.have.same.members(studentRole.permissions)
         })
     })
 
     context('MyUser.permissionsInSchool', () => {
         const query = `
-            query PermissionsInSchool($schoolId: ID!, $filter: PermissionFilter, $count: PageSize){
+            query PermissionsInSchool($schoolId: ID!, $filter: PermissionFilter){
                 myUser {
-                    permissionsInSchool(schoolId: $schoolId, filter: $filter, count: $count) {
+                    permissionsInSchool(schoolId: $schoolId, filter: $filter) {
                         totalCount
-                        pageInfo {
-                            hasNextPage
-                        }
                         edges {
                             node {
                                 id
@@ -581,7 +556,7 @@ describe('acceptance.myUser', () => {
             clientUser = await createUser().save()
             school = await createSchool(org).save()
             const role = await createRole(undefined, org, {
-                permissions: superAdminRole.permissions,
+                permissions: studentRole.permissions,
             }).save()
 
             await createOrganizationMembership({
@@ -605,26 +580,10 @@ describe('acceptance.myUser', () => {
         it('returns a paginated response of a users permissions in schools', async () => {
             const data = await getResult({
                 schoolId: school.school_id,
-                count: 10,
             })
+            expect(data.totalCount).to.eq(studentRole.permissions.length)
             const permissionIds = data.edges.map((edge) => edge.node.id)
-            expect(data.totalCount).to.eq(superAdminRole.permissions.length)
-            expect(data.edges.length).to.eq(10)
-            expect(superAdminRole.permissions).to.include.members(permissionIds)
-            expect(data.pageInfo.hasNextPage).to.be.true
-        })
-        it('ignores default max page size if count is omitted', async () => {
-            expect(superAdminRole.permissions.length).to.be.above(MAX_PAGE_SIZE)
-            const data = await getResult({
-                schoolId: school.school_id,
-            })
-            const permissionIds = data.edges.map((edge) => edge.node.id)
-            expect(data.totalCount).to.eq(superAdminRole.permissions.length)
-            expect(data.edges.length).to.eq(superAdminRole.permissions.length)
-            expect(permissionIds).to.have.same.members(
-                superAdminRole.permissions
-            )
-            expect(data.pageInfo.hasNextPage).to.be.false
+            expect(permissionIds).to.have.same.members(studentRole.permissions)
         })
     })
 })
