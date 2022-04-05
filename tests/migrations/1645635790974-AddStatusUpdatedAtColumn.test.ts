@@ -106,10 +106,10 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
             await runMigration()
 
             const updatedOrgMemb = await OrganizationMembership.findOne({
-                status_updated_at: deletedAtDate,
+                status_updated_at: deletedAtDate.toISOString(),
             })
             const updatedSchoolMemb = await SchoolMembership.findOne({
-                status_updated_at: deletedAtDate,
+                status_updated_at: deletedAtDate.toISOString(),
             })
 
             expect(updatedOrgMemb).to.exist

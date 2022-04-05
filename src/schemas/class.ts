@@ -22,6 +22,8 @@ import {
     AddTeachersToClasses,
     RemoveTeachersFromClasses,
     SetAcademicTermsOfClasses,
+    moveUsersToClass,
+    moveUsersTypeToClass,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -62,6 +64,12 @@ const typeDefs = gql`
         setAcademicTermsOfClasses(
             input: [SetAcademicTermOfClassInput!]!
         ): ClassesMutationResult
+        moveStudentsToClass(
+            input: MoveUsersToClassInput
+        ): MoveUsersToClassMutationResult
+        moveTeachersToClass(
+            input: MoveUsersToClassInput
+        ): MoveUsersToClassMutationResult
     }
 
     # pagination extension types start here
@@ -86,6 +94,17 @@ const typeDefs = gql`
     input ClassSortInput {
         field: ClassSortBy!
         order: SortOrder!
+    }
+
+    input MoveUsersToClassInput {
+        fromClassId: ID!
+        toClassId: ID!
+        userIds: [ID!]!
+    }
+
+    type MoveUsersToClassMutationResult {
+        fromClass: ClassConnectionNode!
+        toClass: ClassConnectionNode!
     }
 
     input ClassFilter {
@@ -581,6 +600,18 @@ export default function getDefault(
                     mutate(RemoveTeachersFromClasses, args, ctx.permissions),
                 setAcademicTermsOfClasses: (_parent, args, ctx) =>
                     mutate(SetAcademicTermsOfClasses, args, ctx.permissions),
+                moveStudentsToClass: (_parent, args, ctx) =>
+                    moveUsersToClass(
+                        ctx,
+                        args.input,
+                        moveUsersTypeToClass.students
+                    ),
+                moveTeachersToClass: (_parent, args, ctx) =>
+                    moveUsersToClass(
+                        ctx,
+                        args.input,
+                        moveUsersTypeToClass.teachers
+                    ),
             },
             Query: {
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
