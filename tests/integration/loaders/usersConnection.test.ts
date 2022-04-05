@@ -63,7 +63,7 @@ describe('usersConnection loaders', async () => {
             )
         })
 
-        it('always returns an array with equal length to the usersIds array', async () => {
+        it('always returns an array with equal length to the userIds array', async () => {
             const userOrgs = await orgsForUsers(userIds)
             expect(userOrgs.length).to.equal(userIds.length)
         })
@@ -184,7 +184,7 @@ describe('usersConnection loaders', async () => {
                 })
             )
         })
-        it('always returns an array with equal length to the usersIds array', async () => {
+        it('always returns an array with equal length to the userIds array', async () => {
             const userSchools = await schoolsForUsers(userIds)
             expect(userSchools.length).to.equal(userIds.length)
         })
@@ -312,7 +312,7 @@ describe('usersConnection loaders', async () => {
             )
         })
 
-        it('always returns an array with equal length to the usersIds array', async () => {
+        it('always returns an array with equal length to the userIds array', async () => {
             const userRoles = await rolesForUsers(userIds)
             expect(userRoles.length).to.equal(userIds.length)
         })

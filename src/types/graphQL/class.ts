@@ -78,3 +78,13 @@ export interface SetAcademicTermOfClassInput {
     classId: string
     academicTermId?: string | null
 }
+export interface MoveUsersToClassInput {
+    fromClassId: string
+    toClassId: string
+    userIds: string[]
+}
+
+export interface MoveUsersToClassMutationResult {
+    fromClass: ClassConnectionNode
+    toClass: ClassConnectionNode
+}
