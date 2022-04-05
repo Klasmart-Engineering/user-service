@@ -1985,8 +1985,13 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbTeacher = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbTeacher = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const teachers = await dbClass.teachers
                         const classesTeaching = await dbTeacher.classesTeaching
                         expect(classesTeaching).to.be.empty
@@ -2026,8 +2031,12 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbTeacher = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbTeacher = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const teachers = await dbClass.teachers
                         const classesTeaching = await dbTeacher.classesTeaching
                         expect(classesTeaching).to.be.empty
@@ -2077,8 +2086,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlTeacher.map(userInfo)).to.deep.eq([user.user_id])
-                    let dbTeacher = await User.findOneOrFail(user.user_id)
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let teachers = (await dbClass.teachers) || []
                     let classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2094,8 +2107,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlTeacher).to.be.empty
-                    dbTeacher = await User.findOneOrFail(user.user_id)
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     teachers = (await dbClass.teachers) || []
                     classesTeaching = (await dbTeacher.classesTeaching) || []
                     expect(teachers).to.be.empty
@@ -2118,8 +2135,12 @@ describe('class', () => {
                         )
 
                         expect(gqlTeacher).to.be.null
-                        const dbTeacher = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbTeacher = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const teachers = await dbClass.teachers
                         const classesTeaching = await dbTeacher.classesTeaching
                         expect(classesTeaching).to.be.empty
@@ -2176,8 +2197,12 @@ describe('class', () => {
                         authorization: undefined,
                     })
                 ).to.be.rejected
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = await dbClass.teachers
                 const classesTeaching = await dbTeacher.classesTeaching
                 expect(classesTeaching).to.be.empty
@@ -2224,8 +2249,12 @@ describe('class', () => {
                         authorization: getNonAdminAuthToken(),
                     })
                 ).to.be.rejected
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = await dbClass.teachers
                 const classesTeaching = await dbTeacher.classesTeaching
                 expect(classesTeaching).to.be.empty
@@ -2281,8 +2310,12 @@ describe('class', () => {
                 )
                 expect(gqlTeacher).to.exist
                 expect(user).to.include(gqlTeacher)
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = await dbClass.teachers
                 const classesTeaching = await dbTeacher.classesTeaching
                 expect(classesTeaching).to.have.lengthOf(1)
@@ -2307,8 +2340,12 @@ describe('class', () => {
                     )
 
                     expect(gqlTeacher).to.be.null
-                    const dbTeacher = await User.findOneOrFail(user.user_id)
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const teachers = await dbClass.teachers
                     const classesTeaching = await dbTeacher.classesTeaching
                     expect(classesTeaching).to.be.empty
@@ -2376,8 +2413,12 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                     ).to.be.rejected
-                    const dbTeacher = await User.findOneOrFail(user.user_id)
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const teachers = (await dbClass.teachers) || []
                     const classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2442,8 +2483,12 @@ describe('class', () => {
                     { authorization: getNonAdminAuthToken() }
                 )
                 expect(gqlTeacher).to.be.true
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = (await dbClass.teachers) || []
                 const classesTeaching = (await dbTeacher.classesTeaching) || []
                 expect(teachers).to.be.empty
@@ -2465,8 +2510,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlTeacher).to.be.null
-                    const dbTeacher = await User.findOneOrFail(user.user_id)
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const teachers = (await dbClass.teachers) || []
                     const classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2543,8 +2592,12 @@ describe('class', () => {
                 )
 
                 expect(gqlTeacher).to.be.true
-                const dbTeacher = await User.findOneOrFail(userId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: userId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const teachers = (await dbClass.teachers) || []
                 const classesTeaching = (await dbTeacher.classesTeaching) || []
                 expect(teachers).to.be.empty
@@ -2567,8 +2620,12 @@ describe('class', () => {
                     )
 
                     expect(gqlTeacher).to.be.null
-                    const dbTeacher = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const teachers = (await dbClass.teachers) || []
                     const classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2607,8 +2664,12 @@ describe('class', () => {
                     )
 
                     expect(gqlTeacher).to.be.true
-                    const dbTeacher = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const teachers = (await dbClass.teachers) || []
                     const classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2655,8 +2716,12 @@ describe('class', () => {
                         { authorization: undefined }
                     )
                 ).to.be.rejected
-                const dbStudent = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const students = await dbClass.students
                 const classesStudying = await dbStudent.classesStudying
                 expect(classesStudying).to.be.empty
@@ -2696,8 +2761,12 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbStudent = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbStudent = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const students = await dbClass.students
                         const classesStudying = await dbStudent.classesStudying
                         expect(classesStudying).to.be.empty
@@ -2737,8 +2806,12 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbStudent = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbStudent = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const students = await dbClass.students
                         const classesStudying = await dbStudent.classesStudying
                         expect(classesStudying).to.be.empty
@@ -2788,8 +2861,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent.map(userInfo)).to.deep.eq([user.user_id])
-                    let dbStudent = await User.findOneOrFail(user.user_id)
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbStudent = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let students = (await dbClass.students) || []
                     let classesStudying =
                         (await dbStudent.classesStudying) || []
@@ -2805,8 +2882,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent).to.be.empty
-                    dbStudent = await User.findOneOrFail(user.user_id)
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbStudent = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     students = (await dbClass.students) || []
                     classesStudying = (await dbStudent.classesStudying) || []
                     expect(students).to.be.empty
@@ -2828,8 +2909,12 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlStudent).to.be.null
-                        const dbStudent = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbStudent = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const students = await dbClass.students
                         const classesStudying = await dbStudent.classesStudying
                         expect(classesStudying).to.be.empty
@@ -2886,8 +2971,12 @@ describe('class', () => {
                         authorization: undefined,
                     })
                 ).to.be.rejected
-                const dbStudent = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const students = await dbClass.students
                 const classesStudying = await dbStudent.classesStudying
                 expect(classesStudying).to.be.empty
@@ -2934,8 +3023,12 @@ describe('class', () => {
                         authorization: getNonAdminAuthToken(),
                     })
                 ).to.be.rejected
-                const dbStudent = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const students = await dbClass.students
                 const classesStudying = await dbStudent.classesStudying
                 expect(classesStudying).to.be.empty
@@ -2991,8 +3084,12 @@ describe('class', () => {
                 )
                 expect(gqlStudent).to.exist
                 expect(user).to.include(gqlStudent)
-                const dbStudent = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const students = await dbClass.students
                 const classesStudying = await dbStudent.classesStudying
                 expect(classesStudying).to.have.lengthOf(1)
@@ -3016,8 +3113,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent).to.be.null
-                    const dbStudent = await User.findOneOrFail(user.user_id)
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbStudent = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const students = await dbClass.students
                     const classesStudying = await dbStudent.classesStudying
                     expect(classesStudying).to.be.empty
@@ -3079,8 +3180,12 @@ describe('class', () => {
                             authorization: getNonAdminAuthToken(),
                         })
                     ).to.be.rejected
-                    const dbStudent = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbStudent = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const students = (await dbClass.students) || []
                     const classesStudying =
                         (await dbStudent.classesStudying) || []
@@ -3139,8 +3244,12 @@ describe('class', () => {
                     { authorization: getNonAdminAuthToken() }
                 )
                 expect(gqlStudent).to.be.true
-                const dbStudent = await User.findOneOrFail(userId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: userId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const students = (await dbClass.students) || []
                 const classesStudying = (await dbStudent.classesStudying) || []
                 expect(students).to.be.empty
@@ -3162,8 +3271,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent).to.be.null
-                    const dbStudents = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbStudents = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const students = (await dbClass.students) || []
                     const classesStudying =
                         (await dbStudents.classesStudying) || []
@@ -3195,10 +3308,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent).to.be.true
-                    const dbStudent = await User.findOneOrFail(userId, {
+                    const dbStudent = await User.findOneOrFail({
+                        where: { user_id: userId },
                         relations: ['classesStudying'],
                     })
-                    const dbClass = await Class.findOneOrFail(classId, {
+                    const dbClass = await Class.findOneOrFail({
+                        where: { class_id: classId },
                         relations: ['students'],
                     })
                     const students = (await dbClass.students) || []
@@ -3276,8 +3391,12 @@ describe('class', () => {
                 )
 
                 expect(gqlStudent).to.be.true
-                const dbStudent = await User.findOneOrFail(userId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: userId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const students = (await dbClass.students) || []
                 const classesStudying = (await dbStudent.classesStudying) || []
                 expect(students).to.be.empty
@@ -3300,8 +3419,12 @@ describe('class', () => {
                     )
 
                     expect(gqlStudent).to.be.null
-                    const dbStudent = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbStudent = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const students = (await dbClass.students) || []
                     const classesStudying =
                         (await dbStudent.classesStudying) || []
@@ -3351,8 +3474,12 @@ describe('class', () => {
                         { authorization: undefined }
                     )
                 ).to.be.rejected
-                const dbSchool = await School.findOneOrFail(school.school_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const schools = await dbClass.schools
                 const classes = await dbSchool.classes
                 expect(classes).to.be.empty
@@ -3392,10 +3519,12 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbSchool = await School.findOneOrFail(
-                            school.school_id
-                        )
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbSchool = await School.findOneByOrFail({
+                            school_id: school.school_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const schools = await dbClass.schools
                         const classes = await dbSchool.classes
                         expect(classes).to.be.empty
@@ -3433,10 +3562,12 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                     ).to.be.rejected
-                    const dbSchool = await School.findOneOrFail(
-                        school.school_id
-                    )
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const schools = await dbClass.schools
                     const classes = await dbSchool.classes
                     expect(classes).to.be.empty
@@ -3487,8 +3618,12 @@ describe('class', () => {
                     expect(gqlSchool.map(schoolInfo)).to.deep.eq([
                         school.school_id,
                     ])
-                    let dbSchool = await School.findOneOrFail(school.school_id)
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let schools = (await dbClass.schools) || []
                     let classes = (await dbSchool.classes) || []
                     expect(schools.map(schoolInfo)).to.deep.eq([
@@ -3503,8 +3638,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlSchool).to.be.empty
-                    dbSchool = await School.findOneOrFail(school.school_id)
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     schools = (await dbClass.schools) || []
                     classes = (await dbSchool.classes) || []
                     expect(schools).to.be.empty
@@ -3526,10 +3665,12 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlSchool).to.be.null
-                        const dbSchool = await School.findOneOrFail(
-                            school.school_id
-                        )
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbSchool = await School.findOneByOrFail({
+                            school_id: school.school_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const schools = await dbClass.schools
                         const classes = await dbSchool.classes
                         expect(classes).to.be.empty
@@ -3596,8 +3737,12 @@ describe('class', () => {
                         { authorization: undefined }
                     )
                 ).to.be.rejected
-                const dbSchool = await School.findOneOrFail(school.school_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const schools = await dbClass.schools
                 const classes = await dbSchool.classes
                 expect(classes).to.be.empty
@@ -3654,8 +3799,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                 ).to.be.rejected
-                const dbSchool = await School.findOneOrFail(school.school_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const schools = await dbClass.schools
                 const classes = await dbSchool.classes
                 expect(classes).to.be.empty
@@ -3718,8 +3867,12 @@ describe('class', () => {
                 )
                 expect(gqlSchool).to.exist
                 expect(school).to.include(gqlSchool)
-                const dbSchool = await School.findOneOrFail(school.school_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const schools = await dbClass.schools
                 const classes = await dbSchool.classes
                 expect(classes).to.have.lengthOf(1)
@@ -3743,10 +3896,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlSchool).to.be.null
-                    const dbSchool = await School.findOneOrFail(
-                        school.school_id
-                    )
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const schools = await dbClass.schools
                     const classes = await dbSchool.classes
                     expect(classes).to.be.empty
@@ -3824,8 +3979,12 @@ describe('class', () => {
                             authorization: getNonAdminAuthToken(),
                         })
                     ).to.be.rejected
-                    const dbSchool = await School.findOneOrFail(schoolId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: schoolId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const classSchools = (await dbClass.schools) || []
                     const schoolClasses = (await dbSchool.classes) || []
                     expect(classSchools.map(schoolInfo)).to.deep.eq([schoolId])
@@ -3894,8 +4053,12 @@ describe('class', () => {
                 )
 
                 expect(gqlSchool).to.be.true
-                const dbSchool = await School.findOneOrFail(schoolId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: schoolId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const classSchools = (await dbClass.schools) || []
                 const schoolClasses = (await dbSchool.classes) || []
                 expect(classSchools).to.be.empty
@@ -3918,8 +4081,12 @@ describe('class', () => {
                     )
 
                     expect(gqlSchool).to.be.null
-                    const dbSchool = await School.findOneOrFail(schoolId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: schoolId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const classSchools = (await dbClass.schools) || []
                     const schoolClasses = (await dbSchool.classes) || []
                     expect(classSchools.map(schoolInfo)).to.deep.eq([schoolId])
@@ -3949,10 +4116,12 @@ describe('class', () => {
                     )
 
                     expect(gqlSchool).to.be.true
-                    const dbSchool = await School.findOneOrFail(schoolId, {
+                    const dbSchool = await School.findOneOrFail({
+                        where: { school_id: schoolId },
                         relations: ['classes'],
                     })
-                    const dbClass = await Class.findOneOrFail(classId, {
+                    const dbClass = await Class.findOneOrFail({
+                        where: { class_id: classId },
                         relations: ['schools'],
                     })
                     const classSchools = (await dbClass.schools) || []
@@ -4028,8 +4197,12 @@ describe('class', () => {
                 )
 
                 expect(gqlSchool).to.be.true
-                const dbSchool = await School.findOneOrFail(schoolId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: schoolId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const classSchools = (await dbClass.schools) || []
                 const schoolClasses = (await dbSchool.classes) || []
                 expect(classSchools).to.be.empty
@@ -4052,8 +4225,12 @@ describe('class', () => {
                     )
 
                     expect(gqlTeacher).to.be.null
-                    const dbSchool = await School.findOneOrFail(schoolId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: schoolId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const classSchools = (await dbClass.schools) || []
                     const schoolClasses = (await dbSchool.classes) || []
                     expect(classSchools.map(schoolInfo)).to.deep.eq([schoolId])
@@ -4091,7 +4268,9 @@ describe('class', () => {
                         authorization: getNonAdminAuthToken(),
                     })
                 ).to.be.rejected
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 expect(dbClass.status).to.eq(Status.ACTIVE)
                 expect(dbClass.deleted_at).to.be.null
             })
@@ -4120,7 +4299,9 @@ describe('class', () => {
                                 authorization: getNonAdminAuthToken(),
                             })
                         ).to.be.rejected
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         expect(dbClass.status).to.eq(Status.ACTIVE)
                         expect(dbClass.deleted_at).to.be.null
                     })
@@ -4154,7 +4335,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(successful).to.be.true
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     expect(dbClass.status).to.eq(Status.INACTIVE)
                     expect(dbClass.deleted_at).not.to.be.null
                 })
@@ -4173,7 +4356,9 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(successful).to.be.null
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         expect(dbClass.status).to.eq(Status.INACTIVE)
                         expect(dbClass.deleted_at).not.to.be.null
                     })
@@ -4232,7 +4417,9 @@ describe('class', () => {
                 authorization: getNonAdminAuthToken(),
             })
 
-            const dbClass = await Class.findOneOrFail(cls.class_id)
+            const dbClass = await Class.findOneByOrFail({
+                class_id: cls.class_id,
+            })
             const dbPrograms = (await dbClass.programs) || []
 
             const gqlProgramDetails = await Promise.all(
@@ -4332,7 +4519,9 @@ describe('class', () => {
                 })
 
                 it('edits the class programs', async () => {
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).to.be.empty
 
@@ -4343,7 +4532,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).not.to.be.empty
                     expect(dbPrograms.map(programInfo)).to.deep.equalInAnyOrder(
@@ -4353,7 +4544,9 @@ describe('class', () => {
                     await editPrograms(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).to.be.empty
                 })
@@ -4734,7 +4927,9 @@ describe('class', () => {
                 })
 
                 it('edits the class age ranges', async () => {
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
 
@@ -4745,7 +4940,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).not.to.be.empty
                     expect(
@@ -4755,7 +4952,9 @@ describe('class', () => {
                     await editAgeRanges(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
                 })
@@ -4866,7 +5065,9 @@ describe('class', () => {
                 })
 
                 it('edits the class grades', async () => {
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).to.be.empty
 
@@ -4877,7 +5078,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).not.to.be.empty
                     expect(dbGrades.map(gradeInfo)).to.deep.equalInAnyOrder(
@@ -4887,7 +5090,9 @@ describe('class', () => {
                     await editGrades(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).to.be.empty
                 })
@@ -4998,7 +5203,9 @@ describe('class', () => {
                 })
 
                 it('edits the class subjects', async () => {
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).to.be.empty
 
@@ -5009,7 +5216,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).not.to.be.empty
                     expect(dbSubjects.map(subjectInfo)).to.deep.equalInAnyOrder(
@@ -5019,7 +5228,9 @@ describe('class', () => {
                     await editSubjects(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).to.be.empty
                 })
@@ -5757,7 +5968,7 @@ describe('class', () => {
             for (const classInputs of input) {
                 const { classId, programIds } = classInputs
 
-                const cls = await Class.findOne(classId)
+                const cls = await Class.findOneBy({ class_id: classId })
                 const dbPrograms = await cls?.programs
 
                 const dbProgramIds = new Set(dbPrograms?.map((val) => val.id))

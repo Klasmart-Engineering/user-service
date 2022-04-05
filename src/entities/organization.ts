@@ -12,7 +12,6 @@ import {
     EntityManager,
     EntityTarget,
     Not,
-    FindOneOptions,
     BaseEntity,
     FindOptionsWhere,
     Equal,
@@ -674,8 +673,8 @@ export class Organization extends CustomBaseEntity {
 
             existingUser = await getRepository(User).findOne({
                 where: [
-                    { email: email, ...personalInfo },
-                    { phone: phone, ...personalInfo },
+                    { email: email || undefined, ...personalInfo },
+                    { phone: phone || undefined, ...personalInfo },
                 ],
             })
 
@@ -1004,7 +1003,9 @@ export class Organization extends CustomBaseEntity {
         entity: EntityTarget<EntityClass>,
         ids: string[],
         variables: IAPIError['variables'],
-        customCondition?: FindOneOptions<EntityClass>['where']
+        customCondition?:
+            | FindOptionsWhere<EntityClass>
+            | FindOptionsWhere<EntityClass>[]
     ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
         const entityAndOrg = entity as EntityTarget<EntityWithOrganization>
         const uniqueIds = [...new Set(ids)]
@@ -1012,34 +1013,35 @@ export class Organization extends CustomBaseEntity {
         const primaryKeyName =
             repository.metadata.primaryColumns[0].propertyName
         const defaultCondition = {
-            organization: Equal({ organization_id: this.organization_id }),
+            organization: {
+                organization_id: this.organization_id,
+            },
         }
 
-        const condition = {}
-
+        let condition = []
         if (customCondition) {
             if (Array.isArray(customCondition)) {
-                customCondition.forEach((c) => {
-                    Object.assign(condition, {
+                condition = customCondition.map((c) => {
+                    return {
                         ...c,
                         [primaryKeyName]: In(uniqueIds),
-                    })
+                    }
                 })
             } else {
-                Object.assign(condition, {
+                condition.push({
                     ...customCondition,
                     [primaryKeyName]: In(uniqueIds),
                 })
             }
         } else {
-            Object.assign(condition, {
+            condition.push({
                 ...defaultCondition,
                 [primaryKeyName]: In(uniqueIds),
             })
         }
 
         const records = await repository.find({
-            where: condition,
+            where: condition as FindOptionsWhere<EntityWithOrganization>,
         })
 
         const found = new Set(records.map((record) => repository.getId(record)))
@@ -1072,9 +1074,9 @@ export class Organization extends CustomBaseEntity {
             // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
             [
                 {
-                    organization: Equal({
+                    organization: {
                         organization_id: this.organization_id,
-                    }),
+                    },
                 },
                 {
                     system_role: true,

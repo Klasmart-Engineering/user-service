@@ -627,17 +627,15 @@ describe('inputValidation', () => {
                             organization.organization_id
                         )
 
-                        const expectedErrors = Array.from(
-                            subItemsMap.keys(),
-                            (k) =>
-                                createEntityAPIError(
-                                    'nonExistentChild',
-                                    index,
-                                    'AgeRange',
-                                    k,
-                                    'Organization',
-                                    organization.organization_id
-                                )
+                        const expectedErrors = Array.from(subItems, (s) =>
+                            createEntityAPIError(
+                                'nonExistentChild',
+                                index,
+                                'AgeRange',
+                                s.id,
+                                'Organization',
+                                organization.organization_id
+                            )
                         )
 
                         expect(errors).to.have.lengthOf(subItemsCount)

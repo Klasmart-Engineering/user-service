@@ -415,7 +415,9 @@ describe('userPermissions', () => {
 
             context('and is inactive', () => {
                 beforeEach(async () => {
-                    const dbUser = await User.findOneOrFail(user.user_id)
+                    const dbUser = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
                     if (dbUser) {
                         dbUser.status = Status.INACTIVE
                         await connection.manager.save(dbUser)

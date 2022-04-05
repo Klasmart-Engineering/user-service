@@ -126,9 +126,9 @@ describe('Grade', () => {
                                 })
 
                                 it('deletes the expected grade', async () => {
-                                    let dbGrade = await Grade.findOneOrFail(
-                                        grade.id
-                                    )
+                                    let dbGrade = await Grade.findOneByOrFail({
+                                        id: grade.id,
+                                    })
 
                                     expect(dbGrade.status).to.eq(Status.ACTIVE)
                                     expect(dbGrade.deleted_at).to.be.null
@@ -142,9 +142,9 @@ describe('Grade', () => {
                                     )
 
                                     expect(gqlBool).to.be.true
-                                    dbGrade = await Grade.findOneOrFail(
-                                        grade.id
-                                    )
+                                    dbGrade = await Grade.findOneByOrFail({
+                                        id: grade.id,
+                                    })
                                     expect(dbGrade.status).to.eq(
                                         Status.INACTIVE
                                     )
@@ -174,8 +174,8 @@ describe('Grade', () => {
                                             )
 
                                             expect(gqlBool).to.be.false
-                                            const dbGrade = await Grade.findOneOrFail(
-                                                grade.id
+                                            const dbGrade = await Grade.findOneByOrFail(
+                                                { id: grade.id }
                                             )
                                             expect(dbGrade.status).to.eq(
                                                 Status.INACTIVE
@@ -196,8 +196,8 @@ describe('Grade', () => {
                                                 authorization: getNonAdminAuthToken(),
                                             })
                                         ).to.be.rejected
-                                        const dbGrade = await Grade.findOneOrFail(
-                                            grade.id
+                                        const dbGrade = await Grade.findOneByOrFail(
+                                            { id: grade.id }
                                         )
 
                                         expect(dbGrade.status).to.eq(
@@ -231,8 +231,8 @@ describe('Grade', () => {
                                             authorization: getNonAdminAuthToken(),
                                         })
                                     ).to.be.rejected
-                                    const dbGrade = await Grade.findOneOrFail(
-                                        grade.id
+                                    const dbGrade = await Grade.findOneByOrFail(
+                                        { id: grade.id }
                                     )
 
                                     expect(dbGrade.status).to.eq(Status.ACTIVE)
@@ -249,8 +249,8 @@ describe('Grade', () => {
                                                 authorization: getNonAdminAuthToken(),
                                             })
                                         ).to.be.rejected
-                                        const dbGrade = await Grade.findOneOrFail(
-                                            grade.id
+                                        const dbGrade = await Grade.findOneByOrFail(
+                                            { id: grade.id }
                                         )
 
                                         expect(dbGrade.status).to.eq(
@@ -270,7 +270,9 @@ describe('Grade', () => {
                     'and does not belong to the organization from the grade',
                     () => {
                         it('deletes the expected grade', async () => {
-                            let dbGrade = await Grade.findOneOrFail(grade.id)
+                            let dbGrade = await Grade.findOneByOrFail({
+                                id: grade.id,
+                            })
 
                             expect(dbGrade.status).to.eq(Status.ACTIVE)
                             expect(dbGrade.deleted_at).to.be.null
@@ -282,7 +284,9 @@ describe('Grade', () => {
                             )
 
                             expect(gqlBool).to.be.true
-                            dbGrade = await Grade.findOneOrFail(grade.id)
+                            dbGrade = await Grade.findOneByOrFail({
+                                id: grade.id,
+                            })
                             expect(dbGrade.status).to.eq(Status.INACTIVE)
                             expect(dbGrade.deleted_at).not.to.be.null
                         })
@@ -303,9 +307,9 @@ describe('Grade', () => {
 
                         context('with a non system grade', () => {
                             it('deletes the expected grade', async () => {
-                                let dbGrade = await Grade.findOneOrFail(
-                                    grade.id
-                                )
+                                let dbGrade = await Grade.findOneByOrFail({
+                                    id: grade.id,
+                                })
 
                                 expect(dbGrade.status).to.eq(Status.ACTIVE)
                                 expect(dbGrade.deleted_at).to.be.null
@@ -317,7 +321,9 @@ describe('Grade', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbGrade = await Grade.findOneOrFail(grade.id)
+                                dbGrade = await Grade.findOneByOrFail({
+                                    id: grade.id,
+                                })
                                 expect(dbGrade.status).to.eq(Status.INACTIVE)
                                 expect(dbGrade.deleted_at).not.to.be.null
                             })
@@ -337,8 +343,8 @@ describe('Grade', () => {
                                     )
 
                                     expect(gqlBool).to.be.false
-                                    const dbGrade = await Grade.findOneOrFail(
-                                        grade.id
+                                    const dbGrade = await Grade.findOneByOrFail(
+                                        { id: grade.id }
                                     )
                                     expect(dbGrade.status).to.eq(
                                         Status.INACTIVE
@@ -355,9 +361,9 @@ describe('Grade', () => {
                             })
 
                             it('deletes the expected grade', async () => {
-                                let dbGrade = await Grade.findOneOrFail(
-                                    grade.id
-                                )
+                                let dbGrade = await Grade.findOneByOrFail({
+                                    id: grade.id,
+                                })
 
                                 expect(dbGrade.status).to.eq(Status.ACTIVE)
                                 expect(dbGrade.deleted_at).to.be.null
@@ -369,7 +375,9 @@ describe('Grade', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbGrade = await Grade.findOneOrFail(grade.id)
+                                dbGrade = await Grade.findOneByOrFail({
+                                    id: grade.id,
+                                })
                                 expect(dbGrade.status).to.eq(Status.INACTIVE)
                                 expect(dbGrade.deleted_at).not.to.be.null
                             })
@@ -389,8 +397,8 @@ describe('Grade', () => {
                                     )
 
                                     expect(gqlBool).to.be.false
-                                    const dbGrade = await Grade.findOneOrFail(
-                                        grade.id
+                                    const dbGrade = await Grade.findOneByOrFail(
+                                        { id: grade.id }
                                     )
                                     expect(dbGrade.status).to.eq(
                                         Status.INACTIVE
@@ -434,7 +442,9 @@ describe('Grade', () => {
                                 })
                             ).to.be.rejected
 
-                            const dbGrade = await Grade.findOneOrFail(grade.id)
+                            const dbGrade = await Grade.findOneByOrFail({
+                                id: grade.id,
+                            })
                             expect(dbGrade.status).to.eq(Status.ACTIVE)
                             expect(dbGrade.deleted_at).to.be.null
                         })

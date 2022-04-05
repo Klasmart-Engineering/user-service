@@ -12,7 +12,7 @@ export const normalizedLowercaseTrimmed = (x?: string) =>
 export function unswapEmailAndPhone(
     email?: string | null,
     phone?: string | null
-): { email?: string; phone?: string } {
+): { email: string | undefined | null; phone: string | undefined | null } {
     let emailAsPhone
     try {
         emailAsPhone = cleanPhone(email)
@@ -20,13 +20,15 @@ export function unswapEmailAndPhone(
         emailAsPhone = undefined
     }
 
-    if (email === null) email = undefined
-    if (phone === null) phone = undefined
-
-    if (!isEmail(email) && emailAsPhone !== null && isPhone(emailAsPhone)) {
+    if (
+        email !== null &&
+        !isEmail(email) &&
+        emailAsPhone !== null &&
+        isPhone(emailAsPhone)
+    ) {
         phone = emailAsPhone
         email = undefined
-    } else if (!isPhone(phone) && isEmail(phone)) {
+    } else if (phone !== null && !isPhone(phone) && isEmail(phone)) {
         email = phone
         phone = undefined
     }
@@ -68,8 +70,8 @@ function cleanPhone(
 }
 
 function contactInfo(value: string | null | undefined) {
-    if (value === null || value === '' || typeof value === 'undefined')
-        return undefined
+    if (value === null || value === '') return null
+    if (typeof value === 'undefined') return undefined
 
     return normalizedLowercaseTrimmed(value)
 }

@@ -1,6 +1,6 @@
 import { Brackets } from 'typeorm'
-import { v4 as uuid_v4 } from 'uuid'
 import { logger } from '../../logging'
+import { getQueryBuilderKey } from '../typeorm'
 
 export interface IEntityFilter {
     [key: string]: IFilter | IEntityFilter[] | undefined
@@ -153,7 +153,7 @@ export function getWhereClauseFromFilter(
                     )
 
                     // parameter keys must be unique when using typeorm querybuilder
-                    const uniqueId = uuid_v4()
+                    const uniqueId = getQueryBuilderKey()
                     const whereCondition = createWhereCondition(
                         !!data.caseInsensitive,
                         alias,
@@ -177,7 +177,7 @@ export function getWhereClauseFromFilter(
                 qb.andWhere(
                     new Brackets((queryBuilder) => {
                         // adding the first condition inside main condition
-                        let uniqueId = uuid_v4()
+                        let uniqueId = getQueryBuilderKey()
                         let whereCondition = createWhereCondition(
                             !!data.caseInsensitive,
                             aliases[0],
@@ -198,7 +198,7 @@ export function getWhereClauseFromFilter(
                             if (data.operator === 'isNull') {
                                 operator = 'AND'
                             }
-                            uniqueId = uuid_v4()
+                            uniqueId = getQueryBuilderKey()
                             whereCondition = createWhereCondition(
                                 !!data.caseInsensitive,
                                 aliases[i],
