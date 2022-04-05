@@ -90,7 +90,8 @@ module.exports = env => ({
         joinLiveStudyClassMultiPageRepeatAccount: `./joinLiveStudyClassMultiPageRepeatAccount.ts`,
         joinLiveStudyClassMultiPageDiferentClasses2:  `./joinLiveStudyClassMultiPageDiferentClasses2.ts`,
         joinLiveStudyClassMultiPageDiferentClasses5:  `./joinLiveStudyClassMultiPageDiferentClasses5.ts`,
-        joinLiveStudyClassMultiPageDiferentClasses10:  `./joinLiveStudyClassMultiPageDiferentClasses10.ts`
+        joinLiveStudyClassMultiPageDiferentClasses10:  `./joinLiveStudyClassMultiPageDiferentClasses10.ts`,
+        joinLiveStudyClassMultiPageDiferentClasses25:  `./joinLiveStudyClassMultiPageDiferentClasses25.ts`
 
     },
     output: {
