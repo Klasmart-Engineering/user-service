@@ -19,10 +19,10 @@ import { Context } from '../main'
 import { Model } from '../model'
 import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import {
-    addOrganizationRolesToUsers,
+    AddOrganizationRolesToUsers,
     AddSchoolRolesToUsers,
     CreateUsers,
-    removeOrganizationRolesFromUsers,
+    RemoveOrganizationRolesFromUsers,
     RemoveSchoolRolesFromUsers,
     UpdateUsers,
 } from '../resolvers/user'
@@ -489,9 +489,13 @@ export default function getDefault(
                 uploadUsersFromCSV: (_parent, args, ctx, info) =>
                     model.uploadUsersFromCSV(args, ctx, info),
                 addOrganizationRolesToUsers: (_parent, args, ctx, _info) =>
-                    addOrganizationRolesToUsers(args, ctx),
+                    mutate(AddOrganizationRolesToUsers, args, ctx.permissions),
                 removeOrganizationRolesFromUsers: (_parent, args, ctx, _info) =>
-                    removeOrganizationRolesFromUsers(args, ctx),
+                    mutate(
+                        RemoveOrganizationRolesFromUsers,
+                        args,
+                        ctx.permissions
+                    ),
                 addSchoolRolesToUsers: (
                     _parent,
                     args: { input: AddSchoolRolesToUserInput[] },
