@@ -104,7 +104,7 @@ export function createDuplicateAttributeAPIError(
 }
 
 export function createDuplicateInputAttributeAPIError(
-    index: number,
+    index: number | undefined,
     entity: string,
     entityName: string,
     attribute: string,
@@ -254,7 +254,7 @@ export function createClassHasAcademicTermAPIError(
 
 export function createEntityAPIError(
     errorType: entityErrorType,
-    index: number,
+    index: number | undefined,
     entity: string,
     name?: string,
     parentEntity?: string,

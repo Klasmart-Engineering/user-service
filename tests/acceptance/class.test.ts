@@ -15,6 +15,7 @@ import {
     ClassConnectionNode,
     CreateClassInput,
     DeleteClassInput,
+    MoveUsersToClassInput,
     RemoveStudentsFromClassInput,
     RemoveTeachersFromClassInput,
     UpdateClassInput,
@@ -45,6 +46,8 @@ import {
     CREATE_CLASSES,
     DELETE_CLASS,
     DELETE_CLASSES,
+    MOVE_STUDENTS_TO_CLASS,
+    MOVE_TEACHERS_TO_CLASS,
     REMOVE_PROGRAMS_FROM_CLASSES,
     REMOVE_STUDENTS_FROM_CLASSES,
     REMOVE_TEACHERS_FROM_CLASSES,
@@ -85,6 +88,12 @@ import { TestConnection } from '../utils/testConnection'
 import { createSuccessiveAcademicTerms } from '../factories/academicTerm.factory'
 import { School } from '../../src/entities/school'
 import { AcademicTerm } from '../../src/entities/academicTerm'
+import { Organization } from '../../src/entities/organization'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { SchoolMembership } from '../../src/entities/schoolMembership'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { createSchools } from '../factories/school.factory'
+import { createRole as createRoleFactory } from '../factories/role.factory'
 
 use(deepEqualInAnyOrder)
 
@@ -1703,6 +1712,180 @@ describe('acceptance.class', () => {
             expect(response.body.errors[0].message).to.contain(
                 'Field "classId" of required type "ID!" was not provided.'
             )
+        })
+    })
+    context('MoveTeachersToClass', () => {
+        let org: Organization
+        let teachers: User[]
+        let classes: Class[]
+        let schools: School[]
+        let nonAdminUser: User
+        beforeEach(async () => {
+            const users = createUsers(1)
+            nonAdminUser = await User.save(users[0])
+            org = await createOrganization().save()
+
+            const permissions = [
+                PermissionName.delete_teacher_from_class_20446,
+                PermissionName.add_teachers_to_class_20226,
+            ]
+            const nonAdminRole = await createRoleFactory(
+                'Non Admin Role',
+                org,
+                { permissions: permissions }
+            ).save()
+            await createOrganizationMembership({
+                user: nonAdminUser,
+                organization: org,
+                roles: [nonAdminRole],
+            }).save()
+            teachers = await User.save(createUsers(3))
+            classes = createClasses(2, org)
+            schools = await School.save(createSchools(1, org))
+            classes[0].teachers = Promise.resolve([teachers[0], teachers[1]])
+            classes[1].teachers = Promise.resolve([teachers[2]])
+            classes[0].schools = Promise.resolve([schools[0]])
+            classes[1].schools = Promise.resolve([schools[0]])
+            await Class.save(classes)
+            await OrganizationMembership.save(
+                Array.from(teachers, (teacher) =>
+                    createOrganizationMembership({
+                        user: teacher,
+                        organization: org,
+                        roles: [],
+                    })
+                )
+            )
+            await SchoolMembership.save(
+                Array.from(teachers, (teacher) =>
+                    createSchoolMembership({
+                        user: teacher,
+                        school: schools[0],
+                    })
+                )
+            )
+        })
+        it('succeeds in moving teachers', async () => {
+            const input: MoveUsersToClassInput = {
+                fromClassId: classes[0].class_id,
+                toClassId: classes[1].class_id,
+                userIds: [teachers[0].user_id, teachers[1].user_id],
+            }
+            const checkteachers = teachers || []
+            const checkIds = checkteachers.map((u) => u.user_id)
+            const response = await makeRequest(
+                request,
+                print(MOVE_TEACHERS_TO_CLASS),
+                { input },
+                generateToken(userToPayload(nonAdminUser))
+            )
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.moveTeachersToClass.fromClass.id
+            ).to.equal(classes[0].class_id)
+            expect(response.body.data.moveTeachersToClass.toClass.id).to.equal(
+                classes[1].class_id
+            )
+            const dbClassFrom = await Class.findOne({
+                where: { class_id: classes[0].class_id },
+            })
+            expect(dbClassFrom).to.exist
+            const dbClassTo = await Class.findOne({
+                where: { class_id: classes[1].class_id },
+            })
+            expect(dbClassTo).to.exist
+            const teachersFrom = (await dbClassFrom!.teachers) || []
+            const teachersTo = (await dbClassTo!.teachers) || []
+            const teachersToIds = teachersTo.map((u) => u.user_id)
+            expect(teachersFrom.length).to.equal(0)
+            expect(teachersToIds).to.deep.equalInAnyOrder(checkIds)
+        })
+    })
+    context('MoveStudentsToClass', () => {
+        let org: Organization
+        let students: User[]
+        let classes: Class[]
+        let schools: School[]
+        let nonAdminUser: User
+        beforeEach(async () => {
+            const users = createUsers(1)
+            nonAdminUser = await User.save(users[0])
+            org = await createOrganization().save()
+
+            const permissions = [
+                PermissionName.add_students_to_class_20225,
+                PermissionName.delete_student_from_class_roster_20445,
+            ]
+            const nonAdminRole = await createRoleFactory(
+                'Non Admin Role',
+                org,
+                { permissions: permissions }
+            ).save()
+            await createOrganizationMembership({
+                user: nonAdminUser,
+                organization: org,
+                roles: [nonAdminRole],
+            }).save()
+            students = await User.save(createUsers(3))
+            classes = createClasses(2, org)
+            schools = await School.save(createSchools(1, org))
+            classes[0].students = Promise.resolve([students[0], students[1]])
+            classes[1].students = Promise.resolve([students[2]])
+            classes[0].schools = Promise.resolve([schools[0]])
+            classes[1].schools = Promise.resolve([schools[0]])
+            await Class.save(classes)
+            await OrganizationMembership.save(
+                Array.from(students, (student) =>
+                    createOrganizationMembership({
+                        user: student,
+                        organization: org,
+                        roles: [],
+                    })
+                )
+            )
+            await SchoolMembership.save(
+                Array.from(students, (student) =>
+                    createSchoolMembership({
+                        user: student,
+                        school: schools[0],
+                    })
+                )
+            )
+        })
+        it('succeeds in moving students', async () => {
+            const input: MoveUsersToClassInput = {
+                fromClassId: classes[0].class_id,
+                toClassId: classes[1].class_id,
+                userIds: [students[0].user_id, students[1].user_id],
+            }
+            const checkstudents = students || []
+            const checkIds = checkstudents.map((u) => u.user_id)
+            const response = await makeRequest(
+                request,
+                print(MOVE_STUDENTS_TO_CLASS),
+                { input },
+                generateToken(userToPayload(nonAdminUser))
+            )
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.moveStudentsToClass.fromClass.id
+            ).to.equal(classes[0].class_id)
+            expect(response.body.data.moveStudentsToClass.toClass.id).to.equal(
+                classes[1].class_id
+            )
+            const dbClassFrom = await Class.findOne({
+                where: { class_id: classes[0].class_id },
+            })
+            expect(dbClassFrom).to.exist
+            const dbClassTo = await Class.findOne({
+                where: { class_id: classes[1].class_id },
+            })
+            expect(dbClassTo).to.exist
+            const studentsFrom = (await dbClassFrom!.students) || []
+            const studentsTo = (await dbClassTo!.students) || []
+            const studentsToIds = studentsTo.map((u) => u.user_id)
+            expect(studentsFrom.length).to.equal(0)
+            expect(studentsToIds).to.deep.equalInAnyOrder(checkIds)
         })
     })
 })

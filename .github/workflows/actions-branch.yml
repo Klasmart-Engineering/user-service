@@ -58,10 +58,43 @@ jobs:
           npm run commitlint-check -- --from=HEAD
       - name: "Unit tests"
         run: npm run coverage:unit
+      - name: Upload unit test coverage to Codecov
+        if: github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage_unit/
+          fail_ci_if_error: true
+          files: ./coverage_unit/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          verbose: true
       - name: "Migration tests"
         run: npm run coverage:migrations
+      - name: Upload migration test coverage to Codecov
+        if: github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage_migrations/
+          fail_ci_if_error: true
+          files: ./coverage_migrations/lcov.info
+          flags: migrationtests
+          name: codecov-umbrella
+          verbose: true
       - name: "Integration tests"
         run: npm run coverage:integration
+      - name: Upload integration test coverage to Codecov
+        if: github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage_integration/
+          fail_ci_if_error: true
+          files: ./coverage_integration/lcov.info
+          flags: integrationtests
+          name: codecov-umbrella
+          verbose: true
       - name: "Acceptance tests"
         run: |
           curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -81,6 +114,17 @@ jobs:
       
           docker stop -t 2 user-service
           npx nyc report --require ts-node/register --reporter=lcov --reporter=json-summary --reporter=text-summary --report-dir ./coverage_acceptance
+      - name: Upload acceptance test coverage to Codecov
+        if: github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage_acceptance/
+          fail_ci_if_error: true
+          files: ./coverage_acceptance/lcov.info
+          flags: acceptancetests
+          name: codecov-umbrella
+          verbose: true
 
   build:
     runs-on: ubuntu-latest

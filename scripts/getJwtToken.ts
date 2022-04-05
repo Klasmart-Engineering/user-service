@@ -12,7 +12,7 @@ async function getAdminUserToken() {
     // email taken from ADMIN_EMAILS list
     let user = await User.findOneBy({ email: 'sandy@calmid.com' })
     if (user == undefined) {
-        user = await createUser({ email: 'sandy@calmid.com' }).save()
+        user = await createUser({ email: 'sandy@kidsloop.live' }).save()
     }
 
     const tokenInfo = {

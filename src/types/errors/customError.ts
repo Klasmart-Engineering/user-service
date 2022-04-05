@@ -72,6 +72,19 @@ export const customErrors = {
     },
 
     // generic
+
+    too_many_relations: {
+        code: 'TOO_MANY_RELATIONS',
+        message:
+            '{entity} {entityName} has more than the maximum of {max} of {otherAttribute} relations',
+    },
+
+    src_and_destination_dont_match: {
+        code: 'SOURCE_AND_DESTINATION_DONT_MATCH',
+        message:
+            '{entity}: {entityName} and {entity}: {otherAttribute} mismatch in {attribute} in relation',
+    },
+
     existent_entity: {
         code: 'ERR_DUPLICATE_ENTITY',
         message: '{entity} {entityName} already exists.',

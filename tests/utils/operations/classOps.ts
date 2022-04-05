@@ -266,6 +266,88 @@ const CLASSES_MUTATION_RESULT = `classes {
             }
 `
 
+export const MOVE_TEACHERS_TO_CLASS = gql`
+    mutation myMutation($input: MoveUsersToClassInput!) {
+        moveTeachersToClass(input: $input) {
+            fromClass {
+                name
+                id
+                teachersConnection {
+                    edges {
+                        node {
+                            id
+                            givenName
+                            familyName
+                            contactInfo {
+                                email
+                                phone
+                            }
+                        }
+                    }
+                }
+            }
+            toClass {
+                name
+                id
+                teachersConnection {
+                    edges {
+                        node {
+                            id
+                            givenName
+                            familyName
+                            contactInfo {
+                                email
+                                phone
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
+export const MOVE_STUDENTS_TO_CLASS = gql`
+    mutation myMutation($input: MoveUsersToClassInput!) {
+        moveStudentsToClass(input: $input) {
+            fromClass {
+                name
+                id
+                studentsConnection {
+                    edges {
+                        node {
+                            id
+                            givenName
+                            familyName
+                            contactInfo {
+                                email
+                                phone
+                            }
+                        }
+                    }
+                }
+            }
+            toClass {
+                name
+                id
+                studentsConnection {
+                    edges {
+                        node {
+                            id
+                            givenName
+                            familyName
+                            contactInfo {
+                                email
+                                phone
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
 export const DELETE_CLASSES = `
     mutation myMutation($input: [DeleteClassInput!]!) {
         deleteClasses(input: $input) {
