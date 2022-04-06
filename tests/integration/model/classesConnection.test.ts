@@ -58,6 +58,8 @@ import {
 import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 import { checkPageInfo } from '../../acceptance/utils'
+import { AcademicTerm } from '../../../src/entities/academicTerm'
+import { createAcademicTerm } from '../../factories/academicTerm.factory'
 
 use(chaiAsPromised)
 
@@ -851,6 +853,52 @@ describe('classesConnection', () => {
             })
 
             ageRangesValues.every((values) => values?.includes(value))
+        })
+
+        context('academic term ID', () => {
+            let term: AcademicTerm
+            let cls: Class
+            beforeEach(async () => {
+                const school = org3Schools[0]
+                cls = org3Classes[0]
+                term = await createAcademicTerm(school, {}, [cls]).save()
+            })
+            it('supports the eq operator', async () => {
+                const filter: IEntityFilter = {
+                    academicTermId: {
+                        operator: 'eq',
+                        value: term.id,
+                    },
+                }
+
+                const result = await classesConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 10 },
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(result.totalCount).to.eq(1)
+                expect(result.edges).to.have.length(1)
+                expect(result.edges[0].node.id).to.eq(cls.class_id)
+            })
+            it('supports the exclusive filter via IS NULL', async () => {
+                const filter: IEntityFilter = {
+                    academicTermId: {
+                        operator: 'isNull',
+                    },
+                }
+
+                const result = await classesConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 10 },
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                checkPageInfo(result, classesCount * 3 - 1)
+            })
         })
 
         context('school ID', () => {
