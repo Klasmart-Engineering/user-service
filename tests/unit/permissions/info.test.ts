@@ -3,7 +3,7 @@ import { permissionInfo } from '../../../src/permissions/permissionInfo'
 
 it('has a category, group, level and description assigned to all permissions', async () => {
     const info = await permissionInfo()
-
+    console.log(info)
     const missingData = Array.from(info).filter(([name, details]) => {
         return (
             // Undefined permissions aren't currently in use
