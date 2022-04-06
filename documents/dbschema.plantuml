@@ -1,7 +1,8 @@
-@startuml
+@startuml dbschema
 enum Status {
     active
     inactive
+    deleted
 }
 
 class User {
@@ -20,6 +21,8 @@ class User {
     deleted_at : timestamp
     avatar : string
     myOrganizationOrganizationId : uuid
+    created_at : timestamp
+    updated_at : timestamp
 }
 
 class Class {
@@ -29,6 +32,9 @@ class Class {
     shortcode : string
     status : status
     deleted_at : timestamp
+    created_at : timestamp
+    updated_at : timestamp
+    academic_term_id : uuid
 }
 
 class ClassAgeRangesAgeRange {
@@ -61,6 +67,8 @@ class Organization {
     status : status
     primaryContactUserId : uuid
     deleted_at : timestamp
+    created_at : timestamp
+    updated_at : timestamp
 }
 
 class OrganizationMembership {
@@ -73,6 +81,8 @@ class OrganizationMembership {
     status_updated_at : timestamp
     userUserId : uuid
     organizationOrganizationId : uuid
+    created_at : timestamp
+    updated_at : timestamp
 }
 
 class Permission {
@@ -84,23 +94,32 @@ class Permission {
     permission_level : string
     allow : boolean
     permission_description : string
+    created_at : timestamp
+    updated_at : timestamp
+    status : Status
 }
 
 class Role {
     role_id : uuid
     role_name : string
+    role_description : string
     status : status
     system_role : bool
     deleted_at : timestamp
     organizationOrganizationId : uuid
+    created_at : timestamp
+    updated_at : timestamp
 }
 
 class School {
     school_id : uuid
     school_name : string
+    shortcode : string
     status : status
     organizationOrganizationId : uuid
     deleted_at : timestamp
+    created_at : timestamp
+    updated_at : timestamp
 }
 
 class SchoolProgramsProgram {
@@ -117,14 +136,8 @@ class SchoolMembership {
     status : Status
     userUserId : uuid
     schoolSchoolId : uuid
-}
-
-class Attendance {
-    user_id : string
-    room_id : string
-    session_id : string
-    join_timestamp : timestamp
-    leave_timestamp : timestamp
+    created_at : timestamp
+    updated_at : timestamp
 }
 
 class RoleMembershipsOrganizationMembership {
@@ -171,6 +184,7 @@ class AgeRange {
     created_at : timestamp
     deleted_at : timestamp
     organization_id : uuid
+    updated_at : timestamp
 }
 
 class Subcategory {
@@ -181,6 +195,7 @@ class Subcategory {
     created_at : timestamp
     deleted_at : timestamp
     organization_id : uuid
+    updated_at : timestamp
 }
 
 class Grade {
@@ -193,6 +208,7 @@ class Grade {
     progress_to_grade_id : uuid
     deleted_at : timestamp
     organization_id : uuid
+    updated_at : timestamp
 }
 
 class Category {
@@ -203,6 +219,7 @@ class Category {
     created_at : timestamp
     deleted_at : timestamp
     organization_id : uuid
+    updated_at : timestamp
 }
 
 class CategorySubcategoriesSubcategory {
@@ -218,6 +235,7 @@ class Subject {
     created_at : timestamp
     deleted_at : timestamp
     organization_id : uuid
+    updated_at : timestamp
 }
 
 class SubjectCategoriesCategory {
@@ -233,6 +251,7 @@ class Program {
     created_at : timestamp
     deleted_at : timestamp
     organization_id : uuid
+    updated_at : timestamp
 }
 
 class ProgramAgeRangesAgeRange {
@@ -256,6 +275,8 @@ class Branding {
     updated_at : timestamp
     primary_color : string
     organization_id : uuid
+    status : Status
+    deleted_at : timestamp
 }
 
 class BrandingImage {
@@ -265,56 +286,94 @@ class BrandingImage {
     tag : string
     url : string
     branding_id : uuid
+    status : Status
+    deleted_at : timestamp
 }
 
-Role -- "*" Organization
-User -- "0..1" Organization
-AgeRange "*" --* "0..1" Organization
-Subcategory "*" --* "0..1" Organization
-Grade "*" --* "0..1" Organization
-Grade --* "0..1" Grade
-Category "*" --* "0..1" Organization
-Category "*" *-- "*" CategorySubcategoriesSubcategory
-CategorySubcategoriesSubcategory "*" --* "*" Subcategory
-Subject "*" --* "0..1" Organization
-Subject "*" *-- "*" SubjectCategoriesCategory
-SubjectCategoriesCategory "*" --* "*" Category
-Program "*" --* "0..1" Organization
-Program "*" *-- "*" ProgramAgeRangesAgeRange
-ProgramAgeRangesAgeRange "*" --* "*" AgeRange
-Program "*" *-- "*" ProgramGradesGrade
-ProgramGradesGrade "*" --* "*" Grade
-Program "*" *-- "*" ProgramSubjectsSubject
-ProgramSubjectsSubject "*" --* "*" Subject
-User "0..1" *-- "*" OrganizationMembership
-OrganizationMembership "*" --* "0..1" Organization
-Class -- "0..1" Organization
-Class "0..1" *-- "*" SchoolClassesClass
-SchoolClassesClass "*" --* "0..1" School
-Class "*" *-- "*" ClassAgeRangesAgeRange
-ClassAgeRangesAgeRange "*" --* "*" AgeRange
-Class "*" *-- "*" ClassGradesGrade
-ClassGradesGrade "*" --* "*" Grade
-Class "*" *-- "*" ClassSubjectsSubject
-ClassSubjectsSubject "*" --* "*" Subject
-Class "*" *-- "*" ClassProgramsProgram
-ClassProgramsProgram "*" --* "*" Program
-Permission --* "0..1" Role
-School -- "0..1" Organization
-School "*" *-- "*" SchoolProgramsProgram
-SchoolProgramsProgram "*" --* "*" Program
-User "0..1" *-- "*" SchoolMembership
-SchoolMembership "*" --* "0..1" School
-RoleMembershipsOrganizationMembership "*" --* "1" Role
-RoleMembershipsOrganizationMembership "*" --* "1" OrganizationMembership
-RoleSchoolMembershipsSchoolMembership "*" --* "1" Role
-RoleSchoolMembershipsSchoolMembership "*" --* "1" SchoolMembership
-UserClassesStudyingcClass "*" --* "1" User
-UserClassesStudyingcClass "*" --* "1" Class
-UserClassesTeachingClass "*" --* "1" User
-UserClassesTeachingClass "*" --* "1" Class
+class AcademicTerm {
+    id : uuid
+    name : string
+    start_date : timestamp
+    end_date : timestamp
+    school_id : uuid
+    status : Status
+    created_at : timestamp
+    updated_at : timestamp
+    deleted_at : timestamp
+}
 
-Branding "*" --* "1" Organization
-BrandingImage "*" --* "0..1" Branding
+class Migrations {
+    id : uuid
+    name : string
+    timestamp : timestamp
+}
+
+class OrganizationOwnership {
+    organization_id : uuid
+    user_id : uuid
+    status : Status
+    created_at : timestamp
+    updated_at : timestamp
+    deleted_at : timestamp
+}
+
+class PermissionRolesRole {
+    permissionPermissionId : uuid
+    roleRoleId : uuid
+}
+
+Role --* "0..1" Organization
+User --* "0..1" Organization
+AgeRange --* "0..1" Organization
+Subcategory --* "0..1" Organization
+Grade --* "0..1" Organization
+Grade --* "0..1" Grade
+Category --* "0..1" Organization
+Category "1" *-- CategorySubcategoriesSubcategory
+CategorySubcategoriesSubcategory --* "1" Subcategory
+Subject --* "0..1" Organization
+Subject "1" *-- SubjectCategoriesCategory
+SubjectCategoriesCategory --* "1" Category
+Program --* "0..1" Organization
+Program "1" *-- ProgramAgeRangesAgeRange
+ProgramAgeRangesAgeRange --* "1" AgeRange
+Program "1" *-- ProgramGradesGrade
+ProgramGradesGrade --* "1" Grade
+Program "1" *-- ProgramSubjectsSubject
+ProgramSubjectsSubject --* "1" Subject
+User "1" *-- OrganizationMembership
+OrganizationMembership --* "1" Organization
+Class --* "0..1" Organization
+Class "1" *-- SchoolClassesClass
+SchoolClassesClass --* "1" School
+Class "1" *-- ClassAgeRangesAgeRange
+ClassAgeRangesAgeRange --* "1" AgeRange
+Class "1" *-- ClassGradesGrade
+ClassGradesGrade --* "1" Grade
+Class "1" *-- ClassSubjectsSubject
+ClassSubjectsSubject --* "1" Subject
+Class "1" *-- ClassProgramsProgram
+ClassProgramsProgram --* "1" Program
+PermissionRolesRole --* "1" Role
+PermissionRolesRole --* "1" Permission
+School --* "0..1" Organization
+School "1" *-- SchoolProgramsProgram
+SchoolProgramsProgram --* "1" Program
+User "1" *-- SchoolMembership
+SchoolMembership --* "1" School
+RoleMembershipsOrganizationMembership --* "1" Role
+RoleMembershipsOrganizationMembership --* "1" OrganizationMembership
+RoleSchoolMembershipsSchoolMembership --* "1" Role
+RoleSchoolMembershipsSchoolMembership --* "1" SchoolMembership
+UserClassesStudyingcClass --* "1" User
+UserClassesStudyingcClass --* "1" Class
+UserClassesTeachingClass --* "1" User
+UserClassesTeachingClass --* "1" Class
+Branding --* "1" Organization
+BrandingImage --* "0..1" Branding
+AcademicTerm --* "1" School
+Class --* "0..1" AcademicTerm
+OrganizationOwnership  --* "1" Organization
+OrganizationOwnership  --* "1" User
 @enduml
 
