@@ -128,6 +128,7 @@ export async function classesConnectionQuery(
                 programId: 'Program.id',
                 studentId: 'Student.user_id',
                 teacherId: 'Teacher.user_id',
+                academicTermId: `Class.academic_term_id`,
             })
         )
     }

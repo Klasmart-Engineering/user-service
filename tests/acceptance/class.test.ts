@@ -85,7 +85,10 @@ import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { TestConnection } from '../utils/testConnection'
-import { createSuccessiveAcademicTerms } from '../factories/academicTerm.factory'
+import {
+    createAcademicTerm,
+    createSuccessiveAcademicTerms,
+} from '../factories/academicTerm.factory'
 import { School } from '../../src/entities/school'
 import { AcademicTerm } from '../../src/entities/academicTerm'
 import { Organization } from '../../src/entities/organization'
@@ -839,6 +842,38 @@ describe('acceptance.class', () => {
 
             expect(response.status).to.eq(200)
             expect(classesConnection.totalCount).to.equal(4)
+        })
+
+        it('queries paginated classes filtering by academic term', async () => {
+            const school = await School.findOneOrFail(schoolId)
+            const cls = await Class.findOneOrFail(class1Ids[2])
+            const term = await createAcademicTerm(school, {}, [cls]).save()
+
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: print(CLASSES_CONNECTION),
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            academicTermId: {
+                                operator: 'eq',
+                                value: term.id,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+            expect(classesConnection.edges).to.have.length(1)
+            expect(classesConnection.edges[0].node.id).to.equal(cls.class_id)
         })
 
         it("returns just the classes that belongs to user's school", async () => {

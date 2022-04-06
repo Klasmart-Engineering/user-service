@@ -121,6 +121,7 @@ const typeDefs = gql`
         schoolId: UUIDExclusiveFilter
         gradeId: UUIDFilter
         subjectId: UUIDFilter
+        academicTermId: UUIDExclusiveFilter
 
         #connections - extra filters
         studentId: UUIDFilter
