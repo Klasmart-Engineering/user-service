@@ -10,12 +10,12 @@ import {
     OneToOne,
     ManyToOne,
     EntityManager,
-    EntityTarget,
     Not,
     BaseEntity,
     FindOptionsWhere,
     Equal,
     IsNull,
+    Brackets,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -62,10 +62,6 @@ import { pickBy } from 'lodash'
 import { config } from '../config/config'
 import logger from '../logging'
 import { reportError } from '../utils/resolvers/errors'
-
-interface EntityWithOrganization extends BaseEntity {
-    organization: Organization
-}
 
 @Entity()
 export class Organization extends CustomBaseEntity {
@@ -1000,49 +996,24 @@ export class Organization extends CustomBaseEntity {
     }
 
     private async findChildEntitiesById<EntityClass extends BaseEntity>(
-        entity: EntityTarget<EntityClass>,
+        entity: (new () => EntityClass) & typeof CustomBaseEntity,
         ids: string[],
         variables: IAPIError['variables'],
-        customCondition?:
-            | FindOptionsWhere<EntityClass>
-            | FindOptionsWhere<EntityClass>[]
+        customCondition?: Brackets
     ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
-        const entityAndOrg = entity as EntityTarget<EntityWithOrganization>
         const uniqueIds = [...new Set(ids)]
-        const repository = getRepository(entityAndOrg)
-        const primaryKeyName =
-            repository.metadata.primaryColumns[0].propertyName
-        const defaultCondition = {
-            organization: {
+        const repository = entity.getRepository()
+        const defaultCondition = new Brackets((qb) => {
+            qb.where('Entity.organizationOrganizationId = :organization_id', {
                 organization_id: this.organization_id,
-            },
-        }
-
-        let condition = []
-        if (customCondition) {
-            if (Array.isArray(customCondition)) {
-                condition = customCondition.map((c) => {
-                    return {
-                        ...c,
-                        [primaryKeyName]: In(uniqueIds),
-                    }
-                })
-            } else {
-                condition.push({
-                    ...customCondition,
-                    [primaryKeyName]: In(uniqueIds),
-                })
-            }
-        } else {
-            condition.push({
-                ...defaultCondition,
-                [primaryKeyName]: In(uniqueIds),
             })
-        }
-
-        const records = await repository.find({
-            where: condition as FindOptionsWhere<EntityWithOrganization>,
         })
+
+        const records = await repository
+            .createQueryBuilder('Entity')
+            .whereInIds(uniqueIds)
+            .andWhere(customCondition || defaultCondition)
+            .getMany()
 
         const found = new Set(records.map((record) => repository.getId(record)))
         const errors = uniqueIds
@@ -1072,16 +1043,16 @@ export class Organization extends CustomBaseEntity {
             roleIds,
             variables,
             // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
-            [
-                {
-                    organization: {
-                        organization_id: this.organization_id,
-                    },
-                },
-                {
+            new Brackets((qb) => {
+                qb.where('Entity.system_role = :system_role', {
                     system_role: true,
-                },
-            ]
+                }).orWhere(
+                    'Entity.organizationOrganizationId = :organization_id',
+                    {
+                        organization_id: this.organization_id,
+                    }
+                )
+            })
         )
     }
 
