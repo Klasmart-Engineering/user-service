@@ -24,15 +24,18 @@ describe('acceptance.authentication', () => {
             }
         }`
 
-        it('accepts missing tokens', async () => {
+        it('rejects missing tokens', async () => {
             const response = await makeRequest(
                 request,
                 VALID_WITH_NO_TOKEN_QUERY,
                 {}
             )
 
-            expect(response.status).to.eq(200)
-            expect(response.body.errors).to.be.undefined
+            expect(response.status).to.eq(401)
+            expect(response.body.code).to.equal('UNAUTHORIZED')
+            expect(response.body.message).to.contain(
+                'Invalid token provided: No authentication token.'
+            )
         })
 
         it('accepts valid tokens and passes them on to resolvers', async () => {

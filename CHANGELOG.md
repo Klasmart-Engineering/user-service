@@ -12,7 +12,6 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [4.1.0](https://github.com/KL-Engineering/user-service/compare/v4.0.0...v4.1.0) (2022-03-21)
 
-
 ### Features
 
 * **AD-2005:** status updated at column migration for orgs and schools ([c2f2714](https://github.com/KL-Engineering/user-service/commit/c2f2714a8a251b97f03824c237f8a93e4ec6a24c))
