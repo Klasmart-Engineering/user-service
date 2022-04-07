@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader'
-import { EntityTarget, getConnection, SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder } from 'typeorm'
 import { CustomBaseEntity } from '../entities/customBaseEntity'
 import { APIError, IAPIError } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -32,7 +32,7 @@ export class NodeDataLoader<
     ReturnEntity | APIError
 > {
     constructor(
-        entityClass: EntityTarget<Entity>,
+        entityClass: (new () => Entity) & typeof CustomBaseEntity,
         nodeType: string,
         entityMapper: (entity: Entity) => ReturnEntity,
         selectFields: string[]
@@ -40,8 +40,8 @@ export class NodeDataLoader<
         super(async function (
             keys: readonly { id: string; scope: SelectQueryBuilder<Entity> }[]
         ): Promise<(ReturnEntity | APIError)[]> {
-            const connection = getConnection()
-            const metadata = connection.getMetadata(entityClass)
+            const repository = entityClass.getRepository()
+            const metadata = repository.metadata
             const primaryKeyColumn = metadata.primaryColumns[0]
             const primaryKeyLabel = primaryKeyColumn.propertyName
             const ids = []

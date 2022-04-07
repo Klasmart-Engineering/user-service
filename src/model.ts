@@ -1,13 +1,10 @@
 import {
-    createConnection,
-    Connection,
-    getManager,
-    getRepository,
+    DataSource,
     EntityManager,
     Repository,
     SelectQueryBuilder,
-    getConnection,
     Equal,
+    getConnection,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
@@ -135,6 +132,7 @@ export async function legacyCsvRowFunctionWrapper<RowType>(
         )
         allRowErrors.push(...rowErrors)
     }
+
     return allRowErrors
 }
 
@@ -150,7 +148,7 @@ export class Model {
             : []
 
         try {
-            const connection = await createConnection({
+            const dataSource = new DataSource({
                 name: 'default',
                 type: 'postgres',
                 synchronize: false,
@@ -171,10 +169,11 @@ export class Model {
                 },
             })
 
-            await runMigrations(connection)
+            await dataSource.initialize()
+            await runMigrations(dataSource)
 
-            const model = new Model(connection)
-            await getManager(connection.name).query(
+            const model = new Model(dataSource)
+            await dataSource.manager.query(
                 'CREATE EXTENSION IF NOT EXISTS pg_trgm'
             )
             await model.createOrUpdateSystemEntities()
@@ -192,7 +191,7 @@ export class Model {
         '0.1'
     )
 
-    private connection: Connection
+    private dataSource: DataSource
     private manager: EntityManager
     private userRepository: Repository<User>
     private organizationRepository: Repository<Organization>
@@ -204,26 +203,21 @@ export class Model {
     private organizationMembershipRepository: Repository<OrganizationMembership>
     private schoolMembershipRepository: Repository<SchoolMembership>
 
-    constructor(connection: Connection) {
-        this.connection = connection
-        this.manager = getManager(connection.name)
-        this.userRepository = getRepository(User, connection.name)
-        this.organizationRepository = getRepository(
-            Organization,
-            connection.name
+    constructor(dataSource: DataSource) {
+        this.dataSource = dataSource
+        this.manager = dataSource.manager
+        this.userRepository = dataSource.getRepository(User)
+        this.organizationRepository = dataSource.getRepository(Organization)
+        this.roleRepository = dataSource.getRepository(Role)
+        this.classRepository = dataSource.getRepository(Class)
+        this.schoolRepository = dataSource.getRepository(School)
+        this.permissionRepository = dataSource.getRepository(Permission)
+        this.ageRangeRepository = dataSource.getRepository(AgeRange)
+        this.organizationMembershipRepository = dataSource.getRepository(
+            OrganizationMembership
         )
-        this.roleRepository = getRepository(Role, connection.name)
-        this.classRepository = getRepository(Class, connection.name)
-        this.schoolRepository = getRepository(School, connection.name)
-        this.permissionRepository = getRepository(Permission, connection.name)
-        this.ageRangeRepository = getRepository(AgeRange, connection.name)
-        this.organizationMembershipRepository = getRepository(
-            OrganizationMembership,
-            connection.name
-        )
-        this.schoolMembershipRepository = getRepository(
-            SchoolMembership,
-            connection.name
+        this.schoolMembershipRepository = dataSource.getRepository(
+            SchoolMembership
         )
     }
 
@@ -357,7 +351,8 @@ export class Model {
         const username = token.user_name
         let users: User[] = []
 
-        const scope = getRepository(User)
+        const scope = this.dataSource
+            .getRepository(User)
             .createQueryBuilder()
             .distinctOn(['User.user_id'])
             .innerJoin('User.memberships', 'OrganizationMembership')
@@ -558,13 +553,17 @@ export class Model {
         )
 
         const errors: APIError[] = []
-        const organization = await getRepository(Organization).findOneByOrFail({
-            organization_id,
-        })
+        const organization = await this.dataSource
+            .getRepository(Organization)
+            .findOneByOrFail({
+                organization_id,
+            })
 
-        const newRole = await getRepository(Role).findOneByOrFail({
-            role_id: new_role_id,
-        })
+        const newRole = await this.dataSource
+            .getRepository(Role)
+            .findOneByOrFail({
+                role_id: new_role_id,
+            })
 
         const newRoleOrganization = await newRole.organization
         if (info.operation.operation !== 'mutation')
@@ -604,7 +603,8 @@ export class Model {
             )
         if (errors.length > 0) throw new APIErrorCollection(errors)
 
-        const orgMembIds = getRepository(OrganizationMembership)
+        const orgMembIds = this.dataSource
+            .getRepository(OrganizationMembership)
             .createQueryBuilder('OM') // alias for OrganizationMembership table
             .select('OM.user_id, OM.organization_id')
             .innerJoin('OM.roles', 'Role')
@@ -614,7 +614,8 @@ export class Model {
             .andWhere('Role.role_id = :role_id', {
                 role_id: old_role_id,
             })
-        const orgMembsWithRoles = await getRepository(OrganizationMembership)
+        const orgMembsWithRoles = await this.dataSource
+            .getRepository(OrganizationMembership)
             .createQueryBuilder('OM1') // alias for main OrganizationMembership table
             .setParameters(orgMembIds.getParameters())
             .innerJoin(
@@ -625,7 +626,8 @@ export class Model {
             .innerJoinAndSelect('OM1.roles', 'Role')
             .getMany()
 
-        const schoolMembsIds = getRepository(SchoolMembership)
+        const schoolMembsIds = this.dataSource
+            .getRepository(SchoolMembership)
             .createQueryBuilder('SM') // alias for SchoolMembership table
             .select('SM.user_id, SM.school_id')
             .innerJoin('SM.roles', 'Role')
@@ -636,7 +638,8 @@ export class Model {
             .andWhere('Role.role_id = :role_id', {
                 role_id: old_role_id,
             })
-        const schoolMembsWithRoles = await getRepository(SchoolMembership)
+        const schoolMembsWithRoles = await this.dataSource
+            .getRepository(SchoolMembership)
             .createQueryBuilder('SM1') // alias for main SchoolMembership table
             .setParameters(schoolMembsIds.getParameters())
             .innerJoin(
@@ -837,7 +840,7 @@ export class Model {
         const { file } = await (args.file as Promise<{ file: Upload }>)
         const isDryRun = args.isDryRun as boolean
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [processUserFromCSVRows],
             context.permissions,
@@ -859,7 +862,7 @@ export class Model {
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -898,7 +901,7 @@ export class Model {
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -937,7 +940,7 @@ export class Model {
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -994,7 +997,7 @@ export class Model {
 
         const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -1032,7 +1035,7 @@ export class Model {
 
         const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -1070,7 +1073,7 @@ export class Model {
 
         const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -1108,7 +1111,7 @@ export class Model {
 
         const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -1146,7 +1149,7 @@ export class Model {
 
         const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -1184,7 +1187,7 @@ export class Model {
 
         const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(
-            this.connection,
+            this.dataSource,
             file,
             [
                 (
@@ -1220,7 +1223,7 @@ export class Model {
             return false
         }
 
-        const queryRunner = this.connection.createQueryRunner()
+        const queryRunner = this.dataSource.createQueryRunner()
         await queryRunner.connect()
         await queryRunner.startTransaction()
 
@@ -1246,7 +1249,7 @@ export class Model {
             return false
         }
 
-        const queryRunner = this.connection.createQueryRunner()
+        const queryRunner = this.dataSource.createQueryRunner()
         await queryRunner.connect()
         await queryRunner.startTransaction()
 
@@ -1271,7 +1274,7 @@ export class Model {
             return false
         }
 
-        const queryRunner = this.connection.createQueryRunner()
+        const queryRunner = this.dataSource.createQueryRunner()
         await queryRunner.connect()
         await queryRunner.startTransaction()
 
@@ -1373,7 +1376,7 @@ export class Model {
             iconImage?.file,
             brandingImagesInfo,
             primaryColor,
-            this.connection
+            this.dataSource
         )
 
         return result

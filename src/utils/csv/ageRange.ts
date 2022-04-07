@@ -1,4 +1,4 @@
-import { EntityManager, Equal } from 'typeorm'
+import { EntityManager } from 'typeorm'
 import { AgeRange } from '../../entities/ageRange'
 import { AgeRangeUnit } from '../../entities/ageRangeUnit'
 import { Organization } from '../../entities/organization'
@@ -196,7 +196,7 @@ export const processAgeRangeFromCSVRow = async (
             low_value_unit: age_range_unit,
             system: false,
             status: Status.ACTIVE,
-            organization: Equal(organization),
+            organization: { organization_id: organization!.organization_id },
         },
     })
 

@@ -2,7 +2,7 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { before } from 'mocha'
-import { Equal, getConnection, IsNull } from 'typeorm'
+import { getConnection, IsNull } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
 import { Organization } from '../../src/entities/organization'
@@ -900,7 +900,9 @@ describe('model', () => {
                 const duplicatedSubjects = await Subject.count({
                     where: {
                         name: subjectName,
-                        organization: Equal(organization),
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
@@ -920,7 +922,9 @@ describe('model', () => {
                 const duplicatedSubjects = await Subject.count({
                     where: {
                         name: subjectName,
-                        organization: Equal(organization),
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
@@ -956,7 +960,9 @@ describe('model', () => {
                 const duplicatedGrades = await Grade.count({
                     where: {
                         name: gradeName,
-                        organization: Equal(organization),
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
@@ -972,7 +978,9 @@ describe('model', () => {
                 const duplicatedGrades = await Grade.count({
                     where: {
                         name: gradeName,
-                        organization: Equal(organization),
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
@@ -992,7 +1000,9 @@ describe('model', () => {
                 const duplicatedGrades = await Grade.count({
                     where: {
                         name: gradeName,
-                        organization: Equal(organization),
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
@@ -1012,7 +1022,9 @@ describe('model', () => {
                 const duplicatedGrades = await Grade.count({
                     where: {
                         name: gradeName,
-                        organization: Equal(organization),
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
@@ -1032,7 +1044,9 @@ describe('model', () => {
                 const duplicatedGrades = await Grade.count({
                     where: {
                         name: gradeName,
-                        organization: Equal(organization),
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 

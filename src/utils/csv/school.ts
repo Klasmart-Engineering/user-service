@@ -1,4 +1,4 @@
-import { EntityManager, Equal, IsNull } from 'typeorm'
+import { EntityManager, IsNull } from 'typeorm'
 import { Organization } from '../../entities/organization'
 import { Program } from '../../entities/program'
 import { School } from '../../entities/school'
@@ -153,7 +153,7 @@ export const processSchoolFromCSVRow = async (
     const schools = await manager.find(School, {
         where: {
             school_name: row.school_name,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 
@@ -194,7 +194,10 @@ export const processSchoolFromCSVRow = async (
     // does the program belong to organisation or a system program
     const programToAdd = await manager.findOne(Program, {
         where: [
-            { name: row.program_name, organization: Equal(organization) },
+            {
+                name: row.program_name,
+                organization: { organization_id: organization.organization_id },
+            },
             {
                 name: row.program_name,
                 organization: IsNull(),

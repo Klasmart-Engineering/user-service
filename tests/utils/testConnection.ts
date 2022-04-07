@@ -1,4 +1,4 @@
-import { Connection, createConnection, QueryRunner } from 'typeorm'
+import { DataSource, createConnection, QueryRunner } from 'typeorm'
 import { TypeORMLogger } from '../../src/logging'
 import { getEnvVar } from '../../src/config/config'
 import { max, min, sum } from 'lodash'
@@ -82,7 +82,7 @@ class QueryMetricsLogger extends TypeORMLogger {
     }
 }
 
-export interface TestConnection extends Connection {
+export interface TestConnection extends DataSource {
     logger: QueryMetricsLogger
 }
 

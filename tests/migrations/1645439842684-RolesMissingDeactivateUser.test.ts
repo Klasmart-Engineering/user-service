@@ -1,6 +1,6 @@
 import chai, { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, QueryRunner } from 'typeorm'
+import { DataSource, QueryRunner } from 'typeorm'
 import { Role } from '../../src/entities/role'
 import {
     createMigrationsTestConnection,
@@ -17,34 +17,34 @@ use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('RolesMissingDeactivateUser1645439842684 migration', () => {
-    let baseConnection: Connection
-    let migrationsConnection: Connection
+    let baseDataSource: DataSource
+    let migrationsDataSource: DataSource
     let runner: QueryRunner
 
     before(async () => {
-        baseConnection = await createTestConnection()
+        baseDataSource = await createTestConnection()
         // every test has to use the same runner
         // otherwise `is benign if run twice` will
         // cause `baseConnection?.close()` to hang in `after`
         // todo: find out why
-        runner = baseConnection.createQueryRunner()
+        runner = baseDataSource.createQueryRunner()
     })
     after(async () => {
-        await baseConnection?.close()
+        await baseDataSource?.close()
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
+        const pendingMigrations = await baseDataSource.showMigrations()
         expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await migrationsDataSource?.close()
     })
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
+        migrationsDataSource = await createMigrationsTestConnection(
             true,
             false,
             'migrations'
         )
-        await migrationsConnection.runMigrations()
+        await migrationsDataSource.runMigrations()
         await RoleInitializer.run()
     })
 
@@ -53,7 +53,7 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
     }
 
     const runMigration = async () => {
-        const migration = migrationsConnection.migrations.find(
+        const migration = migrationsDataSource.migrations.find(
             (m) => m.name === RolesMissingDeactivateUser1645439842684.name
         )
         // promise will be rejected if migration fails

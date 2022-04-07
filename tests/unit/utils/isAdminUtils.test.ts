@@ -1,18 +1,18 @@
 import { expect } from 'chai'
-import { Connection, createQueryBuilder } from 'typeorm'
+import { DataSource, createQueryBuilder } from 'typeorm'
 import { distinctMembers } from '../../../src/directives/isAdminUtils'
 import { User } from '../../../src/entities/user'
 import { createTestConnection } from '../../utils/testConnection'
 
 describe('isAdminUtils', () => {
-    let connection: Connection
+    let dataSource: DataSource
 
     before(async () => {
-        connection = await createTestConnection()
+        dataSource = await createTestConnection()
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     context('distinctMembers', () => {

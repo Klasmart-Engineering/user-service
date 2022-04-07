@@ -1,12 +1,12 @@
 import fs from 'fs'
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 import yaml from 'js-yaml'
 import logger from '../../src/logging'
 
 // Seeding data for testing, especially is users
 export async function loadFixtures(
     name: string,
-    dbConnection: Connection
+    dbDataSource: DataSource
 ): Promise<any> {
     let items: any[] = []
     try {
@@ -28,7 +28,7 @@ export async function loadFixtures(
     for (const item of items) {
         const entityName = Object.keys(item)[0]
         const data = item[entityName]
-        await dbConnection
+        await dbDataSource
             .createQueryBuilder()
             .insert()
             .into(entityName)

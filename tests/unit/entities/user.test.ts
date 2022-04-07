@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection, EntityManager } from 'typeorm'
+import { DataSource, EntityManager } from 'typeorm'
 import faker from 'faker'
 
 import { createTestConnection } from '../../utils/testConnection'
@@ -12,17 +12,17 @@ import { expectValidationErrors } from '../../utils/joi'
 import { truncateTables } from '../../utils/database'
 
 describe('User', () => {
-    let connection: Connection
+    let dataSource: DataSource
     let manager: EntityManager
     let user: User
 
     before(async () => {
-        connection = await createTestConnection()
-        manager = connection.manager
+        dataSource = await createTestConnection()
+        manager = dataSource.manager
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {
@@ -30,7 +30,7 @@ describe('User', () => {
     })
 
     afterEach(async () => {
-        await truncateTables(connection)
+        await truncateTables(dataSource)
     })
 
     describe('.new', () => {

@@ -1,4 +1,4 @@
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { Upload } from '../../types/upload'
 import { readCSVFile } from './readFile'
@@ -8,14 +8,14 @@ import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeaders
 import logger from '../../logging'
 
 export async function createEntityFromCsvWithRollBack(
-    connection: Connection,
+    dataSource: DataSource,
     file: Upload,
     functionsToSaveEntityFromCsvRow: CreateEntityRowCallback[],
     userPermissions: UserPermissions,
     functionToValidateCSVHeaders?: CreateEntityHeadersCallback,
     isDryRun = false
 ) {
-    const queryRunner = connection.createQueryRunner()
+    const queryRunner = dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
     try {

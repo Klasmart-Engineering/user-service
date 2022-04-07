@@ -1,6 +1,6 @@
 import chai, { use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, EntityManager } from 'typeorm'
+import { DataSource, EntityManager } from 'typeorm'
 
 import { createTestConnection } from '../../utils/testConnection'
 import { createSchool } from '../../factories/school.factory'
@@ -14,18 +14,18 @@ chai.should()
 use(chaiAsPromised)
 
 describe('School', () => {
-    let connection: Connection
+    let dataSource: DataSource
     let manager: EntityManager
     let existingOrg: Organization
     let existingSchool: School
 
     before(async () => {
-        connection = await createTestConnection()
-        manager = connection.manager
+        dataSource = await createTestConnection()
+        manager = dataSource.manager
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {
@@ -37,7 +37,7 @@ describe('School', () => {
     })
 
     afterEach(async () => {
-        await truncateTables(connection)
+        await truncateTables(dataSource)
     })
 
     // Unique constraint on School.organization_id/School.school_name has been temporarily removed

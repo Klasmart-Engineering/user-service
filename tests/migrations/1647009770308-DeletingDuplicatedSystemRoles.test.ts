@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { Connection, QueryRunner } from 'typeorm'
+import { DataSource, QueryRunner } from 'typeorm'
 import {
     DeletingDuplicatedSystemRoles1647009770308,
     rolesToDeleteIds,
@@ -31,22 +31,22 @@ import {
 use(deepEqualInAnyOrder)
 
 describe('DeletingDuplicatedSystemRoles', () => {
-    let baseConnection: Connection
-    let migrationsConnection: TestConnection
+    let baseDataSource: DataSource
+    let migrationsDataSource: TestConnection
     let originalSystemRoles: Role[]
     let duplicatedSystemRoles: Role[]
     let organization: Organization
 
     before(async () => {
-        baseConnection = await createTestConnection()
+        baseDataSource = await createTestConnection()
     })
 
     after(async () => {
-        await baseConnection?.close()
+        await baseDataSource?.close()
     })
 
     const runMigration = async (runner: QueryRunner) => {
-        const migration = migrationsConnection.migrations.find(
+        const migration = migrationsDataSource.migrations.find(
             (m) => m.name === DeletingDuplicatedSystemRoles1647009770308.name
         )
         return migration!.up(runner)
@@ -104,19 +104,19 @@ describe('DeletingDuplicatedSystemRoles', () => {
     }
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
+        migrationsDataSource = await createMigrationsTestConnection(
             true,
             true,
             'migrations'
         )
         await createDuplicateRoles()
-        await migrationsConnection.runMigrations()
+        await migrationsDataSource.runMigrations()
     })
 
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
+        const pendingMigrations = await baseDataSource.showMigrations()
         expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await migrationsDataSource?.close()
     })
 
     it('should hard delete all the duplications', async () => {
@@ -184,9 +184,9 @@ describe('DeletingDuplicatedSystemRoles', () => {
 
         await createDuplicateRoles()
 
-        migrationsConnection.logger.reset()
-        await runMigration(migrationsConnection.createQueryRunner())
-        expect(migrationsConnection.logger.count).to.eq(numQueries)
+        migrationsDataSource.logger.reset()
+        await runMigration(migrationsDataSource.createQueryRunner())
+        expect(migrationsDataSource.logger.count).to.eq(numQueries)
     })
 
     context('when a user has both the original and duplicated role', () => {
@@ -210,7 +210,7 @@ describe('DeletingDuplicatedSystemRoles', () => {
             }).save()
         })
         it('deletes the dupe', async () => {
-            await expect(runMigration(migrationsConnection.createQueryRunner()))
+            await expect(runMigration(migrationsDataSource.createQueryRunner()))
                 .to.be.fulfilled
 
             await membership.reload()

@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection, EntityManager } from 'typeorm'
+import { DataSource, EntityManager } from 'typeorm'
 import { Subcategory } from '../../../src/entities/subcategory'
 import { createTestConnection } from '../../utils/testConnection'
 import { createOrganization } from '../../factories/organization.factory'
@@ -11,18 +11,18 @@ import { truncateTables } from '../../utils/database'
 use(chaiAsPromised)
 
 describe('Subcategory', () => {
-    let connection: Connection
+    let dataSource: DataSource
     let manager: EntityManager
     let subcategory: Subcategory
     let org: Organization
 
     before(async () => {
-        connection = await createTestConnection()
-        manager = connection.manager
+        dataSource = await createTestConnection()
+        manager = dataSource.manager
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {
@@ -31,7 +31,7 @@ describe('Subcategory', () => {
     })
 
     afterEach(async () => {
-        await truncateTables(connection)
+        await truncateTables(dataSource)
     })
 
     describe('.new', () => {

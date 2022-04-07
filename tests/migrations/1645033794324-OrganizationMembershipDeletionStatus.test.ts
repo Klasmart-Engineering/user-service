@@ -1,6 +1,6 @@
 import chai, { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, MigrationInterface } from 'typeorm'
+import { DataSource, MigrationInterface } from 'typeorm'
 import { OrganizationMembershipDeletionStatus1645033794324 } from '../../migrations/1645033794324-OrganizationMembershipDeletionStatus'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Status } from '../../src/entities/status'
@@ -16,30 +16,30 @@ chai.should()
 use(chaiAsPromised)
 
 describe('OrganizationMembershipDeletionStatus1645033794324 migration', () => {
-    let baseConnection: Connection
-    let migrationsConnection: Connection
+    let baseDataSource: DataSource
+    let migrationsDataSource: DataSource
     let migrationToTest: MigrationInterface
 
     before(async () => {
-        baseConnection = await createTestConnection()
+        baseDataSource = await createTestConnection()
     })
     after(async () => {
-        await baseConnection?.close()
+        await baseDataSource?.close()
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
+        const pendingMigrations = await baseDataSource.showMigrations()
         expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await migrationsDataSource?.close()
     })
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
+        migrationsDataSource = await createMigrationsTestConnection(
             true,
             false,
             'migrations'
         )
 
-        migrationToTest = migrationsConnection.migrations.find(
+        migrationToTest = migrationsDataSource.migrations.find(
             (m) =>
                 m.name ===
                 OrganizationMembershipDeletionStatus1645033794324.name
@@ -49,7 +49,7 @@ describe('OrganizationMembershipDeletionStatus1645033794324 migration', () => {
         // as in prod this migration will not be run in the same transaction
         // as previous migrations that have already run
         // specifcly the initial state migration that creates organization_membership_status_enum
-        await migrationsConnection.runMigrations({ transaction: 'each' })
+        await migrationsDataSource.runMigrations({ transaction: 'each' })
     })
 
     for (const status of [Status.ACTIVE, Status.INACTIVE]) {
@@ -61,7 +61,7 @@ describe('OrganizationMembershipDeletionStatus1645033794324 migration', () => {
                 organization: org,
                 status: status,
             }).save()
-            const runner = baseConnection.createQueryRunner()
+            const runner = baseDataSource.createQueryRunner()
             await runner.startTransaction()
             await migrationToTest.up(runner)
             await runner.commitTransaction()
@@ -92,7 +92,7 @@ describe('OrganizationMembershipDeletionStatus1645033794324 migration', () => {
     }
 
     it('is benign if run twice', async () => {
-        const runner = baseConnection.createQueryRunner()
+        const runner = baseDataSource.createQueryRunner()
         // we need a transaction as this migration uses a lock
         // which is only valid in transaction blocks
         await runner.startTransaction()

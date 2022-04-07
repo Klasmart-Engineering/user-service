@@ -1,4 +1,4 @@
-import { Connection, QueryRunner } from 'typeorm'
+import { DataSource, QueryRunner } from 'typeorm'
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel'
 
 /**
@@ -52,9 +52,9 @@ const wrap = (originalQueryRunner: QueryRunner): QueryRunnerWrapper => {
  */
 export default class TransactionalTestContext {
     private queryRunner: QueryRunnerWrapper | null = null
-    private createQueryRunner = Connection.prototype.createQueryRunner
+    private createQueryRunner = DataSource.prototype.createQueryRunner
 
-    constructor(private readonly connection: Connection) {}
+    constructor(private readonly connection: DataSource) {}
 
     async start(): Promise<void> {
         if (this.queryRunner) {
@@ -90,13 +90,13 @@ export default class TransactionalTestContext {
     }
 
     private disableQueryRunnerCreation(queryRunner: QueryRunnerWrapper): void {
-        Connection.prototype.createQueryRunner = () => {
+        DataSource.prototype.createQueryRunner = () => {
             return queryRunner
         }
     }
 
     private async cleanUpResources(): Promise<void> {
-        Connection.prototype.createQueryRunner = this.createQueryRunner
+        DataSource.prototype.createQueryRunner = this.createQueryRunner
         if (this.queryRunner) {
             await this.queryRunner.releaseQueryRunner()
             this.queryRunner = null

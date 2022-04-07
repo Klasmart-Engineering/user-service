@@ -150,8 +150,11 @@ export const processClassFromCSVRow = async (
         return rowErrors
     }
 
-    const classInDatabase = await Class.find({
-        where: { organization: Equal(org), class_name },
+    const classInDatabase = await Class.findOne({
+        where: {
+            organization: { organization_id: org.organization_id },
+            class_name,
+        },
     })
 
     if (classInDatabase) {

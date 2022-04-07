@@ -125,10 +125,12 @@ export class CreateOrganizations extends CreateMutation<
             where: {
                 role_name: 'Organization Admin',
                 system_role: true,
-                organization: Equal({ organization_id: IsNull() }),
+                organization: IsNull(),
                 status: Status.ACTIVE,
             },
         })
+
+        console.log('AR:', adminRole)
 
         const userOwnedOrgMap = new ObjMap<{ userId: string }, string>()
         for (const [userId, user] of (await usersMap).entries()) {
@@ -471,6 +473,7 @@ export abstract class ChangeOrganizationMembershipStatus extends RemoveMembershi
         }[]
         apiErrors: APIError[]
     } {
+        console.log('inputs', inputs)
         return filterInvalidInputs(inputs, [
             ...validateNoDuplicates(
                 inputs,

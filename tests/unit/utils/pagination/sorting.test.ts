@@ -1,18 +1,18 @@
-import { createQueryBuilder, SelectQueryBuilder, Connection } from 'typeorm'
+import { createQueryBuilder, SelectQueryBuilder, DataSource } from 'typeorm'
 import { addOrderByClause } from '../../../../src/utils/pagination/sorting'
 import { expect } from 'chai'
 import { createTestConnection } from '../../../utils/testConnection'
 
 describe('paginated sorting', () => {
     let scope: SelectQueryBuilder<any>
-    let connection: Connection
+    let dataSource: DataSource
 
     before(async () => {
-        connection = await createTestConnection()
+        dataSource = await createTestConnection()
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {

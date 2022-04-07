@@ -3,14 +3,12 @@ import {
     PrimaryGeneratedColumn,
     Entity,
     OneToMany,
-    getRepository,
     getManager,
     JoinColumn,
     In,
     OneToOne,
     ManyToOne,
     EntityManager,
-    EntityTarget,
     Not,
     BaseEntity,
     FindOptionsWhere,
@@ -62,8 +60,7 @@ import { pickBy } from 'lodash'
 import { config } from '../config/config'
 import logger from '../logging'
 import { reportError } from '../utils/resolvers/errors'
-
-interface EntityWithOrganization extends BaseEntity {
+interface EntityWithOrganization extends CustomBaseEntity {
     organization: Organization
 }
 
@@ -99,11 +96,11 @@ export class Organization extends CustomBaseEntity {
         context?: Context,
         info?: GraphQLResolveInfo
     ): Promise<OrganizationMembership | undefined> {
-        const membership = await getRepository(
-            OrganizationMembership
-        ).findOneOrFail({
-            where: { user_id, organization_id: this.organization_id },
-        })
+        const membership = await OrganizationMembership.getRepository().findOneOrFail(
+            {
+                where: { user_id, organization_id: this.organization_id },
+            }
+        )
         return membership
     }
 
@@ -179,7 +176,7 @@ export class Organization extends CustomBaseEntity {
             return (await this?.classes) as Class[]
         }
         if (viewSchoolClasses) {
-            return await getRepository(Class)
+            return await Class.getRepository()
                 .createQueryBuilder()
                 .innerJoin('Class.schools', 'School')
                 .innerJoinAndSelect('School.memberships', 'SchoolMembership')
@@ -417,7 +414,7 @@ export class Organization extends CustomBaseEntity {
         info: GraphQLResolveInfo
     ) {
         try {
-            const query = getRepository(OrganizationMembership)
+            const query = OrganizationMembership.getRepository()
                 .createQueryBuilder()
                 .innerJoin('OrganizationMembership.user', 'User')
                 .innerJoin('OrganizationMembership.roles', 'Role')
@@ -476,7 +473,7 @@ export class Organization extends CustomBaseEntity {
                 `SET pg_trgm.word_similarity_threshold = ${Model.SIMILARITY_THRESHOLD}`
             )
 
-            return await getRepository(OrganizationMembership)
+            return await OrganizationMembership.getRepository()
                 .createQueryBuilder()
                 .innerJoin('OrganizationMembership.user', 'User')
                 .where(
@@ -517,7 +514,7 @@ export class Organization extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneByOrFail({ user_id })
+            const user = await User.getRepository().findOneByOrFail({ user_id })
             this.primary_contact = Promise.resolve(user)
             await getManager().save(this)
 
@@ -546,7 +543,7 @@ export class Organization extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneByOrFail({ user_id })
+            const user = await User.getRepository().findOneByOrFail({ user_id })
             if (typeof shortcode === 'string') {
                 shortcode = shortcode.toUpperCase()
                 shortcode = validateShortCode(
@@ -638,16 +635,16 @@ export class Organization extends CustomBaseEntity {
         )
 
         if (validData?.shortcode) {
-            const duplicateShortcode = await getRepository(
-                OrganizationMembership
-            ).findOne({
-                where: {
-                    shortcode,
-                    organization: {
-                        organization_id: this.organization_id,
+            const duplicateShortcode = await OrganizationMembership.getRepository().findOne(
+                {
+                    where: {
+                        shortcode,
+                        organization: {
+                            organization_id: this.organization_id,
+                        },
                     },
-                },
-            })
+                }
+            )
 
             if (duplicateShortcode) {
                 errors.push(
@@ -671,7 +668,7 @@ export class Organization extends CustomBaseEntity {
                 family_name: family_name,
             }
 
-            existingUser = await getRepository(User).findOne({
+            existingUser = await User.getRepository().findOne({
                 where: [
                     { email: email || undefined, ...personalInfo },
                     { phone: phone || undefined, ...personalInfo },
@@ -679,12 +676,12 @@ export class Organization extends CustomBaseEntity {
             })
 
             if (existingUser) {
-                const existingMembership = await getRepository(
-                    OrganizationMembership
-                ).findOneBy({
-                    user_id: existingUser.user_id,
-                    organization_id: this.organization_id,
-                })
+                const existingMembership = await OrganizationMembership.getRepository().findOneBy(
+                    {
+                        user_id: existingUser.user_id,
+                        organization_id: this.organization_id,
+                    }
+                )
 
                 if (existingMembership) {
                     errors.push(
@@ -829,17 +826,17 @@ export class Organization extends CustomBaseEntity {
         )
 
         if (validData?.shortcode) {
-            const duplicateShortcode = await getRepository(
-                OrganizationMembership
-            ).findOne({
-                where: {
-                    shortcode,
-                    user_id: Not(user_id),
-                    organization: {
-                        organization_id: this.organization_id,
+            const duplicateShortcode = await OrganizationMembership.getRepository().findOne(
+                {
+                    where: {
+                        shortcode,
+                        user_id: Not(user_id),
+                        organization: {
+                            organization_id: this.organization_id,
+                        },
                     },
-                },
-            })
+                }
+            )
 
             if (duplicateShortcode) {
                 errors.push(
@@ -1000,16 +997,15 @@ export class Organization extends CustomBaseEntity {
     }
 
     private async findChildEntitiesById<EntityClass extends BaseEntity>(
-        entity: EntityTarget<EntityClass>,
+        entity: (new () => EntityClass) & typeof CustomBaseEntity,
         ids: string[],
         variables: IAPIError['variables'],
         customCondition?:
             | FindOptionsWhere<EntityClass>
             | FindOptionsWhere<EntityClass>[]
     ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
-        const entityAndOrg = entity as EntityTarget<EntityWithOrganization>
         const uniqueIds = [...new Set(ids)]
-        const repository = getRepository(entityAndOrg)
+        const repository = entity.getRepository()
         const primaryKeyName =
             repository.metadata.primaryColumns[0].propertyName
         const defaultCondition = {
@@ -1134,7 +1130,7 @@ export class Organization extends CustomBaseEntity {
         const user_id = user.user_id
         const organization_id = this.organization_id
         const membership =
-            (await getRepository(OrganizationMembership).findOneBy({
+            (await OrganizationMembership.getRepository().findOneBy({
                 organization_id,
                 user_id,
             })) || new OrganizationMembership()
@@ -1158,7 +1154,7 @@ export class Organization extends CustomBaseEntity {
         schoolRoles: Role[]
     ): Promise<[SchoolMembership[], SchoolMembership[]]> {
         const user_id = user.user_id
-        const schoolMembershipRepo = getRepository(SchoolMembership)
+        const schoolMembershipRepo = SchoolMembership.getRepository()
         const oldSchoolMemberships = await getSchoolMemberships(
             this.organization_id,
             user.user_id

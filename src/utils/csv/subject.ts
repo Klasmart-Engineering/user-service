@@ -1,4 +1,4 @@
-import { EntityManager, Equal, IsNull } from 'typeorm'
+import { EntityManager, IsNull } from 'typeorm'
 import { Category } from '../../entities/category'
 import { Organization } from '../../entities/organization'
 import { Subject } from '../../entities/subject'
@@ -76,7 +76,7 @@ export const processSubjectFromCSVRow = async (
     const subjects = await manager.find(Subject, {
         where: {
             name: row.subject_name,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 
@@ -118,7 +118,10 @@ export const processSubjectFromCSVRow = async (
     // does the category belong to organisation or a system category
     const categoryToAdd = await manager.findOne(Category, {
         where: [
-            { name: row.category_name, organization: Equal(organization) },
+            {
+                name: row.category_name,
+                organization: { organization_id: organization.organization_id },
+            },
             { name: row.category_name, organization: IsNull(), system: true },
         ],
     })

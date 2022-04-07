@@ -20,6 +20,10 @@ export async function gqlTry(
             } else if (
                 res.errors[0].message === apiErrorConstants.ERR_API_BAD_INPUT
             ) {
+                console.log(
+                    'ERR:',
+                    res.errors[0]?.extensions?.exception?.errors
+                )
                 throw new APIErrorCollection(
                     res.errors[0]?.extensions?.exception?.errors
                 )

@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection, getRepository, QueryRunner } from 'typeorm'
+import { DataSource, QueryRunner } from 'typeorm'
 import {
     createMigrationsTestConnection,
     createTestConnection,
@@ -19,8 +19,8 @@ import { createSchool } from '../factories/school.factory'
 use(chaiAsPromised)
 
 describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
-    let baseConnection: Connection
-    let migrationsConnection: Connection
+    let baseDataSource: DataSource
+    let migrationsDataSource: DataSource
     let runner: QueryRunner
 
     let user: User
@@ -29,7 +29,7 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
     const deletedAtDate: Date = new Date()
 
     const runMigration = async () => {
-        const migration = migrationsConnection.migrations.find(
+        const migration = migrationsDataSource.migrations.find(
             (m) => m.name === AddStatusUpdatedAtColumn1645635790974.name
         )
         // promise will be rejected if migration fails
@@ -37,8 +37,8 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
     }
 
     before(async () => {
-        baseConnection = await createTestConnection()
-        runner = baseConnection.createQueryRunner()
+        baseDataSource = await createTestConnection()
+        runner = baseDataSource.createQueryRunner()
     })
     beforeEach(async () => {
         // Make sure status_updated_at column in orgMemb table is dropped first - simulates pre-migration situation
@@ -50,12 +50,12 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
         )
     })
     after(async () => {
-        await baseConnection?.close()
+        await baseDataSource?.close()
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
+        const pendingMigrations = await baseDataSource.showMigrations()
         expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await migrationsDataSource?.close()
     })
 
     context('migration is run once', () => {
@@ -67,13 +67,15 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
 
         it('adds a status_updated_at column and copies over deleted_at data in the school and organization membership tables', async () => {
             await expect(
-                getRepository(OrganizationMembership)
+                baseDataSource
+                    .getRepository(OrganizationMembership)
                     .createQueryBuilder()
                     .select('status_updated_at')
                     .getMany()
             ).to.be.rejectedWith('column "status_updated_at" does not exist')
             await expect(
-                getRepository(SchoolMembership)
+                baseDataSource
+                    .getRepository(SchoolMembership)
                     .createQueryBuilder()
                     .select('status_updated_at')
                     .getMany()
@@ -98,7 +100,7 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
                 }');`
             )
 
-            migrationsConnection = await createMigrationsTestConnection(
+            migrationsDataSource = await createMigrationsTestConnection(
                 false,
                 false,
                 'migrations'
@@ -119,7 +121,7 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
 
     context('migration is run twice', () => {
         it('is benign', async () => {
-            migrationsConnection = await createMigrationsTestConnection(
+            migrationsDataSource = await createMigrationsTestConnection(
                 false,
                 false,
                 'migrations'

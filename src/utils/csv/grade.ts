@@ -1,4 +1,4 @@
-import { EntityManager, Equal, IsNull } from 'typeorm'
+import { EntityManager, IsNull } from 'typeorm'
 import { GradeRow } from '../../types/csv/gradeRow'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
@@ -18,7 +18,7 @@ function findGradeInDatabaseOrTransaction(
             name: grade_name,
             system: false,
             status: Status.ACTIVE,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 }
@@ -39,7 +39,7 @@ async function findOrFailGradeInDatabaseOrTransaction(
             name: grade_name,
             system: false,
             status: Status.ACTIVE,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 
@@ -322,7 +322,7 @@ export const setGradeFromToFields = async (
             name: grade_name,
             system: false,
             status: Status.ACTIVE,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 

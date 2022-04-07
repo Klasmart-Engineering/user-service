@@ -1,6 +1,6 @@
 import chai, { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, getManager } from 'typeorm'
+import { DataSource } from 'typeorm'
 import { AddTimestampColumns1630420895212 } from '../../migrations/1630420895212-AddTimestampColumns'
 import { CustomBaseEntity } from '../../src/entities/customBaseEntity'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
@@ -32,30 +32,30 @@ chai.should()
 use(chaiAsPromised)
 
 describe('AddTimestampColumns1630420895212 migration', () => {
-    let baseConnection: Connection
-    let migrationsConnection: Connection
+    let baseDataSource: DataSource
+    let migrationsDataSource: DataSource
     let entities: CustomBaseEntity[]
     let orgMemb: OrganizationMembership
     let schoolMemb: SchoolMembership
 
     before(async () => {
-        baseConnection = await createTestConnection()
+        baseDataSource = await createTestConnection()
     })
     after(async () => {
-        await baseConnection?.close()
+        await baseDataSource?.close()
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
+        const pendingMigrations = await baseDataSource.showMigrations()
         expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await migrationsDataSource?.close()
     })
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
+        migrationsDataSource = await createMigrationsTestConnection(
             true,
             false,
             'migrations'
         )
-        await migrationsConnection.runMigrations()
+        await migrationsDataSource.runMigrations()
 
         const org = await createOrganization().save()
         const user = await createUser().save()
@@ -99,7 +99,7 @@ describe('AddTimestampColumns1630420895212 migration', () => {
         for (const entity of entities) {
             await entity.save()
             await new Promise((resolve) => setTimeout(resolve, 2))
-            await entity.inactivate(getManager())
+            await entity.inactivate(baseDataSource.manager)
             expect(entity.updated_at.valueOf()).to.be.greaterThan(
                 entity.created_at.valueOf()
             )
@@ -111,7 +111,7 @@ describe('AddTimestampColumns1630420895212 migration', () => {
             obj != orgMemb || obj != schoolMemb
         })
         for (const entity of entities) {
-            await entity.inactivate(getManager())
+            await entity.inactivate(baseDataSource.manager)
             expect(entity.deleted_at?.valueOf()).to.be.greaterThan(
                 entity.created_at.valueOf()
             )
@@ -120,16 +120,16 @@ describe('AddTimestampColumns1630420895212 migration', () => {
     it('manages soft deletes via status', async () => {
         for (const entity of entities) {
             expect(entity.status).to.eq(Status.ACTIVE)
-            await entity.inactivate(getManager())
+            await entity.inactivate(baseDataSource.manager)
             expect(entity.status).to.eq(Status.INACTIVE)
         }
     })
 
     it('is benign if run twice', async () => {
-        const migration = migrationsConnection.migrations.find(
+        const migration = migrationsDataSource.migrations.find(
             (m) => m.name === AddTimestampColumns1630420895212.name
         )
-        const runner = baseConnection.createQueryRunner()
+        const runner = baseDataSource.createQueryRunner()
         // promise will be rejected if migration fails
         return migration!.up(runner).should.be.fulfilled
     })

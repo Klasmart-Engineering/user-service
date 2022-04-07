@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection, EntityManager } from 'typeorm'
+import { DataSource, EntityManager } from 'typeorm'
 
 import { createTestConnection } from '../../utils/testConnection'
 import { createRole } from '../../factories/role.factory'
@@ -7,17 +7,17 @@ import { Role } from '../../../src/entities/role'
 import { truncateTables } from '../../utils/database'
 
 describe('Role', () => {
-    let connection: Connection
+    let dataSource: DataSource
     let manager: EntityManager
     let role: Role
 
     before(async () => {
-        connection = await createTestConnection()
-        manager = connection.manager
+        dataSource = await createTestConnection()
+        manager = dataSource.manager
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {
@@ -25,7 +25,7 @@ describe('Role', () => {
     })
 
     afterEach(async () => {
-        await truncateTables(connection)
+        await truncateTables(dataSource)
     })
 
     describe('.new', () => {

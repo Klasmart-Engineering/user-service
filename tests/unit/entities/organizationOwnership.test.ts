@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, EntityManager } from 'typeorm'
+import { DataSource, EntityManager } from 'typeorm'
 import { QueryFailedError } from 'typeorm'
 
 import { createTestConnection } from '../../utils/testConnection'
@@ -15,18 +15,18 @@ import { truncateTables } from '../../utils/database'
 use(chaiAsPromised)
 
 describe('OrganizationOwnership', () => {
-    let connection: Connection
+    let dataSource: DataSource
     let manager: EntityManager
     let user: User
     let organization: Organization
 
     before(async () => {
-        connection = await createTestConnection()
-        manager = connection.manager
+        dataSource = await createTestConnection()
+        manager = dataSource.manager
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {
@@ -35,7 +35,7 @@ describe('OrganizationOwnership', () => {
     })
 
     afterEach(async () => {
-        await truncateTables(connection)
+        await truncateTables(dataSource)
     })
 
     describe('.new', () => {

@@ -1,7 +1,6 @@
 import { defaultFieldResolver, GraphQLSchema } from 'graphql'
 import {
     BaseEntity,
-    getRepository,
     SelectQueryBuilder,
     Brackets,
     createQueryBuilder,
@@ -98,46 +97,46 @@ export const createEntityScope = async ({
     let scope: SelectQueryBuilder<BaseEntity> | undefined
     switch (entity) {
         case 'organization':
-            scope = getRepository(Organization).createQueryBuilder()
+            scope = Organization.getRepository().createQueryBuilder()
             break
         case 'user':
-            scope = getRepository(User).createQueryBuilder()
+            scope = User.getRepository().createQueryBuilder()
             break
         case 'role':
-            scope = getRepository(Role).createQueryBuilder()
+            scope = Role.getRepository().createQueryBuilder()
             break
         case 'class':
-            scope = getRepository(Class).createQueryBuilder()
+            scope = Class.getRepository().createQueryBuilder()
             break
         case 'ageRange':
-            scope = getRepository(AgeRange).createQueryBuilder()
+            scope = AgeRange.getRepository().createQueryBuilder()
             break
         case 'grade':
-            scope = getRepository(Grade).createQueryBuilder()
+            scope = Grade.getRepository().createQueryBuilder()
             break
         case 'category':
-            scope = getRepository(Category).createQueryBuilder()
+            scope = Category.getRepository().createQueryBuilder()
             break
         case 'subcategory':
-            scope = getRepository(Subcategory).createQueryBuilder()
+            scope = Subcategory.getRepository().createQueryBuilder()
             break
         case 'subject':
-            scope = getRepository(Subject).createQueryBuilder()
+            scope = Subject.getRepository().createQueryBuilder()
             break
         case 'program':
-            scope = getRepository(Program).createQueryBuilder()
+            scope = Program.getRepository().createQueryBuilder()
             break
         case 'school':
-            scope = getRepository(School).createQueryBuilder()
+            scope = School.getRepository().createQueryBuilder()
             break
         case 'permission':
-            scope = getRepository(Permission).createQueryBuilder()
+            scope = Permission.getRepository().createQueryBuilder()
             break
         case 'schoolMembership':
-            scope = getRepository(SchoolMembership).createQueryBuilder()
+            scope = SchoolMembership.getRepository().createQueryBuilder()
             break
         case 'organizationMembership':
-            scope = getRepository(OrganizationMembership).createQueryBuilder()
+            scope = OrganizationMembership.getRepository().createQueryBuilder()
             break
         default:
             permissions.rejectIfNotAdmin()
@@ -245,7 +244,7 @@ export const nonAdminUserScope: NonAdminScope<
     User | OrganizationMembership | SchoolMembership
 > = async (scope, permissions) => {
     const user_id = permissions.getUserId()
-    const user = getRepository(User).create({ user_id })
+    const user = User.getRepository().create({ user_id })
     const email = permissions.getEmail()
     const phone = permissions.getPhone()
 
@@ -315,7 +314,7 @@ export const nonAdminUserScope: NonAdminScope<
 
     if (orgsWithSchools.length) {
         // find a schools the user is a member of in these orgs
-        const schoolIdsQuery = getRepository(SchoolMembership)
+        const schoolIdsQuery = SchoolMembership.getRepository()
             .createQueryBuilder()
             .select('SchoolMembership.school_id')
             .innerJoin('SchoolMembership.school', 'School')

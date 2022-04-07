@@ -1,6 +1,6 @@
 import chai, { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, MigrationInterface } from 'typeorm'
+import { DataSource, MigrationInterface } from 'typeorm'
 import { SchoolMembershipDeletionStatus1645438258990 } from '../../migrations/1645517302182-SchoolMembershipDeletionStatus'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { Status } from '../../src/entities/status'
@@ -16,34 +16,34 @@ chai.should()
 use(chaiAsPromised)
 
 describe('1645438258990-SchoolMembershipDeletionStatus migration', () => {
-    let baseConnection: Connection
-    let migrationsConnection: Connection
+    let baseDataSource: DataSource
+    let migrationsDataSource: DataSource
     let migrationToTest: MigrationInterface
 
     before(async () => {
-        baseConnection = await createTestConnection()
+        baseDataSource = await createTestConnection()
     })
     after(async () => {
-        await baseConnection?.close()
+        await baseDataSource?.close()
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
+        const pendingMigrations = await baseDataSource.showMigrations()
         expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await migrationsDataSource?.close()
     })
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
+        migrationsDataSource = await createMigrationsTestConnection(
             true,
             false,
             'migrations'
         )
 
-        migrationToTest = migrationsConnection.migrations.find(
+        migrationToTest = migrationsDataSource.migrations.find(
             (m) => m.name === SchoolMembershipDeletionStatus1645438258990.name
         )!
 
-        await migrationsConnection.runMigrations({ transaction: 'each' })
+        await migrationsDataSource.runMigrations({ transaction: 'each' })
     })
 
     for (const status of [Status.ACTIVE, Status.INACTIVE]) {
@@ -55,7 +55,7 @@ describe('1645438258990-SchoolMembershipDeletionStatus migration', () => {
                 school,
                 status,
             }).save()
-            const runner = baseConnection.createQueryRunner()
+            const runner = baseDataSource.createQueryRunner()
             await runner.startTransaction()
             await migrationToTest.up(runner)
             await runner.commitTransaction()
@@ -86,7 +86,7 @@ describe('1645438258990-SchoolMembershipDeletionStatus migration', () => {
     }
 
     it('is benign if run twice', async () => {
-        const runner = baseConnection.createQueryRunner()
+        const runner = baseDataSource.createQueryRunner()
         // we need a transaction as this migration uses a lock
         // which is only valid in transaction blocks
         await runner.startTransaction()

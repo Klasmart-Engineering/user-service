@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection, EntityManager } from 'typeorm'
+import { DataSource, EntityManager } from 'typeorm'
 
 import { createTestConnection } from '../../utils/testConnection'
 import { createPermission } from '../../factories/permission.factory'
@@ -9,18 +9,18 @@ import { Role } from '../../../src/entities/role'
 import { truncateTables } from '../../utils/database'
 
 describe('Permission', () => {
-    let connection: Connection
+    let dataSource: DataSource
     let manager: EntityManager
     let permission: Permission
     let role: Role
 
     before(async () => {
-        connection = await createTestConnection()
-        manager = connection.manager
+        dataSource = await createTestConnection()
+        manager = dataSource.manager
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {
@@ -29,7 +29,7 @@ describe('Permission', () => {
     })
 
     afterEach(async () => {
-        await truncateTables(connection)
+        await truncateTables(dataSource)
     })
 
     describe('.new', () => {

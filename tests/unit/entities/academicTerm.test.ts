@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, EntityManager } from 'typeorm'
+import { DataSource, EntityManager } from 'typeorm'
 import { AcademicTerm } from '../../../src/entities/academicTerm'
 import { Class } from '../../../src/entities/class'
 import { School } from '../../../src/entities/school'
@@ -13,18 +13,18 @@ import { createTestConnection } from '../../utils/testConnection'
 use(chaiAsPromised)
 
 describe('AcademicTerm', () => {
-    let connection: Connection
+    let dataSource: DataSource
     let manager: EntityManager
 
     let academicTerm: AcademicTerm
 
     before(async () => {
-        connection = await createTestConnection()
-        manager = connection.manager
+        dataSource = await createTestConnection()
+        manager = dataSource.manager
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {
@@ -33,7 +33,7 @@ describe('AcademicTerm', () => {
     })
 
     afterEach(async () => {
-        await truncateTables(connection)
+        await truncateTables(dataSource)
     })
 
     describe('.new', () => {

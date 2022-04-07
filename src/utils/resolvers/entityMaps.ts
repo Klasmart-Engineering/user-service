@@ -2,7 +2,7 @@ import { CustomBaseEntity } from '../../entities/customBaseEntity'
 import { SchoolMembership } from '../../entities/schoolMembership'
 import { OrganizationMembership } from '../../entities/organizationMembership'
 import { Status } from '../../entities/status'
-import { getRepository, In } from 'typeorm'
+import { In } from 'typeorm'
 import { User } from '../../entities/user'
 import { School } from '../../entities/school'
 import { Organization } from '../../entities/organization'
@@ -26,13 +26,13 @@ export type ConflictingNameKey = {
  * Queries the db for a list of entities by ID, then converts that into a map (ID => Entity)
  */
 function idToEntityMap<T extends CustomBaseEntity>(
-    entity: typeof CustomBaseEntity
+    entity: (new () => CustomBaseEntity) & typeof CustomBaseEntity
 ): (ids: string[], relations?: string[]) => Promise<Map<string, T>> {
     return async (
         ids: string[],
         relations?: string[]
     ): Promise<Map<string, T>> => {
-        const repository = getRepository(entity)
+        const repository = entity.getRepository()
         const primaryKey = repository.metadata.primaryColumns[0].propertyName
         return repository
             .find({

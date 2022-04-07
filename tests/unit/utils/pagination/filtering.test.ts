@@ -6,20 +6,20 @@ import {
     setOperatorInComposedValue,
     parseValueForSQLOperator,
 } from '../../../../src/utils/pagination/filtering'
-import { Connection, createQueryBuilder } from 'typeorm'
+import { DataSource, createQueryBuilder } from 'typeorm'
 import { createTestConnection } from '../../../utils/testConnection'
 import { expect } from 'chai'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
 
 describe('getWhereClauseFromFilter', () => {
-    let connection: Connection
+    let dataSource: DataSource
 
     before(async () => {
-        connection = await createTestConnection()
+        dataSource = await createTestConnection()
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     it("doesn't filter if an empty filter config is provided", () => {

@@ -110,7 +110,7 @@ export const processCategoryFromCSVRow = async (
             name: category_name,
             status: Status.ACTIVE,
             system: false,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 

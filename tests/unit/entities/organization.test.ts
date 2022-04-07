@@ -1,7 +1,5 @@
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
 import faker from 'faker'
-
 import { createTestConnection } from '../../utils/testConnection'
 import { createOrganization } from '../../factories/organization.factory'
 import { Organization } from '../../../src/entities/organization'
@@ -13,17 +11,18 @@ import { Role } from '../../../src/entities/role'
 import { createRole } from '../../factories/role.factory'
 import { School } from '../../../src/entities/school'
 import { createSchool } from '../../factories/school.factory'
+import { DataSource } from 'typeorm'
 
 context('Organization', () => {
-    let connection: Connection
+    let dataSource: DataSource
     let organization: Organization
 
     before(async () => {
-        connection = await createTestConnection()
+        dataSource = await createTestConnection()
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     beforeEach(async () => {

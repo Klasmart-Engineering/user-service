@@ -1,4 +1,4 @@
-import { getManager } from 'typeorm'
+import { BaseEntity, getManager, Repository } from 'typeorm'
 import { config } from '../../config/config'
 import { CustomBaseEntity } from '../../entities/customBaseEntity'
 import { Status } from '../../entities/status'
@@ -29,6 +29,11 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
         | CustomBaseEntity[]
         | string[]
         | undefined
+}
+
+interface MembershipStatusUpdate {
+    status: Status
+    status_updated_at: Date
 }
 
 type MembershipIdPair = { entityId?: string; attributeValue?: string }
@@ -733,14 +738,13 @@ export abstract class RemoveMembershipMutation<
     EntityMapType,
     MembershipType
 > {
-    protected readonly partialEntity: {
-        status: Status
-        status_updated_at: Date
-    } = {
+    protected readonly partialEntity: MembershipStatusUpdate &
+        Partial<MembershipType> = {
         status: Status.INACTIVE,
         status_updated_at: new Date(),
-    }
-    protected abstract readonly MembershipType: typeof CustomBaseEntity
+    } as Partial<MembershipType> & MembershipStatusUpdate
+    protected abstract readonly MembershipType: (new () => MembershipType) &
+        typeof BaseEntity
 
     constructor(input: InputType[], permissions: Context['permissions']) {
         super(input, permissions)
@@ -752,6 +756,8 @@ export abstract class RemoveMembershipMutation<
         const entitiesToUpdate = results
             .map((r) => r.modifiedEntity ?? [])
             .flat()
+
+        const repository = this.MembershipType.getRepository() as Repository<MembershipType>
         if (entitiesToUpdate.length === 0) {
             reportError(
                 new Error(
@@ -760,7 +766,8 @@ export abstract class RemoveMembershipMutation<
             )
             return
         }
-        await getManager()
+
+        await repository
             .createQueryBuilder()
             .update(this.MembershipType)
             .set(this.partialEntity)

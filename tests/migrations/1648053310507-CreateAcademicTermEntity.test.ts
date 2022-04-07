@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, QueryRunner } from 'typeorm'
+import { DataSource, QueryRunner } from 'typeorm'
 import { CreateAcademicTermEntity1648053310507 } from '../../migrations/1648053310507-CreateAcademicTermEntity'
 import { School } from '../../src/entities/school'
 import { createClass } from '../factories/class.factory'
@@ -14,31 +14,31 @@ import { getDatabaseTables } from './1628677180503-InitialState.test'
 use(chaiAsPromised)
 
 describe('CreateAcademicTermEntity1648053310507 migration', () => {
-    let baseConnection: Connection
-    let migrationsConnection: Connection
+    let baseDataSource: DataSource
+    let migrationsDataSource: DataSource
     let runner: QueryRunner
 
     before(async () => {
-        baseConnection = await createTestConnection()
-        runner = baseConnection.createQueryRunner()
+        baseDataSource = await createTestConnection()
+        runner = baseDataSource.createQueryRunner()
     })
 
     after(async () => {
-        await baseConnection?.close()
+        await baseDataSource?.close()
     })
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
+        migrationsDataSource = await createMigrationsTestConnection(
             true,
             false,
             'migrations'
         )
-        await migrationsConnection.runMigrations()
+        await migrationsDataSource.runMigrations()
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
+        const pendingMigrations = await baseDataSource.showMigrations()
         expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await migrationsDataSource?.close()
     })
 
     function insert(
@@ -57,7 +57,7 @@ describe('CreateAcademicTermEntity1648053310507 migration', () => {
 
     context('migration is run once', () => {
         it('creates the academic term table', async () => {
-            const tables = await getDatabaseTables(migrationsConnection)
+            const tables = await getDatabaseTables(migrationsDataSource)
             expect(tables).to.include('academic_term')
         })
 
@@ -110,7 +110,7 @@ describe('CreateAcademicTermEntity1648053310507 migration', () => {
 
     context('migration is run twice', () => {
         it('is benign', async () => {
-            const migration = migrationsConnection.migrations.find(
+            const migration = migrationsDataSource.migrations.find(
                 (m) => m.name === CreateAcademicTermEntity1648053310507.name
             )!
             await expect(migration!.up(runner)).to.be.fulfilled

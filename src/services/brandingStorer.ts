@@ -1,5 +1,5 @@
 import { FileUpload } from 'graphql-upload'
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 import { Branding } from '../entities/branding'
 import { BrandingError } from '../types/errors/branding/brandingError'
 import BrandingErrorConstants from '../types/errors/branding/brandingErrorConstants'
@@ -16,7 +16,7 @@ export class BrandingStorer {
         file: FileUpload | undefined,
         brandingImagesInfo: BrandingImageInfo[],
         primaryColor: string | undefined,
-        connection: Connection
+        dataSource: DataSource
     ): Promise<void> {
         const overWriteValues = ['status']
 
@@ -29,7 +29,7 @@ export class BrandingStorer {
             this.validateFile(file)
         }
 
-        await connection.manager.transaction(async (manager) => {
+        await dataSource.manager.transaction(async (manager) => {
             const upsertResult = await manager
                 .createQueryBuilder()
                 .insert()

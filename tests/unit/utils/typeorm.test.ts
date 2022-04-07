@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection, SelectQueryBuilder } from 'typeorm'
+import { DataSource, SelectQueryBuilder } from 'typeorm'
 import { School } from '../../../src/entities/school'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { User } from '../../../src/entities/user'
@@ -7,14 +7,14 @@ import { scopeHasJoin } from '../../../src/utils/typeorm'
 import { createTestConnection } from '../../utils/testConnection'
 
 context('typeorm', () => {
-    let connection: Connection
+    let dataSource: DataSource
 
     before(async () => {
-        connection = await createTestConnection()
+        dataSource = await createTestConnection()
     })
 
     after(async () => {
-        await connection?.close()
+        await dataSource?.close()
     })
 
     context('scopeHasJoin', () => {

@@ -119,7 +119,9 @@ export const processProgramFromCSVRow = async (
                     low_value_unit: age_range_unit,
                     system: false,
                     status: Status.ACTIVE,
-                    organization: Equal(organization),
+                    organization: {
+                        organization_id: organization.organization_id,
+                    },
                 },
                 {
                     name: ageRangeName,
@@ -166,7 +168,7 @@ export const processProgramFromCSVRow = async (
                 name: grade_name,
                 system: false,
                 status: Status.ACTIVE,
-                organization: Equal(organization),
+                organization: { organization_id: organization.organization_id },
             },
         })
     }
@@ -202,7 +204,7 @@ export const processProgramFromCSVRow = async (
                 name: subject_name,
                 system: false,
                 status: Status.ACTIVE,
-                organization: Equal(organization),
+                organization: { organization_id: organization.organization_id },
             },
         })
     }
@@ -232,7 +234,7 @@ export const processProgramFromCSVRow = async (
             name: program_name,
             system: false,
             status: Status.ACTIVE,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 
