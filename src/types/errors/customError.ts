@@ -72,6 +72,19 @@ export const customErrors = {
     },
 
     // generic
+
+    too_many_relations: {
+        code: 'TOO_MANY_RELATIONS',
+        message:
+            '{entity} {entityName} has more than the maximum of {max} of {otherAttribute} relations',
+    },
+
+    src_and_destination_dont_match: {
+        code: 'SOURCE_AND_DESTINATION_DONT_MATCH',
+        message:
+            '{entity}: {entityName} and {entity}: {otherAttribute} mismatch in {attribute} in relation',
+    },
+
     existent_entity: {
         code: 'ERR_DUPLICATE_ENTITY',
         message: '{entity} {entityName} already exists.',
@@ -182,6 +195,15 @@ export const customErrors = {
         code: 'ERR_INVALID_OPERATION_TYPE',
         message:
             'Operation type was {attribute}, but a {otherAttribute} was expected',
+    },
+    invalid_date_range: {
+        code: 'ERR_INVALID_DATE_RANGE',
+        message: 'Date range start date must be before its end date',
+    },
+    overlapping_date_range: {
+        code: 'ERR_OVERLAPPING_DATE_RANGE',
+        message:
+            'Input date range {inputStartDateString} to {inputEndDateString} overlaps with date range {overlappedStartDateString} to {overlappedEndDateString} in {entity} under {parentEntity} {attribute} {attributeValue}.',
     },
     inactive_status: {
         code: 'ERR_INACTIVE_STATUS',

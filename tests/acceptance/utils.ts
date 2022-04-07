@@ -38,7 +38,8 @@ export async function failsValidation(response: request.Response) {
 
 export function checkPageInfo(
     result: IPaginatedResponse,
-    expectedTotalCount?: number
+    expectedTotalCount?: number,
+    pageSize = 10
 ) {
     if (expectedTotalCount != undefined)
         expect(result.totalCount).to.eq(expectedTotalCount)
@@ -46,5 +47,5 @@ export function checkPageInfo(
     expect(result.pageInfo.hasPreviousPage).to.be.false
     expect(result.pageInfo.startCursor).to.be.string
     expect(result.pageInfo.endCursor).to.be.string
-    expect(result.edges.length).eq(10)
+    expect(result.edges.length).eq(pageSize)
 }

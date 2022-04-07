@@ -3,6 +3,7 @@ import { customErrors } from '../../types/errors/customError'
 import { config } from '../../config/config'
 import logger from '../../logging'
 import newrelic from 'newrelic'
+import { IDateRange } from './dateRangeValidation'
 
 export function reportError(
     e: Error,
@@ -88,6 +89,44 @@ export function createInputRequiresAtLeastOne(
     })
 }
 
+export function createInvalidDateRangeAPIError(
+    index: number,
+    variables: string[]
+): APIError {
+    return new APIError({
+        code: customErrors.invalid_date_range.code,
+        message: customErrors.invalid_date_range.message,
+        variables: variables,
+        index: index,
+    })
+}
+
+export function createOverlappingDateRangeAPIError(
+    index: number,
+    variables: string[],
+    entity: string,
+    parentEntity: string,
+    inputDates: IDateRange,
+    overlappedDates: IDateRange,
+    parentEntityAttribute: string,
+    parentEntityAttributeValue: string
+): APIError {
+    return new APIError({
+        code: customErrors.overlapping_date_range.code,
+        message: customErrors.overlapping_date_range.message,
+        variables: variables,
+        entity: entity,
+        parentEntity: parentEntity,
+        index: index,
+        inputStartDateString: inputDates.startDate.toISOString(),
+        inputEndDateString: inputDates.endDate.toISOString(),
+        overlappedStartDateString: overlappedDates.startDate.toISOString(),
+        overlappedEndDateString: overlappedDates.endDate.toISOString(),
+        attribute: parentEntityAttribute,
+        attributeValue: parentEntityAttributeValue,
+    })
+}
+
 export function createDuplicateAttributeAPIError(
     index: number,
     variables: string[],
@@ -104,7 +143,7 @@ export function createDuplicateAttributeAPIError(
 }
 
 export function createDuplicateInputAttributeAPIError(
-    index: number,
+    index: number | undefined,
     entity: string,
     entityName: string,
     attribute: string,
@@ -254,7 +293,7 @@ export function createClassHasAcademicTermAPIError(
 
 export function createEntityAPIError(
     errorType: entityErrorType,
-    index: number,
+    index: number | undefined,
     entity: string,
     name?: string,
     parentEntity?: string,
@@ -303,7 +342,11 @@ export function createEntityAPIError(
         index,
     }
 
-    if (['existentChild', 'nonExistentChild'].includes(errorType)) {
+    if (
+        ['existentChild', 'nonExistentChild', 'overlappingDateRange'].includes(
+            errorType
+        )
+    ) {
         errorDetails.parentEntity = parentEntity
         errorDetails.parentName = parentName
     }

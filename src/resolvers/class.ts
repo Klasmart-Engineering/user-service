@@ -1,4 +1,4 @@
-import { Brackets, getConnection, In } from 'typeorm'
+import { Brackets, getConnection, getManager, getRepository, In } from 'typeorm'
 import { Context } from '../main'
 import {
     DeleteClassInput,
@@ -12,12 +12,15 @@ import {
     AddTeachersToClassInput,
     RemoveTeachersFromClassInput,
     SetAcademicTermOfClassInput,
+    MoveUsersToClassInput,
+    MoveUsersToClassMutationResult,
 } from '../types/graphQL/class'
-import { APIError } from '../types/errors/apiError'
+import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { Class } from '../entities/class'
 import { PermissionName } from '../permissions/permissionNames'
 import {
     createDuplicateChildEntityAttributeAPIError,
+    createDuplicateInputAttributeAPIError,
     createEntityAPIError,
     createMustHaveExactlyNAPIError,
     createNonExistentOrInactiveEntityAPIError,
@@ -62,7 +65,7 @@ import { User } from '../entities/user'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { AcademicTerm } from '../entities/academicTerm'
 import { School } from '../entities/school'
-
+import { customErrors } from '../types/errors/customError'
 export class DeleteClasses extends DeleteMutation<
     Class,
     DeleteClassInput,
@@ -1847,5 +1850,318 @@ export class SetAcademicTermsOfClasses extends SetMutation<
 
     protected buildOutput = async (currentClass: Class): Promise<void> => {
         this.output.classes.push(mapClassToClassConnectionNode(currentClass))
+    }
+}
+
+export enum moveUsersTypeToClass {
+    students,
+    teachers,
+}
+
+export async function moveUsersToClassValidation(
+    fromClassId: string,
+    toClassId: string,
+    userIds: string[],
+    usersType: moveUsersTypeToClass
+): Promise<Class[]> {
+    const errors: APIError[] = []
+    if (fromClassId === toClassId) {
+        errors.push(
+            createDuplicateInputAttributeAPIError(
+                undefined,
+                'fromClassId',
+                fromClassId,
+                'toClassId',
+                toClassId
+            )
+        )
+        throw new APIErrorCollection(errors)
+    }
+    const classes =
+        (await getRepository(Class).findByIds([fromClassId, toClassId], {
+            relations: [
+                'schools',
+                usersType === moveUsersTypeToClass.students
+                    ? 'students'
+                    : 'teachers',
+            ],
+        })) || []
+
+    switch (classes.length) {
+        case 0:
+            errors.push(
+                ...[
+                    createEntityAPIError(
+                        'nonExistent',
+                        undefined,
+                        'Class',
+                        fromClassId
+                    ),
+                    createEntityAPIError(
+                        'nonExistent',
+                        undefined,
+                        'Class',
+                        toClassId
+                    ),
+                ]
+            )
+            break
+        case 1:
+            errors.push(
+                createEntityAPIError(
+                    'nonExistent',
+                    classes[0].class_id === fromClassId ? 1 : 0,
+                    'Class',
+                    classes[0].class_id === fromClassId
+                        ? toClassId
+                        : fromClassId
+                )
+            )
+            break
+        case 2:
+            break
+        default:
+            throw new Error(
+                `More than two classes returned from a search for two ids ${fromClassId} and ${toClassId}`
+            )
+    }
+
+    if (errors.length > 0) {
+        throw new APIErrorCollection(errors)
+    }
+
+    const [fromClass, toClass] =
+        classes[0].class_id === fromClassId
+            ? [classes[0], classes[1]]
+            : [classes[1], classes[0]]
+
+    const fromSchools = (await fromClass.schools) || []
+    const toSchools = (await toClass.schools) || []
+
+    if (fromClass.organization_id === undefined) {
+        throw new Error(
+            `FromClass ${fromClassId} belongs to no organization this should not occur`
+        )
+    }
+
+    if (fromClass.organization_id != toClass.organization_id) {
+        errors.push(
+            new APIError({
+                code: customErrors.src_and_destination_dont_match.code,
+                message: customErrors.src_and_destination_dont_match.message,
+                variables: ['classId', 'schoolId'],
+                entity: 'Class',
+                entityName: toClassId,
+                otherAttribute: fromClassId,
+                attribute: 'Organization',
+                attributeValue: fromClass.organization_id,
+            })
+        )
+    }
+
+    // Check the related school(s)
+    if (fromSchools.length > 1) {
+        errors.push(
+            new APIError({
+                code: customErrors.too_many_relations.code,
+                message: customErrors.too_many_relations.message,
+                variables: ['classId', 'schoolId'],
+                entity: 'Class',
+                entityName: fromClassId,
+                attribute: 'ID',
+                otherAttribute: 'schools',
+            })
+        )
+    }
+    if (toSchools.length > 1) {
+        errors.push(
+            new APIError({
+                code: customErrors.too_many_relations.code,
+                message: customErrors.too_many_relations.message,
+                variables: ['classId', 'schoolId'],
+                entity: 'Class',
+                entityName: toClassId,
+                attribute: 'ID',
+                max: 1,
+                otherAttribute: 'schools',
+            })
+        )
+    }
+    if (errors.length > 0) throw new APIErrorCollection(errors)
+
+    if (
+        fromSchools.length != toSchools.length ||
+        (fromSchools.length == 1 &&
+            fromSchools[0].school_id != toSchools[0].school_id)
+    ) {
+        errors.push(
+            new APIError({
+                code: customErrors.src_and_destination_dont_match.code,
+                message: customErrors.src_and_destination_dont_match.message,
+                variables: ['classId', 'schoolId'],
+                entity: 'Class',
+                entityName: toClassId,
+                attribute: 'schools',
+                otherAttribute: fromClassId,
+            })
+        )
+    }
+
+    const dbUsers =
+        usersType === moveUsersTypeToClass.students
+            ? await fromClass.students
+            : await fromClass.teachers
+
+    const dbUserIds = dbUsers?.map((u) => u.user_id)
+
+    const dbUserIdSet = new Set<string>(dbUserIds)
+    let count = 0
+
+    for (const id of userIds) {
+        if (!dbUserIdSet.has(id)) {
+            errors.push(
+                new APIError({
+                    code: customErrors.nonexistent_child.code,
+                    message: customErrors.nonexistent_child.message,
+                    variables: [
+                        'classId',
+                        usersType === moveUsersTypeToClass.students
+                            ? 'studentId'
+                            : 'teacherId',
+                    ],
+                    entity:
+                        usersType === moveUsersTypeToClass.students
+                            ? 'Student'
+                            : 'Teacher',
+                    entityName: id,
+                    parentEntity: 'Class',
+                    parentName: fromClassId,
+                    index: count,
+                })
+            )
+        }
+        count++
+    }
+    if (errors.length > 0) throw new APIErrorCollection(errors)
+
+    return [fromClass, toClass]
+}
+
+export async function moveUsersToClassAuthorization(
+    fromClass: Class,
+    usersType: moveUsersTypeToClass,
+    context: Pick<Context, 'permissions'>
+): Promise<void> {
+    const fromSchools = (await fromClass.schools) || []
+    const permissionContext = {
+        organization_ids: [fromClass.organization_id!],
+        school_ids: fromSchools.map((s) => s.school_id),
+    }
+
+    const permissions = context.permissions
+
+    const permNames =
+        usersType === moveUsersTypeToClass.students
+            ? [
+                  PermissionName.add_students_to_class_20225,
+                  PermissionName.delete_student_from_class_roster_20445,
+              ]
+            : [
+                  PermissionName.add_teachers_to_class_20226,
+                  PermissionName.delete_teacher_from_class_20446,
+              ]
+
+    const permPromises: Promise<void>[] = []
+    for (const permName of permNames) {
+        permPromises.push(
+            permissions.rejectIfNotAllowed(permissionContext, permName)
+        )
+    }
+    await Promise.all(permPromises)
+}
+
+export async function moveUsersToClassProcessAndWrite(
+    fromClass: Class,
+    toClass: Class,
+    userIds: string[],
+    usersType: moveUsersTypeToClass
+): Promise<void> {
+    const userIdSet = new Set<string>(userIds)
+    if (usersType === moveUsersTypeToClass.students) {
+        const students = (await fromClass.students) || []
+        const existingStudents = (await toClass.students) || []
+        const studentsToMove: User[] = []
+        const studentsToLeave: User[] = []
+        for (const s of students) {
+            if (userIdSet.has(s.user_id)) {
+                studentsToMove.push(s)
+            } else {
+                studentsToLeave.push(s)
+            }
+        }
+        toClass.students = Promise.resolve(
+            Array.from(new Set<User>(studentsToMove.concat(existingStudents)))
+        )
+
+        fromClass.students = Promise.resolve(studentsToLeave)
+    } else {
+        const teachers = (await fromClass.teachers) || []
+        const existingTeachers = (await toClass.teachers) || []
+        const teachersToMove: User[] = []
+        const teachersToLeave: User[] = []
+        for (const s of teachers) {
+            if (userIdSet.has(s.user_id)) {
+                teachersToMove.push(s)
+            } else {
+                teachersToLeave.push(s)
+            }
+        }
+
+        toClass.teachers = Promise.resolve(
+            Array.from(new Set<User>(teachersToMove.concat(existingTeachers)))
+        )
+        fromClass.teachers = Promise.resolve(teachersToLeave)
+    }
+    try {
+        await getManager().save([fromClass, toClass])
+    } catch (e) {
+        const message = e instanceof Error ? e.message : 'Unknown Error'
+        throw new APIError({
+            code: customErrors.database_save_error.code,
+            message: customErrors.database_save_error.message,
+            variables: [message],
+            entity: 'Class',
+        })
+    }
+}
+
+export async function moveUsersToClass(
+    context: Pick<Context, 'permissions'>,
+    input: MoveUsersToClassInput,
+    usersType: moveUsersTypeToClass
+): Promise<MoveUsersToClassMutationResult> {
+    const fromClassId = input.fromClassId
+    const toClassId = input.toClassId
+    const userIds = input.userIds
+
+    const [fromClass, toClass] = await moveUsersToClassValidation(
+        fromClassId,
+        toClassId,
+        userIds,
+        usersType
+    )
+
+    await moveUsersToClassAuthorization(fromClass, usersType, context)
+
+    await moveUsersToClassProcessAndWrite(
+        fromClass,
+        toClass,
+        userIds,
+        usersType
+    )
+
+    return {
+        fromClass: mapClassToClassConnectionNode(fromClass),
+        toClass: mapClassToClassConnectionNode(toClass),
     }
 }

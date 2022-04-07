@@ -30,7 +30,7 @@ export function createRole(
     return role
 }
 
-export const createRoles = (length: number) =>
+export const createRoles = (length: number, org?: Organization) =>
     Array(length)
         .fill(undefined)
-        .map(() => createRole())
+        .map(() => createRole(undefined, org))

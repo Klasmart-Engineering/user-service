@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.1.1](https://github.com/KL-Engineering/user-service/compare/v4.1.0...v4.1.1) (2022-04-01)
+
+
+### Bug Fixes
+
+* handle case of users with both original + dupe role ([22e5f3d](https://github.com/KL-Engineering/user-service/commit/22e5f3dd729c9e0bbda74cc8f58b2d3ef6717d65))
+* improve perf of duplicate roles migration ([1b3f9b8](https://github.com/KL-Engineering/user-service/commit/1b3f9b8a313146e5fd0aa72bac72c952f69e471b))
+
 ## [4.1.0](https://github.com/KL-Engineering/user-service/compare/v4.0.0...v4.1.0) (2022-03-21)
 
 

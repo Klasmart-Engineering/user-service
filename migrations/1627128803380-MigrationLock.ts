@@ -2,6 +2,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm'
 
 export class MigrationLock1627128803380 implements MigrationInterface {
     name = 'MigrationLock1627128803380'
+
     public async up(queryRunner: QueryRunner): Promise<void> {
         // Since all migrations run in a single transaction, we can lock the migration table
         // to prevent other instances from running migrations
