@@ -87,11 +87,6 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
         })
     })
 
-    // auth check is done here
-    // because throwing an error during apollo context creation
-    // gives a 400 status code
-    app.use(validateToken)
-
     // authenticated end points
     app.get(`${options.routePrefix}`, docsAreEnabled, (_, res) => {
         res.render('index', { routePrefix: ROUTE_PREFIX })
@@ -108,6 +103,11 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
             })(req, res, next)
         }
     )
+
+    // auth check is done here
+    // because throwing an error during apollo context creation
+    // gives a 400 status code
+    app.use(validateToken)
 
     return app
 }
@@ -127,17 +127,16 @@ export const initApp = async () => {
 
     return { expressApp: app, apolloServer }
 }
-
 export function docsAreEnabled(
     req: express.Request,
     res: express.Response,
     next: express.NextFunction
 ) {
-    if (
-        getEnvVar('ENABLE_PAGE_DOCS') === '1' ||
-        process.env.NODE_ENV === 'development'
-    ) {
+    if (process.env.NODE_ENV === 'development') {
         next()
+    } else if (getEnvVar('ENABLE_PAGE_DOCS') === '1') {
+        // enforce token
+        return validateToken(req, res, next)
     } else {
         res.status(403).send('Docs are disabled on this server.')
     }
