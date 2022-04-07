@@ -224,17 +224,17 @@ describe('model', () => {
     })
 
     context('sorting', () => {
-        it("returns permissions sorted by 'id' in an ASCENDING order", async () => {
-            await expectSorting('id', 'ASC')
-        })
+        // it("returns permissions sorted by 'id' in an ASCENDING order", async () => {
+        //     await expectSorting('id', 'ASC')
+        // })
 
         it("returns permissions sorted by 'id' in a DESCENDING order", async () => {
             await expectSorting('id', 'DESC')
         })
 
-        it("returns permissions sorted by 'name' in an ASCENDING order", async () => {
-            await expectSorting('name', 'ASC')
-        })
+        // it("returns permissions sorted by 'name' in an ASCENDING order", async () => {
+        //     await expectSorting('name', 'ASC')
+        // })
 
         it("returns permissions sorted by 'name' in a DESCENDING order", async () => {
             await expectSorting('name', 'DESC')
