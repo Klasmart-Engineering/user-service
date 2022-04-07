@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.2.0](https://github.com/KL-Engineering/user-service/compare/v4.1.1...v4.2.0) (2022-04-07)
+
+
+### Features
+
+* **AD-2062:** added upload of tests report to codecov ([8f577e5](https://github.com/KL-Engineering/user-service/commit/8f577e545c01906a042ccb43ab80dfdc486d02dd))
+* **AD-2095:** add academic term to DB schema ([#48](https://github.com/KL-Engineering/user-service/issues/48)) ([7e61621](https://github.com/KL-Engineering/user-service/commit/7e61621b3c2071f39cd47ccb3f9b60a3a5df2628))
+* **AD-2097:** create academic term ([#53](https://github.com/KL-Engineering/user-service/issues/53)) ([75680fb](https://github.com/KL-Engineering/user-service/commit/75680fb86d9ca5c2cd326a4eec0c1a872c1297f0))
+* **AD-2098:** academic term validation for adding/removing classes to/from school ([#55](https://github.com/KL-Engineering/user-service/issues/55)) ([cf1bf1a](https://github.com/KL-Engineering/user-service/commit/cf1bf1a501f8d6f5af291f0865ef339a3ceae7e7))
+* **AD-2098:** mutation to set academic term of class ([#54](https://github.com/KL-Engineering/user-service/issues/54)) ([de53faa](https://github.com/KL-Engineering/user-service/commit/de53faa9c55d567f31fd4700e0f848f1b738474e))
+* **AD-2105:** add functionality to transfer batch of users from one class to another ([#37](https://github.com/KL-Engineering/user-service/issues/37)) ([4c7e099](https://github.com/KL-Engineering/user-service/commit/4c7e099a48988cf181de7535300ad526d8409856))
+* **AD-2317:** return all permissions via myUser.permissionsInOrganization/School if count is omitted ([#41](https://github.com/KL-Engineering/user-service/issues/41)) ([c4db22b](https://github.com/KL-Engineering/user-service/commit/c4db22b9c1c0aeb98eac7713a65a5e045e2bb2af))
+* add academic term filter to classesConnection ([#71](https://github.com/KL-Engineering/user-service/issues/71)) ([a744623](https://github.com/KL-Engineering/user-service/commit/a7446236251c07ef323eeeef62fac447cde3370b))
+
+
+### Bug Fixes
+
+* **AD-2144:** removing unused permissions ([#80](https://github.com/KL-Engineering/user-service/issues/80)) ([3df368e](https://github.com/KL-Engineering/user-service/commit/3df368e58d87e68eceb972b2a7f12a51e31cc4a1))
+* **AD-2235:** sync constraints across db schemas ([#78](https://github.com/KL-Engineering/user-service/issues/78)) ([6101ba7](https://github.com/KL-Engineering/user-service/commit/6101ba7a8bc61e8765b151851d31a286e4b3a857))
+* **AD-2262:** create users mutation properly duplicate error BREAKING CHANGE ([#52](https://github.com/KL-Engineering/user-service/issues/52)) ([b29d6c3](https://github.com/KL-Engineering/user-service/commit/b29d6c3a3c3127e96778faf668ba4105c26a3c7e))
+* **AD-2284:** enforcement of tokens or api-keys ([#50](https://github.com/KL-Engineering/user-service/issues/50)) ([d8d6d15](https://github.com/KL-Engineering/user-service/commit/d8d6d15d55fdaa2314f4be4a6475fa7168b528d0)), closes [#52](https://github.com/KL-Engineering/user-service/issues/52) [#54](https://github.com/KL-Engineering/user-service/issues/54) [#55](https://github.com/KL-Engineering/user-service/issues/55)
+* **AD-2339:** allow API keys to createUsers() ([#44](https://github.com/KL-Engineering/user-service/issues/44)) ([112113e](https://github.com/KL-Engineering/user-service/commit/112113ee7e776403814775064eb292d11f5b577e))
+* handle case of users with both original + dupe role ([22e5f3d](https://github.com/KL-Engineering/user-service/commit/22e5f3dd729c9e0bbda74cc8f58b2d3ef6717d65))
+
 ### [4.1.1](https://github.com/KL-Engineering/user-service/compare/v4.1.0...v4.1.1) (2022-04-01)
 
 
