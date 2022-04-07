@@ -44,6 +44,7 @@ import { addRoleToOrganizationMembership } from '../../../utils/operations/organ
 import { grantPermission } from '../../../utils/operations/roleOps'
 import { PermissionName } from '../../../../src/permissions/permissionNames'
 import { normalizedLowercaseTrimmed } from '../../../../src/utils/clean'
+import { pick } from 'lodash'
 import { config } from '../../../../src/config/config'
 import { QueryResultCache } from '../../../../src/utils/csv/csvUtils'
 import { objectToKey } from '../../../../src/utils/stringUtils'
@@ -1756,6 +1757,22 @@ describe('processUserFromCSVRow', async () => {
                     })
                 )?.class_id
             ).to.equal(cls.class_id)
+        })
+
+        context('and the role is neither student nor teacher related', () => {
+            beforeEach(() => createRoleForUser('notAStudentOrTeacher', []))
+
+            it('raises an UNAUTHORIZED_UPLOAD_CHILD_ENTITY error against the Role column', async () => {
+                const rowErrors = await processRow()
+                expect(rowErrors).to.have.length(1)
+                expect(
+                    pick(rowErrors[0], ['code', 'message', 'column'])
+                ).to.deep.equal({
+                    code: 'UNAUTHORIZED_UPLOAD_CHILD_ENTITY',
+                    message: `On row number 1, Unauthorized to upload User to Class "${cls.class_name}".`,
+                    column: 'organization_role_name',
+                })
+            })
         })
 
         context('and the role is student related', () => {
