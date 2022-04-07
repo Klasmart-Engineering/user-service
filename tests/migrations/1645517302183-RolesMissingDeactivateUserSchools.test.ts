@@ -1,6 +1,6 @@
 import chai, { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, QueryRunner } from 'typeorm'
+import { Connection, MigrationInterface, QueryRunner } from 'typeorm'
 import { Role } from '../../src/entities/role'
 import {
     createMigrationsTestConnection,
@@ -10,7 +10,7 @@ import RoleInitializer from '../../src/initializers/roles'
 import { createRole } from '../factories/role.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { RolesMissingDeactivateUserSchools1645517302183 } from '../../migrations/1645517302183-RolesMissingDeactivateUserSchools'
+import { runPreviousMigrations } from '../utils/migrations'
 
 chai.should()
 use(chaiAsPromised)
@@ -20,6 +20,7 @@ describe('RolesMissingDeactivateUserSchools1645517302183 migration', () => {
     let baseConnection: Connection
     let migrationsConnection: Connection
     let runner: QueryRunner
+    let currentMigration: MigrationInterface
 
     before(async () => {
         baseConnection = await createTestConnection()
@@ -27,7 +28,6 @@ describe('RolesMissingDeactivateUserSchools1645517302183 migration', () => {
         // otherwise `is benign if run twice` will
         // cause `baseConnection?.close()` to hang in `after`
         // todo: find out why
-        runner = baseConnection.createQueryRunner()
     })
     after(async () => {
         await baseConnection?.close()
@@ -44,7 +44,12 @@ describe('RolesMissingDeactivateUserSchools1645517302183 migration', () => {
             false,
             'migrations'
         )
-        await migrationsConnection.runMigrations()
+        runner = migrationsConnection.createQueryRunner()
+        currentMigration = (await runPreviousMigrations(
+            migrationsConnection,
+            runner,
+            'RolesMissingDeactivateUserSchools1645517302183'
+        ))!
         await RoleInitializer.run()
     })
 
@@ -52,14 +57,7 @@ describe('RolesMissingDeactivateUserSchools1645517302183 migration', () => {
         return (await role?.permissions)?.map((p) => p.permission_name)
     }
 
-    const runMigration = async () => {
-        const migration = migrationsConnection.migrations.find(
-            (m) =>
-                m.name === RolesMissingDeactivateUserSchools1645517302183.name
-        )
-        // promise will be rejected if migration fails
-        return migration!.up(runner)
-    }
+    const runMigration = () => currentMigration.up(runner)
 
     it(`adds deactivate_my_school_user_40885 to roles with only edit_school_20330`, async () => {
         const role = await createRole(undefined, undefined, {
@@ -120,7 +118,7 @@ describe('RolesMissingDeactivateUserSchools1645517302183 migration', () => {
     })
 
     it('is benign if run twice', async () => {
-        await expect(runMigration()).to.be.eventually.fulfilled
-        await expect(runMigration()).to.be.eventually.fulfilled
+        await runMigration().should.be.fulfilled
+        await runMigration().should.be.fulfilled
     })
 })

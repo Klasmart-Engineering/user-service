@@ -1,4 +1,4 @@
-import { expect, use } from 'chai'
+import chai, { expect, use } from 'chai'
 import { Connection, getRepository, QueryRunner } from 'typeorm'
 import {
     createMigrationsTestConnection,
@@ -11,11 +11,12 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { User } from '../../src/entities/user'
 import chaiAsPromised from 'chai-as-promised'
 import { generateShortCode } from '../../src/utils/shortcode'
-import { AddStatusUpdatedAtColumn1645635790974 } from '../../migrations/1645635790974-AddStatusUpdatedAtColumn'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { School } from '../../src/entities/school'
 import { createSchool } from '../factories/school.factory'
+import { runPreviousMigrations } from '../utils/migrations'
 
+chai.should()
 use(chaiAsPromised)
 
 describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
@@ -30,7 +31,7 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
 
     const runMigration = async () => {
         const migration = migrationsConnection.migrations.find(
-            (m) => m.name === AddStatusUpdatedAtColumn1645635790974.name
+            (m) => m.name === 'AddStatusUpdatedAtColumn1645635790974'
         )
         // promise will be rejected if migration fails
         return migration!.up(runner)
@@ -58,7 +59,7 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
         await migrationsConnection?.close()
     })
 
-    context('migration is run once', () => {
+    context('when database is populated', () => {
         beforeEach(async () => {
             user = await createUser().save()
             organization = await createOrganization().save()
@@ -117,15 +118,18 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
         })
     })
 
-    context('migration is run twice', () => {
-        it('is benign', async () => {
-            migrationsConnection = await createMigrationsTestConnection(
-                false,
-                false,
-                'migrations'
-            )
-            await runMigration()
-            await expect(runMigration()).to.be.fulfilled
-        })
+    it('is benign if run twice', async () => {
+        migrationsConnection = await createMigrationsTestConnection(
+            true,
+            false,
+            'migrations'
+        )
+        const currentMigration = await runPreviousMigrations(
+            migrationsConnection,
+            runner,
+            'AddStatusUpdatedAtColumn1645635790974'
+        )
+        await currentMigration!.up(runner).should.be.fulfilled
+        await currentMigration!.up(runner).should.be.fulfilled
     })
 })
