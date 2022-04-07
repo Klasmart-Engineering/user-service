@@ -9,6 +9,7 @@ import {
     APIErrorCollection,
     validateAPICall,
 } from '../../types/errors/apiError'
+import { sortObjectArray } from '../array'
 import {
     createDatabaseSaveAPIError,
     createDuplicateAttributeAPIError,
@@ -321,7 +322,10 @@ export function filterInvalidInputs<T>(
         })
         .filter((_, index) => !errorMaps.some((em) => em.has(index)))
     const apiErrors = errorMaps.flatMap((em) => [...em.values()])
-    return { validInputs, apiErrors }
+    return {
+        validInputs: sortObjectArray(validInputs, 'index'),
+        apiErrors: sortObjectArray(apiErrors, 'index'),
+    }
 }
 
 export type ProcessedResult<

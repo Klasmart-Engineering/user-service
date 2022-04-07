@@ -32,4 +32,8 @@ export interface ErrorParams {
     fields?: string
     fieldValues?: Record<string, unknown>[]
     count?: number
+    inputStartDateString?: string
+    inputEndDateString?: string
+    overlappedStartDateString?: string
+    overlappedEndDateString?: string
 }
