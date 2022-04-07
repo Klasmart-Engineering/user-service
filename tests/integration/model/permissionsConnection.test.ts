@@ -226,7 +226,7 @@ describe('model', () => {
         })
     })
 
-    context('sorting asd', () => {
+    context('sorting', () => {
         it("returns permissions sorted by 'id' in an ASCENDING order", async () => {
             await expectSorting('id', 'ASC')
         })
