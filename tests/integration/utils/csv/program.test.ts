@@ -136,7 +136,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -168,7 +168,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -202,7 +202,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -234,7 +234,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -266,7 +266,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -307,7 +307,7 @@ describe('processProgramFromCSVRow', () => {
                     organization: Equal(organization),
                 })
 
-                expect(program).to.be.undefined
+                expect(program).to.be.null
             })
         }
     )
@@ -340,7 +340,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -372,7 +372,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -406,7 +406,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -440,7 +440,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -474,7 +474,7 @@ describe('processProgramFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 

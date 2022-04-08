@@ -93,7 +93,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 },
             })
 
-            expect(ageRange).to.be.undefined
+            expect(ageRange).to.be.null
         })
     })
 
@@ -131,7 +131,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 },
             })
 
-            expect(ageRange).to.be.undefined
+            expect(ageRange).to.be.null
         })
     })
 
@@ -169,7 +169,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 },
             })
 
-            expect(ageRange).to.be.undefined
+            expect(ageRange).to.be.null
         })
     })
 
@@ -207,7 +207,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 },
             })
 
-            expect(ageRange).to.be.undefined
+            expect(ageRange).to.be.null
         })
     })
 
@@ -245,7 +245,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 },
             })
 
-            expect(ageRange).to.be.undefined
+            expect(ageRange).to.be.null
         })
     })
 
@@ -283,7 +283,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 },
             })
 
-            expect(ageRange).to.be.undefined
+            expect(ageRange).to.be.null
         })
     })
 
@@ -330,7 +330,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     },
                 })
 
-                expect(ageRange).to.be.undefined
+                expect(ageRange).to.be.null
             })
         }
     )
@@ -369,7 +369,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 },
             })
 
-            expect(ageRange).to.be.undefined
+            expect(ageRange).to.be.null
         })
     })
 
@@ -407,7 +407,7 @@ describe('processAgeRangeFromCSVRow', () => {
                 },
             })
 
-            expect(ageRange).to.be.undefined
+            expect(ageRange).to.be.null
         })
     })
 

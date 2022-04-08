@@ -98,7 +98,7 @@ describe('processSchoolFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(school).to.be.undefined
+            expect(school).to.be.null
         })
     })
 
@@ -129,7 +129,7 @@ describe('processSchoolFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(school).to.be.undefined
+            expect(school).to.be.null
         })
     })
 
@@ -166,7 +166,7 @@ describe('processSchoolFromCSVRow', () => {
                     organization: Equal(organization),
                 })
 
-                expect(school).to.be.undefined
+                expect(school).to.be.null
             })
         }
     )
@@ -229,7 +229,7 @@ describe('processSchoolFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(school).to.be.undefined
+            expect(school).to.be.null
         })
     })
 
@@ -266,7 +266,7 @@ describe('processSchoolFromCSVRow', () => {
                     organization: Equal(organization),
                 })
 
-                expect(school).to.be.undefined
+                expect(school).to.be.null
             })
         }
     )
@@ -331,7 +331,7 @@ describe('processSchoolFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(school).to.be.undefined
+            expect(school).to.be.null
         })
     })
 
@@ -364,7 +364,7 @@ describe('processSchoolFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(school).to.be.undefined
+            expect(school).to.be.null
         })
     })
 

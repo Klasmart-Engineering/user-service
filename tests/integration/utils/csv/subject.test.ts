@@ -85,7 +85,7 @@ describe('processSubjectFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(subject).to.be.undefined
+            expect(subject).to.be.null
         })
     })
 
@@ -117,7 +117,7 @@ describe('processSubjectFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(subject).to.be.undefined
+            expect(subject).to.be.null
         })
     })
 
@@ -187,7 +187,7 @@ describe('processSubjectFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(subject).to.be.undefined
+            expect(subject).to.be.null
         })
     })
 
@@ -219,7 +219,7 @@ describe('processSubjectFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(subject).to.be.undefined
+            expect(subject).to.be.null
         })
     })
 

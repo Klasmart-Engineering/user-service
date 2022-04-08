@@ -93,7 +93,7 @@ describe('processCategoryFromCSVRow', () => {
                 },
             })
 
-            expect(category).to.be.undefined
+            expect(category).to.be.null
         })
     })
 
@@ -127,7 +127,7 @@ describe('processCategoryFromCSVRow', () => {
                 },
             })
 
-            expect(category).to.be.undefined
+            expect(category).to.be.null
         })
     })
 
@@ -161,7 +161,7 @@ describe('processCategoryFromCSVRow', () => {
                 },
             })
 
-            expect(category).to.be.undefined
+            expect(category).to.be.null
         })
     })
 
@@ -195,7 +195,7 @@ describe('processCategoryFromCSVRow', () => {
                 },
             })
 
-            expect(category).to.be.undefined
+            expect(category).to.be.null
         })
     })
 

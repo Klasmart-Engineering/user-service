@@ -87,7 +87,7 @@ describe('processOrganizationFromCSVRow', () => {
                 where: { organization_name: row.organization_name },
             })
 
-            expect(organization).to.be.undefined
+            expect(organization).to.be.null
         })
     })
 
@@ -122,7 +122,7 @@ describe('processOrganizationFromCSVRow', () => {
                 where: { organization_name: row.organization_name },
             })
 
-            expect(organization).to.be.undefined
+            expect(organization).to.be.null
         })
     })
 
@@ -156,7 +156,7 @@ describe('processOrganizationFromCSVRow', () => {
                 where: { organization_name: row.organization_name },
             })
 
-            expect(organization).to.be.undefined
+            expect(organization).to.be.null
         })
     })
 

@@ -85,7 +85,7 @@ describe('processRoleFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(role).to.be.undefined
+            expect(role).to.be.null
         })
     })
 
@@ -117,7 +117,7 @@ describe('processRoleFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(role).to.be.undefined
+            expect(role).to.be.null
         })
     })
 
@@ -149,7 +149,7 @@ describe('processRoleFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(role).to.be.undefined
+            expect(role).to.be.null
         })
     })
 
@@ -181,7 +181,7 @@ describe('processRoleFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(role).to.be.undefined
+            expect(role).to.be.null
         })
     })
 
@@ -213,7 +213,7 @@ describe('processRoleFromCSVRow', () => {
                 organization: Equal(organization),
             })
 
-            expect(role).to.be.undefined
+            expect(role).to.be.null
         })
     })
 

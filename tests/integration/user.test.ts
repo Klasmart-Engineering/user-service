@@ -1045,7 +1045,7 @@ describe('user', () => {
                 await User.findOne({
                     where: { user_id: newUser.user_id },
                 })
-            ).to.be.undefined
+            ).to.be.null
 
         it('should merge one user into another deleting the source user', async () => {
             const gqlUser = await mergeUser(

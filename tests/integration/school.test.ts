@@ -776,7 +776,7 @@ describe('school', () => {
                                     },
                                 }
                             )
-                            expect(dbMembership).to.be.undefined
+                            expect(dbMembership).to.be.null
                             expect(gqlMembership).to.be.null
                         })
                     }
@@ -809,7 +809,7 @@ describe('school', () => {
                                 school_id: schoolId,
                             },
                         })
-                        expect(dbMembership).to.be.undefined
+                        expect(dbMembership).to.be.null
                         expect(gqlMembership).to.be.null
                     })
                 })
@@ -872,7 +872,7 @@ describe('school', () => {
                                     },
                                 }
                             )
-                            expect(dbMembership).to.be.undefined
+                            expect(dbMembership).to.be.null
                             expect(gqlMembership).to.be.null
                         })
                     }
@@ -905,7 +905,7 @@ describe('school', () => {
                                 school_id: schoolId,
                             },
                         })
-                        expect(dbMembership).to.be.undefined
+                        expect(dbMembership).to.be.null
                         expect(gqlMembership).to.be.null
                     })
                 })
@@ -930,7 +930,7 @@ describe('school', () => {
                 const dbMembership = await SchoolMembership.findOne({
                     where: { user_id: idOfUserToBeAdded, school_id: schoolId },
                 })
-                expect(dbMembership).to.be.undefined
+                expect(dbMembership).to.be.null
             })
         })
     })

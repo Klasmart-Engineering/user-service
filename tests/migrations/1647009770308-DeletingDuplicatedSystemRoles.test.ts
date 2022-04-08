@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { Connection, QueryRunner } from 'typeorm'
+import { Connection, In, QueryRunner } from 'typeorm'
 import {
     DeletingDuplicatedSystemRoles1647009770308,
     rolesToDeleteIds,
@@ -120,9 +120,9 @@ describe('DeletingDuplicatedSystemRoles', () => {
     })
 
     it('should hard delete all the duplications', async () => {
-        const removedRoles = await Role.findByIds(
-            duplicatedSystemRoles.map((r) => r.role_id)
-        )
+        const removedRoles = await Role.findBy({
+            role_id: In(duplicatedSystemRoles.map((r) => r.role_id)),
+        })
 
         expect(removedRoles).to.have.lengthOf(0)
     })

@@ -164,7 +164,7 @@ describe('processUserFromCSVRow', async () => {
             where: { email: normalizedLowercaseTrimmed(row.user_email) },
         })
 
-        expect(dbUser).to.be.undefined
+        expect(dbUser).to.be.null
     })
 
     context('org permissions', () => {

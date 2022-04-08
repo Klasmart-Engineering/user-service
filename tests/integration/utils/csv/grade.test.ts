@@ -80,7 +80,7 @@ describe('processGradeFromCSVRow', () => {
                 name: row.grade_name,
             })
 
-            expect(grade).to.be.undefined
+            expect(grade).to.be.null
         })
     })
 
@@ -111,7 +111,7 @@ describe('processGradeFromCSVRow', () => {
                 name: row.grade_name,
             })
 
-            expect(grade).to.be.undefined
+            expect(grade).to.be.null
         })
     })
 
@@ -142,7 +142,7 @@ describe('processGradeFromCSVRow', () => {
                 name: row.grade_name,
             })
 
-            expect(grade).to.be.undefined
+            expect(grade).to.be.null
         })
     })
 
