@@ -10,5 +10,6 @@ export function mapATtoATConnectionNode(
         startDate: academicTerm.start_date,
         endDate: academicTerm.end_date,
         status: academicTerm.status,
+        schoolId: academicTerm.school_id,
     }
 }

@@ -134,6 +134,7 @@ export const academicTermForClasses = async (
         'start_date',
         'end_date',
         'status',
+        'school_id',
     ]
 
     const scope = baseClassQuery(classIds)
@@ -144,12 +145,25 @@ export const academicTermForClasses = async (
 
     const classToAcademicTerms = new Map()
 
-    for (const _class of await scope.getMany()) {
-        classToAcademicTerms.set(
-            _class.class_id,
-            // eslint-disable-next-line no-await-in-loop
-            await _class.academicTerm
-        )
+    const { raw, entities } = await scope.getRawAndEntities()
+
+    // because school_id is annotated as a RelationId
+    // not a column typeorm does not automaticlly populate it
+    // due to this bug
+    // https://github.com/typeorm/typeorm/issues/4581
+    for (const [index, _class] of entities.entries()) {
+        // eslint-disable-next-line no-await-in-loop
+        let academicTerm = await _class.academicTerm
+
+        if (academicTerm) {
+            // hack to work around academicTerm.school_id being readonly
+            academicTerm = {
+                ...academicTerm,
+                school_id: raw[index].school_id,
+            } as AcademicTerm
+        }
+
+        classToAcademicTerms.set(_class.class_id, academicTerm)
     }
 
     const academicTermsInLoadedOrder = []

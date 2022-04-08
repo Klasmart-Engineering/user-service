@@ -1156,7 +1156,10 @@ describe('acceptance.class', () => {
                                     name,
                                     status,
                                     startDate,
-                                    endDate
+                                    endDate,
+                                    school{
+                                        id
+                                    }
                                 }
                             }
                         }`,
@@ -1175,6 +1178,7 @@ describe('acceptance.class', () => {
             expect(classNode.academicTerm.endDate).to.eq(
                 academicTerm.end_date.toISOString()
             )
+            expect(classNode.academicTerm.school.id).to.eq(school.school_id)
         })
 
         context(
