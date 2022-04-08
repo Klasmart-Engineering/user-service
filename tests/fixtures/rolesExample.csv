@@ -1,8 +1,15 @@
 organization_name,role_name,permission_id
+Company 1,Director,add_content_learning_outcomes_433
 Company 1,Director,add_students_to_class_20225
 Company 1,Director,archived_content_page_205
+Company 2,Director,add_content_learning_outcomes_433
 Company 2,Director,add_students_to_class_20225
 Company 2,Director,archived_content_page_205
+Company 3,Principal,add_learning_outcome_to_content_485
 Company 3,Principal,add_students_to_class_20225
 Company 3,Asistant,assessments_400
+Company 3,Asistant,add_learning_outcome_to_content_485
+Company 4,Principal,add_learning_outcome_to_content_485
+Company 4,Principal,add_content_learning_outcomes_433
 Company 4,Asistant,assessments_400
+Company 4,Asistant,add_learning_outcome_to_content_485
