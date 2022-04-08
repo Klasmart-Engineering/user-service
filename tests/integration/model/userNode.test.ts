@@ -230,6 +230,28 @@ describe('userNode', () => {
                     )
                 })
             })
+            context('User with `view_my_users_40113`', () => {
+                beforeEach(
+                    async () =>
+                        await addPermission({
+                            user,
+                            organization,
+                            permission: PermissionName.view_my_users_40113,
+                        })
+                )
+                it('can view Users with the same email', async () => {
+                    const userNodeResponse = await userNode(
+                        testClient,
+                        {
+                            authorization: generateToken(userToPayload(user)),
+                        },
+                        users[8].user_id
+                    )
+                    expect(userNodeResponse).to.deep.equal(
+                        mapUserToUserConnectionNode(users[8])
+                    )
+                })
+            })
             context('User with view_my_class_users_40112', () => {
                 let teacher: User
                 let student: User

@@ -55,7 +55,7 @@ describe('model', () => {
     let memberPermissions: UserPermissions
     let noMemberPermissions: UserPermissions
 
-    const pageSize = 7
+    const pageSize = 10
 
     // emulated info object to could test resolver
     let info: GraphQLResolveInfo
@@ -82,9 +82,6 @@ describe('model', () => {
         expect(result.edges.length).eq(pageSize)
 
         const values = result.edges.map((edge) => edge.node[field]) as string[]
-        // Note: postgres sorting differs from JS sorting
-        // A specific page size of 7 is used to prevent querying permissions with known sorting differences
-        // https://calmisland.atlassian.net/browse/AD-2246
         const isSorted =
             order === 'ASC'
                 ? isStringArraySortedAscending(values)
@@ -174,7 +171,7 @@ describe('model', () => {
                     }
                 )
 
-                checkPageInfo(result, permissionsCount, pageSize)
+                checkPageInfo(result, permissionsCount)
             })
         })
 
@@ -194,7 +191,7 @@ describe('model', () => {
                     }
                 )
 
-                checkPageInfo(result, roleInvolvedPermissionsCount, pageSize)
+                checkPageInfo(result, roleInvolvedPermissionsCount)
             })
         })
 
@@ -271,6 +268,8 @@ describe('model', () => {
     context('filtering', () => {
         let customRole: Role
         const customRolePermissionIds = [
+            PermissionName.add_content_learning_outcomes_433,
+            PermissionName.add_learning_outcome_to_content_485,
             PermissionName.add_students_to_class_20225,
             PermissionName.add_teachers_to_class_20226,
         ]
@@ -407,7 +406,7 @@ describe('model', () => {
                 }
             )
 
-            expect(result.totalCount).to.eql(3)
+            expect(result.totalCount).to.eql(5)
 
             result.edges.forEach((edge) => {
                 expect(edge.node.name).includes(searching)

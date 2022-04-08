@@ -3,12 +3,57 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 (Super Admin, Org Admin, School Admin, Teacher, Parent, Student, None)",Description,Permission Group,Detailed Description,Systems Affected,"Role of Schools?
 (Visibility Range)",Other Permissions required.,Relates to PII?,Definition of Done,Enforced by service code?
 1,create_an_organization_account_1,Create an Organization Account,Accounts,Super Admin,Gives uers access to create an organization account,Super Admin,"Without this permission, User A (Super Admin) will not be able to create an organization for User B.  Once the organization is created, User B will be the ""Seed Admin"" or simply the ""Org Admin"" ""Owner""",User,Org Admin is a member of all schools created within their organization,,,,Y
+2,delete_an_organization_account_2,Delete an Organization Account,Accounts,Super Admin,Gives users access to delete an organization account,Super Admin,"Without this permission, User A (Super Admin) will not be able to delete an organization for User B.  Once the organization is deleted, User B will no longer be the ""Seed Admin"" or the ""Org Admin"" ""Owner"" of said organization.  User B will be able create another organization once the organization is deleted",,,,,,
+3,reset_an_organization_account_3,Reset an Organization Account,Accounts,Super Admin,Gives users access to reset an organizations account,Super Admin,,,,,,,
+4,setup_an_organizations_academic_profile_4,Setup an Organizations Academic Profile,Accounts,Super Admin,Gives users access to setup an organizations academic profile,Super Admin,"Without this permission, User A (Super Admin) will not be able to add the academic profile for User B's organization .  ",,,,,,
 5,edit_an_organization_details_5,Edit an Organization Details,Accounts,Super Admin,Gives users access to edit an organizations details,Super Admin,,,,,,,Y
+6,update_default_thumbnails_6,Update Default Thumbnails,Accounts,Super Admin,Gives users access to update default thumbnails,Super Admin,,,,,,,
+7,upgrade_organization_publishing_permissions_7,Upgrade Organization Publishing Permissions,Accounts,Super Admin,Gives users access to upgrade organization publishing permissions,Super Admin,,,,,,,
+8,approve_and_reject_pending_content_8,Approve and Reject Pending Content,Accounts,Super Admin,Gives users access to approve and reject pending content,Super Admin,,,,,,,
+9,create_program_category_9,Create Program Category,Accounts,Super Admin,Gives users access to create a program category,Super Admin,,,,,,,
+10,change_an_organizations_visibility_settings_10,Change an Organizations Visibility Settings,Accounts,Super Admin,Gives users access to change an organizations visbility settings,Super Admin,,,,,,,
+11,view_organization_bill_details_11,View Organization Bill Details,Accounts,Super Admin,Gives users access to view organization bill details,Super Admin,,,,,,,
+12,block_org_users_access_12,Block Org Users Access,Accounts,Super Admin,Gives users access to block organization users access,Super Admin,,,,,,,
+13,create_pricing_plan_13,Create Pricing Plan,Accounts,Super Admin,Gives users access to create a pricing plan,Super Admin,,,,,,,
+1000,logos_1000,Logos,Accounts,Student,Gives users access to manage their logos,My Account,Without this permission a user will not be able to do custom rebranding for the organization,,,,,,
+1010,my_account_1010,My Account,Accounts,Student,Gives users access to view my account page,My Account,,,,,,,
+1020,my_settings_1020,My Settings,Accounts,Student,Gives users access to edit their settings page,My Account,,,,,,,
+1030,personalizations_1030,Personalizations,Accounts,Student,Gives users access to view personalizations page,My Account,,,,,,,
+1040,my_learners_page_1040,My Learners Page,Accounts,Student,Gives users access to view my learners page,My Learners Page,,,,,,,
+1041,my_learners_dashboards_1041,My Learners Dashboards,Accounts,Student,Gives users access to view my learner's dashboards,My Learners Page,,,,,,,
+1042,my_learners_schedule_1042,My Learners Schedule,Accounts,Student,Gives users access to view my learner's schedule page,My Learners Page,,,,,,,
+1043,my_learners_study_plan_1043,My Learners Study Plan,Accounts,Student,Gives users access to view my learner's study plan page,My Learners Page,,,,,,,
+1044,my_learners_notifications_1044,My Learners Notifications,Accounts,Student,Gives users access to view my learner's notifications ,My Learners Page,,,,,,,
+1045,my_learners_make_a_payment_1045,My Learners Make A Payment,Accounts,Student,Gives users access to view my learner's make a payment,My Learners Page,,,,,,,
+1046,my_learners_coupon_management_1046,My Learners Coupon Management,Accounts,Student,Gives users access to view my learner's coupon management,My Learners Page,,,,,,,
+1047,my_learners_view_promotions_1047,My Learners View Promotions,Accounts,Student,Gives users access to view my learner's view promotions,My Learners Page,,,,,,,
+1048,my_learners_class_recordings_1048,My Learners Class Recordings,Accounts,Student,Gives users access to view my learner's class recordings,My Learners Page,,,,,,,
+1049,my_learners_attendance_report_1049,My Learners Attendance Report,Accounts,Student,Gives users access to view my learner's attendance report,My Learners Page,,,,,,,
 100,live_100,Live,Live,Student,Gives users access to Live,Access Live Service,,,,,,,
 101,go_live_101,Go Live,Live,Student,Gives users access to Go Live interfaces (via buttons and links),Go Live Interface,"- Hub Homepage (see button)
 - CMS (see preview in Live)
 - Schedule (See 'Go Live' button)
 - Live (Destination of user through interfaces)","Hub, CMS, Schedule, Live",,,,,
+110,view_organization_live_recordings_110,View Organization Live Recordings,Live,Org Admin,Gives users access to view organization live recordings,Recordings,,,,,,,
+120,manage_live_classroom_recording_120,Manage Live Classroom Recording,Live,Org Admin,Gives users access to manage live classroom recordings,Recordings,,,,,,,
+130,override_live_classroom_recording_130,Override Live Classroom Recording,Live,Org Admin,Gives users access to override live classroom recordings,Recordings,,,,,,,
+140,delete_live_classroom_recordings_140,Delete Live Classroom Recordings,Live,Org Admin,Gives users access to delete live classroom recordings,Recordings,,,,,,,
+170,live_default_interface_170,Live Default Interface,Live,Teacher,Gives users access to Live's default interface,Live Interface,,,,,,,
+171,auto_interface_based_on_age_range_171,Auto Interface based on Age Range,Live,Teacher,Gives users access to auto interface based on age range,Live Interface,,,,,,,
+172,record_live_classes_172,Record Live Classes,Live,Teacher,Gives users acces to record live classes,Live Interface,,,,,,,
+173,record_class_classes_173,Record Class Classes,Live,Teacher,Gives users access to record class classes,Live Interface,,,,,,,
+174,collaboration_show_web_cam_dynamic_174,Collaboration Show Web Cam Dynamic,Live,Teacher,Gives teacher access to webcom speaker focus mode,Live Interface,,,,,,,
+175,collaboration_show_web_cam_focus_175,Collaboration Show Web Cam Focus,Live,Teacher,Gives teacher access to webcam teacher focus mode,Live Interface,,,,,,,
+176,collaboration_teacher_present_176,Collaboration Teacher Present,Live,Teacher,Gives teacher access to present mode,Live Interface,,,,,,,
+177,collaboration_observe_mode_177,Collaboration Observe Mode,Live,Teacher,Gives teacher access to observe mode,Live Interface,,,,,,,
+178,collaboration_screenshare_mode_178,Collaboration Screenshare Mode,Live,Teacher,Gives teacher access to screen share feature,Live Interface,,,,,,,
+179,participants_tab_179,Participants Tab,Live,Teacher,Gives teacher access to list of participants,Live Interface,,,,,,,
+180,lesson_plan_tab_180,Lesson Plan Tab,Live,Teacher,Gives teacher access to list of lesson materials in lesson plan,Live Interface,,,,,,,
+181,teaches_desk_tab_181,Teaches Desk Tab,Live,Teacher,Gives teacher access to other classroom management tools,Live Interface,,,,,,,
+182,settings_tab_182,Settings Tab,Live,Teacher,Gives teacher access to Live settings,Live Interface,,,,,,,
+183,view_lesson_attachments_183,View Lesson Attachments,Live,Teacher,Gives users access to view lesson attachments,Live Interface,,,,,,,
+184,view_starred_content_184,View Starred Content,Live,Teacher,Gives users access to view starred content,Live Interface,,,,,,,
+185,see_recommended_content_based_on_age_range_185,See Recommended Content based on Age Range,Live,Teacher,Gives users access to see recommended content based on age range,Live Interface,,,,,,,
 186,attend_live_class_as_a_teacher_186,Attend Live Class as a Teacher,Live,Teacher,Gives users access to attend live class as a teacher,Live for Teachers,"This permission determines:
 - Class Roster: If a user can be enrolled in the class as a Teacher Participant
 - Schedule: If a user can be added as a Teacher Participant
@@ -27,7 +72,9 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 203,pending_content_page_203,Pending Content Page,Library,Teacher,Gives users access to view pending content pages,Pending,,,,,,,Y
 204,published_content_page_204,Published Content Page,Library,Teacher,Gives users access to view published content pages,Published,,,,,,,Y
 205,archived_content_page_205,Archived Content Page,Library,Teacher,Gives users access to view archived content pages,Archive,,,,,,,Y
+300,view_asset_db_300,View Asset DB,Library,Org Admin,Gives users access to view asset database,Asset DB,,,,,,,
 210,view_my_unpublished_content_210,View My Unpublished Content,Library,Teacher,Gives users access to view my unpublished content,Unpublished,,,,,,,Y
+211,view_org_unpublished_content_211,View Org Unpublished Content,Library,None,Gives users access to view org unpublished content,Unpublished,,,,,,,
 212,view_my_pending_212,View My Pending,Library,Teacher,Gives users access to view my pending,Pending,,,,,,,Y
 213,view_org_pending_213,View Org Pending,Library,Org Admin,Gives users access to view org pending,Pending,,,,,,,Y
 214,view_my_published_214,View My Published,Library,Teacher,Gives users access to view my published,Published,,,,,,,Y
@@ -42,20 +89,31 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 229,view_all_schools_archived_229,View All Schools Archived,Library,Org Admin,Gives users access to view all schools archived,Archive,,,,,,,Y
 220,create_lesson_material_220,Create Lesson Material,Library,Teacher,Gives users access to create lesson material,Create Content,,,,,,,Y
 221,create_lesson_plan_221,Create Lesson Plan,Library,Teacher,Gives users access to create lesson plans,Create Content,,,,,,,Y
+222,copy_content_222,Copy Content,Library,School Admin,Gives users access to copy content,Create Content,,,,,,,
 223,create_my_schools_content_223,Create My Schools Content,Library,School Admin,Gives users access to create my schools content,Create Content,,,,,,,Y
 224,create_all_schools_content_224,Create All Schools Content,Library,Org Admin,Gives users access to create all schools content,Create Content,,,,,,,Y
 230,edit_my_unpublished_content_230,Edit My Unpublished Content,Library,Teacher,Gives users access to edit my unpublished content,Unpublished,,,,,,,Y
+231,edit_org_unpublished_content_231,Edit Org Unpublished Content,Library,None,Gives users access to edit my org unpublished ontent,Unpublished,,,,,,,
+232,edit_my_pending_content_232,Edit My Pending Content,Library,Teacher,Gives users access to edit my pending content,Pending,,,,,,,
+233,edit_org_pending_content_233,Edit Org Pending Content,Library,Org Admin,Gives users access to edit org pending content,Pending,,,,,,,
 234,edit_my_published_content_234,Edit My Published Content,Library,Teacher,Gives users access to edit my published content,Published,,,,,,,Y
 235,edit_org_published_content_235,Edit Org Published Content,Library,Org Admin,Gives users access to edit org published content,Published,,,,,,,Y
 236,edit_lesson_material_metadata_and_content_236,Edit Lesson Material Metadata and Content,Library,Org Admin,Gives users access to edit lesson material metadata and content,Edit Content,,,,,,,Y
 237,edit_lesson_plan_metadata_237,Edit Lesson Plan Metadata,Library,Org Admin,Gives users access to edit lesson plan metadata,Edit Content,,,,,,,Y
 238,edit_lesson_plan_content_238,Edit Lesson Plan Content,Library,Org Admin,Gives users access to edit lesson plan content,Edit Content,,,,,,,Y
+239,download_lesson_plan_239,Download Lesson Plan,Library,Org Admin,Gives users access to download lesson plan,Operational,,,,,,,
 247,edit_my_schools_published_247,Edit My Schools Published,Library,School Admin,Gives users access to edit my schools published,Published,,,,,,,Y
+248,edit_my_schools_pending_248,Edit My Schools Pending,Library,School Admin,Gives users access to my schools pending,Pending,,,,,,,
 249,edit_all_schools_published_249,Edit All Schools Published,Library,Org Admin,Gives users access to edit all schools published,Published,,,,,,,Y
+250,edit_all_schools_pending_250,Edit All Schools Pending,Library,Org Admin,Gives users access to edit all schools pending,Pending,,,,,,,
 251,delete_my_pending_251,Delete My Pending,Library,Teacher,Gives user access to delete their pending content,Pending,,,,,,,Y
 252,delete_org_pending_content_252,Delete Org Pending Content,Library,Org Admin,Gives user access to delete organization's pending content,Pending,,,,,,,Y
 253,delete_org_archived_content_253,Delete Org Archived Content,Library,Org Admin,Gives user access to delete organizations archived content,Archive,,,,,,,Y
 254,remove_org_published_content_254,Remove Org Published Content,Library,Org Admin,Gives user access to remove organization published content,Archive,,,,,,,Y
+255,view_folders_255,View Folders,Library,Teacher,Gives user access to view folders and the content within folders,Folders,,,,,,,
+256,create_folders_256,Create Folders,Library,Teacher,Gives user access to create folders and add content to the folders,Folders,,,,,,,
+257,edit_folders_257,Edit Folders,Library,Teacher,Gives user access to edit folder details,Folders,,,,,,,
+258,delete_folders_258,Delete Folders,Library,Teacher,Gives user access to delete folder (will not affect the content within folders),Folders,,,,,,,
 240,delete_my_unpublished_content_240,Delete My Unpublished Content,Library,Teacher,Gives users access to delete my unpublished content,Unpublished,,,,,,,Y
 241,delete_my_schools_pending_241,Delete My Schools Pending,Library,School Admin,Gives users access to delete my schools pending,Pending,,,,,,,Y
 242,remove_my_schools_published_242,Remove My Schools Published,Library,School Admin,Gives users access to remove my schools published,Published,,,,,,,Y
@@ -63,27 +121,50 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 244,delete_all_schools_pending_244,Delete All Schools Pending,Library,Org Admin,Gives users access to delete all schools pending,Archive,,,,,,,Y
 245,remove_all_schools_published_245,Remove All Schools Published,Library,Org Admin,Gives users access to remove all schools published,Published,,,,,,,Y
 246,delete_all_schools_archived_246,Delete All Schools Archived,Library,Org Admin,Gives users access to delete all schools archived,Archive,,,,,,,Y
+270,library_settings_270,Library Settings,Library,Teacher,Gives users access to library settings,Operational,,,,,,,
 271,approve_pending_content_271,Approve Pending Content,Library,School Admin,Gives users access to approve pending content,Pending,,,,,,,Y
 272,reject_pending_content_272,Reject Pending Content,Library,School Admin,Gives users access to reject pending content,Pending,,,,,,,Y
 273,archive_published_content_273,Archive Published Content,Library,School Admin,Gives users access to archive published content,Published,,,,,,,Y
 274,republish_archived_content_274,Republish Archived Content,Library,School Admin,Gives users access to republish archived content,Archive,,,,,,,Y
 275,delete_archived_content_275,Delete Archived Content,Library,School Admin,Gives users access to delete archived content,Archive,,,,,,,Y
+276,details_upload_thumbnail_276,Details Upload Thumbnail,Library,Teacher,Gives users access to upload thumbnail for content types,Operational,,,,,,,
+277,details_manually_add_program_277,Details Manually Add Program,Library,Teacher,Gives users access to define program,Operational,,,,,,,
+278,details_manually_add_developmental_skill_278,Details Manually Add Developmental Skill,Library,Teacher,Gives users access to define category,Operational,,,,,,,
+279,details_manually_add_skills_category_279,Details Manually Add Skills Category,Library,Teacher,Gives users access to define subcategory for each category,Operational,,,,,,,
+280,details_manually_add_suitable_age_280,Details Manually Add Suitable Age,Library,Teacher,Gives users access to define suitable age for content,Operational,,,,,,,
+281,details_manually_add_grade_281,Details Manually Add Grade,Library,Teacher,Gives users access to define the grade,Operational,,,,,,,
+282,share_content_282,Share Content,Library,Teacher,Gives users access to share content,Published,,,,,,,
+283,favorite_content_283,Favorite Content,Library,Teacher,Gives users access to favorite content,Published,,,,,,,
 284,associate_learning_outcomes_284,Associate Learning Outcomes,Library,Teacher,Gives users access to associate learning outcomes,Operational,,,,,,,Y
+285,publish_featured_content_with_lo_285,Publish Featured Content with LO,Library,School Admin,Gives users access to publish featured content with LO,Operational,,,,,,,
+286,publish_featured_content_no_lo_286,Publish Featured Content no LO,Library,School Admin,Gives users access to publish featured content with no LO,Operational,,,,,,,
+287,publish_free_content_with_lo_287,Publish Free Content with LO,Library,School Admin,Gives users access to publish free content with LO,Operational,,,,,,,
+288,publish_free_content_no_lo_288,Publish Free Content no LO,Library,School Admin,Gives users access to publish free content with no LO,Operational,,,,,,,
 289,create_folder_289,Create Folder,Library,Org Admin,Gives user access to create folders,Folders,,,,,,,Y
 290,view_folder_290,View Folder,Library,Org Admin,Gives user access to view folders,Folders,,,,,,,
 291,edit_folder_291,Edit Folder,Library,Org Admin,Gives user access to edit folders,Folders,,,,,,,
 292,delete_folder_292,Delete Folder,Library,Org Admin,Gives user access to delete folders,Folders,,,,,,,
+293,bulk_visibility_settings_293,Bulk Visibility Settings,Library,Org Admin,Gives users access to change the visibility settings in bulk,Operational,,,,,,,
 294,full_content_management_294,Full Content Management,Library,Org Admin,Gives users access to all content management features,Operational,,,,,,,
 295,show_all_folders_295,Show All Folders,Library,Org Admin,"Gives users access to see folders, even when they are empty",Folders,,,,,,,
+300,asset_db_300,Asset DB,Asset Database,Teacher,Gives users access to Media Assets (i.e. via icons/buttons),Access Asset DB,,,,,,,
 301,create_asset_page_301,Create Asset Page,Asset Database,Teacher,Gives users access to create asset pages,Create Asset,,,,,,,Y
+310,view_asset_310,View Asset,Asset Database,Teacher,Gives users access to view asset,Operational,,,,,,,
+311,view_live_recordings_311,View Live Recordings,Asset Database,Teacher,Gives users access to view live recordings,Operational,,,,,,,
 320,create_asset_320,Create Asset,Asset Database,Teacher,Gives users access to create asset pages,Create Asset,,,,,,,Y
+321,upload_asset_321,Upload Asset,Asset Database,Teacher,Gives users access to upload assets,Operational,,,,,,,
+330,edit_asset_330,Edit Asset,Asset Database,School Admin,Gives users access to edit assets,Operational,,,,,,,
+331,download_asset_331,Download Asset,Asset Database,Org Admin,Gives users access to download assets,Operational,,,,,,,
 340,delete_asset_340,Delete Asset,Asset Database,Org Admin,Gives users access to delete assets,Operational,,,,,,,Y
+380,asset_db_settings_380,Asset DB Settings,Asset Database,Teacher,Gives users access to asset DB settings,Operational,,,,,,,
 400,assessments_400,Assessments,Assessments,Teacher,Gives users access to assessments,Access Assessments,,,,,,,Y
+401,create_learning_outcome_page_401,Create Learning Outcome Page,Assessments,Teacher,Gives users access to create learning outcome pages,Create Learning Outcome,,,,,,,
 402,unpublished_page_402,Unpublished Page,Assessments,Teacher,Gives users access to view unpublished pages,Unpublished,,,,,,,Y
 403,pending_page_403,Pending Page,Assessments,Teacher,Gives users access to view pending pages,Pending,,,,,,,
 404,learning_outcome_page_404,Learning Outcome Page,Assessments,Teacher,Gives users access to view learning outcome pages,Published Learning Outcome,,,,,,,Y
 405,milestones_page_405,Milestones Page,Assessments,Teacher,Gives users access to view milestones pages,Milestones,,,,,,,Y
 406,assessments_page_406,Assessments Page,Assessments,Teacher,Gives users access to view assessments pages,Assessments,,,,,,,Y
+407,standards_page_407,Standards Page,Assessments,Teacher,Gives users access to view standards pages,Standards,,,,,,,
 410,view_my_unpublished_learning_outcome_410,View My Unpublished Learning Outcome,Assessments,Teacher,Gives users access to view my unpublished learning outcomes,Unpublished,,,,,,,Y
 411,view_org_unpublished_learning_outcome_411,View Org Unpublished Learning Outcome,Assessments,Org Admin,Gives users access to view org unpublished learning outcomes,Unpublished,,,,,,,Y
 412,view_my_pending_learning_outcome_412,View My Pending Learning Outcome,Assessments,Teacher,Gives users access to view my pending learning outcomes,Pending,,,,,,,Y
@@ -93,6 +174,8 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 416,view_published_learning_outcome_416,View Published Learning Outcome,Assessments,Teacher,Gives users access to view published learning outcome,Published Learning Outcome,,,,,,,Y
 417,view_unpublished_milestone_417,View Unpublished Milestone,Assessments,School Admin,Gives users access to view unpublished milestone,Milestones,,,,,,,Y
 418,view_published_milestone_418,View Published Milestone,Assessments,School Admin,Gives users access to view published milestones,Milestones,,,,,,,Y
+419,view_unpublished_standard_419,View Unpublished Standard,Assessments,School Admin,Gives users access to view the unpublished standard,Standards,,,,,,,
+420,view_published_standard_420,View Published Standard,Assessments,School Admin,Gives users access to view the published standard,Standards,,,,,,,
 424,view_org_completed_assessments_424,View Org Completed Assessments,Assessments,Org Admin,Gives users access to create learning outcomes,Assessments,,,,,,,Y
 425,view_org_in_progress_assessments_425,View Org In Progress Assessments,Assessments,Org Admin,Gives users access to create milestones,Assessments,,,,,,,Y
 426,view_school_completed_assessments_426,View School Completed Assessments,Assessments,School Admin,Gives users access to create standards,Assessments,,,,,,,Y
@@ -101,13 +184,21 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 429,view_my_pending_milestone_429,View My Pending Milestones,Assessments,School Admin,Gives users access to view their pending milestones,Milestones,,,,,,,Y
 421,create_learning_outcome_421,Create Learning Outcome,Assessments,Teacher,Gives users access to edit org unpublished learning outcomes,Create Learning Outcome,,,,,,,Y
 422,create_milestone_422,Create Milestone,Assessments,School Admin,Gives users access to remove content from the learning outcomes cart,Milestones,,,,,,,Y
+423,create_standard_423,Create Standard,Assessments,School Admin,Gives users access to add content learning outcomes,Standards,,,,,,,
 430,edit_my_unpublished_learning_outcome_430,Edit My Unpublished Learning Outcome,Assessments,Teacher,Gives users access to edit my pending learning outcomes,Unpublished,,,,,,,Y
 431,edit_org_unpublished_learning_outcome_431,Edit Org Unpublished Learning Outcome,Assessments,None,Gives users access to edit org pending learning outcomes,Unpublished,,,,,,,Y
+432,remove_content_learning_outcomes_cart_432,Remove Content Learning Outcomes Cart,Assessments,Teacher,Gives users access to remove content learning outcomes from the cart,General,,,,,,,
+433,add_content_learning_outcomes_433,Add Content Learning Outcomes,Assessments,Teacher,Gives users access to add content learning outcomes,General,,,,,,,
+434,edit_my_pending_learning_outcome_434,Edit My Pending Learning Outcome,Assessments,Teacher,Gives users access to edit my pending learning outcomes,Pending,,,,,,,
+435,edit_org_pending_learning_outcome_435,Edit Org Pending Learning Outcome,Assessments,School Admin,Gives users access to edit org pending learning outcomes,Pending,,,,,,,
 436,edit_published_learning_outcome_436,Edit Published Learning Outcome,Assessments,School Admin,Gives users access to edit published learning outcomes,Published Learning Outcome,,,,,,,Y
+437,edit_attendance_for_completed_assessment_437,Edit Attendance for Completed Assessment,Assessments,None,Gives users access to edit attendance for completed assessmens,Assessments,,,,,,,
 438,edit_attendance_for_in_progress_assessment_438,Edit Attendance for In Progress Assessment,Assessments,Teacher,Gives users access to edit attendance for in progress assessments,Assessments,,,,,,,Y
 439,edit_in_progress_assessment_439,Edit In Progress Assessment,Assessments,Teacher,Gives users access to edit in progress assessments,Assessments,,,,,,,Y
 440,edit_unpublished_milestone_440,Edit Unpublished Milestone,Assessments,School Admin,Gives users access to edit unpublished milestones,Milestones,,,,,,,Y
 441,edit_published_milestone_441,Edit Published Milestone,Assessments,School Admin,Gives users access to edit published milestones,Milestones,,,,,,,Y
+442,edit_unpublished_standard_442,Edit Unpublished Standard,Assessments,School Admin,Gives users access to edit unpublished standards,Standards,,,,,,,
+443,edit_published_standard_443,Edit Published Standard,Assessments,School Admin,Gives users access to edit published standards,Standards,,,,,,,
 444,delete_my_unpublished_learning_outcome_444,Delete My Unpublished Learninng Outcome,Assessments,Teacher,Gives users access to delete my unpublished learning outcomes,Unpublished,,,,,,,Y
 445,delete_org_unpublished_learning_outcome_445,Delete Org Unpublished Learning Outcome,Assessments,School Admin,Gives users access to delete org unpublished learning outcomes,Unpublished,,,,,,,Y
 446,delete_my_pending_learning_outcome_446,Delete My Pending Learning Outcome,Assessments,Teacher,Gives users access to delete my pending learning outcomes,Pending,,,,,,,Y
@@ -115,8 +206,15 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 448,delete_published_learning_outcome_448,Delete Published Learning Outcome,Assessments,School Admin,Gives users access to delete published learning outcomes,Published Learning Outcome,,,,,,,Y
 449,delete_unpublished_milestone_449,Delete Unpublished Milestone,Assessments,School Admin,Gives users access to delete unpublished milestones,Milestones,,,,,,,Y
 450,delete_published_milestone_450,Delete Published Milestone,Assessments,School Admin,Gives users access to delete published milestones,Milestones,,,,,,,Y
+451,delete_unpublished_standard_451,Delete Unpublished Standard,Assessments,School Admin,Gives users access to delete unpublished standards,Standards,,,,,,,
+452,delete_published_standard_452,Delete Published Standard,Assessments,School Admin,Gives users access to delete published standards,Standards,,,,,,,
+453,delete_in_progress_assessments_453,Delete In Progress Assessments,Assessments,Org Admin,Gives user access to delete in progress assessment feature,Assessments,,,,,,,
+480,assessment_settings_480,Assessment Settings,Assessments,Org Admin,Gives users access to view assessment settings,General,,,,,,,
 481,approve_pending_learning_outcome_481,Approve Pending Learning Outcome,Assessments,School Admin,Gives users access to approve pending learning outcomes,Pending,,,,,,,Y
 482,reject_pending_learning_outcome_482,Reject Pending Learning Outcome,Assessments,School Admin,Gives users access to reject pending learning outcomes,Pending,,,,,,,Y
+483,upload_learning_outcomes_483,Upload Learning Outcomes,Assessments,Org Admin,Gives users access to upload learning outcomes,General,,,,,,,
+484,download_learning_outcomes_484,Download Learning Outcomes,Assessments,Org Admin,Gives users access to download learning outcomes,General,,,,,,,
+485,add_learning_outcome_to_content_485,Add Learning Outcome to Content,Assessments,Teacher,Gives users access to add learning outcomes to content,General,,,,,,,
 486,view_pending_milestone_486,View Org Pending Milestone,Assessments,Org Admin,Gives users access to view pending milestones within the organization,Milestones,,,,,,,Y
 487,edit_my_unpublished_milestone_487,Edit My Unpublished Milestone,Assessments,Teacher,Gives users access to edit their unpublished milestones,Milestones,,,,,,,Y
 488,delete_my_unpublished_milestone_488,Delete My Unpublished Milestone,Assessments,Teacher,Gives users access to delete their unpublished milestones,Milestones,,,,,,,Y
@@ -139,26 +237,44 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 526,create_study_calendar_events_526,Create Study Calendar Events,Schedule,Teacher,Gives user access to create Study class events,Create Schedule Class Type,,,,,,,
 527,create_home_fun_calendar_events_527,Create Home Fun Calendar Events,Schedule,Teacher,Gives user access to create Home Fun class events,Create Schedule Class Type,,,,,,,
 530,edit_event_530,Edit Event,Schedule,Teacher,Gives users access to edit events,Edit Schedule,,,,,,,Y
+531,override_live_classroom_recording_setting_531,Override Live Classroom Recording Setting,Schedule,Org Admin,Gives users access to override live classroom recording settings,Operational,,,,,,,
 540,delete_event_540,Delete Event,Schedule,Teacher,Gives users access to delete events,Delete Schedule,,,,,,,Y
+541,delete_review_calendar_events_541,Delete Review Calendar Events,Schedule,Teacher,Gives users access to delete review calendar events,Delete Schedule,,,,,,,
+580,schedule_settings_580,Schedule Settings,Schedule,Teacher,Gives users access to schedule settings,Operational,,,,,,,
+581,schedule_quick_start_581,Schedule Quick Start,Schedule,Teacher,Gives users access to schedule quick starts,operational,,,,,,,
 582,schedule_search_582,Schedule Search,Schedule,School Admin,Gives users access to schedule searches,Operational,,,,,,,Y
 600,reports_600,Reports,Reports,Student,Gives users access to Reports (i.e. via icons/buttons),Access Reports,,,,,,,
+601,org_reports_601,Org Reports,Reports,Org Admin,Gives users access to view org reports,Operational,,,,,,,
+602,school_reports_602,School Reports,Reports,School Admin,Gives users access to view school reports,Operational,,,,,,,
 603,teacher_reports_603,Teacher Reports,Reports,Teacher,Gives users access to view teacher reports,Operational,,,,,,,Y
+604,class_reports_604,Class Reports,Reports,Student,Gives users access to vew class reports,Operational,,,,,,,
+605,student_reports_605,Student Reports,Reports,Student,Gives users access to vew student reports,Operational,,,,,,,
 610,view_reports_610,View Reports,Reports,Org Admin,Gives users access to view reports,Operational,,,,,,,Y
 611,view_my_school_reports_611,View My School Reports,Reports,School Admin,Gives users access to view my school reports,Operational,,,,,,,Y
 612,view_my_organizations_reports_612,View My Organizations Reports,Reports,Org Admin,Gives users access to view my organization reports,Operational,,,,,,,Y
+613,view_all_organizations_reports_613,View All Organizations Reports,Reports,Super Admin,Gives users access to view all organization reports,Operational,,,,,,,
 614,view_my_reports_614,View My Reports,Reports,Teacher,Gives users access to view my reports,Operational,,,,,,,Y
+615,report_student_achievement_615,Report Student Achievement,Reports,Teacher,Gives users access to report student achievement,Operational,,,,,,,
 616,report_learning_outcomes_in_categories_616,Report Learning Outcomes in Categories,Reports,Teacher,Gives users access to report learning outcomes in categories,Operational,,,,,,,
 617,report_organization_teaching_load_617,Report Organization Teaching Load,Reports,Org Admin,Give users access to teaching load report for org admin,Report - Teaching Load,,,,,,,Y
 618,report_school_teaching_load_618,Report School Teaching Load,Reports,School Admin,Give users access to teaching load report for school admin,Report - Teaching Load,,,,,,,Y
 619,report_my_teaching_load_619,Report My Teaching Load,Reports,Teacher,Give users access to teaching load report for teacher(s),Report - Teaching Load,,,,,,,Y
 620,teachers_classes_teaching_time_report_620,Teachers Classes Teaching Time Report,Reports,Teacher,Give users access to class teaching time load report for teacher(s),Report - Teaching Load,,,,,,,
+621,class_load_time_report_621,Class Load Time Report,Reports,Teacher,Give users access to class load report for teacher(s),Report - Teaching Load,,,,,,,
 622,time_assessing_load_report_622,Time Assessing Load Report,Reports,Teacher,Give users access to time assessing report for teacher(s),Report - Teaching Load,,,,,,,
+623,a_teachers_detailed_time_load_report_623,A Teachers Detailed Time Load Report,Reports,Teacher,Give users access to detailed time assessing report for teacher(s),Report - Teaching Load,,,,,,,
+624,a_teachers_schedule_load_report_624,A Teachers Schedule Load Report,Reports,Teacher,Give users access to schedule load report for teacher(s),Report - Teaching Load,,,,,,,
+625,a_teachers_detailed_schedule_load_report_625,A Teachers Detailed Schedule Load Report,Reports,Teacher,Give users access to detailed schedule load report for teacher(s),Report - Teaching Load,,,,,,,
 626,organization_class_achievements_report_626,Organization Class Achievements Report,Reports,Teacher,Give users access to class achievement report for org admin,Report - Class Achievement,,,,,,,
+627,school_class_achievements_report_627,School Class Achievements Report,Reports,School Admin,Give users access to class achievement report for schol admin,Report - Class Achievement,,,,,,,
+628,my_class_achievements_report_628,My Class Achievements Report,Reports,Teacher,Give users access to class achievement report for teacher,Report - Class Achievement,,,,,,,
 629,my_student_achievements_report_629,My Student Achievements Report,Reports,Parent,Give users access to student achievement report for parent,Report - Class Achievement,,,,,,,
 640,report_organizations_skills_taught_640,Report Organizations Skills Taught,Reports,Org Admin,Give users access to skills taught report for org admin,Report - Skills Taught,,,,,,,
 641,report_schools_skills_taught_641,Report Schools Skills Taught,Reports,School Admin,Give users access to skills taught report for school admin,Report - Skills Taught,,,,,,,
 642,report_my_skills_taught_642,Report My Skills Taught,Reports,Teacher,Give users access to skills taught report for teacher,Report - Skills Taught,,,,,,,
 643,skills_taught_by_all_teachers_in_this_org_report_643,Skills Taught By All Teachers In This Org Report,Reports,Org Admin,Give users access to skills taught report data for org admin,Report - Skills Taught,,,,,,,
+644,skills_taught_by_all_teachers_in_my_school_report_644,Skills Taught By All Teachers in My School Report,Reports,School Admin,Give users access to skills taught report data for school admin,Report - Skills Taught,,,,,,,
+645,a_teachers_skills_taught_report_645,A Teachers Skills Taught Report,Reports,Teacher,Give users access to skills taught report data for teacher,Report - Skills Taught,,,,,,,
 646,report_organizations_class_achievements_646,Report Organizations Class Achievements,Reports,Org Admin,Give users access to class achievement report data for org admin,Report - Class Achievement,,,,,,,
 647,report_schools_class_achievements_647,Report Schools Class Achievements,Reports,School Admin,Give users access to class achievement report data for school admin,Report - Class Achievement,,,,,,,
 648,report_my_class_achievments_648,Report My Class Achievments,Reports,Teacher,Give users access to class achievement report data for teacher,Report - Class Achievement,,,,,,,
@@ -177,14 +293,24 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 661,report_student_progress_student_661,Report Student Progress Student,Reports,Student,Gives users access to student progress report within the report list for student,Report - Student Progress ,,,,,,,Y
 662,student_progress_report_662,Student Progress Report,Reports,Student,Gives users access to student progress report within the report list ,Report - Student Progress ,,,,,,,Y
 670,view_teacher_feedback_670,View Teacher Feedback Card,Reports,Student,Gives user visibility of the teacher feedback card,Report - Teacher Feedback,,,,,,,Y
+630,share_report_630,Share Report,Report,School Admin,Gives users access to share reports,Operational,,,,,,,
+631,download_report_631,Download Report,Report,School Admin,Gives users access to download reports,Operational,,,,,,,
+680,report_settings_680,Report Settings,Report,School Admin,Gives users access to report settings,Operational,,,,,,,
 10100,organizational_profile_10100,Organizational Profile,Accounts,Student,Gives users access to Organizational Profile (i.e. via icons/buttons),Organizational Profile,"As a user with this permission, I can view view the button or interface, or access the link successfully to view the organization details.  If I don't have this permission (a) the button is unclickable, or equally (b) the details are hidden once the button is clicked.",User,,,,,Y
+10101,view_all_organization_details_page_10101,View All Organization Details Page,Accounts,Student,Gives users access to view all organization details page,Organizational Profile,"As a user with this permission, I can view the organization details of all the organizations which consist of Organization Name, Org Address, Org Contact Info, Short Code, and Personalization Features",User,,,,,
 10110,view_this_organization_profile_10110,View This Organization Profile,Accounts,School Admin,Gives users access to view this organization profile,Organizational Profile,"As a user with this permission, I can view the organization details of the organization that has granted me this permission, which consist of Organization Name, Org Address, Org Contact Info, Short Code, and Personalization Features",User,,10100,,,
 10111,view_my_organization_profile_10111,View My Organization Profile,Accounts,Student,Gives users access to view my organization profile,Organizational Profile,"As a user with this permission, I can view the organization details of my organization which consist of Organization Name, Org Address, Org Contact Info, Short Code, and Personalization Features.  ",User,,10100,,,
+10112,view_organization_details_10112,View Organization Details,Accounts,Student,Gives users access to view organization details,Organizational Profile,deprecate,User,,10100,,,
 10220,create_own_organization_10220,Create Own Organization,Accounts,Parent,Gives users access to create their own organization,Organizational Profile,"As a user, I may or may not have this permission when I join an organization.  Assuming I have this permission, I will be able to create my own organization.",User,,10100,,,Y
+10221,reactivate_own_organization_10221,Reactivate Own Organization,Accounts,Org Admin,Gives users access to reactivate their closed organization account,Organizational Profile,"As a user who's organization was deleted (by my accord, or by the Super Admin), when I sign in into KidsLoop, I am presented an option to reactivate my deleted organization if I have this permission.  If I don't have this permission, I will not be presented the option to reactivate my organization.",User,,,,,
 10330,edit_this_organization_10330,Edit This Organization,Accounts,Org Admin,Gives users access to edit this organization,Organizational Profile,,,,1,,,Y
 10331,edit_my_organization_10331,Edit My Organization,Accounts,Org Admin,Gives users access to edit my organization,Organizational Profile,,,,10100,,,Y
+10332,edit_email_address_10332,Edit Email Address,Accounts,Org Admin,Gives users access to edit their email address,Organizational Profile,,,,10100 | 1,,,
+10333,edit_password_10333,Edit Password,Accounts,Org Admin,Gives users access to edit their password,Organizational Profile,deprecate,,,,,,
 10440,delete_organization_10440,Delete Organization,Accounts,Org Admin,Gives users access to delete an organization,Organizational Profile,"As a user with this permission and 10220, I will be able to delete the organization",,,10100 & 10220 & 10880 | 1,,,Y
+10880,change_owner_10880,Change Owner,Accounts,Org Admin,Gives users access to change owners,Organizational Profile,"As a user with this permission and 10220, I will be able to change the owner of the organization",,,10220,,,
 10881,join_organization_10881,Join Organization,Accounts,Student,Gives users access to join an organization,Organizational Profile,,,,,,,Y
+10882,leave_organization_10882,Leave Organization,Accounts,Student,Gives users access to leave an organization,Organizational Profile,,,,,,,
 20100,academic_profile_20100,Academic Profile,Academic Profile,School Admin,Gives users access to School Resources (i.e. via icons/buttons),Schools --> Deprecate,,,,,,,
 20101,define_school_program_page_20101,School Page,Academic Profile,School Admin,Gives users access to define school program pages,Schools,,,,,,,Y
 20102,define_age_ranges_page_20102,Age Range Page,Academic Profile,School Admin,Gives users access to define age ranges page,Age Range,,,,,,,Y
@@ -201,6 +327,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 20118,view_my_classes_20118,View My Classes,Academic Profile,Teacher,Gives users access to view all classes they are participating as a Teacher,Clases,,,,,,,Y
 20119,view_my_school_20119,View My School,Academic Profile,School Admin,Gives users access to view their school details,Schools,,,,,,,Y
 20115,view_subjects_20115,View Subjects,Academic Profile,School Admin,Gives users access to view subjects,Subjects,,,,,,,Y
+20116,view_class_roster_20116,View Class Roster,Academic Profile,School Admin,Gives users access to view class roster,Classes,,,,,,,
 20220,create_school_20220,Create School,Academic Profile,Org Admin,Gives users access to create schools,Schools,,,,,,,Y
 20221,create_program_20221,Create Program,Academic Profile,School Admin,Gives users access to create programs,Programs,,,,,,,Y
 20222,create_age_range_20222,Create Age Range,Academic Profile,School Admin,Gives users access to create age ranges,Age Range,,,,,,,Y
@@ -209,13 +336,17 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 20225,add_students_to_class_20225,Add Students to Class,Academic Profile,School Admin,Gives users access to add students to class,Classes,,,,,,,Y
 20226,add_teachers_to_class_20226,Add Teachers to Class,Academic Profile,School Admin,Gives users access to add teachers to class,Classes,,,,,,,Y
 20227,create_subjects_20227,Create Subjects,Academic Profile,Org Admin,Gives users access to create subjects,Subjects,,,,,,,Y
+20228,create_school_classes_20228,Create School Classes,Academic Profile,School Admin,Gives users access to create classes within the associated School,Classes,,,,,,,
 20330,edit_school_20330,Edit School,Academic Profile,School Admin,Gives users access to edit school,Schools,,,,,,,Y
 20331,edit_program_20331,Edit Program,Academic Profile,School Admin,Gives users access to edit programs,Programs,,,,,,,Y
 20332,edit_age_range_20332,Edit Age Range,Academic Profile,School Admin,Gives users access to edit age range,Age Range,,,,,,,Y
 20333,edit_grade_20333,Edit Grade,Academic Profile,Org Admin,Gives users access to edit grades,Grades,,,,,,,Y
 20334,edit_class_20334,Edit Class,Academic Profile,Org Admin,Gives users access to edit classes within the Organization,Classes,,,,,,,Y
 20335,move_students_to_another_class_20335,Move Students to Another Class,Academic Profile,School Admin,Gives users access to move students to another class,Classes,,,,,,,
+20336,edit_teacher_in_class_20336,Edit Teacher in Class,Academic Profile,School Admin,Gives users access to edit teacher in class,Classes,,,,,,,
 20337,edit_subjects_20337,Edit Subjects,Academic Profile,Org Admin,Gives users access to edit subjects,Subjects,,,,,,,Y
+20338,edit_students_in_class_20338,Edit Students in Class,Academic Profile,School Admin,Gives users access to edit students in class,Classes,,,,,,,
+20339,edit_school_class_20339,Edit School Classes,Academic Profile,School Admin,Gives users access to edit classes within the associated School,Classes,,,,,,,
 20440,delete_school_20440,Delete School,Academic Profile,School Admin,Gives users access to delete schools,Schools,,,,,,,Y
 20441,delete_program_20441,Delete Program,Academic Profile,School Admin,Gives users access to delete programs,Programs,,,,,,,Y
 20442,delete_age_range_20442,Delete Age Range,Academic Profile,School Admin,Gives users access to delete age ranges,Age Range,,,,,,,Y
@@ -224,12 +355,35 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 20445,delete_student_from_class_roster_20445,Delete Student from Class Roster,Academic Profile,School Admin,Gives users access to delete students from class rosters,Classes,,,,,,,Y
 20446,delete_teacher_from_class_20446,Delete Teacher from Class,Academic Profile,School Admin,Gives users access to delete teachers from class,Classes,,,,,,,Y
 20447,delete_subjects_20447,Delete Subjects,Academic Profile,Org Admin,Gives users access to delete subjects,Subjects,,,,,,,Y
+20448,delete_school_class_20448,Delete School Classes,Academic Profile,School Admin,Gives users access to delete classes within the associated School,Classes,,,,,,,
+20880,upload_schools_20880,Upload Schools,Academic Profile,Org Admin,Gives users access to upload schools,Schools,,,,,,,
+20881,download_schools_20881,Download Schools,Academic Profile,Org Admin,Gives users access to download schools,Schools,,,,,,,
+20882,upload_program_20882,Upload Program,Academic Profile,Org Admin,Gives users access to upload programs,Programs,,,,,,,
+20883,download_program_20883,Download Program,Academic Profile,Org Admin,Gives users access to download programs,Programs,,,,,,,
+20884,upload_class_roster_with_teachers_20884,Upload Class Roster with Teachers,Academic Profile,Org Admin,Gives users access to upload class rosters with teachers,Classes,,,,,,,
+20885,download_class_roster_with_teachers_20885,Download Class Roster with Teachers,Academic Profile,Org Admin,Gives users access to download class rosters with teachers,Classes,,,,,,,
+20886,upload_age_range_20886,Upload Age Range,Academic Profile,Org Admin,Gives users access to upload age ranges,Age Range,,,,,,,
+20887,download_age_range_20887,Download Age Range,Academic Profile,Org Admin,Gives users access to download age ranges,Age Range,,,,,,,
+20888,upload_grades_20888,Upload Grades,Academic Profile,Org Admin,Gives users access to upload grades,Grades,,,,,,,
+20889,download_grades_20889,Download Grades,Academic Profile,Org Admin,Gives users access to download grades,Grades,,,,,,,
+20890,upload_classes_20890,Upload Classes,Academic Profile,Org Admin,Gives users access to upload classes,Classes,,,,,,,
+20891,download_classes_20891,Download Classes,Academic Profile,Org Admin,Gives users access to download classes,Classes,,,,,,,
+20892,upload_subject_20892,Upload Subjects,Academic Profile,Org Admin,Gives users access to upload subjects,Subjects,,,,,,,
+20893,download_subject_20893,Download Subjects,Academic Profile,Org Admin,Gives users access to download subjects,Subjects,,,,,,,
 30100,roles_30100,Roles,Accounts,Org Admin,Gives users access to Roles Page (i.e. via icons/buttons),Roles,,,,,,,
+30101,role_levels_30101,Role Levels,Accounts,Org Admin,Gives users access to view role levels,Roles,deprecate,,,,,,
+30102,roles_and_permissions_30102,Roles and Permission Page,Accounts,Org Admin,Gives users access to view roles and permissions page,Roles,,,,,,,
 30110,view_roles_and_permissions_30110,View Roles,Accounts,Org Admin,Gives users access to view roles and permissions,Roles,,,,,,,Y
+30111,view_role_priority_levels_30111,View Role Priority Levels,Accounts,Org Admin,Gives users access to view role priority levels,Roles,deprecate,,,,,,
 30112,view_role_permissions_30112,View Role Permissions,Accounts,Org Admin,Gives users access to view role permissions,Roles,deprecate,,,,,,Y
+30220,create_groups_30220,Create Groups,Accounts,Org Admin,Gives users access to create groups,Roles,deprecate,,,,,,
+30221,create_role_priority_levels_30221,Create Role Priority Levels,Accounts,Org Admin,Gives users access to create role priority levels,Roles,deprecate,,,,,,
 30222,create_role_with_permissions_30222,Create Role with Permissions,Accounts,Org Admin,Gives users access to create roles with permissions,Roles,,,,,,,Y
+30330,edit_groups_30330,Edit Groups,Accounts,Org Admin,Gives users access to edit groups,Roles,deprecate,,,,,,
+30331,edit_role_priority_levels_30331,Edit Role Priority Levels,Accounts,Org Admin,Gives users access to edit role priority levels,Roles,deprecate,,,,,,
 30332,edit_role_and_permissions_30332,Edit Role Permissions,Accounts,Org Admin,Gives users access to edit role permissions,Roles,,,,,,,Y
 30440,delete_role_30440,Delete Role ,Accounts,Org Admin,Gives users access to delete roles,Roles,,,,,,,Y
+40100,users_40100,Users,Accounts,Org Admin,Gives users access to Users Page (i.e. via icons/buttons),Users,"As a user with this permission, I can view view the button or interface to view the User Table.  ",User,,,,,
 40101,view_user_page_40101,View User Page,Accounts,Org Admin,Gives users access to view user pages,Users,"As a user with this permission, I can view view and click the button to the User table, or access the link successfully to view the User table.  If I don't have this permission (a) ideally, the button is visible, however, unclickable, or (c) worst case scenario, the button is clickable, however, the user table is hidden and the user cannot see any users.",User,,40100,,,Y
 40110,view_users_40110,View All Users,Accounts,Org Admin,Gives users access to view users,Users,"As a user with this permission, I can click the button to the User table and view the user details/information, or access the link successfully to view the User table and the appropriate filters defined by my visibility-range to view ALL USERS within the organization and organization's schools within the User Table.  If I don't have this permission I cannot view all users within the organization and organization's schools within the User Table.",User,"User A should see (a) users that are associated with all schools, and (b) users who are not associated with any school.  
 
@@ -238,23 +392,32 @@ Note:
 - TO BE: A user with this permission should be able to view all users within the organization without having to be associated to all the schools.",40100,,,Y
 40111,view_my_school_users_40111,View My School Users,Accounts,School Admin,Give users access to view users in specific schools,Users,"As a user with this permission, I can click the button to the User table and view the user details/information, or access the link successfully to view the User table and the appropriate filters defined by my visibility-range (partly defined by my associated schools) to view SPECIFIC users within the User Table.  If I don't have this permission (a) I cannot view the users within my associated schools, or (b) the users who are not associated with any school and are taking classes that belong to my school.",User,"User A should see (a) users that are associated with User A's schools, only.",40100,,,
 40112,view_my_class_users_40112,View My Class Users,Accounts,Teacher,Gives users access to view users in taught classes,Users,"As a user with this permission, I can click the button to the User table and view the user details/information, or access the link successfully to view the User table and the appropriate filters defined by my visibility-range (partly defined by my associated schools' classes) to view SPECIFIC users who are in the classes I currently teach within the User Table.  If I don't have this permission (a) I cannot view the users within my associated schools' classes within the User Table.",User,"User A should see (a) users that are associated with User A's associated schools' classes, only",40100,,,
+40113,view_my_users_40113,View My Users,Accounts,Parent,Gives users access to view users under their account,Users,"As a user with this permission, I can click the button to the User table and view the user details/information, or access the link successfully to view information within the User table of users who are associated to my email or phone account (it's plausible that to view this information is not necessarily within the User Table).  If I don't have this permission (a) I cannot view the details of users who are associated with my account.",User,,40100,,,
 40220,create_users_40220,Create Users,Accounts,Org Admin,Gives users access to create users for the organization,Users,"As a user with this permission, I can click ""Create"" user to create: (a) a user within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can create any user required within the organization.  If I don't have this permission I cannot create all types of users within the organization and the organization school(s).
 Note: A user with this permission will be able to ""reactivate"" a user that has been ""deactivated"" for less than 30 days, and has not bee deleted.",User,"User A should be able to create (a) users that are associated with any school within the organization, and (b) users who are not associated with any school.  
 Note: It shouldn't be necessary for this user to be associated with SCHOOL A to create a user for SCHOOL A if they have this permission.  If this is the case currently, we should update accordingly. ",40100,,,Y
 40221,create_my_school_users_40221,Create My School Users,Accounts,School Admin,Gives users access to create users for specific schools,Users,"As a user with this permission, I can click ""Create"" user to create a user within my visibility-range: (a) specifically, a user within my associated school(s).   If I don't have this permission I cannot create users within my school",User,"User A should be able to create (a) users that are associated with User A's schools, only.  
 Note: If this user is associated with ALL SCHOOLS created within the organization, the only user they won't be able to create is a user without being associated to a school.",40100,,,
+40222,create_my_class_users_40222,Create My Class Users,Accounts,Teacher,Gives users access to create users in taught classes,Users,deprecate,,,40100,,,
+40223,create_my_users_40223,Create My Users,Accounts,Parent,Gives users access to create users under their account,Users,"As a user with this permission, I can use the app to create a user to be invited into an organization that will be associated to my email or phone account. If I don't have this permission (a) I cannot create a user that will be associated with my email or phone account.",User,,40100,,,
 40330,edit_users_40330,Edit Users,Accounts,Org Admin,Gives users access to edit users,Users,"As a user with this permission, I can click ""Edit"" user to edit: (a) a user within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can edit any user required within the organization.  If I don't have this permission I cannot edit all types of users within the organization and the organization schools.",User,"User A should be able to edit (a) users that are associated with any school within the organization, and (b) users who are not associated with any school.  
 Note: It shouldn't be necessary for this user to be associated with SCHOOL A to edit a user for SCHOOL A if they have this permission.  If this is the case currently, we should update accordingly. ","40100, and 40220",,,Y
 40331,edit_my_school_users_40331,Edit My School Users,Accounts,School Admin,Gives users access to edit users in specific schools,Users,"As a user with this permission, I can click ""Edit"" user to edit a user within my visibility-range: (a) specifically, a user within my associated school(s).  If I don't have this permission I cannot edit users within my school(s).",User,"User A should be able to edit (a) users that are associated with User A's schools, only.  
 Note: If this user is associated with ALL SCHOOLS created within the organization, the only user they won't be able to edit is a user without being associated to a school.","40100, and 40221",,,
+40332,edit_my_class_users_40332,Edit My Class Users,Accounts,Teacher,Gives users access to edit users in taught classes,Users,deprecate,,,,,,
+40333,edit_my_users_40333,Edit My Users,Accounts,Parent,Gives users access to edit users under their account,Users,"As a user with this permission, I can use the app to edit a user that is associated to my email or phone account. If I don't have this permission (a) I cannot edit a user that is associated with my email or phone account.",User,,"40100, and 40223",,,
 40440,delete_users_40440,Delete Users,Accounts,Org Admin,Gives users access to delete users at the organization level,User Activation,"As a user with this permission, I can click ""Delete"" user to delete: (a) a user within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can delete any user required within the organization.  If I don't have this permission I cannot delete all types of users within the organization and the organization schools.
 Note: Deleting a user is one of the ways the system complys with GDPR and COPPA.  A user that has been deleted cannot be reactivated by the Org Admin.  In this case, to rejoin the organization, this user would need to be readded to the organization as a new user.  After a user is deleted from an organization, it is possible for a user to rejoin the organization. 
 Note: Deleting a user prevents the user from many operations.  The user cannot sign into the organization, the user cannot create content, the user cannot be added to a class roster, the user cannot be scheduled for any scheduled event, and the user cannot attend a Live class (via a link) within that organization.",User,"User A should be able to delete (a) users that are associated with any school within the organization, and (b) users who are not associated with any school.  
 Note: It shouldn't be necessary for this user to be associated with SCHOOL A to delete a user for SCHOOL A if they have this permission.  If this is the case currently, we should update accordingly. ","40100, and 40220",,,Y
 40441,delete_my_school_users_40441,Delete My School Users,Accounts,School Admin,Gives users access to delete users in specific schools,User Activation,"As a user with this permission, I can click ""Delete"" user to delete a user within my visibility-range: (a) specifically, a user within my associated school(s).  If I don't have this permission I cannot delete users within my school(s).",User,"User A should be able to delete (a) users that are associated with User A's schools, only.  
 Note: If this user is associated with ALL SCHOOLS created within the organization, the only user they won't be able to delete is a user without being associated to a school.","40100, and 40221",,,Y
+40442,delete_my_class_users_40442,Delete My Class Users,Accounts,Teacher,Gives users access to delete users in taught classes,User Activation,deprecate,,,,,,
+40443,delete_my_users_40443,Delete My Users,Accounts,Parent,Gives users access to delete users under their account,User Activation,"As a user with this permission, I can use the app to delete a user that is associated to my email or phone account. If I don't have this permission (a) I cannot delete a user that is associated with my email or phone account.  If I delete my user, I am making a request to delete the user within the indicated organization.  The user is deleted (or deactivated) within the organization automatically, or manually.",User,,"40100, and 40223",,,
 40880,upload_users_40880,Upload Users,Accounts,Org Admin,Gives users access to upload users,Users,"As a user with this permission, I can use a .csv file to create (a) users within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can create any user required within the organization using a .csv file.  If I don't have this permission I cannot create all types of users within the organization and the organization school(s) using a .csv.",User,"User A should be able to create (a) users that are associated with any school within the organization, and (b) users who are not associated with any school using a .csv file.  
 Note: It shouldn't be necessary for this user to be associated with SCHOOL A to create a user for SCHOOL A if they have this permission.  If this is the case currently, we should update accordingly. ",40100 and 40220 | 40221,,,Y
+40881,download_users_40881,Download Users,Accounts,Org Admin,Gives users access to download users,Users,"As a user with this permission, I can download a .csv file of (a) users within any school(s), and/or (b) users that's not a part of any school.  Essentially, I can download all users within the organization into a .csv file.  If I don't have this permission I cannot download all types of users within the organization and the organization school(s) into a .csv.",User,"User A should be able to download (a) users that are associated with any school within the organization, and (b) users who are not associated with any school into a .csv file.  
+Note: It shouldn't be necessary for this user to be associated with SCHOOL A to create a user for SCHOOL A if they have this permission.  If this is the case currently, we should update accordingly. ",40100 and 40220 | 40221,,,
 40882,send_invitation_40882,Send Invitation,Accounts,Org Admin,Gives users access to send invitations,Users,"As a user with this permission, I can see a button/trigger to click that will manually send an invitation to users to join my organization. 
 Note: When a user is added to an organization, an invitation to join my organization is automatically sent to this user ",,,40100 and 40220 | 40221,,,Y
 40883,deactivate_user_40883,Deactivate User,Accounts,Org Admin,Gives users access to deactivate users at the organization level,User Activation,"As a user with this permission, I can click ""Delete"" user to first ""Deactive"": (a) a user within any school(s), and/or (b) a user that's not a part of any school.  Essentially, I can ""deactivate"" then delete any user required within the organization.  If I don't have this permission I cannot delete all types of users within the organization and the organization schools.
@@ -264,6 +427,82 @@ Note: Deactivating a user is the first step to ""Deleting"" a user.",,,40100 and
 40884,reactivate_user_40884,Reactivate User,Accounts,Org Admin,Gives users access to reactivate users at the organization level,User Activation,,,,,,,Y
 40885,deactivate_my_school_user_40885,Deactivate My School User,Accounts,School Admin,Gives users access to deactivate users at the school level,User Activation,,,,,,,Y
 40886,reactivate_my_school_user_40886,Reactivate My School User,Accounts,School Admin,Gives users access to reactivate users at the school level,User Activation,,,,,,,Y
+50100,billing_50100,Billing,Accounts,Org Admin,Gives users access to Billing Page (i.e. via icons/buttons),Billing,,,,,,,
+50101,view_payment_details_and_make_payment_50101,View Payment Details and Make Payment,Accounts,Org Admin,Gives users access to view payment details and make payments,Billing,,,,,,,
+50110,view_billing_details_50110,View Billing Details,Accounts,Org Admin,Gives users access to view billing details,Billing,,,,,,,
+50880,purchase_more_minutes_50880,Purchase More Minutes,Accounts,Org Admin,Gives users access to purchase more minutes,Billing,,,,,,,
+50881,purchase_more_storage_50881,Purchase More Storage,Accounts,Org Admin,Gives users access to purchase more storage,Billing,,,,,,,
+50882,purchase_next_plan_50882,Purchase Next Plan,Accounts,Org Admin,Gives users access to purchase the next plan,Billing,,,,,,,
+50883,download_billing_50883,Download Billing,Accounts,Org Admin,Gives users access to download billing,Billing,,,,,,,
+60100,support_60100,Support,General,Student,Gives users access to Suppoort Page (i.e. via icons/buttons),Support,,,,,,,
+60101,online_support_60101,Online Support,General,Student,Gives users access to view online support,Support,,,,,,,
+70000,featured_programs_70000,Featured Programs,Library,Teacher,Gives users access to Featured Programs Page (i.e. via icons/buttons),Featured Programs,,,,,,,
+70001,view_any_featured_programs_70001,View Any Featured Programs,Library,Teacher,Gives users access to view any featured programs,Featured Programs,,,,,,,
+71000,view_bada_rhyme_71000,View Bada Rhyme,Library,Teacher,Gives users access to view Bada Rhyme,Featured Programs,,,,,,,
+71001,view_bada_genius_71001,View Bada Genius,Library,Teacher,Gives users access to view Bada Genius,Featured Programs,,,,,,,
+71002,view_bada_talk_71002,View Bada Talk,Library,Teacher,Gives users access to view Bada Talk,Featured Programs,,,,,,,
+71003,view_bada_sound_71003,View Bada Sound,Library,Teacher,Gives users access to view Bada Sound,Featured Programs,,,,,,,
+71004,view_bada_read_71004,View Bada Read,Library,Teacher,Gives users access to view Bada Read,Featured Programs,,,,,,,
+71005,view_bada_math_71005,View Bada Math,Library,Teacher,Gives users access to view Bada Math,Featured Programs,,,,,,,
+71006,view_bada_stem_71006,View Bada STEM,Library,Teacher,Gives users access to view Bada STEM,Featured Programs,,,,,,,
+71007,view_badanamu_esl_71007,View Badanamu ESL,Library,Teacher,Gives users access to view Badanamu ESL,Featured Programs,,,,,,,
+71008,undefined_71008,undefined,,,undefined,Featured Programs,,,,,,,
+71009,undefined_71009,undefined,,,undefined,Featured Programs,,,,,,,
+75000,create_bada_rhyme_75000,Create Bada Rhyme,Library,Super Admin,Gives users access to create Bada Rhyme,Featured Programs,,,,,,,
+75001,create_bada_genius_75001,Create Bada Genius,Library,Super Admin,Gives users access to create Bada Genius,Featured Programs,,,,,,,
+75002,create_bada_talk_75002,Create Bada Talk,Library,Super Admin,Gives users access to create Bada Talk,Featured Programs,,,,,,,
+75003,create_bada_sound_75003,Create Bada Sound,Library,Super Admin,Gives users access to create Bada Sound,Featured Programs,,,,,,,
+75004,create_bada_read_75004,Create Bada Read,Library,Super Admin,Gives users access to create Bada Read,Featured Programs,,,,,,,
+75005,create_bada_math_75005,Create Bada Math,Library,Super Admin,Gives users access to create Bada Math,Featured Programs,,,,,,,
+75006,create_bada_stem_75006,Create Bada STEM,Library,Super Admin,Gives users access to create Bada STEM,Featured Programs,,,,,,,
+75007,create_badanamu_esl_75007,Create Badanamu ESL,Library,Super Admin,Gives users access to create Badanamu ESL ,Featured Programs,,,,,,,
+75008,undefined_75008,undefined,,,undefined,Featured Programs,,,,,,,
+75009,undefined_75009,undefined,,,undefined,Featured Programs,,,,,,,
+78000,edit_bada_rhyme_78000,Edit Bada Rhyme,Library,Super Admin,Gives users access to edit Bada Rhyme,Featured Programs,,,,,,,
+78001,edit_bada_genius_78001,Edit Bada Genius,Library,Super Admin,Gives users access to edit Bada Genius,Featured Programs,,,,,,,
+78002,edit_bada_talk_78002,Edit Bada Talk,Library,Super Admin,Gives users access to edit Bada Talk,Featured Programs,,,,,,,
+78003,edit_bada_sound_78003,Edit Bada Sound,Library,Super Admin,Gives users access to edit Bada Sound,Featured Programs,,,,,,,
+78004,edit_bada_read_78004,Edit Bada Read,Library,Super Admin,Gives users access to edit Bada Read,Featured Programs,,,,,,,
+78005,edit_bada_math_78005,Edit Bada Math,Library,Super Admin,Gives users access to edit Bada Math,Featured Programs,,,,,,,
+78006,edit_bada_stem_78006,Edit Bada STEM,Library,Super Admin,Gives users access to edit Bada STEM,Featured Programs,,,,,,,
+78007,edit_badanamu_esl_78007,Edit Badanamu ESL,Library,Super Admin,Gives users access to edit Badanamu ESL,Featured Programs,,,,,,,
+78008,copy_featured_content_into_library_78008,Copy Featured Content into Library,Library,Org Admin,Gives user access to Copy Featured Content feature,Featured Programs,,,,,,,
+78009,download_featured_content_78009,Download Featured Content,Library,Org Admin,Gives user access to Download Featured Content feture,Featured Programs,,,,,,,
 79000,publish_featured_content_for_all_hub_79000,Publish featured content for all hub,Library,Super Admin,Gives users access to publish featured content for all hub,Featured Programs,,,,,,,Y
 79001,publish_featured_content_for_specific_orgs_79001,Publish featured content for specific orgs,Library,Super Admin,Gives users access to publish featured content for specific organizations,Featured Programs,,,,,,,Y
 79002,publish_featured_content_for_all_orgs_79002,Publish featured content for all orgs,Library,Super Admin,Gives users access to publish featured content for all organizations,Featured Programs,,,,,,,Y
+80000,free_programs_80000,Free Programs,Library,Teacher,Gives users access to Free Programs Page (i.e. via icons/buttons),Free Programs,,,,,,,
+80001,view_free_programs_80001,View Free Programs,Library,Teacher,Gives users access to view free programs,Free Programs,,,,,,,
+81000,view_bada_rhyme_81000,View Bada Rhyme,Library,Teacher,Gives users access to view Bada Rhyme,Free Programs,,,,,,,
+81001,view_bada_genius_81001,View Bada Genius,Library,Teacher,Gives users access to view Bada Genius,Free Programs,,,,,,,
+81002,view_bada_talk_81002,View Bada Talk,Library,Teacher,Gives users access to view Bada Talk,Free Programs,,,,,,,
+81003,view_bada_sound_81003,View Bada Sound,Library,Teacher,Gives users access to view Bada Sound,Free Programs,,,,,,,
+81004,view_bada_read_81004,View Bada Read,Library,Teacher,Gives users access to view Bada Read,Free Programs,,,,,,,
+81005,view_bada_math_81005,View Bada Math,Library,Teacher,Gives users access to view Bada Math,Free Programs,,,,,,,
+81006,view_bada_stem_81006,View Bada STEM,Library,Teacher,Gives users access to view Bada STEM,Free Programs,,,,,,,
+81007,view_badanamu_esl_81007,View Badanamu ESL,Library,Teacher,Gives users access to view Badanamu ESL,Free Programs,,,,,,,
+81008,use_free_as_recommended_content_for_study_81008,Use Free as Recommended Content for Study,Library,Teacher,Gives users access to use free as recommended content for study,Free Programs,,,,,,,
+81009,undefinend_81009,undefinend,,,undefined,Free Programs,,,,,,,
+85000,create_bada_rhyme_85000,Create Bada Rhyme,Library,Super Admin,Gives users access to create Bada Rhyme,Free Programs,,,,,,,
+85001,create_bada_genius_85001,Create Bada Genius,Library,Super Admin,Gives users access to create Bada Genius,Free Programs,,,,,,,
+85002,create_bada_talk_85002,Create Bada Talk,Library,Super Admin,Gives users access to create Bada Talk,Free Programs,,,,,,,
+85003,create_bada_sound_85003,Create Bada Sound,Library,Super Admin,Gives users access to create Bada Sound,Free Programs,,,,,,,
+85004,create_bada_read_85004,Create Bada Read,Library,Super Admin,Gives users access to create Bada Read,Free Programs,,,,,,,
+85005,create_bada_math_85005,Create Bada Math,Library,Super Admin,Gives users access to create Bada Math,Free Programs,,,,,,,
+85006,create_bada_stem_85006,Create Bada STEM,Library,Super Admin,Gives users access to create Bada STEM,Free Programs,,,,,,,
+85007,undefined_85007,undefined,,,undefined,Free Programs,,,,,,,
+85008,undefined_85008,undefined,,,undefined,Free Programs,,,,,,,
+85009,undefined_85009,undefined,,,undefined,Free Programs,,,,,,,
+88000,edit_bada_rhyme_88000,Edit Bada Rhyme,Library,Super Admin,Gives users access to edit Bada Rhyme,Free Programs,,,,,,,
+88001,edit_bada_genius_88001,Edit Bada Genius,Library,Super Admin,Gives users access to edit Bada Genius,Free Programs,,,,,,,
+88002,edit_bada_talk_88002,Edit Bada Talk,Library,Super Admin,Gives users access to edit Bada Talk,Free Programs,,,,,,,
+88003,edit_bada_sound_88003,Edit Bada Sound,Library,Super Admin,Gives users access to edit Bada Sound,Free Programs,,,,,,,
+88004,edit_bada_read_88004,Edit Bada Read,Library,Super Admin,Gives users access to edit Bada Read,Free Programs,,,,,,,
+88005,edit_bada_math_88005,Edit Bada Math,Library,Super Admin,Gives users access to edit Bada Math,Free Programs,,,,,,,
+88006,edit_bada_stem_88006,Edit Bada STEM,Library,Super Admin,Gives users access to edit Bada STEM,Free Programs,,,,,,,
+88007,edit_badanamu_esl_88007,Edit Badanamu ESL,Library,Super Admin,Gives users access to edit Badanamu ESL,Free Programs,,,,,,,
+88008,copy_free_content_into_library_88008,Copy Free Content into Library,Library,Org Admin,Gives user access to Copy Free Content feature,Free Programs,,,,,,,
+88009,download_free_content__88009,Download Free Content,Library,Org Admin,Gives user access to Download Free Content feture,Free Programs,,,,,,,
+89000,publish_free_content_for_all_hub_89000,Publish free content for all hub,Library,Super Admin,Gives users access to publish free content for all hub,Free Programs,,,,,,,
+89001,publish_free_content_for_specific_orgs_89001,Publish free content for specific orgs,Library,Super Admin,Gives users access to publish free content for specific organizations,Free Programs,,,,,,,
+89002,publish_free_content_for_all_orgs_89002,Publish free content for all orgs,Library,Super Admin,Gives users access to publish frree content for all organizations,Free Programs,,,,,,,
