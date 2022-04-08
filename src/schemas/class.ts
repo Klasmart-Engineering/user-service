@@ -159,7 +159,7 @@ const typeDefs = gql`
                 reason: "Sunset Date: 01/03/22 Details: https://calmisland.atlassian.net/l/c/aaSJnmbQ"
             )
 
-        academicTerm: AcademicTerm
+        academicTerm: AcademicTermConnectionNode
 
         studentsConnection(
             count: PageSize

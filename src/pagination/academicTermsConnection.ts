@@ -1,9 +1,9 @@
 import { AcademicTerm } from '../entities/academicTerm'
 import { AcademicTermConnectionNode } from '../types/graphQL/academicTerm'
 
-export async function mapATtoATConnectionNode(
+export function mapATtoATConnectionNode(
     academicTerm: AcademicTerm
-): Promise<AcademicTermConnectionNode> {
+): AcademicTermConnectionNode {
     return {
         id: academicTerm.id,
         name: academicTerm.name,

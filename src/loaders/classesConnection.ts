@@ -16,8 +16,8 @@ import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
 import { CoreSubjectConnectionNode } from '../pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../pagination/programsConnection'
 import { AcademicTermConnectionNode } from '../types/graphQL/academicTerm'
-import { mapAcademicTermToAcademicTermNode } from '../pagination/academicTermConnection'
 import { AcademicTerm } from '../entities/academicTerm'
+import { mapATtoATConnectionNode } from '../pagination/academicTermsConnection'
 
 export interface IClassesConnectionLoaders {
     schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
@@ -144,11 +144,11 @@ export const academicTermForClasses = async (
 
     const classToAcademicTerms = new Map()
 
-    for (const academicTerm of await scope.getMany()) {
+    for (const _class of await scope.getMany()) {
         classToAcademicTerms.set(
-            academicTerm.class_id,
+            _class.class_id,
             // eslint-disable-next-line no-await-in-loop
-            await academicTerm.academicTerm
+            await _class.academicTerm
         )
     }
 
@@ -158,9 +158,7 @@ export const academicTermForClasses = async (
         const academicTerm = classToAcademicTerms.get(classId)
 
         academicTermsInLoadedOrder.push(
-            academicTerm
-                ? mapAcademicTermToAcademicTermNode(academicTerm)
-                : undefined
+            academicTerm ? mapATtoATConnectionNode(academicTerm) : undefined
         )
     }
 
