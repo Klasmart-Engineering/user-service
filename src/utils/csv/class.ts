@@ -150,11 +150,12 @@ export const processClassFromCSVRow = async (
         return rowErrors
     }
 
-    const classInDatabase = await Class.find({
-        where: { organization: Equal(org), class_name },
+    const classInDatabase = await Class.findBy({
+        organization: { organization_id: org.organization_id },
+        class_name,
     })
 
-    if (classInDatabase) {
+    if (classInDatabase.length) {
         addCsvError(
             rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,

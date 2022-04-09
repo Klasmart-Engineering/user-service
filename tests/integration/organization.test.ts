@@ -2190,9 +2190,12 @@ describe('organization', () => {
 
             it('if the `user_id` exists, but has no membership for the chosen Organization, throws ERR_NONEXISTENT_CHILD_ENTITY APIError', async () => {
                 // We need to create another user belonging to this Organization, so we can get past the permission checks
-                await OrganizationMembership.delete(
-                    OrganizationMembership.getId(existingMembership)
-                )
+                existingMembership.roles = Promise.resolve([])
+                await existingMembership.save()
+                await OrganizationMembership.delete({
+                    user_id: existingMembership.user_id,
+                    organization_id: existingMembership.organization_id,
+                })
                 const adminUser = await adminUserFactory().save()
 
                 return expect(
@@ -3232,12 +3235,12 @@ describe('organization', () => {
         let progressFromGradeDetails: any
         let progressToGradeDetails: any
 
-        const gradeInfo = async (grade: Grade) => {
+        const gradeInfo = async (g: Grade) => {
             return {
-                name: grade.name,
-                progress_from_grade_id: (await grade.progress_from_grade)?.id,
-                progress_to_grade_id: (await grade.progress_to_grade)?.id,
-                system: grade.system,
+                name: g.name,
+                progress_from_grade_id: (await g.progress_from_grade)?.id,
+                progress_to_grade_id: (await g.progress_to_grade)?.id,
+                system: g.system,
             }
         }
 
@@ -3251,19 +3254,22 @@ describe('organization', () => {
             progressFromGrade = createGrade(organization)
             await progressFromGrade.save()
             progressFromGradeDetails = await gradeInfo(progressFromGrade)
+
             progressToGrade = createGrade(organization)
             await progressToGrade.save()
             progressToGradeDetails = await gradeInfo(progressToGrade)
+
             grade = createGrade(
                 organization,
                 progressFromGrade,
                 progressToGrade
             )
+
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(
                 testClient,
                 user.user_id,
-                organization.organization_id,
+                organizationId,
                 { authorization: getAdminAuthToken() }
             )
         })

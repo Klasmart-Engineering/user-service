@@ -1,4 +1,4 @@
-import { EntityManager, Equal, IsNull } from 'typeorm'
+import { EntityManager, IsNull } from 'typeorm'
 import { Category } from '../../entities/category'
 import { Organization } from '../../entities/organization'
 import { Subcategory } from '../../entities/subcategory'
@@ -110,7 +110,7 @@ export const processCategoryFromCSVRow = async (
             name: category_name,
             status: Status.ACTIVE,
             system: false,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 

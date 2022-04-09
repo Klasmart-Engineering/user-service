@@ -229,8 +229,8 @@ export const processOrganizationFromCSVRow = async (
 
     const ownerUploaded = await manager.findOne(User, {
         where: [
-            { email: owner_email, phone: IsNull() },
-            { email: IsNull(), phone: owner_phone },
+            { email: owner_email, phone: undefined },
+            { email: undefined, phone: owner_phone },
             { email: owner_email, phone: owner_phone },
         ],
     })

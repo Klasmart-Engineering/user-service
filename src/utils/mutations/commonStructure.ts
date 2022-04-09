@@ -1,4 +1,4 @@
-import { getManager } from 'typeorm'
+import { BaseEntity, getManager } from 'typeorm'
 import { config } from '../../config/config'
 import { CustomBaseEntity } from '../../entities/customBaseEntity'
 import { Status } from '../../entities/status'
@@ -760,11 +760,16 @@ export abstract class RemoveMembershipMutation<
             )
             return
         }
+
+        const MembershipAsEntity = this
+            .MembershipType as (new () => CustomBaseEntity) & typeof BaseEntity
+        const ids = entitiesToUpdate.map((e) => MembershipAsEntity.getId(e))
+
         await getManager()
             .createQueryBuilder()
             .update(this.MembershipType)
             .set(this.partialEntity)
-            .whereInIds(entitiesToUpdate)
+            .whereInIds(ids)
             .execute()
     }
 }

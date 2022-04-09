@@ -1,5 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
-import { Equal, getConnection } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 import { Model } from '../../../../src/model'
 import { createServer } from '../../../../src/utils/createServer'
@@ -259,28 +259,27 @@ describe('processOrganizationFromCSVRow', () => {
 
             expect(errors).to.deep.equal([])
 
-            const organization = await Organization.findOneOrFail({
-                where: { organization_name: row.organization_name },
+            const organization = await Organization.findOneByOrFail({
+                organization_name: row.organization_name,
             })
+
             const user = await User.findOneByOrFail({
-                my_organization: Equal({
+                my_organization: {
                     organization_id: organization.organization_id,
-                }),
+                },
             })
-            const organizationOwnership = await OrganizationOwnership.findOneOrFail(
+
+            const organizationOwnership = await OrganizationOwnership.findOneByOrFail(
                 {
-                    where: {
-                        organization_id: organization.organization_id,
-                        user_id: user.user_id,
-                    },
+                    organization_id: organization.organization_id,
+                    user_id: user.user_id,
                 }
             )
-            const organizationMembership = await OrganizationMembership.findOneOrFail(
+
+            const organizationMembership = await OrganizationMembership.findOneByOrFail(
                 {
-                    where: {
-                        organization_id: organization.organization_id,
-                        user_id: user.user_id,
-                    },
+                    organization_id: organization.organization_id,
+                    user_id: user.user_id,
                 }
             )
 

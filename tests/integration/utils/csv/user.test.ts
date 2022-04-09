@@ -1625,8 +1625,8 @@ describe('processUserFromCSVRow', async () => {
                 queryResultCache
             )
 
-            const dbUser = await User.findOneOrFail({
-                where: { email: normalizedLowercaseTrimmed(row.user_email) },
+            const dbUser = await User.findOneByOrFail({
+                email: normalizedLowercaseTrimmed(row.user_email),
             })
 
             expect(dbUser.user_id).to.not.be.empty
@@ -1638,17 +1638,20 @@ describe('processUserFromCSVRow', async () => {
             expect(dbUser.gender).to.eq(row.user_gender)
 
             const orgMembership = await OrganizationMembership.findOneByOrFail({
-                user: Equal(dbUser),
-                organization: Equal(organization),
+                user: { user_id: dbUser.user_id },
+                organization: { organization_id: organization.organization_id },
             })
+
             expect(orgMembership.shortcode).to.eq(row.user_shortcode)
+
             const orgRoles = (await orgMembership.roles) || []
             expect(orgRoles.map(roleInfo)).to.deep.eq([role].map(roleInfo))
 
             const schoolMembership = await SchoolMembership.findOneByOrFail({
-                user: Equal(dbUser),
-                school: Equal(school),
+                user: { user_id: dbUser.user_id },
+                school: { school_id: school.school_id },
             })
+
             const schoolRoles = (await schoolMembership.roles) || []
             expect(schoolRoles).to.deep.eq([])
         })
@@ -1878,7 +1881,6 @@ describe('processUserFromCSVRow', async () => {
             })
 
             it('creates the user', async () => {
-                //const { user: dbUser } =
                 await processUserFromCSVRows(
                     connection.manager,
                     [row],
@@ -2162,7 +2164,7 @@ describe('processUserFromCSVRow', async () => {
                         queryResultCache
                     )
                     const distinctQueriesMade = connection.logger.queryCounts
-                    expect(distinctQueriesMade.size).to.eq(25)
+                    expect(distinctQueriesMade.size).to.eq(27)
 
                     const expectedNonOptimizedQueries = Array.from(
                         distinctQueriesMade.entries()

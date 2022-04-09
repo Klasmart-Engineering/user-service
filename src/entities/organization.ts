@@ -667,20 +667,23 @@ export class Organization extends CustomBaseEntity {
                 family_name: family_name,
             }
 
-            existingUser = await getRepository(User).findOne({
-                where: [
-                    { email: email || undefined, ...personalInfo },
-                    { phone: phone || undefined, ...personalInfo },
-                ],
-            })
+            const condition = []
+            if (email) condition.push({ email, ...personalInfo })
+            if (phone) condition.push({ phone, ...personalInfo })
+
+            if (condition.length) {
+                existingUser = await User.findOne({
+                    where: condition,
+                })
+            }
 
             if (existingUser) {
-                const existingMembership = await getRepository(
-                    OrganizationMembership
-                ).findOneBy({
-                    user_id: existingUser.user_id,
-                    organization_id: this.organization_id,
-                })
+                const existingMembership = await OrganizationMembership.findOneBy(
+                    {
+                        user_id: existingUser.user_id,
+                        organization_id: this.organization_id,
+                    }
+                )
 
                 if (existingMembership) {
                     errors.push(
@@ -1377,8 +1380,14 @@ export class Organization extends CustomBaseEntity {
             checkUpdatePermission = checkUpdatePermission || !!gradeDetail?.id
             checkCreatePermission = checkCreatePermission || !gradeDetail?.id
 
-            const grade =
-                (await Grade.findOneBy({ id: gradeDetail?.id })) || new Grade()
+            let grade: Grade
+            if (gradeDetail?.id) {
+                grade =
+                    (await Grade.findOneBy({ id: gradeDetail?.id })) ||
+                    new Grade()
+            } else {
+                grade = new Grade()
+            }
 
             checkAdminPermission =
                 checkAdminPermission || grade.system || !!gradeDetail?.system

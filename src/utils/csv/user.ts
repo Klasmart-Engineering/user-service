@@ -56,6 +56,7 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
         },
         OrganizationMembership
     >()
+
     const schoolMemberships = new ObjMap<
         {
             userId: SchoolMembership['user_id']
@@ -65,7 +66,6 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
     >()
 
     const usersFound = await getUsers(rows, manager)
-
     const dataForMakingMemberships: {
         user: User
         org: Organization
@@ -101,8 +101,8 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
                 organizationRole: entities.organizationRole,
                 row,
             })
-            users.set(entities.user.user_id, entities.user)
 
+            users.set(entities.user.user_id, entities.user)
             if (entities.cls !== undefined) {
                 dataForMakingClasses.push({
                     index: rowNumber + index,
@@ -205,12 +205,10 @@ async function getUsers(
     const familyNames = rows.map((r) => r.user_family_name)
 
     const users = await manager.find(User, {
-        where: [
-            {
-                given_name: In(givenNames),
-                family_name: In(familyNames),
-            },
-        ],
+        where: {
+            given_name: In(givenNames),
+            family_name: In(familyNames),
+        },
     })
 
     const usersFromDb = new ObjMap<
@@ -575,14 +573,14 @@ export const processUserFromCSVRow = async (
     }
 
     if (row.user_shortcode) {
-        const userShortcode = await manager.findOne(OrganizationMembership, {
+        const userShortcode = await manager.find(OrganizationMembership, {
             where: {
                 shortcode: row.user_shortcode,
                 organization: { organization_id: org.organization_id },
             },
         })
 
-        if (userShortcode && user.user_id !== userShortcode.user_id) {
+        if (userShortcode[0] && user.user_id !== userShortcode[0].user_id) {
             addCsvError(
                 rowErrors,
                 customErrors.existent_entity.code,
@@ -602,14 +600,18 @@ export const processUserFromCSVRow = async (
         return { rowErrors }
     }
 
+    if (cls === null) cls = undefined
+    if (school === null) school = undefined
+    if (organizationRole === null) organizationRole = undefined
+
     return {
         rowErrors,
         entities: {
             user,
-            cls: cls || undefined,
+            cls,
             org,
-            organizationRole: organizationRole || undefined,
-            school: school || undefined,
+            organizationRole,
+            school,
         },
     }
 }
@@ -673,9 +675,11 @@ export const createOrUpdateMemberships = async (
         }
     }
 
+    if (schoolMembership === null) schoolMembership = undefined
+
     return {
         organizationMembership,
-        schoolMembership: schoolMembership || undefined,
+        schoolMembership,
     }
 }
 

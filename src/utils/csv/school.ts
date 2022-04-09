@@ -153,7 +153,7 @@ export const processSchoolFromCSVRow = async (
     const schools = await manager.find(School, {
         where: {
             school_name: row.school_name,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 

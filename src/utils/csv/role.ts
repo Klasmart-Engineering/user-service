@@ -1,4 +1,4 @@
-import { EntityManager, Equal } from 'typeorm'
+import { EntityManager } from 'typeorm'
 import { Organization } from '../../entities/organization'
 import { Permission } from '../../entities/permission'
 import { Role } from '../../entities/role'
@@ -113,7 +113,7 @@ export const processRoleFromCSVRow = async (
             role_name,
             status: Status.ACTIVE,
             system_role: false,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 

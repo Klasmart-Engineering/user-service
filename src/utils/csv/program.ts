@@ -232,7 +232,7 @@ export const processProgramFromCSVRow = async (
             name: program_name,
             system: false,
             status: Status.ACTIVE,
-            organization: Equal(organization),
+            organization: { organization_id: organization.organization_id },
         },
     })
 
