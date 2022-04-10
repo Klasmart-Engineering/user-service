@@ -104,6 +104,14 @@ export class DeletingDuplicatedSystemRoles1647009770308
             }
         }
 
+        // We have to delete the roles' permissions to not violate
+        // the foreign key constraint between roles and their permissions
+        rolesToDelete.forEach((role) => {
+            role.permissions = Promise.resolve([])
+        })
+
+        await manager.save(rolesToDelete)
+
         // Once these roles are not in any organization or school membership, they can be hard deleted
         await manager.delete(Role, rolesToDeleteIds)
 

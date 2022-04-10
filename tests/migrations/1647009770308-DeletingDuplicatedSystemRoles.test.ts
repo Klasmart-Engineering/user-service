@@ -179,8 +179,9 @@ describe('DeletingDuplicatedSystemRoles', () => {
         // 1 for roles to persist
         // 10 (5x2) for updating memberships with both original & dupe role assigned
         // 10 (5x2) for updating each role in each membership table
+        // 5 to update the roles to delete removing their permissions
         // 1 to delete roles
-        const numQueries = 23
+        const numQueries = 28
 
         await createDuplicateRoles()
 
