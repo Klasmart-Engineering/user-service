@@ -75,7 +75,7 @@ describe('model', () => {
         grades = []
 
         for (let i = 0; i < gradesCount; i++) {
-            const grade = await createGrade(
+            const grade = createGrade(
                 org1,
                 systemGrades[i],
                 systemGrades[i + 1]
@@ -86,7 +86,7 @@ describe('model', () => {
         }
 
         for (let i = 0; i < gradesCount; i++) {
-            const grade = await createGrade(
+            const grade = createGrade(
                 org2,
                 systemGrades[i],
                 systemGrades[i + 1]
@@ -327,7 +327,7 @@ describe('model', () => {
                 return edge.node.fromGrade.id
             })
 
-            fromGradeIds.every((ids) => ids.includes(fromGradeId))
+            fromGradeIds.forEach((ids) => ids.includes(fromGradeId))
         })
 
         it('supports filtering by to grade ID', async () => {
@@ -350,10 +350,10 @@ describe('model', () => {
             expect(result.totalCount).to.eq(2)
 
             const toGradeIds = result.edges.map((edge) => {
-                return edge.node.fromGrade.id
+                return edge.node.toGrade.id
             })
 
-            toGradeIds.every((ids) => ids.includes(toGradeId))
+            toGradeIds.forEach((ids) => ids.includes(toGradeId))
         })
 
         it('supports filtering by program ID', async () => {
