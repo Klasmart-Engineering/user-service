@@ -1285,7 +1285,7 @@ describe('acceptance.class', () => {
                 getAdminAuthToken()
             )
             expect(response.status).to.eq(200)
-            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.errors).to.be.undefined
             expect(response.body.data.createClasses.classes).to.have.lengthOf(
                 input.length
             )
@@ -1343,7 +1343,7 @@ describe('acceptance.class', () => {
             )
 
             expect(response.status).to.eq(200)
-            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.errors).to.be.undefined
             expect(response.body.data.updateClasses.classes).to.have.lengthOf(
                 input.length
             )

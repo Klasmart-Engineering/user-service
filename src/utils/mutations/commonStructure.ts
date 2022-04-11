@@ -222,7 +222,7 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     mainEntityIds: string[],
     entityTypeName: string,
     inputTypeName: string,
-    idName = 'id'
+    idName = 'id' // TODO: don't default to id, make required
 ) {
     const errors: APIError[] = []
     const ids = inputs.map((_, index) => mainEntityIds[index])
@@ -623,7 +623,14 @@ export abstract class DeleteMutation<
         )
     }
 
-    validate = () => []
+    validate(
+        _index: number,
+        _currentEntity: EntityType,
+        _currentInput: InputType,
+        _entityMaps: DeleteEntityMap<EntityType>
+    ): APIError[] {
+        return []
+    }
 
     process(
         _currentInput: InputType,

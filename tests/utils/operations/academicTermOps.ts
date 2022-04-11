@@ -12,3 +12,9 @@ export const CREATE_ACADEMIC_TERMS = `mutation($input: [CreateAcademicTermInput!
         ${ACADEMIC_TERMS_MUTATION_RESULT}
     }
 }`
+
+export const DELETE_ACADEMIC_TERMS = `mutation($input: [DeleteAcademicTermInput!]!) {
+    deleteAcademicTerms(input: $input) {
+        ${ACADEMIC_TERMS_MUTATION_RESULT}
+    }
+}`

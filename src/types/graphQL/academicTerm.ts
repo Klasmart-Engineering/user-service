@@ -15,6 +15,10 @@ export interface CreateAcademicTermInput {
     endDate: Date
 }
 
+export interface DeleteAcademicTermInput {
+    id: string
+}
+
 export interface AcademicTermsMutationResult {
     academicTerms: AcademicTermConnectionNode[]
 }
