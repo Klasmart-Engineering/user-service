@@ -29,10 +29,13 @@ import {
     DELETE_PROGRAMS,
 } from '../utils/operations/programOps'
 import { userToPayload } from '../utils/operations/userOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { failsValidation, makeRequest } from './utils'
-import { createUser as createUserFactory } from './../factories/user.factory'
+import {
+    createUser,
+    createUser as createUserFactory,
+} from './../factories/user.factory'
 import { createAgeRanges as createAgeRangesFactory } from './../factories/ageRange.factory'
 import { createGrades as createGradesFactory } from './../factories/grade.factory'
 import { createSubjects as createSubjectsFactory } from './../factories/subject.factory'
@@ -58,6 +61,7 @@ let orgId: string
 
 describe('acceptance.program', () => {
     let connection: TestConnection
+    let adminToken: string
 
     before(async () => {
         connection = getConnection() as TestConnection
@@ -69,13 +73,19 @@ describe('acceptance.program', () => {
         await AgeRangesInitializer.run()
         await loadFixtures('users', connection)
 
+        const adminUser = await createUser({
+            email: UserPermissions.ADMIN_EMAILS[0],
+        }).save()
+
+        adminToken = await generateToken(userToPayload(adminUser))
+
         const ageRangeDetails: IAgeRangeDetail[] = []
         const programDetails: IProgramDetail[] = []
 
         const createOrg1Response = await createOrg(
             user_id,
             org_name,
-            getAdminAuthToken()
+            adminToken
         )
 
         const createOrg1Data =
@@ -94,7 +104,7 @@ describe('acceptance.program', () => {
             })
         }
 
-        await createAgeRanges(orgId, ageRangeDetails, getAdminAuthToken())
+        await createAgeRanges(orgId, ageRangeDetails, adminToken)
 
         const ageRanges =
             (await connection.manager.find(AgeRange, {
@@ -114,7 +124,7 @@ describe('acceptance.program', () => {
         const programsResponse = await createPrograms(
             orgId,
             programDetails,
-            getAdminAuthToken()
+            adminToken
         )
 
         const programs =
@@ -125,7 +135,7 @@ describe('acceptance.program', () => {
             const classResponse = await createClass(
                 orgId,
                 `class ${i + 1}`,
-                getAdminAuthToken()
+                adminToken
             )
 
             const classId =
@@ -136,7 +146,7 @@ describe('acceptance.program', () => {
         for (const classId of classIds) {
             const ids = [programIds[0], programIds[1], programIds[2]]
 
-            await addProgramsToClass(classId, ids, getAdminAuthToken())
+            await addProgramsToClass(classId, ids, adminToken)
         }
     })
 
@@ -147,7 +157,7 @@ describe('acceptance.program', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: adminToken,
                     })
                     .send({
                         query: PROGRAMS_CONNECTION,
@@ -180,7 +190,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -205,7 +215,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -261,7 +271,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -313,7 +323,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -344,7 +354,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -386,7 +396,7 @@ describe('acceptance.program', () => {
                         },
                     },
                 },
-                getAdminAuthToken()
+                adminToken
             )
             const programsConnection = response.body.data.programsConnection
             expect(programsConnection.edges).to.have.lengthOf(1)

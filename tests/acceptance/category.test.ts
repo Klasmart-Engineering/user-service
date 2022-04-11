@@ -503,7 +503,10 @@ describe('acceptance.category', () => {
                 for (const [i, c] of categories.entries()) {
                     expect(c.id).to.eq(input[i].categoryId)
 
-                    const category = await Category.findOneOrFail(c.id)
+                    const category = await Category.findOneByOrFail({
+                        id: c.id,
+                    })
+
                     const categorySubcategories = await category.subcategories
 
                     expect(subcategoryIds.slice(2)).to.deep.equalInAnyOrder(

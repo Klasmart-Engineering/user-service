@@ -1299,13 +1299,17 @@ export class Organization extends CustomBaseEntity {
         const ageRanges = []
 
         for (const ageRangeDetail of age_ranges) {
-            checkUpdatePermission =
-                checkUpdatePermission || !!ageRangeDetail?.id
-            checkCreatePermission = checkCreatePermission || !ageRangeDetail?.id
+            checkUpdatePermission = checkUpdatePermission || !!ageRangeDetail.id
+            checkCreatePermission = checkCreatePermission || !ageRangeDetail.id
 
-            const ageRange =
-                (await AgeRange.findOneBy({ id: ageRangeDetail?.id })) ||
-                new AgeRange()
+            let ageRange: AgeRange
+            if (ageRangeDetail.id) {
+                ageRange =
+                    (await AgeRange.findOneBy({ id: ageRangeDetail.id })) ||
+                    new AgeRange()
+            } else {
+                ageRange = new AgeRange()
+            }
 
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1377,13 +1381,13 @@ export class Organization extends CustomBaseEntity {
         const dbGrades = []
 
         for (const gradeDetail of grades) {
-            checkUpdatePermission = checkUpdatePermission || !!gradeDetail?.id
-            checkCreatePermission = checkCreatePermission || !gradeDetail?.id
+            checkUpdatePermission = checkUpdatePermission || !!gradeDetail.id
+            checkCreatePermission = checkCreatePermission || !gradeDetail.id
 
             let grade: Grade
-            if (gradeDetail?.id) {
+            if (gradeDetail.id) {
                 grade =
-                    (await Grade.findOneBy({ id: gradeDetail?.id })) ||
+                    (await Grade.findOneBy({ id: gradeDetail.id })) ||
                     new Grade()
             } else {
                 grade = new Grade()
@@ -1461,13 +1465,19 @@ export class Organization extends CustomBaseEntity {
 
         for (const subcategoryDetail of subcategories) {
             checkUpdatePermission =
-                checkUpdatePermission || !!subcategoryDetail?.id
+                checkUpdatePermission || !!subcategoryDetail.id
             checkCreatePermission =
-                checkCreatePermission || !subcategoryDetail?.id
+                checkCreatePermission || !subcategoryDetail.id
 
-            const subcategory =
-                (await Subcategory.findOneBy({ id: subcategoryDetail?.id })) ||
-                new Subcategory()
+            let subcategory: Subcategory
+            if (subcategoryDetail.id) {
+                subcategory =
+                    (await Subcategory.findOneBy({
+                        id: subcategoryDetail.id,
+                    })) || new Subcategory()
+            } else {
+                subcategory = new Subcategory()
+            }
 
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1529,13 +1539,17 @@ export class Organization extends CustomBaseEntity {
         const dbCategories = []
 
         for (const categoryDetail of categories) {
-            checkUpdatePermission =
-                checkUpdatePermission || !!categoryDetail?.id
-            checkCreatePermission = checkCreatePermission || !categoryDetail?.id
+            checkUpdatePermission = checkUpdatePermission || !!categoryDetail.id
+            checkCreatePermission = checkCreatePermission || !categoryDetail.id
 
-            const category =
-                (await Category.findOneBy({ id: categoryDetail?.id })) ||
-                new Category()
+            let category: Category
+            if (categoryDetail.id) {
+                category =
+                    (await Category.findOneBy({ id: categoryDetail.id })) ||
+                    new Category()
+            } else {
+                category = new Category()
+            }
 
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1604,12 +1618,17 @@ export class Organization extends CustomBaseEntity {
         const dbSubjects = []
 
         for (const subjectDetail of subjects) {
-            checkUpdatePermission = checkUpdatePermission || !!subjectDetail?.id
-            checkCreatePermission = checkCreatePermission || !subjectDetail?.id
+            checkUpdatePermission = checkUpdatePermission || !!subjectDetail.id
+            checkCreatePermission = checkCreatePermission || !subjectDetail.id
 
-            const subject =
-                (await Subject.findOneBy({ id: subjectDetail?.id })) ||
-                new Subject()
+            let subject: Subject
+            if (subjectDetail.id) {
+                subject =
+                    (await Subject.findOneBy({ id: subjectDetail.id })) ||
+                    new Subject()
+            } else {
+                subject = new Subject()
+            }
 
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1727,12 +1746,19 @@ export class Organization extends CustomBaseEntity {
         const dbPrograms = []
 
         for (const programDetail of programs) {
-            checkUpdatePermission = checkUpdatePermission || !!programDetail?.id
-            checkCreatePermission = checkCreatePermission || !programDetail?.id
+            checkUpdatePermission = checkUpdatePermission || !!programDetail.id
+            checkCreatePermission = checkCreatePermission || !programDetail.id
 
-            const program =
-                (await Program.findOneBy({ id: programDetail?.id })) ||
-                new Program()
+            let program: Program
+
+            if (programDetail.id) {
+                program =
+                    (await Program.findOneBy({ id: programDetail.id })) ||
+                    new Program()
+            } else {
+                program = new Program()
+            }
+
             checkAdminPermission =
                 checkAdminPermission ||
                 program.system ||

@@ -63,7 +63,7 @@ import {
     getSystemRoleIds,
 } from '../utils/operations/organizationOps'
 import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken } from '../utils/testConfig'
 import { print } from 'graphql'
 import { Program } from '../../src/entities/program'
 import ProgramsInitializer from '../../src/initializers/programs'
@@ -189,6 +189,7 @@ async function deleteClass(classId: string, token: string) {
 
 describe('acceptance.class', () => {
     let connection: TestConnection
+    let adminToken: string
 
     before(async () => {
         connection = getConnection() as TestConnection
@@ -204,6 +205,11 @@ describe('acceptance.class', () => {
         })) as Program[]
         systemProgramIds = systemPrograms.map((p) => p.id)
 
+        const adminUser = await createUser({
+            email: UserPermissions.ADMIN_EMAILS[0],
+        }).save()
+        adminToken = await generateToken(userToPayload(adminUser))
+
         class1Ids = []
         class2Ids = []
         schoolIds = []
@@ -212,7 +218,7 @@ describe('acceptance.class', () => {
         const createOrg1Response = await createOrg(
             user_id,
             org_name,
-            getAdminAuthToken()
+            adminToken
         )
 
         const createOrg1Data =
@@ -220,7 +226,9 @@ describe('acceptance.class', () => {
 
         org1Id = createOrg1Data.organization_id
 
-        user2 = await connection.manager.findOneOrFail(User, user2_id)
+        user2 = await connection.manager.findOneByOrFail(User, {
+            user_id: user2_id,
+        })
 
         const createOrg2Response = await createOrg(
             user2_id,
@@ -237,7 +245,7 @@ describe('acceptance.class', () => {
             const createSchoolResponse = await createSchool(
                 org1Id,
                 `school ${i}`,
-                getAdminAuthToken()
+                adminToken
             )
 
             const createSchoolData =
@@ -253,7 +261,7 @@ describe('acceptance.class', () => {
             'school.admin@gmail.com',
             org1Id,
             'Male',
-            getAdminAuthToken(),
+            adminToken,
             'SHORTY2',
             [schoolAdminRoleId],
             [schoolAdminRoleId],
@@ -264,10 +272,9 @@ describe('acceptance.class', () => {
             createSchoolAdminResponse.body.data.organization.inviteUser
 
         schoolAdminId = createSchoolAdminData.user.user_id
-        schoolAdmin = await connection.manager.findOneOrFail(
-            User,
-            schoolAdminId
-        )
+        schoolAdmin = await connection.manager.findOneByOrFail(User, {
+            user_id: schoolAdminId,
+        })
 
         const createOrgMemberResponse = await inviteUserToOrganization(
             'organization',
@@ -275,7 +282,7 @@ describe('acceptance.class', () => {
             'org.member@gmail.com',
             org1Id,
             'Male',
-            getAdminAuthToken(),
+            adminToken,
             'SHORTY1',
             [schoolAdminRoleId]
         )
@@ -283,13 +290,15 @@ describe('acceptance.class', () => {
             createOrgMemberResponse.body.data.organization.inviteUser
 
         orgMemberId = createOrgMemberData.user.user_id
-        orgMember = await connection.manager.findOneOrFail(User, orgMemberId)
+        orgMember = await connection.manager.findOneByOrFail(User, {
+            user_id: orgMemberId,
+        })
 
         // Creating Age Range to Filter
         const createAgeRangeResponse = await createAgeRanges(
             org1Id,
             [ageRangeDetail],
-            getAdminAuthToken()
+            adminToken
         )
 
         ageRangeId =
@@ -300,7 +309,7 @@ describe('acceptance.class', () => {
         const createSchoolResponse = await createSchool(
             org1Id,
             'School One',
-            getAdminAuthToken()
+            adminToken
         )
 
         schoolId =
@@ -310,7 +319,7 @@ describe('acceptance.class', () => {
         const createGradeResponse = await createGrades(
             org1Id,
             [{ name: 'Grade One' }],
-            getAdminAuthToken()
+            adminToken
         )
 
         gradeId =
@@ -321,18 +330,17 @@ describe('acceptance.class', () => {
         const createSubjectResponse = await createSubjects(
             org1Id,
             [{ name: 'Subject One' }],
-            getAdminAuthToken()
+            adminToken
         )
 
         subjectId =
             createSubjectResponse.body.data.organization
                 .createOrUpdateSubjects[0].id
-
         // Creating Program to Filter
         const createProgramResponse = await createPrograms(
             org1Id,
             [{ name: 'Program One' }],
-            getAdminAuthToken()
+            adminToken
         )
 
         programId =
@@ -343,7 +351,7 @@ describe('acceptance.class', () => {
             const org1ClassResponse = await createClass(
                 org1Id,
                 `class ${i}`,
-                getAdminAuthToken()
+                adminToken
             )
 
             const class1Id =
@@ -351,17 +359,9 @@ describe('acceptance.class', () => {
 
             class1Ids.push(class1Id)
 
-            await addSchoolToClass(
-                class1Id,
-                schoolIds[i % 2],
-                getAdminAuthToken()
-            )
+            await addSchoolToClass(class1Id, schoolIds[i % 2], adminToken)
 
-            await addProgramsToClass(
-                class1Id,
-                systemProgramIds,
-                getAdminAuthToken()
-            )
+            await addProgramsToClass(class1Id, systemProgramIds, adminToken)
 
             if (i > classesCount / 2) {
                 const org2ClassResponse = await createClass(
@@ -381,16 +381,12 @@ describe('acceptance.class', () => {
         const classes = await connection.manager.find(Class)
         const inactiveClassId = classes[0].class_id
 
-        await deleteClass(inactiveClassId, getAdminAuthToken())
-        await addAgeRangesToClass(
-            class1Ids[1],
-            [ageRangeId],
-            getAdminAuthToken()
-        )
+        await deleteClass(inactiveClassId, adminToken)
+        await addAgeRangesToClass(class1Ids[1], [ageRangeId], adminToken)
 
-        await addSchoolsToClass(class1Ids[2], [schoolId], getAdminAuthToken())
-        await addGradesToClass(class1Ids[3], [gradeId], getAdminAuthToken())
-        await addSubjectsToClass(class1Ids[4], [subjectId], getAdminAuthToken())
+        await addSchoolsToClass(class1Ids[2], [schoolId], adminToken)
+        await addGradesToClass(class1Ids[3], [gradeId], adminToken)
+        await addSubjectsToClass(class1Ids[4], [subjectId], adminToken)
     })
 
     context('classesConnection', () => {
@@ -400,7 +396,7 @@ describe('acceptance.class', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: adminToken,
                     })
                     .send({
                         query: print(CLASSES_CONNECTION),
@@ -434,7 +430,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -446,7 +442,9 @@ describe('acceptance.class', () => {
             const classesConnection = response.body.data.classesConnection
 
             expect(response.status).to.eq(200)
-            expect(classesConnection.totalCount).to.equal(classesCount)
+            expect(classesConnection.totalCount).to.equal(
+                classesCount + classesCount / 2
+            )
         })
 
         it('queries paginated classes sorted by name', async () => {
@@ -478,7 +476,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -494,7 +492,9 @@ describe('acceptance.class', () => {
             const classesConnection = response.body.data.classesConnection
 
             expect(response.status).to.eq(200)
-            expect(classesConnection.totalCount).to.equal(classesCount)
+            expect(classesConnection.totalCount).to.equal(
+                classesCount + classesCount / 2
+            )
         })
 
         it('queries paginated classes filtering by organization ID', async () => {
@@ -530,7 +530,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -558,7 +558,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -586,7 +586,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -630,7 +630,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -672,7 +672,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -707,7 +707,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -742,7 +742,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -773,17 +773,13 @@ describe('acceptance.class', () => {
         })
 
         it('queries paginated classes filtering by program ID', async () => {
-            await addProgramsToClass(
-                class1Ids[5],
-                [programId],
-                getAdminAuthToken()
-            )
+            await addProgramsToClass(class1Ids[5], [programId], adminToken)
 
             const response = await request
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -820,7 +816,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -838,7 +834,9 @@ describe('acceptance.class', () => {
             const classesConnection = response.body.data.classesConnection
 
             expect(response.status).to.eq(200)
-            expect(classesConnection.totalCount).to.equal(4)
+            // 4 for org1 classes (1, 10, 11, 12)
+            // 3 for org2 classes (10, 11, 12)
+            expect(classesConnection.totalCount).to.equal(7)
         })
 
         it("returns just the classes that belongs to user's school", async () => {
@@ -929,7 +927,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -955,7 +953,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -1018,7 +1016,7 @@ describe('acceptance.class', () => {
         })
 
         it('has programsConnection as a child', async () => {
-            const user1 = await User.findOneOrFail(user_id)
+            const user1 = await User.findOneByOrFail({ user_id })
             const response = await makeRequest(
                 request,
                 print(CLASSES_CONNECTION),
@@ -1057,7 +1055,7 @@ describe('acceptance.class', () => {
                         },
                     },
                 },
-                getAdminAuthToken()
+                adminToken
             )
             const classesConnection = response.body.data.classesConnection
             expect(classesConnection.edges).to.have.lengthOf(1)
@@ -1079,7 +1077,7 @@ describe('acceptance.class', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: adminToken,
                     })
                     .send({
                         query: print(CLASS_NODE),
@@ -1104,7 +1102,7 @@ describe('acceptance.class', () => {
                         .post('/user')
                         .set({
                             ContentType: 'application/json',
-                            Authorization: getAdminAuthToken(),
+                            Authorization: adminToken,
                         })
                         .send({
                             query: print(CLASS_NODE),
@@ -1144,7 +1142,7 @@ describe('acceptance.class', () => {
                     request,
                     DELETE_CLASSES,
                     { input },
-                    getAdminAuthToken()
+                    adminToken
                 )
             })
 
@@ -1247,7 +1245,7 @@ describe('acceptance.class', () => {
                 request,
                 CREATE_CLASSES,
                 { input },
-                getAdminAuthToken()
+                adminToken
             )
             expect(response.status).to.eq(200)
             expect(response.body.data.errors).to.be.undefined
@@ -1261,7 +1259,7 @@ describe('acceptance.class', () => {
                 request,
                 CREATE_CLASSES,
                 { input: [{}] },
-                getAdminAuthToken()
+                adminToken
             )
             expect(response.status).to.eq(400)
             expect(response.body.errors).to.be.length(2)
@@ -1304,7 +1302,7 @@ describe('acceptance.class', () => {
                 request,
                 UPDATE_CLASSES,
                 { input },
-                getAdminAuthToken()
+                adminToken
             )
 
             expect(response.status).to.eq(200)
@@ -1319,7 +1317,7 @@ describe('acceptance.class', () => {
                 request,
                 UPDATE_CLASSES,
                 { input: [{}] },
-                getAdminAuthToken()
+                adminToken
             )
             expect(response.status).to.eq(400)
             expect(response.body.errors).to.be.length(1)

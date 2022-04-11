@@ -15,7 +15,7 @@ import {
     AGE_RANGES_CONNECTION,
     AGE_RANGE_NODE,
 } from '../utils/operations/modelOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Organization } from '../../src/entities/organization'
@@ -26,6 +26,8 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createProgram } from '../factories/program.factory'
 import { makeRequest } from './utils'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { userToPayload } from '../utils/operations/userOps'
 
 interface IAgeRangeEdge {
     node: AgeRangeConnectionNode
@@ -38,12 +40,12 @@ const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
 const ageRangesCount = 12
 
-const makeConnectionQuery = async () => {
+const makeConnectionQuery = async (token: string) => {
     return await request
         .post('/graphql')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: token,
         })
         .send({
             query: AGE_RANGES_CONNECTION,
@@ -53,12 +55,12 @@ const makeConnectionQuery = async () => {
         })
 }
 
-const makeNodeQuery = async (id: string) => {
+const makeNodeQuery = async (id: string, token: string) => {
     return await request
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: token,
         })
         .send({
             query: print(AGE_RANGE_NODE),
@@ -70,6 +72,7 @@ const makeNodeQuery = async (id: string) => {
 
 describe('acceptance.ageRange', () => {
     let connection: TestConnection
+    let adminToken: string
 
     before(async () => {
         connection = getConnection() as TestConnection
@@ -79,12 +82,13 @@ describe('acceptance.ageRange', () => {
         await AgeRangesInitializer.run()
         await loadFixtures('users', connection)
 
+        const adminUser = await createUser({
+            email: UserPermissions.ADMIN_EMAILS[0],
+        }).save()
+
+        adminToken = await generateToken(userToPayload(adminUser))
         const ageRangeDetails: IAgeRangeDetail[] = []
-        const createOrgResponse = await createOrg(
-            user_id,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrgResponse = await createOrg(user_id, org_name, adminToken)
 
         const createOrgData =
             createOrgResponse.body.data.user.createOrganization
@@ -111,7 +115,7 @@ describe('acceptance.ageRange', () => {
             })
         }
 
-        await createAgeRanges(orgId, ageRangeDetails, getAdminAuthToken())
+        await createAgeRanges(orgId, ageRangeDetails, adminToken)
 
         systemAgeRangesCount = await connection.manager.count(AgeRange, {
             where: { system: true },
@@ -120,7 +124,7 @@ describe('acceptance.ageRange', () => {
 
     context('ageRangesConnection', () => {
         it('queries paginated age ranges', async () => {
-            const response = await makeConnectionQuery()
+            const response = await makeConnectionQuery(adminToken)
 
             const ageRangesConnection = response.body.data.ageRangesConnection
 
@@ -137,7 +141,7 @@ describe('acceptance.ageRange', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: AGE_RANGES_CONNECTION,
@@ -178,7 +182,7 @@ describe('acceptance.ageRange', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: AGE_RANGES_CONNECTION,
@@ -216,14 +220,14 @@ describe('acceptance.ageRange', () => {
     context('ageRangeNode', () => {
         let ageRangesEdges: IAgeRangeEdge[]
         beforeEach(async () => {
-            const ageRangeResponse = await makeConnectionQuery()
+            const ageRangeResponse = await makeConnectionQuery(adminToken)
             ageRangesEdges =
                 ageRangeResponse.body.data.ageRangesConnection.edges
         })
         context('when requested age range exists', () => {
             it('should respond succesfully', async () => {
                 const ageRangeId = ageRangesEdges[0].node.id
-                const response = await makeNodeQuery(ageRangeId)
+                const response = await makeNodeQuery(ageRangeId, adminToken)
                 const ageRangeNode = response.body.data.ageRangeNode
 
                 expect(response.status).to.eq(200)
@@ -234,7 +238,7 @@ describe('acceptance.ageRange', () => {
         context('when requested age range does not exists', () => {
             it('should respond with errors', async () => {
                 const ageRangeId = '00000000-0000-0000-0000-000000000000'
-                const response = await makeNodeQuery(ageRangeId)
+                const response = await makeNodeQuery(ageRangeId, adminToken)
                 const errors = response.body.errors
                 const ageRangeNode = response.body.data.ageRangeNode
 
