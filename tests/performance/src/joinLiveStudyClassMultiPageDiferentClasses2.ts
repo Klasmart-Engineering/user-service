@@ -53,7 +53,7 @@ const studyClassPayload = {
     "repeat":{},
     "subject_id": process.env.SUBJECT_ID,
     "teacher_ids": [],
-    "title":"test 4 classes",
+    "title":"test 4 Demo",
     "outcome_ids":[],
     "start_at": Math.round((new Date().getTime() + (7 * 60000)) / 1000),
     "end_at": Math.round((new Date().getTime() + (7 * 60000)) / 1000),

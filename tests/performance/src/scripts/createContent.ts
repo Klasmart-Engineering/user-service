@@ -18,7 +18,7 @@ const payloadTemp = {
     grade: [],
     keywords: [],
     lesson_type: "2",
-    name: "Load Script",
+    name: "Load Script Lesson Material",
     outcomes: [],
     parent_folder: "",
     program: "b39edb9a-ab91-4245-94a4-eb2b5007c033",
@@ -35,8 +35,10 @@ export default function () {
     const payload = JSON.stringify(payloadTemp);
     const res = http.post(`${process.env.CMS_URL}/v1/contents?org_id=${process.env.ORG_ID}`, payload, params);
     
+    console.log(JSON.stringify(res));
+
     check(res, {
-        'CREATE LIVE CLASS status is 200': () => res.status === 200,
-        'CREATE LIVE CLASS returned class ID': (r) => JSON.parse(r.body as string).id ?? false,
+        'CREATE LESSON MATERIAL status is 200': () => res.status === 200,
+        'CREATE LESSON MATERIAl returned data': (r) => JSON.parse(r.body as string).id ?? false,
     });
 }

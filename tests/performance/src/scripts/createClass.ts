@@ -3,6 +3,9 @@ import http from 'k6/http';
 import randomNumber from '../utils/randomNumber';
 import { CREATE_CLASS } from '../queries/classes';
 
+// Command: k6 run createClass.js
+// - Located in the Dist folder
+
 const params = {
     headers: {
         'Content-Type': `application/json`,
