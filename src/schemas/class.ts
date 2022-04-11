@@ -30,6 +30,7 @@ import { Subject } from '../entities/subject'
 import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
 import { mutate } from '../utils/mutations/commonStructure'
+import { CoreClassConnectionNode } from '../pagination/classesConnection'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -157,6 +158,8 @@ const typeDefs = gql`
             @deprecated(
                 reason: "Sunset Date: 01/03/22 Details: https://calmisland.atlassian.net/l/c/aaSJnmbQ"
             )
+
+        academicTerm: AcademicTermConnectionNode
 
         studentsConnection(
             count: PageSize
@@ -522,6 +525,15 @@ export default function getDefault(
                 ) => {
                     return ctx.loaders.classesConnection.programs.instance.load(
                         class_.id
+                    )
+                },
+                academicTerm: async (
+                    classNode: CoreClassConnectionNode,
+                    _args: Record<string, never>,
+                    ctx: Context
+                ) => {
+                    return ctx.loaders.classesConnection.academicTerm.instance.load(
+                        classNode.id
                     )
                 },
                 schoolsConnection: schoolsChildConnectionResolver,
