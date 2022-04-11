@@ -224,9 +224,7 @@ export class CreateAcademicTerms extends CreateMutation<
     }
 
     protected async buildOutput(outputEntity: AcademicTerm): Promise<void> {
-        const academicTermConnectionNode = await mapATtoATConnectionNode(
-            outputEntity
-        )
+        const academicTermConnectionNode = mapATtoATConnectionNode(outputEntity)
         this.output.academicTerms.push(academicTermConnectionNode)
     }
 }
@@ -315,9 +313,7 @@ export class DeleteAcademicTerms extends DeleteMutation<
     }
 
     protected async buildOutput(outputEntity: AcademicTerm): Promise<void> {
-        const academicTermConnectionNode = await mapATtoATConnectionNode(
-            outputEntity
-        )
+        const academicTermConnectionNode = mapATtoATConnectionNode(outputEntity)
         this.output.academicTerms.push(academicTermConnectionNode)
     }
 }
