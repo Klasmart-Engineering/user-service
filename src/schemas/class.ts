@@ -479,6 +479,32 @@ export async function loadGradesForClass(
     })
 }
 
+export async function teachers(
+    parent: Class,
+    args: { scope: SelectQueryBuilder<User> }
+): Promise<User[]> {
+    const scope = args.scope as SelectQueryBuilder<User>
+    return scope
+        .innerJoin('User.classesTeaching', 'ClassTeaching')
+        .andWhere('ClassTeaching.class_id = :class_id', {
+            class_id: parent.class_id,
+        })
+        .getMany()
+}
+
+export async function students(
+    parent: Class,
+    args: { scope: SelectQueryBuilder<User> }
+): Promise<User[]> {
+    const scope = args.scope as SelectQueryBuilder<User>
+    return scope
+        .innerJoin('User.classesStudying', 'ClassStudying')
+        .andWhere('ClassStudying.class_id = :class_id', {
+            class_id: parent.class_id,
+        })
+        .getMany()
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -594,24 +620,8 @@ export default function getDefault(
                 ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Class: {
-                students: async (parent: Class, args) => {
-                    const scope = args.scope as SelectQueryBuilder<User>
-                    return scope
-                        .innerJoin('class_studying', 'ClassStudying')
-                        .where('ClassStudying.class_id = :class_id', {
-                            class_id: parent.class_id,
-                        })
-                        .getMany()
-                },
-                teachers: async (parent: Class, args) => {
-                    const scope = args.scope as SelectQueryBuilder<User>
-                    return scope
-                        .innerJoin('class_teaching', 'ClassTeaching')
-                        .where('ClassTeaching.class_id = :class_id', {
-                            class_id: parent.class_id,
-                        })
-                        .getMany()
-                },
+                students,
+                teachers,
                 eligibleStudents: async (parent: Class, args) => {
                     return parent.eligibleStudents(args.scope)
                 },

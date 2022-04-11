@@ -159,7 +159,7 @@ export class Class extends CustomBaseEntity {
             .innerJoin('OrganizationMembership.roles', 'Role')
             .innerJoin('Role.permissions', 'Permission')
             .innerJoin('Organization.classes', 'Class')
-            .where('Class.class_id = :class_id', { class_id: this.class_id })
+            .andWhere('Class.class_id = :class_id', { class_id: this.class_id })
             .andWhere('Permission.permission_name = :permission_name', {
                 permission_name,
             })
@@ -180,7 +180,7 @@ export class Class extends CustomBaseEntity {
             .innerJoin('SchoolMembership.roles', 'Role')
             .innerJoin('Role.permissions', 'Permission')
             .innerJoin('School.classes', 'Class')
-            .where('Class.class_id = :class_id', { class_id: this.class_id })
+            .andWhere('Class.class_id = :class_id', { class_id: this.class_id })
             .andWhere('Permission.permission_name = :permission_name', {
                 permission_name,
             })

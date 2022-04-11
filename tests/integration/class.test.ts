@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
-import { getManager, In, getConnection } from 'typeorm'
+import { getManager, In, getConnection, SelectQueryBuilder } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 import { Model } from '../../src/model'
 import { TestConnection } from '../utils/testConnection'
@@ -153,6 +153,8 @@ import { getMap } from '../../src/utils/resolvers/entityMaps'
 import { createSchools } from '../factories/school.factory'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { students, teachers } from '../../src/schemas/class'
+import { createEntityScope } from '../../src/directives/isAdmin'
 
 type ClassSpecs = {
     class: Class
@@ -1147,6 +1149,32 @@ describe('class', () => {
 
     describe('eligibleTeachers', () => {
         context(
+            'when the client does not have permission to view users',
+            () => {
+                it('returns an array containing no users', async () => {
+                    const orgOwner = await createUser().save()
+                    const organization = await createOrganization(
+                        orgOwner
+                    ).save()
+                    const _class = await createClassFactory(
+                        [],
+                        organization
+                    ).save()
+
+                    const unauthorizedUserToken = getNonAdminAuthToken()
+
+                    const gqlTeachers = await eligibleTeachers(
+                        testClient,
+                        _class.class_id,
+                        { authorization: unauthorizedUserToken }
+                    )
+
+                    expect(gqlTeachers).to.be.an('array').with.lengthOf(0)
+                })
+            }
+        )
+
+        context(
             'when one user is authorized to attend a live class as a teacher, and another as a student',
             () => {
                 let teacherId: string
@@ -1159,14 +1187,12 @@ describe('class', () => {
                 let clientToken: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
-                let arbitraryUserToken: string
 
                 beforeEach(async () => {
                     const orgOwner = await createAdminUser(testClient)
                     orgOwnerId = orgOwner?.user_id
                     orgOwnerToken = generateToken(userToPayload(orgOwner))
                     await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                     const teacherInfo = { email: 'teacher@gmail.com' } as User
                     const studentInfo = { email: 'student@gmail.com' } as User
                     teacherId = (
@@ -1428,6 +1454,32 @@ describe('class', () => {
     })
 
     describe('eligibleStudents', () => {
+        context(
+            'when the client does not have permission to view users',
+            () => {
+                it('returns an array containing no users', async () => {
+                    const orgOwner = await createUser().save()
+                    const organization = await createOrganization(
+                        orgOwner
+                    ).save()
+                    const _class = await createClassFactory(
+                        [],
+                        organization
+                    ).save()
+
+                    const unauthorizedUserToken = getNonAdminAuthToken()
+
+                    const gqlStudents = await eligibleStudents(
+                        testClient,
+                        _class.class_id,
+                        { authorization: unauthorizedUserToken }
+                    )
+
+                    expect(gqlStudents).to.be.an('array').with.lengthOf(0)
+                })
+            }
+        )
+
         context(
             'when one user is authorized to attend a live class as a teacher, and another as a student',
             () => {
@@ -1923,6 +1975,128 @@ describe('class', () => {
                     }
                 )
                 expect(gqlTeachers.length).to.eq(3) // 2 teachers, 1 org admin
+            })
+        })
+    })
+
+    describe('students', () => {
+        context(
+            'when the client does not have permission to view users',
+            () => {
+                it('returns an array containing no users', async () => {
+                    const orgOwner = await createUser().save()
+                    const organization = await createOrganization(
+                        orgOwner
+                    ).save()
+                    const _class = await createClassFactory([], organization, {
+                        students: [orgOwner],
+                    }).save()
+
+                    const unauthorizedUser = await createUser().save()
+
+                    const orgOwnerPermissons = new UserPermissions(
+                        userToPayload(unauthorizedUser)
+                    )
+
+                    const userscope = (await createEntityScope({
+                        permissions: orgOwnerPermissons,
+                        entity: 'user',
+                    }))! as SelectQueryBuilder<User>
+
+                    const usersFound = await students(_class, {
+                        scope: userscope,
+                    })
+
+                    expect(usersFound).to.have.lengthOf(0)
+                })
+            }
+        )
+
+        context('when the client does have permission to view users', () => {
+            it('returns an array containing teachers', async () => {
+                const orgOwner = await createUser().save()
+                const organization = await createOrganization(orgOwner).save()
+                const _class = await createClassFactory([], organization, {
+                    students: [orgOwner],
+                }).save()
+
+                const orgOwnerPermissons = new UserPermissions(
+                    userToPayload(orgOwner)
+                )
+
+                const userscope = (await createEntityScope({
+                    permissions: orgOwnerPermissons,
+                    entity: 'user',
+                }))! as SelectQueryBuilder<User>
+
+                const usersFound = await students(_class, {
+                    scope: userscope,
+                })
+
+                expect(usersFound.map((u) => u.user_id)).to.deep.eq([
+                    orgOwner.user_id,
+                ])
+            })
+        })
+    })
+
+    describe('teachers', () => {
+        context(
+            'when the client does not have permission to view users',
+            () => {
+                it('returns an array containing no users', async () => {
+                    const orgOwner = await createUser().save()
+                    const organization = await createOrganization(
+                        orgOwner
+                    ).save()
+                    const _class = await createClassFactory([], organization, {
+                        teachers: [orgOwner],
+                    }).save()
+
+                    const unauthorizedUser = await createUser().save()
+
+                    const unauthorizedUserPermissions = new UserPermissions(
+                        userToPayload(unauthorizedUser)
+                    )
+
+                    const userscope = (await createEntityScope({
+                        permissions: unauthorizedUserPermissions,
+                        entity: 'user',
+                    }))! as SelectQueryBuilder<User>
+
+                    const usersFound = await teachers(_class, {
+                        scope: userscope,
+                    })
+
+                    expect(usersFound).to.have.lengthOf(0)
+                })
+            }
+        )
+
+        context('when the client does have permission to view users', () => {
+            it('returns an array containing teachers', async () => {
+                const orgOwner = await createUser().save()
+                const organization = await createOrganization(orgOwner).save()
+                const _class = await createClassFactory([], organization, {
+                    teachers: [orgOwner],
+                }).save()
+
+                const orgOwnerPermissons = new UserPermissions(
+                    userToPayload(orgOwner)
+                )
+
+                const userscope = (await createEntityScope({
+                    permissions: orgOwnerPermissons,
+                    entity: 'user',
+                }))! as SelectQueryBuilder<User>
+
+                const usersFound = await teachers(_class, {
+                    scope: userscope,
+                })
+
+                expect(usersFound.map((t) => t.user_id)).to.deep.eq([
+                    orgOwner.user_id,
+                ])
             })
         })
     })
