@@ -3,34 +3,43 @@ import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { getConnection, In } from 'typeorm'
 import { AcademicTerm } from '../../src/entities/academicTerm'
+import { Class } from '../../src/entities/class'
 import { Organization } from '../../src/entities/organization'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Role } from '../../src/entities/role'
 import { School } from '../../src/entities/school'
 import { Status } from '../../src/entities/status'
 import { User } from '../../src/entities/user'
+import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { CreateAcademicTerms } from '../../src/resolvers/academicTerm'
-import { CreateAcademicTermInput } from '../../src/types/graphQL/academicTerm'
+import {
+    CreateAcademicTerms,
+    DeleteAcademicTerms,
+} from '../../src/resolvers/academicTerm'
+import {
+    CreateAcademicTermInput,
+    DeleteAcademicTermInput,
+} from '../../src/types/graphQL/academicTerm'
+import { sortObjectArray } from '../../src/utils/array'
+import {
+    createEntityAPIError,
+    createInvalidDateRangeAPIError,
+    createMustHaveExactlyNAPIError,
+    createOverlappingDateRangeAPIError,
+} from '../../src/utils/resolvers/errors'
 import { createAcademicTerm } from '../factories/academicTerm.factory'
+import { createClass, createClasses } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createSchool } from '../factories/school.factory'
 import {
     createAdminUser as adminUserFactory,
     createUser,
 } from '../factories/user.factory'
-import { createRole as createRoleFactory } from '../factories/role.factory'
+import { compareMultipleErrors } from '../utils/apiError'
 import { userToPayload } from '../utils/operations/userOps'
 import { TestConnection } from '../utils/testConnection'
-import { PermissionName } from '../../src/permissions/permissionNames'
-import {
-    createEntityAPIError,
-    createInvalidDateRangeAPIError,
-    createOverlappingDateRangeAPIError,
-} from '../../src/utils/resolvers/errors'
-import { compareMultipleErrors } from '../utils/apiError'
-import { sortObjectArray } from '../../src/utils/array'
-import { OrganizationMembership } from '../../src/entities/organizationMembership'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -506,6 +515,162 @@ describe('academicTerm', () => {
                 await createAcademicTerms(inputs.slice(1)).run()
                 const countForMultipleInputs = connection.logger.count
                 expect(countForMultipleInputs).to.eq(countForOneInput)
+            })
+        })
+    })
+
+    describe('deleteAcademicTerms', () => {
+        let adminUser: User
+        let inputs: DeleteAcademicTermInput[]
+        let academicTerms: AcademicTerm[]
+        let org: Organization
+
+        beforeEach(async () => {
+            adminUser = await adminUserFactory().save()
+
+            org = await createOrganization().save()
+            const school = await createSchool(org).save()
+
+            academicTerms = [
+                await createAcademicTerm(school, {}).save(),
+                await createAcademicTerm(school, {}).save(),
+            ]
+
+            inputs = academicTerms.map((t) => {
+                return {
+                    id: t.id,
+                }
+            })
+        })
+
+        const deleteAcademicTerms = (authUser = adminUser) =>
+            new DeleteAcademicTerms(
+                inputs,
+                new UserPermissions(userToPayload(authUser))
+            )
+        context('.generateEntityMaps', () => {
+            it('fetches ATs by ID', async () => {
+                const map = await deleteAcademicTerms().generateEntityMaps(
+                    inputs
+                )
+                const terms = map.mainEntity
+                expect(terms.size).to.eq(inputs.length)
+                expect(Array.from(terms.keys())).have.same.members(
+                    inputs.map((i) => i.id)
+                )
+                expect(
+                    Array.from(terms.values()).map((t) => t.id)
+                ).have.same.members(inputs.map((i) => i.id))
+            })
+            it('fetches classes by AT', async () => {
+                const at1Classes = await createClasses(2)
+                const at2Classes = await createClasses(2)
+                await Class.save([...at1Classes, ...at2Classes])
+                academicTerms[0]!.classes = Promise.resolve(at1Classes)
+                academicTerms[1]!.classes = Promise.resolve(at2Classes)
+                await AcademicTerm.save(academicTerms)
+
+                const map = await deleteAcademicTerms().generateEntityMaps(
+                    inputs
+                )
+                const classes = map.classesByAcademicTerm
+
+                expect(classes.size).to.eq(2)
+                expect(Array.from(classes.keys())).have.same.members(
+                    inputs.map((i) => i.id)
+                )
+                expect(
+                    classes.get(academicTerms[0].id)?.map((c) => c.class_id)
+                ).to.have.same.members(at1Classes.map((c) => c.class_id))
+                expect(
+                    classes.get(academicTerms[1].id)?.map((c) => c.class_id)
+                ).to.have.same.members(at2Classes.map((c) => c.class_id))
+            })
+            it('loads school and classes relations', async () => {
+                const cls = await createClass().save()
+                academicTerms[0]!.classes = Promise.resolve([cls])
+                await academicTerms[0].save()
+
+                const map = await deleteAcademicTerms().generateEntityMaps(
+                    inputs
+                )
+                connection.logger.reset()
+                await map.mainEntity.get(academicTerms[0].id)?.classes
+                await map.mainEntity.get(academicTerms[0].id)?.school
+                expect(connection.logger.count).to.eq(0)
+            })
+        })
+        context('.authorize', () => {
+            let nonAdminUser: User
+            beforeEach(async () => {
+                nonAdminUser = await createUser().save()
+            })
+            const authorize = async (user: User) => {
+                const mutationClass = deleteAcademicTerms(user)
+                const maps = await mutationClass.generateEntityMaps(inputs)
+                return mutationClass.authorize(inputs, maps)
+            }
+            it('passes when user has required permission in all orgs', async () => {
+                const role = await createRoleFactory('role', org, {
+                    permissions: [PermissionName.edit_school_20330],
+                }).save()
+                await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [role],
+                }).save()
+                await expect(authorize(nonAdminUser)).to.be.eventually.fulfilled
+            })
+            it('fails when user does not have required permissions in any org', async () => {
+                await expect(
+                    authorize(nonAdminUser)
+                ).to.be.eventually.rejectedWith(
+                    /User\(.*\) does not have Permission\(edit_school_20330\) in Organizations\(.*\)/
+                )
+            })
+        })
+
+        context('.validate', () => {
+            it('errors for academic terms with classes assigned', async () => {
+                const classes = await createClasses(2)
+                await Class.save(classes)
+                academicTerms[0]!.classes = Promise.resolve(classes)
+                await AcademicTerm.save(academicTerms)
+
+                const map = await deleteAcademicTerms().generateEntityMaps(
+                    inputs
+                )
+
+                const apiErrors = deleteAcademicTerms().validate(
+                    0,
+                    academicTerms[0],
+                    { id: academicTerms[0].id },
+                    map
+                )
+
+                compareMultipleErrors(apiErrors, [
+                    createMustHaveExactlyNAPIError(
+                        'AcademicTerm',
+                        academicTerms[0].id,
+                        'Classes',
+                        0,
+                        0
+                    ),
+                ])
+                expect(apiErrors[0].message).to.eq(
+                    `On index 0, AcademicTerm ${academicTerms[0].id} must have exactly 0 Classes.`
+                )
+            })
+        })
+        context('.run', () => {
+            it('deletes academic terms', async () => {
+                await deleteAcademicTerms().run()
+                const terms = await AcademicTerm.find()
+                expect(terms).to.have.length(2)
+                for (const term of terms) {
+                    expect(term.status).to.eq(Status.INACTIVE)
+                    expect(term.deleted_at).to.exist
+                }
             })
         })
     })

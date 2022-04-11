@@ -1,25 +1,33 @@
-import { getConnection } from 'typeorm'
-import { Organization } from '../../src/entities/organization'
-import { School } from '../../src/entities/school'
-import { createOrganization } from '../factories/organization.factory'
-import { createSchool } from '../factories/school.factory'
-import { TestConnection } from '../utils/testConnection'
-import { createUser } from '../factories/user.factory'
-import { User } from '../../src/entities/user'
-import { makeRequest } from './utils'
-import { generateToken } from '../utils/testConfig'
 import { expect } from 'chai'
 import supertest from 'supertest'
-import { CREATE_ACADEMIC_TERMS } from '../utils/operations/academicTermOps'
-import { CreateAcademicTermInput } from '../../src/types/graphQL/academicTerm'
-import { SchoolMembership } from '../../src/entities/schoolMembership'
-import { createSchoolMembership } from '../factories/schoolMembership.factory'
-import { createRole } from '../factories/role.factory'
-import { PermissionName } from '../../src/permissions/permissionNames'
-import { Role } from '../../src/entities/role'
-import { userToPayload } from '../utils/operations/userOps'
+import { getConnection } from 'typeorm'
+import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { Role } from '../../src/entities/role'
+import { School } from '../../src/entities/school'
+import { SchoolMembership } from '../../src/entities/schoolMembership'
+import { User } from '../../src/entities/user'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import {
+    CreateAcademicTermInput,
+    DeleteAcademicTermInput,
+} from '../../src/types/graphQL/academicTerm'
+import { createAcademicTerm } from '../factories/academicTerm.factory'
+import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createRole } from '../factories/role.factory'
+import { createSchool } from '../factories/school.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { createUser } from '../factories/user.factory'
+import {
+    CREATE_ACADEMIC_TERMS,
+    DELETE_ACADEMIC_TERMS,
+} from '../utils/operations/academicTermOps'
+import { userToPayload } from '../utils/operations/userOps'
+import { generateToken } from '../utils/testConfig'
+import { TestConnection } from '../utils/testConnection'
+import { makeRequest } from './utils'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -98,7 +106,7 @@ describe('acceptance.academicTerm', () => {
             )
 
             expect(response.status).to.eq(200)
-            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.errors).to.be.undefined
             expect(
                 response.body.data.createAcademicTerms.academicTerms
             ).to.have.lengthOf(inputs.length)
@@ -124,6 +132,51 @@ describe('acceptance.academicTerm', () => {
             )
             expect(response.body.errors[3].message).to.contain(
                 'Field "endDate" of required type "Date!" was not provided.'
+            )
+        })
+    })
+
+    describe('deleteAcademicTerms', () => {
+        let adminUser: User
+        let inputs: DeleteAcademicTermInput[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const school = await createSchool(org).save()
+            const term = await createAcademicTerm(school).save()
+            inputs = [
+                {
+                    id: term.id,
+                },
+            ]
+        })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                DELETE_ACADEMIC_TERMS,
+                { input: inputs },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.be.undefined
+            expect(
+                response.body.data.deleteAcademicTerms.academicTerms
+            ).to.have.lengthOf(inputs.length)
+        })
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                DELETE_ACADEMIC_TERMS,
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
             )
         })
     })
