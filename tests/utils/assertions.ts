@@ -22,7 +22,8 @@ type ComparableTypes = CustomBaseEntity | CreateClassInput | UpdateClassInput
 
 /**
  * Converts two entities to strings in order to compare them,
- * ignores property ordering
+ * ignores property ordering. It will also remove functions
+ * from an object, both key and value.
  */
 export function compareEntities<T extends ComparableTypes>(
     object: T,
