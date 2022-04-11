@@ -71,4 +71,6 @@ npm run release -- --dry-run
 
 5. Update the release document according to that sprint. An [example](https://calmisland.atlassian.net/l/c/S8dgrLWg)
 
-6. Merge the release branch back into main __without squashing the changes__ - use a merge commit. 
+6. Merge the release branch back into main __without squashing the changes__ - use a merge commit, and don't delete the branch.
+
+7. Create the release on GitHub: https://github.com/KL-Engineering/user-service/releases
