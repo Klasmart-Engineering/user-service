@@ -3,7 +3,7 @@ import { Class } from '../entities/class'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { SchoolSummaryNode } from '../types/graphQL/school'
-import { SelectQueryBuilder } from 'typeorm'
+import { In, SelectQueryBuilder } from 'typeorm'
 import { School } from '../entities/school'
 import { AgeRange } from '../entities/ageRange'
 import { Grade } from '../entities/grade'
@@ -128,55 +128,29 @@ export const subjectsForClasses = async (
 export const academicTermForClasses = async (
     classIds: readonly string[]
 ): Promise<(AcademicTermConnectionNode | undefined)[]> => {
-    const coreAcademicTermNodeFields: (keyof AcademicTerm)[] = [
-        'id',
-        'name',
-        'start_date',
-        'end_date',
-        'status',
-        'school_id',
-    ]
+    const classes = await Class.find({
+        where: {
+            class_id: In(classIds as string[]),
+        },
+        relations: ['academicTerm'],
+    })
 
-    const scope = baseClassQuery(classIds)
-        .leftJoin('Class.academicTerm', 'AcademicTerm')
-        .addSelect(
-            coreAcademicTermNodeFields.map((field) => `AcademicTerm.${field}`)
-        )
+    const classToAcademicTerms = new Map<string, AcademicTerm>()
 
-    const classToAcademicTerms = new Map()
-
-    const { raw, entities } = await scope.getRawAndEntities()
-
-    // because school_id is annotated as a RelationId
-    // not a column typeorm does not automaticlly populate it
-    // due to this bug
-    // https://github.com/typeorm/typeorm/issues/4581
-    for (const [index, _class] of entities.entries()) {
+    for (const _class of classes) {
         // eslint-disable-next-line no-await-in-loop
-        let academicTerm = await _class.academicTerm
+        const academicTerm = await _class.academicTerm
 
         if (academicTerm) {
-            // hack to work around academicTerm.school_id being readonly
-            academicTerm = {
-                ...academicTerm,
-                school_id: raw[index].school_id,
-            } as AcademicTerm
+            classToAcademicTerms.set(_class.class_id, academicTerm)
         }
-
-        classToAcademicTerms.set(_class.class_id, academicTerm)
     }
 
-    const academicTermsInLoadedOrder = []
-
-    for (const classId of classIds) {
-        const academicTerm = classToAcademicTerms.get(classId)
-
-        academicTermsInLoadedOrder.push(
+    return classIds
+        .map((classId) => classToAcademicTerms.get(classId))
+        .map((academicTerm) =>
             academicTerm ? mapATtoATConnectionNode(academicTerm) : undefined
         )
-    }
-
-    return academicTermsInLoadedOrder
 }
 
 export const programsForClasses = async (
