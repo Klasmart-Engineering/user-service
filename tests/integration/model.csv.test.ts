@@ -102,6 +102,8 @@ import { config } from '../../src/config/config'
 import { checkCSVErrorsMatch } from '../utils/csvError'
 import { userToPayload } from '../utils/operations/userOps'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { createAcademicTerm } from '../factories/academicTerm.factory'
+import { AcademicTerm } from '../../src/entities/academicTerm'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -1141,6 +1143,12 @@ describe('model.csv', () => {
                     const expectedSchool = createSchool(org, 'test-school')
                     await connection.manager.save(expectedSchool)
 
+                    const expectedAcademicTerm = createAcademicTerm(
+                        expectedSchool
+                    )
+                    expectedAcademicTerm.name = 'test academic term'
+                    await connection.manager.save(expectedAcademicTerm)
+
                     const expectedCSVErrors = [
                         buildCsvError(
                             csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
@@ -1179,6 +1187,12 @@ describe('model.csv', () => {
                     const expectedProg = createProgram(org)
                     expectedProg.name = 'outdoor activities'
                     await connection.manager.save(expectedProg)
+
+                    const expectedAcademicTerm = createAcademicTerm(
+                        expectedSchool
+                    )
+                    expectedAcademicTerm.name = 'test academic term'
+                    await connection.manager.save(expectedAcademicTerm)
 
                     const expectedCSVErrors = [
                         buildCsvError(
@@ -1222,6 +1236,12 @@ describe('model.csv', () => {
                     const expectedGrade = createGrade(org)
                     expectedGrade.name = 'first grade'
                     await connection.manager.save(expectedGrade)
+
+                    const expectedAcademicTerm = createAcademicTerm(
+                        expectedSchool
+                    )
+                    expectedAcademicTerm.name = 'test academic term'
+                    await connection.manager.save(expectedAcademicTerm)
 
                     const expectedCSVErrors = [
                         buildCsvError(
@@ -1269,6 +1289,12 @@ describe('model.csv', () => {
                     const expectedSubject = createSubject(org)
                     expectedSubject.name = 'pilates'
                     await connection.manager.save(expectedSubject)
+
+                    const expectedAcademicTerm = createAcademicTerm(
+                        expectedSchool
+                    )
+                    expectedAcademicTerm.name = 'test academic term'
+                    await connection.manager.save(expectedAcademicTerm)
 
                     const expectedCSVErrors = [
                         buildCsvError(
@@ -1444,6 +1470,7 @@ describe('model.csv', () => {
             let expectedGrade: Grade
             let expectedSubject: Subject
             let expectedAgeRange: AgeRange
+            let expectedAcademicTerm: AcademicTerm
 
             beforeEach(async () => {
                 filename = 'classes.csv'
@@ -1475,6 +1502,10 @@ describe('model.csv', () => {
                 expectedAgeRange.low_value_unit = AgeRangeUnit.YEAR
                 expectedAgeRange.high_value_unit = AgeRangeUnit.YEAR
                 await connection.manager.save(expectedAgeRange)
+
+                expectedAcademicTerm = createAcademicTerm(expectedSchool)
+                expectedAcademicTerm.name = 'test academic term'
+                await connection.manager.save(expectedAcademicTerm)
             })
 
             it('should create classes', async () => {

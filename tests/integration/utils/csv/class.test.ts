@@ -23,6 +23,9 @@ import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { config } from '../../../../src/config/config'
+import { createAcademicTerm } from '../../../factories/academicTerm.factory'
+import { AcademicTerm } from '../../../../src/entities/academicTerm'
+import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 
 use(chaiAsPromised)
 
@@ -533,5 +536,142 @@ describe('processClassFromCSVRow', () => {
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
+    })
+
+    context('academic term', () => {
+        let academicTerm: AcademicTerm
+
+        beforeEach(async () => {
+            academicTerm = await createAcademicTerm(secondSchool).save()
+        })
+
+        it('should return an error if the academic term is for a different school then the class', async () => {
+            row = {
+                organization_name: orgName,
+                class_name: 'class1',
+                school_name: expectedSchool.school_name,
+                academic_term_name: academicTerm.name,
+            }
+            const rowErrors = await processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
+
+            const classRowError = rowErrors[0]
+            expect(classRowError.code).to.equal(
+                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+            )
+            expect(classRowError.message).to.equal(
+                `On row number 1, "${academicTerm.name}" AcademicTerm doesn't exist for "${expectedSchool.school_name}" School.`
+            )
+
+            const dbClass = await Class.find()
+            expect(dbClass.length).to.equal(1)
+        })
+
+        it('should return an error if the academic term does not exist', async () => {
+            row = {
+                organization_name: orgName,
+                class_name: 'class1',
+                school_name: expectedSchool.school_name,
+                academic_term_name: 'not a real academic term',
+            }
+            const rowErrors = await processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
+
+            const classRowError = rowErrors[0]
+            expect(classRowError.code).to.equal(
+                csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY
+            )
+            expect(classRowError.message).to.equal(
+                `On row number 1, "not a real academic term" AcademicTerm doesn't exist.`
+            )
+
+            const dbClass = await Class.find()
+            expect(dbClass.length).to.equal(1)
+        })
+
+        it('should return an error if class has no school', async () => {
+            row = {
+                organization_name: orgName,
+                class_name: 'class1',
+                school_name: undefined,
+                academic_term_name: academicTerm.name,
+            }
+            const rowErrors = await processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
+
+            const classRowError = rowErrors[0]
+            expect(classRowError.code).to.equal(
+                csvErrorConstants.ERR_CSV_MUST_HAVE_EXACTLY_N
+            )
+            expect(classRowError.message).to.equal(
+                'On row number 1, Class class1 must have exactly 1 School.'
+            )
+
+            const dbClass = await Class.find()
+            expect(dbClass.length).to.equal(1)
+        })
+
+        // todo: if the same class is provided on 2 different rows
+        // then its possible to give it 2 schools
+        // but this is not possible to test as the class
+        // must be created in the current transaction in production
+        // which does not work with our transactional test setup
+        it.skip('should return an error if class has more then one school', async () => {
+            const queryRunner = connection.createQueryRunner()
+            await queryRunner.connect()
+            await queryRunner.startTransaction()
+
+            const classFromPreviousRow = createClass(
+                [expectedSchool, expectedSchool2],
+                expectedOrg,
+                undefined,
+                'class1'
+            )
+
+            await queryRunner.manager.save(classFromPreviousRow)
+            row = {
+                organization_name: orgName,
+                class_name: classFromPreviousRow.class_name!,
+                school_name: undefined,
+                academic_term_name: academicTerm.name,
+            }
+            const rowErrors = await processClassFromCSVRow(
+                queryRunner.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
+
+            const classRowError = rowErrors[0]
+            expect(classRowError.code).to.equal(
+                csvErrorConstants.ERR_CSV_MUST_HAVE_EXACTLY_N
+            )
+            expect(classRowError.message).to.equal(
+                `On row number 1, Class class1 must have exactly 1 School.`
+            )
+
+            const dbClass = await Class.find()
+            expect(dbClass.length).to.equal(1)
+        })
     })
 })
