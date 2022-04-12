@@ -96,6 +96,7 @@ import {
     multiKeyChildConnectionLoader,
 } from './childConnectionLoader'
 import {
+    academicTermForClasses,
     ageRangesForClasses,
     gradesForClasses,
     IClassesConnectionLoaders,
@@ -185,6 +186,7 @@ import {
     organizationMembershipConnectionQuery,
     organizationMembershipsConnectionSortingConfig,
 } from '../pagination/organizationMembershipsConnection'
+import { AcademicTermConnectionNode } from '../types/graphQL/academicTerm'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -577,6 +579,9 @@ export function createContextLazyLoaders(
             programs: new Lazy<DataLoader<string, CoreProgramConnectionNode[]>>(
                 () => new DataLoader(programsForClasses)
             ),
+            academicTerm: new Lazy<
+                DataLoader<string, AcademicTermConnectionNode | undefined>
+            >(() => new DataLoader(academicTermForClasses)),
         },
         classNode: {
             node: new Lazy<NodeDataLoader<Class, ClassSummaryNode>>(

@@ -1130,6 +1130,57 @@ describe('acceptance.class', () => {
             })
         })
 
+        it("can access the class's academic term", async () => {
+            const org1 = await connection.manager.findOneOrFail(
+                Organization,
+                org1Id
+            )
+            const school = await createSchoolFactory(org1).save()
+            const class_ = createClassFactory([], org1)
+            const academicTerm = createAcademicTerm(school)
+            await academicTerm.save()
+            class_.academicTerm = Promise.resolve(academicTerm)
+            await class_.save()
+
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: `query($id: ID!){
+                            classNode(id: $id){
+                                academicTerm{
+                                    id,
+                                    name,
+                                    status,
+                                    startDate,
+                                    endDate,
+                                    school{
+                                        id
+                                    }
+                                }
+                            }
+                        }`,
+                    variables: {
+                        id: class_.class_id,
+                    },
+                })
+
+            const classNode = response.body.data.classNode
+            expect(response.status).to.eq(200)
+            expect(classNode.academicTerm.id).to.eq(academicTerm.id)
+            expect(classNode.academicTerm.name).to.eq(academicTerm.name)
+            expect(classNode.academicTerm.startDate).to.eq(
+                academicTerm.start_date.toISOString()
+            )
+            expect(classNode.academicTerm.endDate).to.eq(
+                academicTerm.end_date.toISOString()
+            )
+            expect(classNode.academicTerm.school.id).to.eq(school.school_id)
+        })
+
         context(
             "when request is using a param that doesn't exist ('classId' instead of 'id')",
             () => {
@@ -1285,7 +1336,7 @@ describe('acceptance.class', () => {
                 getAdminAuthToken()
             )
             expect(response.status).to.eq(200)
-            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.errors).to.be.undefined
             expect(response.body.data.createClasses.classes).to.have.lengthOf(
                 input.length
             )
@@ -1343,7 +1394,7 @@ describe('acceptance.class', () => {
             )
 
             expect(response.status).to.eq(200)
-            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.errors).to.be.undefined
             expect(response.body.data.updateClasses.classes).to.have.lengthOf(
                 input.length
             )

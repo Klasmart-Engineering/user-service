@@ -1,6 +1,13 @@
-export function isStringArraySortedAscending(values: string[]): boolean {
+export function isStringArraySortedAscending(
+    values: string[],
+    ignorePunctuation = false
+): boolean {
     for (let i = 1; i < values.length; i += 1) {
-        if (values[i].localeCompare(values[i - 1]) < 0) {
+        if (
+            values[i].localeCompare(values[i - 1], 'en', {
+                ignorePunctuation,
+            }) < 0
+        ) {
             return false
         }
     }
@@ -8,9 +15,16 @@ export function isStringArraySortedAscending(values: string[]): boolean {
     return true
 }
 
-export function isStringArraySortedDescending(values: string[]): boolean {
+export function isStringArraySortedDescending(
+    values: string[],
+    ignorePunctuation = false
+): boolean {
     for (let i = 1; i < values.length; i += 1) {
-        if (values[i].localeCompare(values[i - 1]) > 0) {
+        if (
+            values[i].localeCompare(values[i - 1], 'en', {
+                ignorePunctuation,
+            }) > 0
+        ) {
             return false
         }
     }

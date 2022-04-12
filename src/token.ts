@@ -73,10 +73,10 @@ export interface TokenPayload {
     user_name?: string
 }
 
-async function checkTokenAMS(req: Request): Promise<TokenPayload | undefined> {
+async function checkTokenAMS(req: Request): Promise<TokenPayload> {
     const token = req.headers.authorization || req.cookies.access
     if (!token) {
-        return undefined
+        throw new AuthenticationError('No authentication token')
     }
     const payload = decode(token)
     if (!payload || typeof payload === 'string') {
@@ -106,10 +106,8 @@ async function checkTokenAMS(req: Request): Promise<TokenPayload | undefined> {
     return verifiedToken
 }
 
-export async function checkToken(
-    req: Request
-): Promise<TokenPayload | undefined> {
-    let tokenPayload: TokenPayload | undefined
+export async function checkToken(req: Request): Promise<TokenPayload> {
+    let tokenPayload: TokenPayload
     if (IS_AZURE_B2C_ENABLED) {
         const azureTokenPayload = await getAuthenticatedUser(req)
         const { emails, ...rest } = azureTokenPayload
@@ -122,17 +120,15 @@ export async function checkToken(
     } else {
         tokenPayload = await checkTokenAMS(req)
     }
-    if (tokenPayload !== undefined) {
-        // the auth service that create our tokens does not normalize emails
-        // as strictly as we do
-        // https://calmisland.atlassian.net/browse/AD-1133?focusedCommentId=56306
-        // therefor we must normalize them ourselves to ensure they match up
-        // with what is saved to our db
-        // cast is ok because clean.email only return null if input is null
-        tokenPayload.email = clean.email(tokenPayload.email) as
-            | string
-            | undefined
-    }
+
+    // the auth service that create our tokens does not normalize emails
+    // as strictly as we do
+    // https://calmisland.atlassian.net/browse/AD-1133?focusedCommentId=56306
+    // therefor we must normalize them ourselves to ensure they match up
+    // with what is saved to our db
+    // cast is ok because clean.email only return null if input is null
+    tokenPayload.email = clean.email(tokenPayload.email) as string | undefined
+
     return tokenPayload
 }
 
@@ -160,12 +156,12 @@ export async function validateToken(
     next: express.NextFunction
 ) {
     const auth = req.headers.authorization
+
     if (auth !== undefined && isAPIKey(auth)) {
         try {
             res.locals.hasApiKey = checkAPIKey(auth)
         } catch (e) {
             const { code, message } = customErrors.invalid_api_key
-
             return res.status(401).send({
                 code,
                 message: stringInject(message, { reason: e.message })!,

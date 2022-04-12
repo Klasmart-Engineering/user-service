@@ -358,7 +358,16 @@ describe('commonStructure', () => {
                     permissions,
                     inputCategories
                 )
-                expect(mutation.validate()).to.be.empty
+                expect(
+                    mutation.validate(
+                        0,
+                        inputCategories[0],
+                        { id: inputCategories[0].id },
+                        {
+                            mainEntity: categoriesMap,
+                        }
+                    )
+                ).to.be.empty
             })
         })
 

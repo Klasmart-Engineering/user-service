@@ -1,4 +1,6 @@
+import { Context } from 'mocha'
 import { AcademicTerm } from '../entities/academicTerm'
+import { Class } from '../entities/class'
 import { School } from '../entities/school'
 import { mapATtoATConnectionNode } from '../pagination/academicTermsConnection'
 import { PermissionName } from '../permissions/permissionNames'
@@ -6,9 +8,11 @@ import { APIError } from '../types/errors/apiError'
 import {
     AcademicTermsMutationResult,
     CreateAcademicTermInput,
+    DeleteAcademicTermInput,
 } from '../types/graphQL/academicTerm'
 import {
     CreateMutation,
+    DeleteMutation,
     EntityMap,
     filterInvalidInputs,
 } from '../utils/mutations/commonStructure'
@@ -18,11 +22,19 @@ import {
     validateNoDateOverlapsForParent,
 } from '../utils/resolvers/dateRangeValidation'
 import { getMap } from '../utils/resolvers/entityMaps'
-import { createEntityAPIError } from '../utils/resolvers/errors'
+import {
+    createEntityAPIError,
+    createMustHaveExactlyNAPIError,
+} from '../utils/resolvers/errors'
 
 interface CreateAcademicTermsEntityMap extends EntityMap<AcademicTerm> {
     schoolsAcademicTerms: Map<AcademicTerm['school_id'], AcademicTerm[]>
     schools: Map<string, School>
+}
+
+export interface DeleteAcademicTermsEntityMap extends EntityMap<AcademicTerm> {
+    mainEntity: Map<string, AcademicTerm>
+    classesByAcademicTerm: Map<string, Class[]>
 }
 
 export class CreateAcademicTerms extends CreateMutation<
@@ -212,9 +224,96 @@ export class CreateAcademicTerms extends CreateMutation<
     }
 
     protected async buildOutput(outputEntity: AcademicTerm): Promise<void> {
-        const academicTermConnectionNode = await mapATtoATConnectionNode(
-            outputEntity
+        const academicTermConnectionNode = mapATtoATConnectionNode(outputEntity)
+        this.output.academicTerms.push(academicTermConnectionNode)
+    }
+}
+
+export class DeleteAcademicTerms extends DeleteMutation<
+    AcademicTerm,
+    DeleteAcademicTermInput,
+    AcademicTermsMutationResult
+> {
+    protected readonly EntityType = AcademicTerm
+    protected readonly inputTypeName = 'DeleteAcademicTermInput'
+    protected readonly output: AcademicTermsMutationResult = {
+        academicTerms: [],
+    }
+    protected readonly mainEntityIds: string[]
+
+    constructor(
+        input: DeleteAcademicTermInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.id)
+    }
+
+    async generateEntityMaps(
+        input: DeleteAcademicTermInput[]
+    ): Promise<DeleteAcademicTermsEntityMap> {
+        const terms = await getMap.academicTerm(
+            input.map((i) => i.id),
+            ['school', 'classes']
         )
+
+        const classesByAcademicTerm: Map<string, Class[]> = new Map()
+        for (const [academicTermId, term] of terms) {
+            // eslint-disable-next-line no-await-in-loop
+            const classes = await term.classes
+            classesByAcademicTerm.set(academicTermId, classes ?? [])
+        }
+
+        return {
+            mainEntity: terms,
+            classesByAcademicTerm,
+        }
+    }
+
+    async authorize(
+        _input: DeleteAcademicTermInput[],
+        maps: DeleteAcademicTermsEntityMap
+    ): Promise<void> {
+        const terms = Array.from(maps.mainEntity.values())
+        const organization_ids = await Promise.all(
+            terms.map((t) => t.school.then((s) => s.organizationId))
+        )
+        const school_ids = terms.map((t) => t.school_id)
+        return this.permissions.rejectIfNotAllowed(
+            {
+                organization_ids,
+                school_ids,
+            },
+            PermissionName.edit_school_20330 // TODO: update with permissions from AD-2107
+        )
+    }
+
+    validate(
+        index: number,
+        currentEntity: AcademicTerm,
+        currentInput: DeleteAcademicTermInput,
+        maps: DeleteAcademicTermsEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+
+        const classes = maps.classesByAcademicTerm.get(currentEntity.id)
+        if (classes?.length) {
+            errors.push(
+                createMustHaveExactlyNAPIError(
+                    'AcademicTerm',
+                    currentInput.id,
+                    'Classes',
+                    0,
+                    index
+                )
+            )
+        }
+
+        return errors
+    }
+
+    protected async buildOutput(outputEntity: AcademicTerm): Promise<void> {
+        const academicTermConnectionNode = mapATtoATConnectionNode(outputEntity)
         this.output.academicTerms.push(academicTermConnectionNode)
     }
 }

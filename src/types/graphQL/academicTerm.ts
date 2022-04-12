@@ -6,6 +6,10 @@ export interface AcademicTermConnectionNode {
     startDate: Date
     endDate: Date
     status: Status
+    // not exposed in graphql schema
+    // but used by child resolver for fetching
+    // school
+    schoolId: string
 }
 
 export interface CreateAcademicTermInput {
@@ -13,6 +17,10 @@ export interface CreateAcademicTermInput {
     name: string
     startDate: Date
     endDate: Date
+}
+
+export interface DeleteAcademicTermInput {
+    id: string
 }
 
 export interface AcademicTermsMutationResult {
