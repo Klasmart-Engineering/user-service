@@ -21,206 +21,206 @@ export const options: Options = {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students',
-            duration: '1m',
+            duration: '10m',
         },
         students1: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students1',
-            duration: '1m',
+            duration: '10m',
         },
          students2: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students2',
-            duration: '1m',
+            duration: '10m',
         },
         students3: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students3',
-            duration: '1m',
+            duration: '10m',
         },
         students4: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students4',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 010
         students5: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students5',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 011
         students6: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students6',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 012
         students7: {
         executor: 'constant-vus',
         vus: parseInt(__ENV.VUS, 10),
         exec: 'students7',
-        duration: '1m',
+        duration: '10m',
         },
         // Class K6 013
         students8: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students8',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 014
         students9: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students9',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 015
         students10: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students10',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 016
         students11: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students11',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 017
         students12: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students12',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 018
         students13: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students13',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 019
         students14: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students14',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 020
         students15: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students15',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 021
         students16: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students16',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 022
         students17: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students17',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 023
         students18: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students18',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 024
         students19: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students19',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 025
         students20: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students20',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 026
         students21: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students21',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 027
         students22: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students22',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 028
         students23: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students23',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 029
         students24: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students24',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 030
         students25: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students25',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 031
         students26: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students26',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 032
         students27: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students27',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 033
         students28: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students28',
-            duration: '1m',
+            duration: '10m',
         },
         // Class K6 034
         students29: {
             executor: 'constant-vus',
             vus: parseInt(__ENV.VUS, 10),
             exec: 'students29',
-            duration: '1m',
+            duration: '10m',
         }, 
         
     },
