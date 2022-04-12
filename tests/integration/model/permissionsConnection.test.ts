@@ -55,7 +55,7 @@ describe('model', () => {
     let memberPermissions: UserPermissions
     let noMemberPermissions: UserPermissions
 
-    const pageSize = 7
+    const pageSize = 10
 
     // emulated info object to could test resolver
     let info: GraphQLResolveInfo
@@ -82,13 +82,10 @@ describe('model', () => {
         expect(result.edges.length).eq(pageSize)
 
         const values = result.edges.map((edge) => edge.node[field]) as string[]
-        // Note: postgres sorting differs from JS sorting
-        // A specific page size of 7 is used to prevent querying permissions with known sorting differences
-        // https://calmisland.atlassian.net/browse/AD-2246
         const isSorted =
             order === 'ASC'
-                ? isStringArraySortedAscending(values)
-                : isStringArraySortedDescending(values)
+                ? isStringArraySortedAscending(values, true)
+                : isStringArraySortedDescending(values, true)
 
         expect(isSorted).to.be.true
     }
