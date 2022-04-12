@@ -140,8 +140,8 @@ export function setup() {
         classId2: JSON.parse(res2.body as string).data?.id,
     }
 
-    let i = 100; // cambie de 0 a 1
-    let l = 141;
+    let i = 0; // cambie de 0 a 1
+    let l = 20;
 
     for (i; i < l; i++) {
         const prefix = i; // reemplace el ('0' + i).slice(-2) por i
