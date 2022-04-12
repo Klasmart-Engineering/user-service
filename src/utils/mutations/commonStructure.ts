@@ -9,6 +9,7 @@ import {
     APIErrorCollection,
     validateAPICall,
 } from '../../types/errors/apiError'
+import { sortObjectArray } from '../array'
 import {
     createDatabaseSaveAPIError,
     createDuplicateAttributeAPIError,
@@ -221,7 +222,7 @@ export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     mainEntityIds: string[],
     entityTypeName: string,
     inputTypeName: string,
-    idName = 'id'
+    idName = 'id' // TODO: don't default to id, make required
 ) {
     const errors: APIError[] = []
     const ids = inputs.map((_, index) => mainEntityIds[index])
@@ -321,7 +322,10 @@ export function filterInvalidInputs<T>(
         })
         .filter((_, index) => !errorMaps.some((em) => em.has(index)))
     const apiErrors = errorMaps.flatMap((em) => [...em.values()])
-    return { validInputs, apiErrors }
+    return {
+        validInputs: sortObjectArray(validInputs, 'index'),
+        apiErrors: sortObjectArray(apiErrors, 'index'),
+    }
 }
 
 export type ProcessedResult<
@@ -619,7 +623,14 @@ export abstract class DeleteMutation<
         )
     }
 
-    validate = () => []
+    validate(
+        _index: number,
+        _currentEntity: EntityType,
+        _currentInput: InputType,
+        _entityMaps: DeleteEntityMap<EntityType>
+    ): APIError[] {
+        return []
+    }
 
     process(
         _currentInput: InputType,

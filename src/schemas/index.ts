@@ -26,6 +26,7 @@ import scalars from './scalars'
 import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import academicTerm from './academicTerm'
 
 export default function getDefault(
     model: Model,
@@ -35,6 +36,7 @@ export default function getDefault(
         utils(model, context),
         pagination,
         filtering(model, context),
+        academicTerm(),
         ageRange(model, context),
         category(model, context),
         _class(model, context),

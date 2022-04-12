@@ -27,8 +27,7 @@ describe('Check Token', () => {
     })
 
     context('throw errors when validation fails when', () => {
-        // This test is temporarily disabled. See https://calmisland.atlassian.net/browse/AD-1810
-        xit('no token passed in', async () => {
+        it('no token passed in', async () => {
             req.headers = { authorization: undefined }
             await expect(checkToken(req)).to.be.rejectedWith(
                 'No authentication token'
@@ -83,12 +82,6 @@ describe('Check Token', () => {
             await expect(checkToken(req)).to.eventually.have.deep.include(
                 payload
             )
-        })
-
-        // This test is temporarily included, see https://calmisland.atlassian.net/browse/AD-1810
-        it('with missing token', async () => {
-            req.headers = { authorization: undefined }
-            await expect(checkToken(req)).to.eventually.eq(undefined)
         })
     })
 

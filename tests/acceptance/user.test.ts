@@ -596,24 +596,6 @@ describe('acceptance.user', () => {
     })
 
     context('my_users', async () => {
-        it('Finds no users if I am not logged in', async () => {
-            const response = await request
-                .post('/user')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: '',
-                })
-                .send({
-                    query: MY_USERS,
-                })
-
-            expect(response.status).to.eq(200)
-            expect(response.body.errors.length).to.equal(1)
-            expect(response.body.errors[0]['message']).to.equal(
-                'No authentication token'
-            )
-        })
-
         it('Finds one user with active membership ', async () => {
             const token = generateToken({
                 id: userIds[0],

@@ -150,9 +150,7 @@ export function compareMultipleErrors(
     expectedErrors: APIError[]
 ) {
     expect(errors.length).to.equal(expectedErrors.length)
-    for (let i = 0; i < errors.length; i++) {
-        compareErrors(errors[i], expectedErrors[i])
-    }
+    expect(errors).to.deep.equalInAnyOrder(expectedErrors)
 }
 
 export async function expectAPIErrorCollection(

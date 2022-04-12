@@ -196,6 +196,15 @@ export const customErrors = {
         message:
             'Operation type was {attribute}, but a {otherAttribute} was expected',
     },
+    invalid_date_range: {
+        code: 'ERR_INVALID_DATE_RANGE',
+        message: 'Date range start date must be before its end date',
+    },
+    overlapping_date_range: {
+        code: 'ERR_OVERLAPPING_DATE_RANGE',
+        message:
+            'Input date range {inputStartDateString} to {inputEndDateString} overlaps with date range {overlappedStartDateString} to {overlappedEndDateString} in {entity} under {parentEntity} {attribute} {attributeValue}.',
+    },
     inactive_status: {
         code: 'ERR_INACTIVE_STATUS',
         message: '{entity} {entityName} is inactive.',

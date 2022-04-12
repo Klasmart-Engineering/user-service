@@ -1,6 +1,6 @@
 import chai, { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, QueryRunner } from 'typeorm'
+import { Connection, MigrationInterface, QueryRunner } from 'typeorm'
 import { Role } from '../../src/entities/role'
 import {
     createMigrationsTestConnection,
@@ -10,7 +10,7 @@ import RoleInitializer from '../../src/initializers/roles'
 import { createRole } from '../factories/role.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { RolesMissingDeactivateUser1645439842684 } from '../../migrations/1645439842684-RolesMissingDeactivateUser'
+import { runPreviousMigrations } from '../utils/migrations'
 
 chai.should()
 use(chaiAsPromised)
@@ -20,6 +20,7 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
     let baseConnection: Connection
     let migrationsConnection: Connection
     let runner: QueryRunner
+    let currentMigration: MigrationInterface
 
     before(async () => {
         baseConnection = await createTestConnection()
@@ -44,7 +45,11 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
             false,
             'migrations'
         )
-        await migrationsConnection.runMigrations()
+        currentMigration = (await runPreviousMigrations(
+            migrationsConnection,
+            runner,
+            'RolesMissingDeactivateUser1645439842684'
+        ))!
         await RoleInitializer.run()
     })
 
@@ -52,13 +57,7 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
         return (await role?.permissions)?.map((p) => p.permission_name)
     }
 
-    const runMigration = async () => {
-        const migration = migrationsConnection.migrations.find(
-            (m) => m.name === RolesMissingDeactivateUser1645439842684.name
-        )
-        // promise will be rejected if migration fails
-        return migration!.up(runner)
-    }
+    const runMigration = () => currentMigration!.up(runner)
 
     it(`adds deactivate_user_40883 to roles with only edit_this_organization_10330`, async () => {
         const role = await createRole(undefined, undefined, {
@@ -127,7 +126,7 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
     })
 
     it('is benign if run twice', async () => {
-        await expect(runMigration()).to.be.eventually.fulfilled
-        await expect(runMigration()).to.be.eventually.fulfilled
+        await runMigration().should.be.fulfilled
+        await runMigration().should.be.fulfilled
     })
 })

@@ -85,7 +85,10 @@ import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { TestConnection } from '../utils/testConnection'
-import { createSuccessiveAcademicTerms } from '../factories/academicTerm.factory'
+import {
+    createAcademicTerm,
+    createSuccessiveAcademicTerms,
+} from '../factories/academicTerm.factory'
 import { School } from '../../src/entities/school'
 import { AcademicTerm } from '../../src/entities/academicTerm'
 import { Organization } from '../../src/entities/organization'
@@ -839,6 +842,38 @@ describe('acceptance.class', () => {
             expect(classesConnection.totalCount).to.equal(7)
         })
 
+        it('queries paginated classes filtering by academic term', async () => {
+            const school = await School.findOneOrFail(schoolId)
+            const cls = await Class.findOneOrFail(class1Ids[2])
+            const term = await createAcademicTerm(school, {}, [cls]).save()
+
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: print(CLASSES_CONNECTION),
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            academicTermId: {
+                                operator: 'eq',
+                                value: term.id,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+            expect(classesConnection.edges).to.have.length(1)
+            expect(classesConnection.edges[0].node.id).to.equal(cls.class_id)
+        })
+
         it("returns just the classes that belongs to user's school", async () => {
             const response = await request
                 .post('/user')
@@ -1093,6 +1128,57 @@ describe('acceptance.class', () => {
             })
         })
 
+        it("can access the class's academic term", async () => {
+            const org1 = await connection.manager.findOneOrFail(
+                Organization,
+                org1Id
+            )
+            const school = await createSchoolFactory(org1).save()
+            const class_ = createClassFactory([], org1)
+            const academicTerm = createAcademicTerm(school)
+            await academicTerm.save()
+            class_.academicTerm = Promise.resolve(academicTerm)
+            await class_.save()
+
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: `query($id: ID!){
+                            classNode(id: $id){
+                                academicTerm{
+                                    id,
+                                    name,
+                                    status,
+                                    startDate,
+                                    endDate,
+                                    school{
+                                        id
+                                    }
+                                }
+                            }
+                        }`,
+                    variables: {
+                        id: class_.class_id,
+                    },
+                })
+
+            const classNode = response.body.data.classNode
+            expect(response.status).to.eq(200)
+            expect(classNode.academicTerm.id).to.eq(academicTerm.id)
+            expect(classNode.academicTerm.name).to.eq(academicTerm.name)
+            expect(classNode.academicTerm.startDate).to.eq(
+                academicTerm.start_date.toISOString()
+            )
+            expect(classNode.academicTerm.endDate).to.eq(
+                academicTerm.end_date.toISOString()
+            )
+            expect(classNode.academicTerm.school.id).to.eq(school.school_id)
+        })
+
         context(
             "when request is using a param that doesn't exist ('classId' instead of 'id')",
             () => {
@@ -1248,7 +1334,7 @@ describe('acceptance.class', () => {
                 adminToken
             )
             expect(response.status).to.eq(200)
-            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.errors).to.be.undefined
             expect(response.body.data.createClasses.classes).to.have.lengthOf(
                 input.length
             )
@@ -1306,7 +1392,7 @@ describe('acceptance.class', () => {
             )
 
             expect(response.status).to.eq(200)
-            expect(response.body.data.errors).to.be.undefined
+            expect(response.body.errors).to.be.undefined
             expect(response.body.data.updateClasses.classes).to.have.lengthOf(
                 input.length
             )

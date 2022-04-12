@@ -3,7 +3,7 @@ import { Class } from '../entities/class'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { SchoolSummaryNode } from '../types/graphQL/school'
-import { SelectQueryBuilder } from 'typeorm'
+import { In, SelectQueryBuilder } from 'typeorm'
 import { School } from '../entities/school'
 import { AgeRange } from '../entities/ageRange'
 import { Grade } from '../entities/grade'
@@ -15,6 +15,9 @@ import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
 import { CoreSubjectConnectionNode } from '../pagination/subjectsConnection'
 import { CoreProgramConnectionNode } from '../pagination/programsConnection'
+import { AcademicTermConnectionNode } from '../types/graphQL/academicTerm'
+import { AcademicTerm } from '../entities/academicTerm'
+import { mapATtoATConnectionNode } from '../pagination/academicTermsConnection'
 
 export interface IClassesConnectionLoaders {
     schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
@@ -22,6 +25,9 @@ export interface IClassesConnectionLoaders {
     grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
     subjects: Lazy<DataLoader<string, CoreSubjectConnectionNode[]>>
     programs: Lazy<DataLoader<string, CoreProgramConnectionNode[]>>
+    academicTerm: Lazy<
+        DataLoader<string, AcademicTermConnectionNode | undefined>
+    >
 }
 
 export interface IClassNodeDataLoaders {
@@ -117,6 +123,34 @@ export const subjectsForClasses = async (
     ) as Promise<CoreSubjectConnectionNode[][]>
 
     return classSubjects
+}
+
+export const academicTermForClasses = async (
+    classIds: readonly string[]
+): Promise<(AcademicTermConnectionNode | undefined)[]> => {
+    const classes = await Class.find({
+        where: {
+            class_id: In(classIds as string[]),
+        },
+        relations: ['academicTerm'],
+    })
+
+    const classToAcademicTerms = new Map<string, AcademicTerm>()
+
+    for (const _class of classes) {
+        // eslint-disable-next-line no-await-in-loop
+        const academicTerm = await _class.academicTerm
+
+        if (academicTerm) {
+            classToAcademicTerms.set(_class.class_id, academicTerm)
+        }
+    }
+
+    return classIds
+        .map((classId) => classToAcademicTerms.get(classId))
+        .map((academicTerm) =>
+            academicTerm ? mapATtoATConnectionNode(academicTerm) : undefined
+        )
 }
 
 export const programsForClasses = async (
