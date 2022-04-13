@@ -30,7 +30,11 @@ import {
     updateRole,
     deleteRole,
 } from '../utils/operations/roleOps'
-import { getNonAdminAuthToken, getAdminAuthToken } from '../utils/testConfig'
+import {
+    getNonAdminAuthToken,
+    getAdminAuthToken,
+    generateToken,
+} from '../utils/testConfig'
 import { Permission } from '../../src/entities/permission'
 import { Role } from '../../src/entities/role'
 import { Status } from '../../src/entities/status'
@@ -63,6 +67,9 @@ import {
     createNonExistentOrInactiveEntityAPIError,
 } from '../../src/utils/resolvers/errors'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { runQuery } from '../utils/operations/modelOps'
+import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
 
 chai.use(chaiAsPromised)
 
@@ -2771,6 +2778,65 @@ describe('role', () => {
                     })
                 })
             })
+        })
+    })
+
+    describe('#memberships', () => {
+        let organization: Organization
+        let memberships: OrganizationMembership[]
+        let systemRole: Role
+        beforeEach(async () => {
+            organization = await createOrganization().save()
+            const user = await createUser().save()
+            systemRole = await Role.findOneOrFail({
+                where: {
+                    system_role: true,
+                    role_name: organizationAdminRole.role_name,
+                },
+            })
+            memberships = [
+                await createOrganizationMembership({
+                    user,
+                    organization,
+                    roles: [systemRole],
+                }).save(),
+            ]
+        })
+        it('restricts results using organizationMembership isAdmin scope', async () => {
+            const query = `
+                query {
+                    roles {
+                        memberships {
+                            user_id
+                        }
+                    }
+                }
+            `
+
+            const clientUser = await createUser().save()
+            const authorization = generateToken(userToPayload(clientUser))
+
+            let result = await runQuery(query, testClient, {
+                authorization,
+            })
+            expect(
+                result!.roles.map((r: Role) => r.memberships).flat().length
+            ).to.equal(0)
+
+            memberships.push(
+                await createOrganizationMembership({
+                    user: clientUser,
+                    organization,
+                    roles: [systemRole],
+                }).save()
+            )
+
+            result = await runQuery(query, testClient, {
+                authorization,
+            })
+            expect(
+                result!.roles.map((r: Role) => r.memberships).flat().length
+            ).to.equal(memberships.length)
         })
     })
 })
