@@ -35,7 +35,9 @@ describe('Role', () => {
             })
 
             it('creates the role as not a system role', async () => {
-                const dbRole = await Role.findOneOrFail(role.role_id)
+                const dbRole = await Role.findOneByOrFail({
+                    role_id: role.role_id,
+                })
 
                 expect(dbRole.role_id).to.eq(role.role_id)
                 expect(dbRole.role_name).to.eq(role.role_name)
@@ -49,7 +51,9 @@ describe('Role', () => {
             })
 
             it('creates the role with the default description', async () => {
-                const dbRole = await Role.findOneOrFail(role.role_id)
+                const dbRole = await Role.findOneByOrFail({
+                    role_id: role.role_id,
+                })
 
                 expect(dbRole.role_id).to.eq(role.role_id)
                 expect(dbRole.role_name).to.eq(role.role_name)
@@ -63,7 +67,9 @@ describe('Role', () => {
             })
 
             it('creates the role', async () => {
-                const dbRole = await Role.findOneOrFail(role.role_id)
+                const dbRole = await Role.findOneByOrFail({
+                    role_id: role.role_id,
+                })
 
                 expect(dbRole.role_id).to.eq(role.role_id)
                 expect(dbRole.role_name).to.eq(role.role_name)

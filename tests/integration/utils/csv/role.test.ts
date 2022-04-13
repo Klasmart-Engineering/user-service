@@ -231,9 +231,9 @@ describe('processRoleFromCSVRow', () => {
         () => {
             beforeEach(async () => {
                 const permissions: Permission[] = []
-                const permissionFound = await Permission.findOneOrFail(
-                    row.permission_id
-                )
+                const permissionFound = await Permission.findOneByOrFail({
+                    permission_id: row.permission_id,
+                })
                 const role = new Role()
 
                 permissions.push(permissionFound)

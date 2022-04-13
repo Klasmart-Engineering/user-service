@@ -122,8 +122,8 @@ describe('ageRange', () => {
                                     })
 
                                     it('deletes the expected age range', async () => {
-                                        let dbAgeRange = await AgeRange.findOneOrFail(
-                                            ageRange.id
+                                        let dbAgeRange = await AgeRange.findOneByOrFail(
+                                            { id: ageRange.id }
                                         )
 
                                         expect(dbAgeRange.status).to.eq(
@@ -140,8 +140,10 @@ describe('ageRange', () => {
                                         )
 
                                         expect(gqlBool).to.be.true
-                                        dbAgeRange = await AgeRange.findOneOrFail(
-                                            ageRange.id
+                                        dbAgeRange = await AgeRange.findOneByOrFail(
+                                            {
+                                                id: ageRange.id,
+                                            }
                                         )
                                         expect(dbAgeRange.status).to.eq(
                                             Status.INACTIVE
@@ -173,8 +175,8 @@ describe('ageRange', () => {
                                                 )
 
                                                 expect(gqlBool).to.be.false
-                                                const dbAgeRange = await AgeRange.findOneOrFail(
-                                                    ageRange.id
+                                                const dbAgeRange = await AgeRange.findOneByOrFail(
+                                                    { id: ageRange.id }
                                                 )
                                                 expect(dbAgeRange.status).to.eq(
                                                     Status.INACTIVE
@@ -200,8 +202,8 @@ describe('ageRange', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbAgeRange = await AgeRange.findOneOrFail(
-                                            ageRange.id
+                                        const dbAgeRange = await AgeRange.findOneByOrFail(
+                                            { id: ageRange.id }
                                         )
 
                                         expect(dbAgeRange.status).to.eq(
@@ -243,8 +245,8 @@ describe('ageRange', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbAgeRange = await AgeRange.findOneOrFail(
-                                            ageRange.id
+                                        const dbAgeRange = await AgeRange.findOneByOrFail(
+                                            { id: ageRange.id }
                                         )
 
                                         expect(dbAgeRange.status).to.eq(
@@ -268,8 +270,8 @@ describe('ageRange', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbAgeRange = await AgeRange.findOneOrFail(
-                                            ageRange.id
+                                        const dbAgeRange = await AgeRange.findOneByOrFail(
+                                            { id: ageRange.id }
                                         )
 
                                         expect(dbAgeRange.status).to.eq(
@@ -289,9 +291,9 @@ describe('ageRange', () => {
                     'and does not belong to the organization from the age range',
                     () => {
                         it('deletes the expected age range', async () => {
-                            let dbAgeRange = await AgeRange.findOneOrFail(
-                                ageRange.id
-                            )
+                            let dbAgeRange = await AgeRange.findOneByOrFail({
+                                id: ageRange.id,
+                            })
 
                             expect(dbAgeRange.status).to.eq(Status.ACTIVE)
                             expect(dbAgeRange.deleted_at).to.be.null
@@ -303,9 +305,9 @@ describe('ageRange', () => {
                             )
 
                             expect(gqlBool).to.be.true
-                            dbAgeRange = await AgeRange.findOneOrFail(
-                                ageRange.id
-                            )
+                            dbAgeRange = await AgeRange.findOneByOrFail({
+                                id: ageRange.id,
+                            })
                             expect(dbAgeRange.status).to.eq(Status.INACTIVE)
                             expect(dbAgeRange.deleted_at).not.to.be.null
                         })
@@ -326,8 +328,8 @@ describe('ageRange', () => {
 
                         context('with a non system age range', () => {
                             it('deletes the expected age range', async () => {
-                                let dbAgeRange = await AgeRange.findOneOrFail(
-                                    ageRange.id
+                                let dbAgeRange = await AgeRange.findOneByOrFail(
+                                    { id: ageRange.id }
                                 )
 
                                 expect(dbAgeRange.status).to.eq(Status.ACTIVE)
@@ -340,9 +342,9 @@ describe('ageRange', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbAgeRange = await AgeRange.findOneOrFail(
-                                    ageRange.id
-                                )
+                                dbAgeRange = await AgeRange.findOneByOrFail({
+                                    id: ageRange.id,
+                                })
                                 expect(dbAgeRange.status).to.eq(Status.INACTIVE)
                                 expect(dbAgeRange.deleted_at).not.to.be.null
                             })
@@ -370,8 +372,8 @@ describe('ageRange', () => {
                                         )
 
                                         expect(gqlBool).to.be.false
-                                        const dbAgeRange = await AgeRange.findOneOrFail(
-                                            ageRange.id
+                                        const dbAgeRange = await AgeRange.findOneByOrFail(
+                                            { id: ageRange.id }
                                         )
                                         expect(dbAgeRange.status).to.eq(
                                             Status.INACTIVE
@@ -390,8 +392,8 @@ describe('ageRange', () => {
                             })
 
                             it('deletes the expected age range', async () => {
-                                let dbAgeRange = await AgeRange.findOneOrFail(
-                                    ageRange.id
+                                let dbAgeRange = await AgeRange.findOneByOrFail(
+                                    { id: ageRange.id }
                                 )
 
                                 expect(dbAgeRange.status).to.eq(Status.ACTIVE)
@@ -404,9 +406,9 @@ describe('ageRange', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbAgeRange = await AgeRange.findOneOrFail(
-                                    ageRange.id
-                                )
+                                dbAgeRange = await AgeRange.findOneByOrFail({
+                                    id: ageRange.id,
+                                })
                                 expect(dbAgeRange.status).to.eq(Status.INACTIVE)
                                 expect(dbAgeRange.deleted_at).not.to.be.null
                             })
@@ -434,8 +436,8 @@ describe('ageRange', () => {
                                         )
 
                                         expect(gqlBool).to.be.false
-                                        const dbAgeRange = await AgeRange.findOneOrFail(
-                                            ageRange.id
+                                        const dbAgeRange = await AgeRange.findOneByOrFail(
+                                            { id: ageRange.id }
                                         )
                                         expect(dbAgeRange.status).to.eq(
                                             Status.INACTIVE

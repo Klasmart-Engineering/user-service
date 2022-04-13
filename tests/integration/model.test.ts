@@ -189,7 +189,7 @@ describe('model', () => {
 
         context('when user membership is inactive', () => {
             beforeEach(async () => {
-                const dbOtherMembership = await OrganizationMembership.findOneOrFail(
+                const dbOtherMembership = await OrganizationMembership.findOneByOrFail(
                     {
                         user_id: profiles[0].user_id,
                         organization_id: organization.organization_id,

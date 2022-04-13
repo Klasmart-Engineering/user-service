@@ -64,7 +64,9 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
             permissions: [PermissionName.edit_this_organization_10330],
         }).save()
         await runMigration()
-        const migratedRole = await Role.findOneOrFail({ role_id: role.role_id })
+        const migratedRole = await Role.findOneByOrFail({
+            role_id: role.role_id,
+        })
         expect(
             await getPermissionNamesForRole(migratedRole)
         ).deep.equalInAnyOrder([
@@ -83,7 +85,9 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
             true
         ).save()
         await runMigration()
-        const migratedRole = await Role.findOneOrFail({ role_id: role.role_id })
+        const migratedRole = await Role.findOneByOrFail({
+            role_id: role.role_id,
+        })
         expect(
             await getPermissionNamesForRole(migratedRole)
         ).deep.equalInAnyOrder([PermissionName.edit_this_organization_10330])
@@ -97,7 +101,9 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
             ],
         }).save()
         await runMigration()
-        const migratedRole = await Role.findOneOrFail({ role_id: role.role_id })
+        const migratedRole = await Role.findOneByOrFail({
+            role_id: role.role_id,
+        })
         expect(
             await getPermissionNamesForRole(migratedRole)
         ).deep.equalInAnyOrder(await getPermissionNamesForRole(role))
@@ -111,7 +117,9 @@ describe('RolesMissingDeactivateUser1645439842684 migration', () => {
             ],
         }).save()
         await runMigration()
-        const migratedRole = await Role.findOneOrFail({ role_id: role.role_id })
+        const migratedRole = await Role.findOneByOrFail({
+            role_id: role.role_id,
+        })
         expect(
             await getPermissionNamesForRole(migratedRole)
         ).deep.equalInAnyOrder(await getPermissionNamesForRole(role))

@@ -54,7 +54,7 @@ describe('model.user', () => {
             })
             expect(gqlUser).to.exist
             expect(gqlUser).to.include(modifiedUser)
-            const dbUser = await User.findOneOrFail(user.user_id)
+            const dbUser = await User.findOneByOrFail({ user_id: user.user_id })
             expect(dbUser).to.include(gqlUser)
         })
 

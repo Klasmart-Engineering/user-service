@@ -126,7 +126,7 @@ describe('acceptance.school', () => {
         await loadFixtures('users', connection)
         // find the NON admin user created above...
         // TODO this whole thing better...
-        clientUser = (await User.findOne(user_id)) as User
+        clientUser = (await User.findOneBy({ user_id })) as User
         const createOrgResponse = await createOrg(
             user_id,
             org_name,
@@ -134,7 +134,9 @@ describe('acceptance.school', () => {
         )
         organizationId =
             createOrgResponse.body.data.user.createOrganization.organization_id
-        const org = await Organization.findOneOrFail(organizationId)
+        const org = await Organization.findOneByOrFail({
+            organization_id: organizationId,
+        })
 
         const createSchoolResponse = await createSchool(
             organizationId,
@@ -143,7 +145,7 @@ describe('acceptance.school', () => {
         )
         schoolId =
             createSchoolResponse.body.data.organization.createSchool.school_id
-        const school = await School.findOne(schoolId)
+        const school = await School.findOneBy({ school_id: schoolId })
 
         schoolMember = await createUser().save()
         await createOrganizationMembership({
@@ -286,7 +288,7 @@ describe('acceptance.school', () => {
             })
             const systemProgramIds = systemPrograms.map((p) => p.id)
 
-            const school = await School.findOneOrFail(schoolId)
+            const school = await School.findOneByOrFail({ school_id: schoolId })
             school.programs = Promise.resolve(systemPrograms)
             await school.save()
 
@@ -519,7 +521,7 @@ describe('acceptance.school', () => {
         let input: UpdateSchoolInput[]
 
         beforeEach(async () => {
-            const school = await School.findOne(schoolId)
+            const school = await School.findOneBy({ school_id: schoolId })
             input = [
                 {
                     organizationId: (await school?.organization)
@@ -652,7 +654,7 @@ describe('acceptance.school', () => {
         }
 
         beforeEach(async () => {
-            const school = await School.findOneOrFail(schoolId)
+            const school = await School.findOneByOrFail({ school_id: schoolId })
             const studentRole = await Role.findOneOrFail({
                 where: { role_name: 'Student' },
             })

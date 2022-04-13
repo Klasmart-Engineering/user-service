@@ -241,7 +241,7 @@ describe('subcategoriesConnection', () => {
 
     context('filtering', () => {
         beforeEach(async () => {
-            const inactiveSubcategory = await Subcategory.findOneOrFail()
+            const inactiveSubcategory = await Subcategory.findOneByOrFail({})
             inactiveSubcategory.status = Status.INACTIVE
             await connection.manager.save(inactiveSubcategory)
         })

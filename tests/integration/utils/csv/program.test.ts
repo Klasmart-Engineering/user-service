@@ -657,17 +657,17 @@ describe('processProgramFromCSVRow', () => {
                     },
                 })
 
-                const ageRangeDB = await connection.manager.findOneOrFail(
+                const ageRangeDB = await connection.manager.findOneByOrFail(
                     AgeRange,
-                    ageRange.id
+                    { id: ageRange.id }
                 )
-                const gradeDB = await connection.manager.findOneOrFail(
+                const gradeDB = await connection.manager.findOneByOrFail(
                     Grade,
-                    grade.id
+                    { id: grade.id }
                 )
-                const subjectDB = await connection.manager.findOneOrFail(
+                const subjectDB = await connection.manager.findOneByOrFail(
                     Subject,
-                    subject.id
+                    { id: subject.id }
                 )
 
                 const organizationInProgram = await program.organization
@@ -727,17 +727,17 @@ describe('processProgramFromCSVRow', () => {
                     },
                 })
 
-                const ageRangeDB = await connection.manager.findOneOrFail(
+                const ageRangeDB = await connection.manager.findOneByOrFail(
                     AgeRange,
-                    noneSpecifiedAgeRange.id
+                    { id: noneSpecifiedAgeRange.id }
                 )
-                const gradeDB = await connection.manager.findOneOrFail(
+                const gradeDB = await connection.manager.findOneByOrFail(
                     Grade,
-                    grade.id
+                    { id: grade.id }
                 )
-                const subjectDB = await connection.manager.findOneOrFail(
+                const subjectDB = await connection.manager.findOneByOrFail(
                     Subject,
-                    subject.id
+                    { id: subject.id }
                 )
 
                 const organizationInProgram = await program.organization
@@ -791,17 +791,17 @@ describe('processProgramFromCSVRow', () => {
                     },
                 })
 
-                const ageRangeDB = await connection.manager.findOneOrFail(
+                const ageRangeDB = await connection.manager.findOneByOrFail(
                     AgeRange,
-                    ageRange.id
+                    { id: ageRange.id }
                 )
-                const gradeDB = await connection.manager.findOneOrFail(
+                const gradeDB = await connection.manager.findOneByOrFail(
                     Grade,
-                    noneSpecifiedGrade.id
+                    { id: noneSpecifiedGrade.id }
                 )
-                const subjectDB = await connection.manager.findOneOrFail(
+                const subjectDB = await connection.manager.findOneByOrFail(
                     Subject,
-                    subject.id
+                    { id: subject.id }
                 )
 
                 const organizationInProgram = await program.organization
@@ -855,17 +855,17 @@ describe('processProgramFromCSVRow', () => {
                     },
                 })
 
-                const ageRangeDB = await connection.manager.findOneOrFail(
+                const ageRangeDB = await connection.manager.findOneByOrFail(
                     AgeRange,
-                    ageRange.id
+                    { id: ageRange.id }
                 )
-                const gradeDB = await connection.manager.findOneOrFail(
+                const gradeDB = await connection.manager.findOneByOrFail(
                     Grade,
-                    grade.id
+                    { id: grade.id }
                 )
-                const subjectDB = await connection.manager.findOneOrFail(
+                const subjectDB = await connection.manager.findOneByOrFail(
                     Subject,
-                    noneSpecifiedSubject.id
+                    { id: noneSpecifiedSubject.id }
                 )
 
                 const organizationInProgram = await program.organization

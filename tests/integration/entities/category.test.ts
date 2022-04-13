@@ -128,8 +128,8 @@ describe('Category', () => {
                                     })
 
                                     it('deletes the expected category', async () => {
-                                        let dbCategory = await Category.findOneOrFail(
-                                            category.id
+                                        let dbCategory = await Category.findOneByOrFail(
+                                            { id: category.id }
                                         )
 
                                         expect(dbCategory.status).to.eq(
@@ -146,8 +146,8 @@ describe('Category', () => {
                                         )
 
                                         expect(gqlBool).to.be.true
-                                        dbCategory = await Category.findOneOrFail(
-                                            category.id
+                                        dbCategory = await Category.findOneByOrFail(
+                                            { id: category.id }
                                         )
                                         expect(dbCategory.status).to.eq(
                                             Status.INACTIVE
@@ -179,8 +179,8 @@ describe('Category', () => {
                                                 )
 
                                                 expect(gqlBool).to.be.false
-                                                const dbCategory = await Category.findOneOrFail(
-                                                    category.id
+                                                const dbCategory = await Category.findOneByOrFail(
+                                                    { id: category.id }
                                                 )
                                                 expect(dbCategory.status).to.eq(
                                                     Status.INACTIVE
@@ -206,8 +206,8 @@ describe('Category', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbCategory = await Category.findOneOrFail(
-                                            category.id
+                                        const dbCategory = await Category.findOneByOrFail(
+                                            { id: category.id }
                                         )
                                         expect(dbCategory.status).to.eq(
                                             Status.ACTIVE
@@ -248,8 +248,8 @@ describe('Category', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbCategory = await Category.findOneOrFail(
-                                            category.id
+                                        const dbCategory = await Category.findOneByOrFail(
+                                            { id: category.id }
                                         )
                                         expect(dbCategory.status).to.eq(
                                             Status.ACTIVE
@@ -272,8 +272,8 @@ describe('Category', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbCategory = await Category.findOneOrFail(
-                                            category.id
+                                        const dbCategory = await Category.findOneByOrFail(
+                                            { id: category.id }
                                         )
                                         expect(dbCategory.status).to.eq(
                                             Status.ACTIVE
@@ -292,9 +292,9 @@ describe('Category', () => {
                     'and does not belong to the organization from the category',
                     () => {
                         it('deletes the expected category', async () => {
-                            let dbCategory = await Category.findOneOrFail(
-                                category.id
-                            )
+                            let dbCategory = await Category.findOneByOrFail({
+                                id: category.id,
+                            })
 
                             expect(dbCategory.status).to.eq(Status.ACTIVE)
                             expect(dbCategory.deleted_at).to.be.null
@@ -306,9 +306,9 @@ describe('Category', () => {
                             )
 
                             expect(gqlBool).to.be.true
-                            dbCategory = await Category.findOneOrFail(
-                                category.id
-                            )
+                            dbCategory = await Category.findOneByOrFail({
+                                id: category.id,
+                            })
                             expect(dbCategory.status).to.eq(Status.INACTIVE)
                             expect(dbCategory.deleted_at).not.to.be.null
                         })
@@ -329,8 +329,8 @@ describe('Category', () => {
 
                         context('with a non system category', () => {
                             it('deletes the expected category', async () => {
-                                let dbCategory = await Category.findOneOrFail(
-                                    category.id
+                                let dbCategory = await Category.findOneByOrFail(
+                                    { id: category.id }
                                 )
 
                                 expect(dbCategory.status).to.eq(Status.ACTIVE)
@@ -343,9 +343,9 @@ describe('Category', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbCategory = await Category.findOneOrFail(
-                                    category.id
-                                )
+                                dbCategory = await Category.findOneByOrFail({
+                                    id: category.id,
+                                })
                                 expect(dbCategory.status).to.eq(Status.INACTIVE)
                                 expect(dbCategory.deleted_at).not.to.be.null
                             })
@@ -367,8 +367,8 @@ describe('Category', () => {
                                     )
 
                                     expect(gqlBool).to.be.false
-                                    const dbCategory = await Category.findOneOrFail(
-                                        category.id
+                                    const dbCategory = await Category.findOneByOrFail(
+                                        { id: category.id }
                                     )
                                     expect(dbCategory.status).to.eq(
                                         Status.INACTIVE
@@ -385,8 +385,8 @@ describe('Category', () => {
                             })
 
                             it('deletes the expected category', async () => {
-                                let dbCategory = await Category.findOneOrFail(
-                                    category.id
+                                let dbCategory = await Category.findOneByOrFail(
+                                    { id: category.id }
                                 )
 
                                 expect(dbCategory.status).to.eq(Status.ACTIVE)
@@ -399,9 +399,9 @@ describe('Category', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbCategory = await Category.findOneOrFail(
-                                    category.id
-                                )
+                                dbCategory = await Category.findOneByOrFail({
+                                    id: category.id,
+                                })
                                 expect(dbCategory.status).to.eq(Status.INACTIVE)
                                 expect(dbCategory.deleted_at).not.to.be.null
                             })
@@ -423,8 +423,8 @@ describe('Category', () => {
                                     )
 
                                     expect(gqlBool).to.be.false
-                                    const dbCategory = await Category.findOneOrFail(
-                                        category.id
+                                    const dbCategory = await Category.findOneByOrFail(
+                                        { id: category.id }
                                     )
                                     expect(dbCategory.status).to.eq(
                                         Status.INACTIVE
@@ -504,7 +504,9 @@ describe('Category', () => {
                 })
 
                 it('edits the category subcategories', async () => {
-                    let dbCategory = await Category.findOneOrFail(category.id)
+                    let dbCategory = await Category.findOneByOrFail({
+                        id: category.id,
+                    })
                     let dbSubcategories = (await dbCategory.subcategories) || []
                     expect(dbSubcategories).to.be.empty
 
@@ -515,7 +517,9 @@ describe('Category', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbCategory = await Category.findOneOrFail(category.id)
+                    dbCategory = await Category.findOneByOrFail({
+                        id: category.id,
+                    })
                     dbSubcategories = (await dbCategory.subcategories) || []
                     expect(dbSubcategories).not.to.be.empty
                     expect(
@@ -530,7 +534,9 @@ describe('Category', () => {
                         [],
                         { authorization: getNonAdminAuthToken() }
                     )
-                    dbCategory = await Category.findOneOrFail(category.id)
+                    dbCategory = await Category.findOneByOrFail({
+                        id: category.id,
+                    })
                     dbSubcategories = (await dbCategory.subcategories) || []
                     expect(dbSubcategories).to.be.empty
                 })
