@@ -100,9 +100,9 @@ export class UserPermissions {
         if (this.user && this.user?.user_id === uid) return this.user
 
         if (!this._userResolver) {
-            this._userResolver = getRepository(User).findOne(
-                this.getUserIdOrError(uid)
-            )
+            this._userResolver = getRepository(User).findOneBy({
+                user_id: this.getUserIdOrError(uid),
+            })
         }
         this.user = await this._userResolver
         if (!this.user) throw new Error(`User(${uid}) not found`)

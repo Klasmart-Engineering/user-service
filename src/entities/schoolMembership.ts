@@ -73,7 +73,7 @@ export class SchoolMembership extends CustomBaseEntity {
             ) {
                 return null
             }
-            const role = await getRepository(Role).findOneOrFail({ role_id })
+            const role = await getRepository(Role).findOneByOrFail({ role_id })
             const memberships = (await role.schoolMemberships) || []
             memberships.push(this)
             role.schoolMemberships = Promise.resolve(memberships)
@@ -101,7 +101,7 @@ export class SchoolMembership extends CustomBaseEntity {
             }
 
             const rolePromises = role_ids.map(async (role_id) => {
-                const role = await getRepository(Role).findOneOrFail({
+                const role = await getRepository(Role).findOneByOrFail({
                     role_id,
                 })
                 const schoolMemberships = (await role.schoolMemberships) || []
@@ -129,7 +129,7 @@ export class SchoolMembership extends CustomBaseEntity {
             ) {
                 return null
             }
-            const role = await getRepository(Role).findOneOrFail({ role_id })
+            const role = await getRepository(Role).findOneByOrFail({ role_id })
             const memberships = await role.schoolMemberships
             if (memberships) {
                 const newMemberships = memberships.filter(

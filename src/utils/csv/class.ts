@@ -131,7 +131,7 @@ export const processClassFromCSVRow = async (
         return rowErrors
     }
 
-    const org = await Organization.findOne({ organization_name })
+    const org = await Organization.findOneBy({ organization_name })
 
     if (!org) {
         addCsvError(

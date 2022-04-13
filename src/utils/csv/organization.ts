@@ -22,7 +22,7 @@ async function getUserByEmailOrPhone(
 ) {
     const hashSource = email || phone
     const user_id = accountUUID(hashSource)
-    return manager.findOne(User, { user_id })
+    return manager.findOneBy(User, { user_id })
 }
 
 async function createOrganizationOwner(
@@ -187,7 +187,7 @@ export const processOrganizationFromCSVRow = async (
         return rowErrors
     }
 
-    const organizationExists = await Organization.findOne({
+    const organizationExists = await Organization.findOneBy({
         organization_name,
     })
 

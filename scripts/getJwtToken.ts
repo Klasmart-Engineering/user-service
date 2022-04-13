@@ -10,7 +10,7 @@ import { createTestConnection } from '../tests/utils/testConnection'
 async function getAdminUserToken() {
     await createTestConnection()
     // email taken from ADMIN_EMAILS list
-    let user = await User.findOne({ email: 'sandy@kidsloop.live' })
+    let user = await User.findOneBy({ email: 'sandy@kidsloop.live' })
     if (user == undefined) {
         user = await createUser({ email: 'sandy@kidsloop.live' }).save()
     }

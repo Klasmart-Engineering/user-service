@@ -1305,10 +1305,10 @@ async function generateMapsForRemoveUsers(
     }[],
     membershipStatuses = [Status.ACTIVE]
 ): Promise<ChangeSchoolMembershipStatusEntityMap> {
-    const preloadedUserArray = User.findByIds(
-        input.map((i) => i.userIds).flat(),
-        { where: { status: Status.ACTIVE } }
-    )
+    const preloadedUserArray = User.findBy({
+        user_id: In(input.map((i) => i.userIds).flat()),
+        status: Status.ACTIVE,
+    })
 
     const preloadedSchoolArray = await getMap.school(schoolIds, [
         'organization',

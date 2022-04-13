@@ -310,7 +310,7 @@ export class Model {
             }
         }
 
-        const user = await this.userRepository.findOneOrFail(user_id)
+        const user = await this.userRepository.findOneByOrFail({ user_id })
 
         if (given_name !== undefined) {
             user.given_name = given_name
@@ -346,7 +346,7 @@ export class Model {
         return user
     }
     public async getUser(user_id: string) {
-        const user = await this.userRepository.findOneOrFail(user_id)
+        const user = await this.userRepository.findOneByOrFail({ user_id })
         return user
     }
 
@@ -403,9 +403,9 @@ export class Model {
         phone,
         shortCode,
     }: Organization) {
-        const organization = await this.organizationRepository.findOneOrFail(
-            organization_id
-        )
+        const organization = await this.organizationRepository.findOneByOrFail({
+            organization_id,
+        })
 
         if (organization_name !== undefined) {
             organization.organization_name = organization_name
@@ -427,9 +427,10 @@ export class Model {
         return organization
     }
     public async getOrganization(organization_id: string) {
-        const organization = await this.organizationRepository.findOne(
-            organization_id
-        )
+        const organization = await this.organizationRepository.findOneBy({
+            organization_id,
+        })
+
         return organization
     }
 
@@ -529,7 +530,7 @@ export class Model {
 
     public async getRole({ role_id }: Role, context: Context) {
         try {
-            const role = await this.roleRepository.findOneOrFail({ role_id })
+            const role = await this.roleRepository.findOneByOrFail({ role_id })
             return role
         } catch (e) {
             logger.warn(e)
@@ -557,10 +558,14 @@ export class Model {
         )
 
         const errors: APIError[] = []
-        const organization = await getRepository(Organization).findOneOrFail(
-            organization_id
-        )
-        const newRole = await getRepository(Role).findOneOrFail(new_role_id)
+        const organization = await getRepository(Organization).findOneByOrFail({
+            organization_id,
+        })
+
+        const newRole = await getRepository(Role).findOneByOrFail({
+            role_id: new_role_id,
+        })
+
         const newRoleOrganization = await newRole.organization
         if (info.operation.operation !== 'mutation')
             errors.push(
@@ -664,9 +669,10 @@ export class Model {
 
     public async getClass({ class_id }: Class, context: Context) {
         try {
-            const _class = await this.classRepository.findOneOrFail({
+            const _class = await this.classRepository.findOneByOrFail({
                 class_id,
             })
+
             return _class
         } catch (e) {
             logger.warn(e)
@@ -684,9 +690,10 @@ export class Model {
 
     public async getSchool({ school_id }: School, context: Context) {
         try {
-            const school = await this.schoolRepository.findOneOrFail({
+            const school = await this.schoolRepository.findOneByOrFail({
                 school_id,
             })
+
             return school
         } catch (e) {
             logger.warn(e)
@@ -1430,7 +1437,7 @@ export class Model {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const organizationId = args.organizationId
+        const organizationId = args.organizationId as string
         const organizationBranding = await Branding.findOne({
             where: {
                 organization: { organization_id: organizationId },

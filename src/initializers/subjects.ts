@@ -191,9 +191,10 @@ export class SubjectsInitializer {
                     where: { id: In(systemSubject.categories) },
                 })) || []
 
-            const subject = await Subject.findOneOrFail({
+            const subject = await Subject.findOneByOrFail({
                 id: systemSubject.id,
             })
+
             subject.categories = Promise.resolve(categories)
 
             await subject.save()

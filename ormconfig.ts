@@ -15,9 +15,6 @@ const config: ConnectionOptions = {
     ),
     entities: ['src/entities/*{.ts,.js}'],
     migrations: ['migrations/*{.ts,.js}'],
-    cli: {
-        migrationsDir: 'migrations',
-    },
 }
 
 export = config

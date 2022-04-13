@@ -121,11 +121,12 @@ export class GradesInitializer {
         }
 
         for (const systemGrade of this.SYSTEM_GRADES) {
-            const grade = await Grade.findOneOrFail({ id: systemGrade.id })
-            const fromGrade = await Grade.findOne({
+            const grade = await Grade.findOneByOrFail({ id: systemGrade.id })
+            const fromGrade = await Grade.findOneBy({
                 id: systemGrade.progress_from_grade,
             })
-            const toGrade = await Grade.findOne({
+
+            const toGrade = await Grade.findOneBy({
                 id: systemGrade.progress_to_grade,
             })
 

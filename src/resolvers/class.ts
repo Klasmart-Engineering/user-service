@@ -1878,7 +1878,8 @@ export async function moveUsersToClassValidation(
         throw new APIErrorCollection(errors)
     }
     const classes =
-        (await getRepository(Class).findByIds([fromClassId, toClassId], {
+        (await getRepository(Class).find({
+            where: { class_id: In([fromClassId, toClassId]) },
             relations: [
                 'schools',
                 usersType === moveUsersTypeToClass.students

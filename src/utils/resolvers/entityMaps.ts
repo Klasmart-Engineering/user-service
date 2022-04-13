@@ -2,7 +2,7 @@ import { CustomBaseEntity } from '../../entities/customBaseEntity'
 import { SchoolMembership } from '../../entities/schoolMembership'
 import { OrganizationMembership } from '../../entities/organizationMembership'
 import { Status } from '../../entities/status'
-import { In } from 'typeorm'
+import { getRepository, In } from 'typeorm'
 import { User } from '../../entities/user'
 import { School } from '../../entities/school'
 import { Organization } from '../../entities/organization'
@@ -32,15 +32,17 @@ function idToEntityMap<T extends CustomBaseEntity>(
         ids: string[],
         relations?: string[]
     ): Promise<Map<string, T>> => {
-        return entity
-            .findByIds(ids, {
-                where: { status: Status.ACTIVE },
+        const repository = getRepository(entity)
+        const primaryKey = repository.metadata.primaryColumns[0].propertyName
+        return repository
+            .find({
+                where: { [primaryKey]: In(ids), status: Status.ACTIVE },
                 relations,
             })
             .then((entities) => {
                 return entities.reduce(
                     (map: Map<string, T>, e) =>
-                        map.set(entity.getId(e), e as T),
+                        map.set(repository.getId(e), e as T),
                     new Map()
                 )
             })

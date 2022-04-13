@@ -10,11 +10,9 @@ import {
     OneToOne,
     ManyToOne,
     EntityManager,
-    EntityTarget,
-    FindConditions,
+    FindOptionsWhere,
     Not,
     Brackets,
-    FindOneOptions,
     BaseEntity,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
@@ -155,7 +153,7 @@ export class Organization extends CustomBaseEntity {
         let membership: OrganizationMembership | undefined
 
         if (!context.permissions.isAdmin) {
-            membership = await OrganizationMembership.findOne({
+            membership = await OrganizationMembership.findOneBy({
                 organization_id: this.organization_id,
                 user_id: userId,
             })
@@ -476,7 +474,7 @@ export class Organization extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail({ user_id })
+            const user = await getRepository(User).findOneByOrFail({ user_id })
             this.primary_contact = Promise.resolve(user)
             await getManager().save(this)
 
@@ -505,7 +503,7 @@ export class Organization extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail(user_id)
+            const user = await getRepository(User).findOneByOrFail({ user_id })
             if (typeof shortcode === 'string') {
                 shortcode = shortcode.toUpperCase()
                 shortcode = validateShortCode(
@@ -640,7 +638,7 @@ export class Organization extends CustomBaseEntity {
             if (existingUser) {
                 const existingMembership = await getRepository(
                     OrganizationMembership
-                ).findOne({
+                ).findOneBy({
                     user_id: existingUser.user_id,
                     organization_id: this.organization_id,
                 })
@@ -817,7 +815,7 @@ export class Organization extends CustomBaseEntity {
 
         let user: User | undefined
         if (validData?.user_id) {
-            user = await User.findOne(user_id)
+            user = await User.findOneBy({ user_id })
             if (!user) {
                 errors.push(
                     new APIError({
@@ -833,7 +831,7 @@ export class Organization extends CustomBaseEntity {
 
         let membership: OrganizationMembership | undefined
         if (user) {
-            membership = await OrganizationMembership.findOne({
+            membership = await OrganizationMembership.findOneBy({
                 user_id,
                 organization_id: this.organization_id,
                 status: Status.ACTIVE,
@@ -862,7 +860,7 @@ export class Organization extends CustomBaseEntity {
                 user_id: Not(user_id),
             }
 
-            const findConditions: FindConditions<User>[] = []
+            const findConditions: FindOptionsWhere<User>[] = []
             if (user.email) {
                 findConditions.push({ ...baseCondition, email: user.email })
             }
@@ -959,17 +957,25 @@ export class Organization extends CustomBaseEntity {
     }
 
     private async findChildEntitiesById<EntityClass extends BaseEntity>(
-        entity: EntityTarget<EntityClass>,
+        entity: (new () => EntityClass) & typeof BaseEntity,
         ids: string[],
         variables: IAPIError['variables'],
-        customCondition?: FindOneOptions<EntityClass>['where']
+        customCondition?: Brackets
     ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
         const uniqueIds = [...new Set(ids)]
-        const repository = getRepository(entity)
-        const defaultCondition = { organization: this.organization_id }
-        const records = await repository.findByIds(ids, {
-            where: customCondition ?? defaultCondition,
+        const repository = entity.getRepository()
+        const defaultCondition = new Brackets((qb) => {
+            qb.where('Entity.organizationOrganizationId = :organization_id', {
+                organization_id: this.organization_id,
+            })
         })
+
+        const records = (await repository
+            .createQueryBuilder('Entity')
+            .whereInIds(uniqueIds)
+            .andWhere(customCondition || defaultCondition)
+            .getMany()) as EntityClass[]
+
         const found = new Set(records.map((record) => repository.getId(record)))
         const errors = uniqueIds
             .filter((id) => !found.has(id))
@@ -999,10 +1005,11 @@ export class Organization extends CustomBaseEntity {
             // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
             new Brackets((qb) =>
                 qb
-                    .where('Role.organization = :organization_id', {
-                        organization_id: this.organization_id,
-                    })
-                    .orWhere('Role.system_role IS TRUE')
+                    .where(
+                        'Entity.organizationOrganizationId = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                    .orWhere('Entity.system_role IS TRUE')
             )
         )
     }
@@ -1030,7 +1037,7 @@ export class Organization extends CustomBaseEntity {
         // eslint-disable-next-line prefer-const
         let { user_id, ...rest } = partialUser
         if (user_id) {
-            user = await User.findOne(user_id)
+            user = await User.findOneBy({ user_id })
             if (!user) {
                 user_id = uuid_v4()
                 user = new User() as User
@@ -1056,7 +1063,7 @@ export class Organization extends CustomBaseEntity {
         const user_id = user.user_id
         const organization_id = this.organization_id
         const membership =
-            (await getRepository(OrganizationMembership).findOne({
+            (await getRepository(OrganizationMembership).findOneBy({
                 organization_id,
                 user_id,
             })) || new OrganizationMembership()
@@ -1087,7 +1094,7 @@ export class Organization extends CustomBaseEntity {
             schools.map(async (school) => {
                 const school_id = school.school_id
                 const schoolMembership =
-                    (await schoolMembershipRepo.findOne({
+                    (await schoolMembershipRepo.findOneBy({
                         school_id,
                         user_id,
                     })) || new SchoolMembership()
@@ -1247,7 +1254,7 @@ export class Organization extends CustomBaseEntity {
             checkCreatePermission = checkCreatePermission || !ageRangeDetail?.id
 
             const ageRange =
-                (await AgeRange.findOne({ id: ageRangeDetail?.id })) ||
+                (await AgeRange.findOneBy({ id: ageRangeDetail?.id })) ||
                 new AgeRange()
 
             checkAdminPermission =
@@ -1324,7 +1331,7 @@ export class Organization extends CustomBaseEntity {
             checkCreatePermission = checkCreatePermission || !gradeDetail?.id
 
             const grade =
-                (await Grade.findOne({ id: gradeDetail?.id })) || new Grade()
+                (await Grade.findOneBy({ id: gradeDetail?.id })) || new Grade()
 
             checkAdminPermission =
                 checkAdminPermission || grade.system || !!gradeDetail?.system
@@ -1332,16 +1339,18 @@ export class Organization extends CustomBaseEntity {
             grade.name = gradeDetail?.name || grade.name
 
             if (gradeDetail?.progress_from_grade_id) {
-                const progressFromGrade = await Grade.findOneOrFail({
+                const progressFromGrade = await Grade.findOneByOrFail({
                     id: gradeDetail?.progress_from_grade_id,
                 })
+
                 grade.progress_from_grade = Promise.resolve(progressFromGrade)
             }
 
             if (gradeDetail?.progress_to_grade_id) {
-                const progressToGrade = await Grade.findOneOrFail({
+                const progressToGrade = await Grade.findOneByOrFail({
                     id: gradeDetail?.progress_to_grade_id,
                 })
+
                 grade.progress_to_grade = Promise.resolve(progressToGrade)
             }
 
@@ -1403,7 +1412,7 @@ export class Organization extends CustomBaseEntity {
                 checkCreatePermission || !subcategoryDetail?.id
 
             const subcategory =
-                (await Subcategory.findOne({ id: subcategoryDetail?.id })) ||
+                (await Subcategory.findOneBy({ id: subcategoryDetail?.id })) ||
                 new Subcategory()
 
             checkAdminPermission =
@@ -1471,7 +1480,7 @@ export class Organization extends CustomBaseEntity {
             checkCreatePermission = checkCreatePermission || !categoryDetail?.id
 
             const category =
-                (await Category.findOne({ id: categoryDetail?.id })) ||
+                (await Category.findOneBy({ id: categoryDetail?.id })) ||
                 new Category()
 
             checkAdminPermission =
@@ -1545,7 +1554,7 @@ export class Organization extends CustomBaseEntity {
             checkCreatePermission = checkCreatePermission || !subjectDetail?.id
 
             const subject =
-                (await Subject.findOne({ id: subjectDetail?.id })) ||
+                (await Subject.findOneBy({ id: subjectDetail?.id })) ||
                 new Subject()
 
             checkAdminPermission =
@@ -1668,7 +1677,7 @@ export class Organization extends CustomBaseEntity {
             checkCreatePermission = checkCreatePermission || !programDetail?.id
 
             const program =
-                (await Program.findOne({ id: programDetail?.id })) ||
+                (await Program.findOneBy({ id: programDetail?.id })) ||
                 new Program()
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1776,7 +1785,7 @@ export class Organization extends CustomBaseEntity {
     }
 
     private async inactivateOwnership(manager: EntityManager) {
-        const ownership = await OrganizationOwnership.findOne({
+        const ownership = await OrganizationOwnership.findOneBy({
             organization_id: this.organization_id,
         })
 
