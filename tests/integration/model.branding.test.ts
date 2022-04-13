@@ -30,6 +30,10 @@ import { BrandingImageTag } from '../../src/types/graphQL/branding'
 import { Organization } from '../../src/entities/organization'
 import { getNonAdminAuthToken } from '../utils/testConfig'
 import { NIL_UUID } from '../utils/database'
+import { createRole } from '../factories/role.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { Role } from '../../src/entities/role'
 
 use(chaiAsPromised)
 
@@ -57,6 +61,7 @@ describe('model.branding', () => {
     let organization: Organization
     let organizationId: string
     let arbitraryUserToken: string
+    let role: Role
 
     beforeEach(async () => {
         const user = await createAdminUser(testClient)
@@ -65,14 +70,66 @@ describe('model.branding', () => {
             user.user_id,
             'Some fabulous organization'
         )
+
         organizationId = organization.organization_id
-        await createNonAdminUser(testClient)
+        const nonAdmin = await createNonAdminUser(testClient)
+        role = await createRole('role', organization, {
+            permissions: [PermissionName.edit_my_organization_10331],
+        }).save()
+
+        await createOrganizationMembership({
+            user: nonAdmin,
+            organization,
+            roles: [role],
+        }).save()
         arbitraryUserToken = getNonAdminAuthToken()
     })
 
     describe('setBranding', () => {
         const mimetype = 'image/png'
         const encoding = '7bit'
+
+        context('permissions', () => {
+            function setBrandingCaller() {
+                return setBranding(
+                    testClient,
+                    organizationId,
+                    fs.createReadStream(resolve(`tests/fixtures/${filename}`)),
+                    filename,
+                    mimetype,
+                    encoding,
+                    '#cd657b',
+                    { authorization: arbitraryUserToken }
+                )
+            }
+
+            beforeEach(async () => {
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .remove(PermissionName.edit_my_organization_10331)
+            })
+            it('rejects users with neither edit_my_organization_10331 or edit_this_organization_10330', async () => {
+                await expect(setBrandingCaller()).to.be.rejected
+            })
+            it('allows users with edit_my_organization_10331', async () => {
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .add(PermissionName.edit_my_organization_10331)
+
+                await expect(setBrandingCaller()).to.be.fulfilled
+            })
+            it('allows users with edit_this_organization_10330', async () => {
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .add(PermissionName.edit_this_organization_10330)
+
+                await expect(setBrandingCaller()).to.be.fulfilled
+            })
+        })
+
         context(
             'when the parameters and input file are correctly specified.',
             () => {
@@ -342,6 +399,57 @@ describe('model.branding', () => {
     })
 
     describe('deleteBrandingImage', () => {
+        context('permissions', () => {
+            function deleteBrandingImageCaller() {
+                return deleteBrandingImageMutation(
+                    testClient,
+                    organizationId,
+                    BrandingImageTag.ICON,
+                    arbitraryUserToken
+                )
+            }
+
+            beforeEach(async () => {
+                const primaryColor = '#cd657b'
+                const iconImage = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+                await setBranding(
+                    testClient,
+                    organizationId,
+                    iconImage,
+                    filename,
+                    mimetype,
+                    encoding,
+                    primaryColor,
+                    { authorization: arbitraryUserToken }
+                )
+
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .remove(PermissionName.edit_my_organization_10331)
+            })
+            it('rejects users with neither edit_my_organization_10331 or edit_this_organization_10330', async () => {
+                await expect(deleteBrandingImageCaller()).to.be.rejected
+            })
+            it('allows users with edit_my_organization_10331', async () => {
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .add(PermissionName.edit_my_organization_10331)
+
+                await expect(deleteBrandingImageCaller()).to.be.fulfilled
+            })
+            it('allows users with edit_this_organization_10330', async () => {
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .add(PermissionName.edit_this_organization_10330)
+
+                await expect(deleteBrandingImageCaller()).to.be.fulfilled
+            })
+        })
         context('when operation is not a mutation', () => {
             beforeEach(async () => {
                 const primaryColor = '#cd657b'
@@ -639,11 +747,58 @@ describe('model.branding', () => {
     describe('deleteBrandingColor', () => {
         let branding: Branding | null
         const primaryColor = '#cd657b'
+        const iconImage = fs.createReadStream(
+            resolve(`tests/fixtures/${filename}`)
+        )
+
+        context('permissions', () => {
+            function deleteBrandingColorCaller() {
+                return deleteBrandingColorMutation(
+                    testClient,
+                    organizationId,
+                    arbitraryUserToken
+                )
+            }
+
+            beforeEach(async () => {
+                await setBranding(
+                    testClient,
+                    organizationId,
+                    iconImage,
+                    filename,
+                    mimetype,
+                    encoding,
+                    primaryColor,
+                    { authorization: arbitraryUserToken }
+                )
+
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .remove(PermissionName.edit_my_organization_10331)
+            })
+            it('rejects users with neither edit_my_organization_10331 or edit_this_organization_10330', async () => {
+                await expect(deleteBrandingColorCaller()).to.be.rejected
+            })
+            it('allows users with edit_my_organization_10331', async () => {
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .add(PermissionName.edit_my_organization_10331)
+
+                await expect(deleteBrandingColorCaller()).to.be.fulfilled
+            })
+            it('allows users with edit_this_organization_10330', async () => {
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .add(PermissionName.edit_this_organization_10330)
+
+                await expect(deleteBrandingColorCaller()).to.be.fulfilled
+            })
+        })
 
         it('removes any set colour while leaving other properties unchanged', async () => {
-            const iconImage = fs.createReadStream(
-                resolve(`tests/fixtures/${filename}`)
-            )
             await setBranding(
                 testClient,
                 organizationId,
