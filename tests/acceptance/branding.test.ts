@@ -220,7 +220,7 @@ describe('acceptance.branding', () => {
             orgId,
             primaryColor,
             imagePath,
-            token
+            getAdminAuthToken()
         )
 
         expect(setBrandingResponse.status).to.eq(200)
@@ -296,7 +296,7 @@ describe('acceptance.branding', () => {
             orgId,
             primaryColor,
             imagePath,
-            token
+            getAdminAuthToken()
         )
 
         expect(setBrandingResponse.status).to.eq(200)
