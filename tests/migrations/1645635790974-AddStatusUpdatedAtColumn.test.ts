@@ -118,18 +118,20 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
         })
     })
 
-    it('is benign if run twice', async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
-        const currentMigration = await runPreviousMigrations(
-            migrationsConnection,
-            runner,
-            'AddStatusUpdatedAtColumn1645635790974'
-        )
-        await currentMigration!.up(runner).should.be.fulfilled
-        await currentMigration!.up(runner).should.be.fulfilled
+    context('if run twice', () => {
+        it('is benign', async () => {
+            migrationsConnection = await createMigrationsTestConnection(
+                true,
+                false,
+                'migrations'
+            )
+            const currentMigration = await runPreviousMigrations(
+                migrationsConnection,
+                runner,
+                'AddStatusUpdatedAtColumn1645635790974'
+            )
+            await currentMigration!.up(runner).should.be.fulfilled
+            await currentMigration!.up(runner).should.be.fulfilled
+        })
     })
 })
