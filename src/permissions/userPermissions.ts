@@ -173,6 +173,42 @@ export class UserPermissions {
         throw new Error(message)
     }
 
+    public async rejectIfNotAllowedMany(
+        organization_id: string,
+        permission_names: PermissionName[],
+        operator: 'AND' | 'OR' = 'AND'
+    ) {
+        const results = await Promise.all(
+            permission_names.map((perm) =>
+                this.hasPermissions(
+                    {
+                        organization_ids: [organization_id],
+                        user_id: this.user_id,
+                    },
+                    perm
+                )
+            )
+        )
+        const inactiveUserResults = results.filter((r) => r.isInactive)
+        const passedResults = results.filter((res) => res.passed)
+        const permissionsString = permission_names.join(` ${operator} `)
+
+        if (inactiveUserResults.length) {
+            throw new Error(
+                `User(${this.user_id}) has been deleted, so does not have Permission(${permissionsString})`
+            )
+        }
+
+        if (
+            (operator === 'AND' &&
+                passedResults.length !== permission_names.length) ||
+            (operator === 'OR' && !passedResults.length)
+        ) {
+            const message = `User(${this.user_id}) does not have Permission(${permissionsString}) in Organization(${organization_id})`
+            throw new Error(message)
+        }
+    }
+
     public async allowed(
         permission_context: PermissionContext,
         permission_name: PermissionName

@@ -253,6 +253,102 @@ describe('userPermissions', () => {
         })
     })
 
+    describe('rejectIfNotAllowedMany', () => {
+        let userPermissions: UserPermissions
+        let organization: Organization
+        let user: User
+
+        beforeEach(async () => {
+            organization = await createOrganization().save()
+
+            user = await createUser().save()
+            const role = await createRoleFactory('role', organization, {
+                permissions: [
+                    PermissionName.academic_profile_20100,
+                    PermissionName.add_students_to_class_20225,
+                ],
+            }).save()
+            await createOrganizationMembership({
+                user,
+                organization,
+                roles: [role],
+            }).save()
+
+            userPermissions = new UserPermissions(userToPayload(user), false)
+        })
+
+        it('throws an error for inactive users', async () => {
+            await user.inactivate(connection.manager)
+
+            await expect(
+                userPermissions.rejectIfNotAllowedMany(
+                    organization.organization_id,
+                    [PermissionName.academic_profile_20100],
+                    'OR'
+                )
+            ).to.be.rejectedWith(
+                `User(${user.user_id}) has been deleted, so does not have Permission(${PermissionName.academic_profile_20100})`
+            )
+        })
+
+        context('AND operator', () => {
+            it('throws an error if the user is missing ANY permissions', async () => {
+                await expect(
+                    userPermissions.rejectIfNotAllowedMany(
+                        organization.organization_id,
+                        [
+                            PermissionName.academic_profile_20100,
+                            PermissionName.add_teachers_to_class_20226,
+                        ],
+                        'AND'
+                    )
+                ).to.be.rejectedWith(
+                    `User(${user.user_id}) does not have Permission(${PermissionName.academic_profile_20100} AND ${PermissionName.add_teachers_to_class_20226}) in Organization(${organization.organization_id})`
+                )
+            })
+            it('passes when the user has ALL permissions', async () => {
+                await expect(
+                    userPermissions.rejectIfNotAllowedMany(
+                        organization.organization_id,
+                        [
+                            PermissionName.academic_profile_20100,
+                            PermissionName.add_students_to_class_20225,
+                        ],
+                        'AND'
+                    )
+                ).to.be.fulfilled
+            })
+        })
+        context('OR operator', () => {
+            it('throws an error if the user has NONE of the permissions', async () => {
+                await expect(
+                    userPermissions.rejectIfNotAllowedMany(
+                        organization.organization_id,
+                        [
+                            PermissionName.add_teachers_to_class_20226,
+                            PermissionName.approve_pending_content_271,
+                        ],
+                        'OR'
+                    )
+                ).to.to.be.rejectedWith(
+                    `User(${user.user_id}) does not have Permission(${PermissionName.add_teachers_to_class_20226} OR ${PermissionName.approve_pending_content_271}) in Organization(${organization.organization_id})`
+                )
+            })
+            it('passes when the user has ANY of the permissions', async () => {
+                await expect(
+                    userPermissions.rejectIfNotAllowedMany(
+                        organization.organization_id,
+                        [
+                            PermissionName.academic_profile_20100,
+                            PermissionName.add_teachers_to_class_20226,
+                        ],
+                        'OR'
+                    )
+                ).to.be.fulfilled
+            })
+        })
+    })
+
     describe('rejectIfNotAllowed', () => {
         let userPermissions: UserPermissions
         let org1: Organization
