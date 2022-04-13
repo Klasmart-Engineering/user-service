@@ -63,6 +63,7 @@ import {
     BrandingImageTag,
     deleteBrandingImageInput,
     setBrandingInput,
+    DeleteBrandingColorInput,
 } from './types/graphQL/branding'
 import { BrandingStorer } from './services/brandingStorer'
 import { CloudStorageUploader } from './services/cloudStorageUploader'
@@ -1290,6 +1291,16 @@ export class Model {
         const primaryColor = args.primaryColor
         const iconImage = await args.iconImage
         const organizationId = args.organizationId
+
+        await context.permissions.rejectIfNotAllowedMany(
+            organizationId,
+            [
+                PermissionName.edit_this_organization_10330,
+                PermissionName.edit_my_organization_10331,
+            ],
+            'OR'
+        )
+
         const preloadedBranding = Branding.createQueryBuilder('Branding')
             .innerJoin('Branding.organization', 'Organization')
             .leftJoinAndSelect('Branding.images', 'BrandingImage')
@@ -1382,6 +1393,15 @@ export class Model {
         }
 
         const { organizationId, type } = args
+
+        await context.permissions.rejectIfNotAllowedMany(
+            organizationId,
+            [
+                PermissionName.edit_this_organization_10330,
+                PermissionName.edit_my_organization_10331,
+            ],
+            'OR'
+        )
         const organizationBranding = await Branding.findOne({
             where: {
                 organization: { organization_id: organizationId },
@@ -1426,11 +1446,20 @@ export class Model {
     }
 
     public async deleteBrandingColor(
-        args: Record<string, unknown>,
+        args: DeleteBrandingColorInput,
         context: Context,
         info: GraphQLResolveInfo
     ) {
         const organizationId = args.organizationId
+
+        await context.permissions.rejectIfNotAllowedMany(
+            organizationId,
+            [
+                PermissionName.edit_this_organization_10330,
+                PermissionName.edit_my_organization_10331,
+            ],
+            'OR'
+        )
         const organizationBranding = await Branding.findOne({
             where: {
                 organization: { organization_id: organizationId },
