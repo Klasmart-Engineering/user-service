@@ -10,6 +10,9 @@ import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Permission } from '../entities/permission'
 import { mutate } from '../utils/mutations/commonStructure'
 import { CreateRoles, UpdateRoles, DeleteRoles } from '../resolvers/role'
+import { SelectQueryBuilder } from 'typeorm'
+import { OrganizationMembership } from '../entities/organizationMembership'
+import { Role } from '../entities/role'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -108,6 +111,7 @@ const typeDefs = gql`
         #connections
         organization: Organization
         memberships: [OrganizationMembership]
+            @isAdmin(entity: "organizationMembership")
         permissions: [Permission]
             @deprecated(
                 reason: "Sunset Date: 26/02/2022 Details: https://calmisland.atlassian.net/l/c/1nEk2YHE"
@@ -193,6 +197,17 @@ export default function getDefault(
     return {
         typeDefs,
         resolvers: {
+            Role: {
+                memberships: (parent: Role, args, ctx) => {
+                    const scope = args.scope as SelectQueryBuilder<OrganizationMembership>
+                    return scope
+                        .innerJoin('OrganizationMembership.roles', 'Role')
+                        .andWhere('Role.role_id = :role_id', {
+                            role_id: parent.role_id,
+                        })
+                        .getMany()
+                },
+            },
             RoleConnectionNode: {
                 permissionsConnection: permissionsChildConnectionResolver,
             },
