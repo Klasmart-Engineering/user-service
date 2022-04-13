@@ -8,4 +8,4 @@ Sign in to Github to view these images.
 
 
 ### Database Schema
-![Database Schema](https://github.com/KL-Engineering/user-service/blob/main/documents/dbschema.png "Database Schema")
+![Database Schema](https://github.com/KL-Engineering/user-service/blob/main/documents/dbschema.svg "Database Schema")
