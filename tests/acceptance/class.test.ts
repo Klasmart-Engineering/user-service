@@ -843,15 +843,15 @@ describe('acceptance.class', () => {
         })
 
         it('queries paginated classes filtering by academic term', async () => {
-            const school = await School.findOneOrFail(schoolId)
-            const cls = await Class.findOneOrFail(class1Ids[2])
+            const school = await School.findOneByOrFail({ school_id: schoolId })
+            const cls = await Class.findOneByOrFail({ class_id: class1Ids[2] })
             const term = await createAcademicTerm(school, {}, [cls]).save()
 
             const response = await request
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: print(CLASSES_CONNECTION),
@@ -1129,9 +1129,9 @@ describe('acceptance.class', () => {
         })
 
         it("can access the class's academic term", async () => {
-            const org1 = await connection.manager.findOneOrFail(
+            const org1 = await connection.manager.findOneByOrFail(
                 Organization,
-                org1Id
+                { organization_id: org1Id }
             )
             const school = await createSchoolFactory(org1).save()
             const class_ = createClassFactory([], org1)
@@ -1144,7 +1144,7 @@ describe('acceptance.class', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: adminToken,
                 })
                 .send({
                     query: `query($id: ID!){
