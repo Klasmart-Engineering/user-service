@@ -264,8 +264,8 @@ describe('userPermissions', () => {
             user = await createUser().save()
             const role = await createRoleFactory('role', organization, {
                 permissions: [
-                    PermissionName.academic_profile_20100,
                     PermissionName.add_students_to_class_20225,
+                    PermissionName.add_teachers_to_class_20226,
                 ],
             }).save()
             await createOrganizationMembership({
@@ -283,11 +283,11 @@ describe('userPermissions', () => {
             await expect(
                 userPermissions.rejectIfNotAllowedMany(
                     organization.organization_id,
-                    [PermissionName.academic_profile_20100],
+                    [PermissionName.add_students_to_class_20225],
                     'OR'
                 )
             ).to.be.rejectedWith(
-                `User(${user.user_id}) has been deleted, so does not have Permission(${PermissionName.academic_profile_20100})`
+                `User(${user.user_id}) has been deleted, so does not have Permission(${PermissionName.add_students_to_class_20225})`
             )
         })
 
@@ -297,13 +297,13 @@ describe('userPermissions', () => {
                     userPermissions.rejectIfNotAllowedMany(
                         organization.organization_id,
                         [
-                            PermissionName.academic_profile_20100,
-                            PermissionName.add_teachers_to_class_20226,
+                            PermissionName.add_students_to_class_20225,
+                            PermissionName.deactivate_my_school_user_40885,
                         ],
                         'AND'
                     )
                 ).to.be.rejectedWith(
-                    `User(${user.user_id}) does not have Permission(${PermissionName.academic_profile_20100} AND ${PermissionName.add_teachers_to_class_20226}) in Organization(${organization.organization_id})`
+                    `User(${user.user_id}) does not have Permission(${PermissionName.add_students_to_class_20225} AND ${PermissionName.deactivate_my_school_user_40885}) in Organization(${organization.organization_id})`
                 )
             })
             it('passes when the user has ALL permissions', async () => {
@@ -311,8 +311,8 @@ describe('userPermissions', () => {
                     userPermissions.rejectIfNotAllowedMany(
                         organization.organization_id,
                         [
-                            PermissionName.academic_profile_20100,
                             PermissionName.add_students_to_class_20225,
+                            PermissionName.add_teachers_to_class_20226,
                         ],
                         'AND'
                     )
@@ -325,13 +325,13 @@ describe('userPermissions', () => {
                     userPermissions.rejectIfNotAllowedMany(
                         organization.organization_id,
                         [
-                            PermissionName.add_teachers_to_class_20226,
-                            PermissionName.approve_pending_content_271,
+                            PermissionName.deactivate_my_school_user_40885,
+                            PermissionName.deactivate_user_40883,
                         ],
                         'OR'
                     )
                 ).to.to.be.rejectedWith(
-                    `User(${user.user_id}) does not have Permission(${PermissionName.add_teachers_to_class_20226} OR ${PermissionName.approve_pending_content_271}) in Organization(${organization.organization_id})`
+                    `User(${user.user_id}) does not have Permission(${PermissionName.deactivate_my_school_user_40885} OR ${PermissionName.deactivate_user_40883}) in Organization(${organization.organization_id})`
                 )
             })
             it('passes when the user has ANY of the permissions', async () => {
@@ -339,8 +339,8 @@ describe('userPermissions', () => {
                     userPermissions.rejectIfNotAllowedMany(
                         organization.organization_id,
                         [
-                            PermissionName.academic_profile_20100,
-                            PermissionName.add_teachers_to_class_20226,
+                            PermissionName.add_students_to_class_20225,
+                            PermissionName.deactivate_my_school_user_40885,
                         ],
                         'OR'
                     )
