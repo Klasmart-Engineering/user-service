@@ -18,6 +18,10 @@ export interface deleteBrandingImageInput {
     type: BrandingImageTag
 }
 
+export interface DeleteBrandingColorInput {
+    organizationId: string
+}
+
 export interface BrandingInput {
     primaryColor: string | undefined
     iconImage: Promise<Uploader>
