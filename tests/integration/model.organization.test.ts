@@ -126,7 +126,7 @@ describe('model.organization', () => {
 
             beforeEach(async () => {
                 await createNonAdminUser(testClient)
-                const arbitraryUserToken = getNonAdminAuthToken()
+                await createAdminUser(testClient)
                 orgs = []
                 brandings = []
                 for (let i = 0; i < 3; i++) {
@@ -142,7 +142,7 @@ describe('model.organization', () => {
                         'image/png',
                         '7bit',
                         `#${i.toString().repeat(6)}`,
-                        { authorization: arbitraryUserToken }
+                        { authorization: getAdminAuthToken() }
                     )
                     brandings.push(branding)
                     orgs.push(org)
@@ -251,7 +251,7 @@ describe('model.organization', () => {
                         'image/png',
                         '7bit',
                         primaryColor,
-                        { authorization: arbitraryUserToken }
+                        { authorization: getAdminAuthToken() }
                     )
                     const { query } = testClient
 
@@ -283,7 +283,7 @@ describe('model.organization', () => {
                         'image/png',
                         '7bit',
                         primaryColor,
-                        { authorization: arbitraryUserToken }
+                        { authorization: getAdminAuthToken() }
                     )
 
                     let res = await query({
@@ -312,7 +312,7 @@ describe('model.organization', () => {
                         'image/jpeg',
                         '7bit',
                         primaryColor,
-                        { authorization: arbitraryUserToken }
+                        { authorization: getAdminAuthToken() }
                     )
 
                     res = await query({
