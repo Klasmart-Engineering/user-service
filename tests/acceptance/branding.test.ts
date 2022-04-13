@@ -241,7 +241,7 @@ describe('acceptance.branding', () => {
             .post('/graphql')
             .set({
                 ContentType: 'application/json',
-                Authorization: token,
+                Authorization: getAdminAuthToken(),
             })
             .send({
                 query: DELETE_BRANDING_IMAGE,
@@ -252,6 +252,7 @@ describe('acceptance.branding', () => {
             })
 
         expect(setDeleteBrandingImageResponse.status).to.eq(200)
+        expect(setDeleteBrandingImageResponse.body.errors).to.not.exist
 
         const getOrgResponse2 = await getOrg(orgId, token)
 
@@ -318,7 +319,7 @@ describe('acceptance.branding', () => {
             .post('/graphql')
             .set({
                 ContentType: 'application/json',
-                Authorization: token,
+                Authorization: getAdminAuthToken(),
             })
             .send({
                 query: DELETE_BRANDING_COLOR,
@@ -327,6 +328,7 @@ describe('acceptance.branding', () => {
                 },
             })
         expect(setDeleteBrandingColorResponse.status).to.eq(200)
+        expect(setDeleteBrandingColorResponse.body.errors).to.not.exist
 
         const getOrgResponse2 = await getOrg(orgId, token)
 
