@@ -26,6 +26,7 @@ import { config } from '../../../../src/config/config'
 import { createAcademicTerm } from '../../../factories/academicTerm.factory'
 import { AcademicTerm } from '../../../../src/entities/academicTerm'
 import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 use(chaiAsPromised)
 
@@ -619,7 +620,7 @@ describe('processClassFromCSVRow', () => {
 
             const classRowError = rowErrors[0]
             expect(classRowError.code).to.equal(
-                csvErrorConstants.ERR_CSV_MUST_HAVE_EXACTLY_N
+                customErrors.must_have_exactly_n.code
             )
             expect(classRowError.message).to.equal(
                 'On row number 1, Class class1 must have exactly 1 School.'
@@ -664,7 +665,7 @@ describe('processClassFromCSVRow', () => {
 
             const classRowError = rowErrors[0]
             expect(classRowError.code).to.equal(
-                csvErrorConstants.ERR_CSV_MUST_HAVE_EXACTLY_N
+                customErrors.must_have_exactly_n.code
             )
             expect(classRowError.message).to.equal(
                 `On row number 1, Class class1 must have exactly 1 School.`

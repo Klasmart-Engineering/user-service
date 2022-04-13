@@ -120,8 +120,4 @@ export default {
     ERR_CSV_INVALID_LENGTH: 'ERR_CSV_INVALID_LENGTH',
     MSG_ERR_CSV_INVALID_LENGTH:
         '{entity} {attribute} must not be greater than {max} characters.',
-
-    ERR_CSV_MUST_HAVE_EXACTLY_N: 'ERR_MUST_HAVE_EXACTLY_N',
-    MSG_ERR_CSV_MUST_HAVE_EXACTLY_N:
-        '{entity} {entityName} must have exactly {count} {parentEntity}.',
 } as const

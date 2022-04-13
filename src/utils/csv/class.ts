@@ -301,10 +301,10 @@ export const processClassFromCSVRow = async (
         if (existingSchools.length !== 1) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_MUST_HAVE_EXACTLY_N,
+                customErrors.must_have_exactly_n.code,
                 rowNumber,
                 'school_name',
-                csvErrorConstants.MSG_ERR_CSV_MUST_HAVE_EXACTLY_N,
+                customErrors.must_have_exactly_n.message,
                 {
                     entityName: class_name,
                     entity: 'Class',
