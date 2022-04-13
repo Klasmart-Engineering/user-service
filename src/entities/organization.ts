@@ -999,7 +999,7 @@ export class Organization extends CustomBaseEntity {
     }
 
     private async findChildEntitiesById<EntityClass extends BaseEntity>(
-        entity: (new () => EntityClass) & typeof CustomBaseEntity,
+        entity: (new () => EntityClass) & typeof BaseEntity,
         ids: string[],
         variables: IAPIError['variables'],
         customCondition?: Brackets
@@ -1012,11 +1012,11 @@ export class Organization extends CustomBaseEntity {
             })
         })
 
-        const records = await repository
+        const records = (await repository
             .createQueryBuilder('Entity')
             .whereInIds(uniqueIds)
             .andWhere(customCondition || defaultCondition)
-            .getMany()
+            .getMany()) as EntityClass[]
 
         const found = new Set(records.map((record) => repository.getId(record)))
         const errors = uniqueIds
@@ -1034,7 +1034,7 @@ export class Organization extends CustomBaseEntity {
                     })
             )
 
-        return { data: (records as unknown) as EntityClass[], errors }
+        return { data: records, errors }
     }
 
     private async findRolesById(
