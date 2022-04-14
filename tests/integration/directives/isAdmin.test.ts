@@ -226,7 +226,12 @@ describe('isAdmin', () => {
                 permissions = new UserPermissions(token)
 
                 scope = createQueryBuilder(Organization)
-                await nonAdminOrganizationScope(scope, permissions)
+                await nonAdminOrganizationScope(
+                    scope as SelectQueryBuilder<
+                        Organization | OrganizationMembership
+                    >,
+                    permissions
+                )
             })
 
             it('limits scope to a users organizations', async () => {
