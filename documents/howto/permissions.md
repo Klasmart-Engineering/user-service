@@ -18,5 +18,5 @@
 - Overwrite `src/permissions/permissionInfo.csv` & `tests/fixtures/permissions.csv` by manually exporting new CSVs from the google sheet using the URLs in `tests/utils/latestPermissions.ts`
 - Update predefined roles with changes using `npm run update-role-permissions`
   - check the result manually
-- Manually update `src/permissions/permissionNames.ts` with changes
+- Update `src/permissions/permissionNames.ts` using `npm run update-permission-names`
 - Run `npm run test` to validate changes against `tests/fixtures/permissions.csv`
