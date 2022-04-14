@@ -21,6 +21,8 @@ import { Subject } from '../../entities/subject'
 import { validateAgeRanges } from './validations/ageRange'
 import { AgeRange } from '../../entities/ageRange'
 import { Status } from '../../entities/status'
+import { PermissionName } from '../../permissions/permissionNames'
+import { AcademicTerm } from '../../entities/academicTerm'
 
 export const processClassFromCSVRow = async (
     manager: EntityManager,
@@ -35,6 +37,7 @@ export const processClassFromCSVRow = async (
         age_range_low_value,
         age_range_high_value,
         age_range_unit,
+        academic_term_name,
     }: ClassRow,
     rowNumber: number,
     fileErrors: CSVError[],
@@ -150,6 +153,27 @@ export const processClassFromCSVRow = async (
         return rowErrors
     }
 
+    // Is the user authorized to upload classes to this org
+    if (
+        !(await userPermissions.allowed(
+            { organization_ids: [org.organization_id] },
+            PermissionName.create_class_20224
+        ))
+    ) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_org_upload.code,
+            rowNumber,
+            'organization_name',
+            customErrors.unauthorized_org_upload.message,
+            {
+                entity: 'class',
+                organizationName: org.organization_name,
+            }
+        )
+        return rowErrors
+    }
+
     const classInDatabase = await Class.findBy({
         organization: { organization_id: org.organization_id },
         class_name,
@@ -258,6 +282,61 @@ export const processClassFromCSVRow = async (
 
         existingSchools.push(school)
     }
+
+    if (academic_term_name) {
+        const academicTerm = await AcademicTerm.findOneBy({
+            name: academic_term_name,
+        })
+        if (!academicTerm) {
+            addCsvError(
+                rowErrors,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                rowNumber,
+                'academic_term_name',
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                {
+                    name: academic_term_name,
+                    entity: 'AcademicTerm',
+                }
+            )
+        }
+        if (existingSchools.length !== 1) {
+            addCsvError(
+                rowErrors,
+                customErrors.must_have_exactly_n.code,
+                rowNumber,
+                'school_name',
+                customErrors.must_have_exactly_n.message,
+                {
+                    entityName: class_name,
+                    entity: 'Class',
+                    count: 1,
+                    parentEntity: 'School',
+                }
+            )
+        } else if (academicTerm) {
+            if (existingSchools[0].school_id !== academicTerm.school_id) {
+                addCsvError(
+                    rowErrors,
+                    csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                    rowNumber,
+                    'academic_term_name',
+                    csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                    {
+                        name: academic_term_name,
+                        entity: 'AcademicTerm',
+                        parent_name: school_name,
+                        parent_entity: 'School',
+                    }
+                )
+            }
+            c.academicTerm = Promise.resolve(academicTerm)
+        }
+        if (rowErrors.length > 0) {
+            return rowErrors
+        }
+    }
+
     c.schools = Promise.resolve(existingSchools)
 
     const existingPrograms = (await c.programs) || []

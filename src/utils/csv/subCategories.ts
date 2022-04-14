@@ -6,6 +6,8 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { PermissionName } from '../../permissions/permissionNames'
+import { customErrors } from '../../types/errors/customError'
 
 export const processSubCategoriesFromCSVRow = async (
     manager: EntityManager,
@@ -63,6 +65,28 @@ export const processSubCategoriesFromCSVRow = async (
             }
         )
 
+        return rowErrors
+    }
+
+    // Is the user authorized to upload subcategories to this org
+    // Uses create-subjects permission in line with existing related root-level mutations
+    if (
+        !(await userPermissions.allowed(
+            { organization_ids: [org.organization_id] },
+            PermissionName.create_subjects_20227
+        ))
+    ) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_org_upload.code,
+            rowNumber,
+            'organization_name',
+            customErrors.unauthorized_org_upload.message,
+            {
+                entity: 'subcategory',
+                organizationName: org.organization_name,
+            }
+        )
         return rowErrors
     }
 

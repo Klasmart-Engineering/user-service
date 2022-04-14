@@ -797,6 +797,9 @@ export class Model {
     ) {
         const { file } = await (args.file as Promise<{ file: Upload }>)
 
+        // Check authorization of user to create any organizations. Must have admin permissions.
+        context.permissions.rejectIfNotAdmin()
+
         await createEntityFromCsvWithRollBack(
             getConnection(),
             file,

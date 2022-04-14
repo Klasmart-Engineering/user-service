@@ -13,6 +13,8 @@ import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
+import { PermissionName } from '../../permissions/permissionNames'
+import { customErrors } from '../../types/errors/customError'
 
 export const processSchoolFromCSVRow = async (
     manager: EntityManager,
@@ -126,6 +128,27 @@ export const processSchoolFromCSVRow = async (
     }
 
     const organization = organizations[0]
+
+    // Is the user authorized to upload schools to this org
+    if (
+        !(await userPermissions.allowed(
+            { organization_ids: [organization.organization_id] },
+            PermissionName.create_school_20220
+        ))
+    ) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_org_upload.code,
+            rowNumber,
+            'organization_name',
+            customErrors.unauthorized_org_upload.message,
+            {
+                entity: 'school',
+                organizationName: organization.organization_name,
+            }
+        )
+        return rowErrors
+    }
 
     const schoolShortcode = await manager.findOne(School, {
         where: {
