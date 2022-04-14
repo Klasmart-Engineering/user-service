@@ -175,7 +175,7 @@ describe('RolesInitializer', () => {
             'when an existing permission is not in the permissionInfo.csv file but is in an existing system role',
             () => {
                 let organization: Organization
-                let role: Role | undefined
+                let role: Role | null
                 let permission: Permission
                 const roleName = 'Teacher'
                 let permsLength = 0

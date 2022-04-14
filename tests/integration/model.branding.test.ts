@@ -637,7 +637,7 @@ describe('model.branding', () => {
     })
 
     describe('deleteBrandingColor', () => {
-        let branding: Branding | undefined
+        let branding: Branding | null
         const primaryColor = '#cd657b'
 
         it('removes any set colour while leaving other properties unchanged', async () => {
