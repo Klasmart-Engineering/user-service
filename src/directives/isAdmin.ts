@@ -146,7 +146,9 @@ export const createEntityScope = async ({
         switch (entity) {
             case 'organization':
                 await nonAdminOrganizationScope(
-                    scope as SelectQueryBuilder<Organization>,
+                    scope as SelectQueryBuilder<
+                        Organization | OrganizationMembership
+                    >,
                     permissions
                 )
                 break
@@ -395,10 +397,9 @@ export const nonAdminUserScope: NonAdminScope<
     )
 }
 
-export const nonAdminOrganizationScope: NonAdminScope<Organization> = async (
-    scope,
-    permissions
-) => {
+export const nonAdminOrganizationScope: NonAdminScope<
+    Organization | OrganizationMembership
+> = async (scope, permissions) => {
     const orgIds = await permissions.orgMembershipsWithPermissions([])
     if (orgIds.length > 0) {
         scope.andWhere('Organization.organization_id IN (:...orgIds)', {
@@ -418,13 +419,11 @@ export const nonAdminOrganizationMembershipScope: NonAdminScope<OrganizationMemb
     scope.leftJoin('OrganizationMembership.organization', 'Organization')
     scope.leftJoin('OrganizationMembership.user', 'User')
 
-    await nonAdminOrganizationScope(
-        (scope as unknown) as SelectQueryBuilder<Organization>,
-        permissions
-    )
-
+    await nonAdminOrganizationScope(scope, permissions)
     await nonAdminUserScope(
-        (scope as unknown) as SelectQueryBuilder<User>,
+        scope as SelectQueryBuilder<
+            User | OrganizationMembership | SchoolMembership
+        >,
         permissions
     )
 }
