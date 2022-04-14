@@ -1,2 +1,2 @@
-organization_name,class_name,class_shortcode,school_name,program_name,grade_name,subject_name,age_range_low_value,age_range_high_value,age_range_unit
-my-org,class1,CSCODE,test-school,outdoor activities,first grade,pilates,5,7,year
+organization_name,class_name,class_shortcode,school_name,program_name,grade_name,subject_name,age_range_low_value,age_range_high_value,age_range_unit,academic_term_name
+my-org,class1,CSCODE,test-school,outdoor activities,first grade,pilates,5,7,year,test academic term
