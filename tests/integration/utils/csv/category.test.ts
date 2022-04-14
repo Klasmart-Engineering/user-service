@@ -75,7 +75,7 @@ describe('processCategoryFromCSVRow', () => {
                 adminPermissions
             )
 
-            expect(rowErrors).to.have.length(2) // Should actually be 1, needs to be fixed
+            expect(rowErrors).to.have.length(1)
 
             const orgRowError = rowErrors[0]
             expect(orgRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')

@@ -10,6 +10,8 @@ import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { validateAgeRanges } from './validations/ageRange'
+import { PermissionName } from '../../permissions/permissionNames'
+import { customErrors } from '../../types/errors/customError'
 
 export const processProgramFromCSVRow = async (
     manager: EntityManager,
@@ -94,6 +96,27 @@ export const processProgramFromCSVRow = async (
             }
         )
 
+        return rowErrors
+    }
+
+    // Is the user authorized to upload programs to this org
+    if (
+        !(await userPermissions.allowed(
+            { organization_ids: [organization.organization_id] },
+            PermissionName.create_program_20221
+        ))
+    ) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_org_upload.code,
+            rowNumber,
+            'organization_name',
+            customErrors.unauthorized_org_upload.message,
+            {
+                entity: 'program',
+                organizationName: organization.organization_name,
+            }
+        )
         return rowErrors
     }
 

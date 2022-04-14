@@ -20,6 +20,7 @@ import { customErrors } from '../../types/errors/customError'
 import { Subject } from '../../entities/subject'
 import { validateAgeRanges } from './validations/ageRange'
 import { AgeRange } from '../../entities/ageRange'
+import { PermissionName } from '../../permissions/permissionNames'
 
 export const processClassFromCSVRow = async (
     manager: EntityManager,
@@ -146,6 +147,27 @@ export const processClassFromCSVRow = async (
             }
         )
 
+        return rowErrors
+    }
+
+    // Is the user authorized to upload classes to this org
+    if (
+        !(await userPermissions.allowed(
+            { organization_ids: [org.organization_id] },
+            PermissionName.create_class_20224
+        ))
+    ) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_org_upload.code,
+            rowNumber,
+            'organization_name',
+            customErrors.unauthorized_org_upload.message,
+            {
+                entity: 'class',
+                organizationName: org.organization_name,
+            }
+        )
         return rowErrors
     }
 

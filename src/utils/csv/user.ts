@@ -318,12 +318,12 @@ export const processUserFromCSVRow = async (
         }
 
         // And is the user authorized to upload to this org?
-        try {
-            await userPermissions.rejectIfNotAllowed(
+        if (
+            !(await userPermissions.allowed(
                 { organization_ids: [org.organization_id] },
                 PermissionName.upload_users_40880
-            )
-        } catch (e) {
+            ))
+        ) {
             addCsvError(
                 rowErrors,
                 customErrors.unauthorized_org_upload.code,
