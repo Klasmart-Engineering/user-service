@@ -29,6 +29,35 @@ const typeDefs = gql`
         school: SchoolConnectionNode! @isAdmin(entity: "school")
     }
 
+    type AcademicTermsConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [AcademicTermsConnectionEdge]
+    }
+
+
+    type AcademicTermsConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: AcademicTermConnectionNode
+    }
+
+    input AcademicTermFilter {
+        # in the interests of time
+        # don't support any filters by default
+        # can be added if FE needed them
+        # todo: check that with FE
+        #id UUIDFilter
+        #status: StatusFilter
+        #name: StringFilter
+        
+        # // todo: filter on start/end dates and class ID?
+
+        AND: [AcademicTermFilter]
+        OR: [AcademicTermFilter]
+    }
+    
+    //todo: AcademicTermSortInput
+
     input CreateAcademicTermInput {
         schoolId: ID!
         name: String!

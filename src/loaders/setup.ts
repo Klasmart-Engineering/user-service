@@ -187,6 +187,8 @@ import {
     organizationMembershipsConnectionSortingConfig,
 } from '../pagination/organizationMembershipsConnection'
 import { AcademicTermConnectionNode } from '../types/graphQL/academicTerm'
+import { AcademicTerm } from '../entities/academicTerm'
+import { CoreAcademicTermConnectionNode } from '../pagination/academicTermsConnection'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -266,6 +268,12 @@ export interface IDataLoaders {
         DataLoader<
             IChildConnectionDataloaderKey<Program>,
             IPaginatedResponse<CoreProgramConnectionNode>
+        >
+    >
+    academicTermsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<AcademicTerm>,
+            IPaginatedResponse<CoreAcademicTermConnectionNode>
         >
     >
     permissionsConnectionChild: Lazy<
@@ -696,6 +704,18 @@ export function createContextLazyLoaders(
                         mapProgramToProgramConnectionNode,
                         programsConnectionSortingConfig,
                         { permissions, entity: 'program' }
+                    )
+                })
+        ),
+        academicTermsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        academicTermsConnectionQuery,
+                        mapAcademicTermToAcademicTermConnectionNode,
+                        academicTermsConnectionSortingConfig,
+                        { permissions, entity: 'academicTerm' }
                     )
                 })
         ),
