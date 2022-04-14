@@ -7,6 +7,8 @@ import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { PermissionName } from '../../permissions/permissionNames'
+import { customErrors } from '../../types/errors/customError'
 
 export const processCategoryFromCSVRow = async (
     manager: EntityManager,
@@ -49,6 +51,11 @@ export const processCategoryFromCSVRow = async (
         )
     }
 
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (rowErrors.length > 0) {
+        return rowErrors
+    }
+
     const organization = await manager.findOne(Organization, {
         where: { organization_name },
     })
@@ -65,10 +72,28 @@ export const processCategoryFromCSVRow = async (
                 entity: 'organization',
             }
         )
+        return rowErrors
     }
 
-    // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (rowErrors.length > 0) {
+    // Is the user authorized to upload categories to this org
+    // Uses create-subjects permission in line with CreateCategories root-level mutations due to no other available precedent
+    if (
+        !(await userPermissions.allowed(
+            { organization_ids: [organization.organization_id] },
+            PermissionName.create_subjects_20227
+        ))
+    ) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_org_upload.code,
+            rowNumber,
+            'organization_name',
+            customErrors.unauthorized_org_upload.message,
+            {
+                entity: 'category',
+                organizationName: organization.organization_name,
+            }
+        )
         return rowErrors
     }
 

@@ -83,10 +83,11 @@ import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
-import { CustomError } from '../../src/types/csv/csvError'
+import { CSVError, CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
-import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
+import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
+import { createAdminUser as createAdminUserFactory } from '../factories/user.factory'
 import { customErrors } from '../../src/types/errors/customError'
 import { buildCsvError } from '../../src/utils/csv/csvUtils'
 import { PermissionName } from '../../src/permissions/permissionNames'
@@ -99,6 +100,8 @@ import iconv from 'iconv-lite'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { config } from '../../src/config/config'
 import { checkCSVErrorsMatch } from '../utils/csvError'
+import { userToPayload } from '../utils/operations/userOps'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -121,9 +124,9 @@ describe('model.csv', () => {
         )
         const expectedOrgsCreated = 20
 
-        beforeEach(() => {
-            const uploader = createUser()
-            const token = { id: uploader.user_id }
+        beforeEach(async () => {
+            const uploader = await createAdminUserFactory().save()
+            const token = userToPayload(uploader)
             const permissions = new UserPermissions(token)
             ctx = { permissions }
         })
@@ -225,11 +228,11 @@ describe('model.csv', () => {
         const encoding = '7bit'
         const filename = 'fileSizeExceeded.csv'
 
-        let arbitraryUserToken: string
+        let adminUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
+            await createAdminUser(testClient)
+            adminUserToken = getAdminAuthToken()
         })
 
         it('should throw high level error', async () => {
@@ -242,7 +245,7 @@ describe('model.csv', () => {
                     filename,
                     mimetype,
                     encoding,
-                    arbitraryUserToken
+                    adminUserToken
                 )
             ).to.be.rejectedWith('File size exceeds max file size (50KB)')
 
@@ -257,11 +260,11 @@ describe('model.csv', () => {
         const encoding = '7bit'
         const correctFileName = 'organizationsExample.csv'
         const wrongFileName = 'organizationsWrong.csv'
-        let arbitraryUserToken: string
+        let adminUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
+            await createAdminUser(testClient)
+            adminUserToken = getAdminAuthToken()
         })
 
         context('when operation is not a mutation', () => {
@@ -278,9 +281,42 @@ describe('model.csv', () => {
                         filename,
                         mimetype,
                         encoding,
-                        arbitraryUserToken
+                        adminUserToken
                     )
                 ).to.be.rejected
+
+                const organizationsCreated = await Organization.count()
+                expect(organizationsCreated).eq(0)
+            })
+        })
+
+        context('when uploader is not admin', () => {
+            let nonAdminUser: User
+            let nonAdminUserToken: string
+
+            beforeEach(async () => {
+                nonAdminUser = await createNonAdminUser(testClient)
+                nonAdminUserToken = getNonAdminAuthToken()
+            })
+
+            it('should throw an error', async () => {
+                const filename = correctFileName
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+
+                await expect(
+                    uploadOrganizations(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding,
+                        nonAdminUserToken
+                    )
+                ).to.be.rejectedWith(
+                    `User(${nonAdminUser.user_id}) does not have Admin permissions`
+                )
 
                 const organizationsCreated = await Organization.count()
                 expect(organizationsCreated).eq(0)
@@ -301,7 +337,7 @@ describe('model.csv', () => {
                         filename,
                         mimetype,
                         encoding,
-                        arbitraryUserToken
+                        adminUserToken
                     )
                 ).to.be.rejected
 
@@ -344,7 +380,7 @@ describe('model.csv', () => {
                         filename,
                         mimetype,
                         encoding,
-                        arbitraryUserToken
+                        adminUserToken
                     )
                 ).to.be.rejected
                 checkCSVErrorsMatch(e, [expectedCSVError])
@@ -367,7 +403,7 @@ describe('model.csv', () => {
                     filename,
                     mimetype,
                     encoding,
-                    arbitraryUserToken
+                    adminUserToken
                 )
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
@@ -384,11 +420,44 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'rolesExample.csv'
+        let nonAdminUser: User
+        let orgs: Organization[]
+        let orgMemberships: OrganizationMembership[]
         let arbitraryUserToken: string
+        let preMadeRolesCount: number
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
+
+            orgs = []
+            orgMemberships = []
+            preMadeRolesCount = 0
+
+            for (let i = 1; i <= 4; i += 1) {
+                const org = createOrganization()
+                org.organization_name = `Company ${i}`
+                // eslint-disable-next-line no-await-in-loop
+                await org.save()
+                orgs.push(org)
+
+                // eslint-disable-next-line no-await-in-loop
+                const createRolesRole = await createRole('create roles', org, {
+                    permissions: [
+                        PermissionName.create_role_with_permissions_30222,
+                    ],
+                }).save()
+                preMadeRolesCount += 1
+
+                const orgMemb = createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [createRolesRole],
+                })
+                // eslint-disable-next-line no-await-in-loop
+                await orgMemb.save()
+                orgMemberships.push(orgMemb)
+            }
         })
 
         context('when operation is not a mutation', () => {
@@ -408,14 +477,61 @@ describe('model.csv', () => {
                     )
                 ).to.be.rejected
 
-                const rolesCreated = await Role.count({
+                const rolesExisting = await Role.count({
                     where: { system_role: false },
                 })
-                expect(rolesCreated).eq(0)
+                expect(rolesExisting).eq(preMadeRolesCount) // Should only be those created in the four org memberships
             })
         })
 
+        context(
+            'when uploader is not authorised to upload roles in the organization',
+            () => {
+                beforeEach(async () => {
+                    for await (const orgMemb of orgMemberships) {
+                        orgMemb.roles = Promise.resolve([])
+                        await orgMemb.save()
+                    }
+                })
+
+                it('it throws an authorized code error', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const actualErrors = await expect(
+                        uploadRoles(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+
+                    actualErrors.errors.map((error: CSVError) => {
+                        expect(error.code).to.eq(
+                            customErrors.unauthorized_org_upload.code
+                        )
+                        expect(error.column).to.eq('organization_name')
+                        expect(error.entity).to.eq('role')
+                        expect(
+                            orgs.map((org) => org.organization_name)
+                        ).to.include(error.organizationName)
+                    })
+                })
+            }
+        )
+
         context('when file data is not correct', () => {
+            beforeEach(() => {
+                orgs.map(async (org, idx) => {
+                    org.organization_name = `Not Company ${idx + 1}`
+                    await org.save()
+                })
+            })
+
             it('should throw an error', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -432,22 +548,14 @@ describe('model.csv', () => {
                     )
                 ).to.be.rejected
 
-                const rolesCreated = await Role.count({
+                const rolesExisting = await Role.count({
                     where: { system_role: false },
                 })
-                expect(rolesCreated).eq(0)
+                expect(rolesExisting).eq(preMadeRolesCount) // Should only be those created in the four org memberships
             })
         })
 
         context('when file data is correct', () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    const org = await createOrganization()
-                    org.organization_name = `Company ${i}`
-                    await connection.manager.save(org)
-                }
-            })
-
             it('should create roles', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -478,13 +586,87 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'subjectsExample.csv'
+        let nonAdminUser: User
+        let orgs: Organization[]
+        let orgMemberships: OrganizationMembership[]
         let arbitraryUserToken: string
+
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
             await SubcategoriesInitializer.run()
             await CategoriesInitializer.run()
+
+            orgs = []
+            orgMemberships = []
+
+            for (let i = 1; i <= 4; i += 1) {
+                const org = createOrganization()
+                org.organization_name = `Company ${i}`
+                // eslint-disable-next-line no-await-in-loop
+                await org.save()
+                orgs.push(org)
+
+                // eslint-disable-next-line no-await-in-loop
+                const createSubjectsRole = await createRole(
+                    'create roles',
+                    org,
+                    {
+                        permissions: [PermissionName.create_subjects_20227],
+                    }
+                ).save()
+
+                const orgMemb = createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [createSubjectsRole],
+                })
+                // eslint-disable-next-line no-await-in-loop
+                await orgMemb.save()
+                orgMemberships.push(orgMemb)
+            }
         })
+
+        context(
+            'when uploader is not authorised to upload subjects in the organization',
+            () => {
+                beforeEach(async () => {
+                    for await (const orgMemb of orgMemberships) {
+                        orgMemb.roles = Promise.resolve([])
+                        await orgMemb.save()
+                    }
+                })
+
+                it('it throws an authorized code error', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const actualErrors = await expect(
+                        uploadSubjects(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+
+                    actualErrors.errors.map((error: CSVError) => {
+                        expect(error.code).to.eq(
+                            customErrors.unauthorized_org_upload.code
+                        )
+                        expect(error.column).to.eq('organization_name')
+                        expect(error.entity).to.eq('subject')
+                        expect(
+                            orgs.map((org) => org.organization_name)
+                        ).to.include(error.organizationName)
+                    })
+                })
+            }
+        )
+
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
                 file = fs.createReadStream(
@@ -510,6 +692,13 @@ describe('model.csv', () => {
         })
 
         context('when file data is not correct', () => {
+            beforeEach(() => {
+                orgs.map(async (org, idx) => {
+                    org.organization_name = `Not Company ${idx + 1}`
+                    await org.save()
+                })
+            })
+
             it('should throw an error', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -534,14 +723,6 @@ describe('model.csv', () => {
         })
 
         context('when file data is correct', () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    const org = await createOrganization()
-                    org.organization_name = `Company ${i}`
-                    await connection.manager.save(org)
-                }
-            })
-
             it('should create subjects', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -573,11 +754,48 @@ describe('model.csv', () => {
         const encoding = '7bit'
         const correctFilename = 'gradesExample.csv'
         const wrongFilename = 'gradesWrong.csv'
+        let nonAdminUser: User
+        let orgs: Organization[]
+        let orgMemberships: OrganizationMembership[]
         let arbitraryUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
+
+            orgs = []
+            orgMemberships = []
+
+            for (let i = 1; i <= 2; i += 1) {
+                const org = createOrganization()
+                org.organization_name = `Company ${i}`
+                // eslint-disable-next-line no-await-in-loop
+                await org.save()
+                orgs.push(org)
+
+                // eslint-disable-next-line no-await-in-loop
+                const createGradesRole = await createRole(
+                    'create grades',
+                    org,
+                    {
+                        permissions: [PermissionName.create_grade_20223],
+                    }
+                ).save()
+
+                const orgMemb = createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [createGradesRole],
+                })
+                // eslint-disable-next-line no-await-in-loop
+                await orgMemb.save()
+                orgMemberships.push(orgMemb)
+            }
+
+            const noneSpecifiedGrade = new Grade()
+            noneSpecifiedGrade.name = 'None Specified'
+            noneSpecifiedGrade.system = true
+            await connection.manager.save(noneSpecifiedGrade)
         })
 
         context('when operation is not a mutation', () => {
@@ -598,12 +816,59 @@ describe('model.csv', () => {
                     )
                 ).to.be.rejected
 
-                const gradesCreated = await Grade.count()
-                expect(gradesCreated).eq(0)
+                const gradesExisting = await Grade.count()
+                expect(gradesExisting).eq(1) // Only None Specified grade should exist
             })
         })
 
+        context(
+            'when uploader is not authorised to upload grades in the organization',
+            () => {
+                beforeEach(async () => {
+                    for await (const orgMemb of orgMemberships) {
+                        orgMemb.roles = Promise.resolve([])
+                        await orgMemb.save()
+                    }
+                })
+
+                it('it throws an authorized code error', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${correctFilename}`)
+                    )
+
+                    const actualErrors = await expect(
+                        uploadGrades(
+                            testClient,
+                            file,
+                            correctFilename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+
+                    actualErrors.errors.map((error: CSVError) => {
+                        expect(error.code).to.eq(
+                            customErrors.unauthorized_org_upload.code
+                        )
+                        expect(error.column).to.eq('organization_name')
+                        expect(error.entity).to.eq('grade')
+                        expect(
+                            orgs.map((org) => org.organization_name)
+                        ).to.include(error.organizationName)
+                    })
+                })
+            }
+        )
+
         context('when file data is not correct', () => {
+            beforeEach(() => {
+                orgs.map(async (org, idx) => {
+                    org.organization_name = `Not Company ${idx + 1}`
+                    await org.save()
+                })
+            })
+
             it('should throw an error', async () => {
                 const filename = wrongFilename
                 file = fs.createReadStream(
@@ -621,27 +886,12 @@ describe('model.csv', () => {
                     )
                 ).to.be.rejected
 
-                const gradesCreated = await Grade.count()
-                expect(gradesCreated).eq(0)
+                const gradesExisting = await Grade.count()
+                expect(gradesExisting).eq(1) // Only None Specified grade should exist
             })
         })
 
         context('when file data is correct', () => {
-            beforeEach(async () => {
-                const org = await createOrganization()
-                org.organization_name = 'Company 1'
-                await connection.manager.save(org)
-
-                const org2 = await createOrganization()
-                org2.organization_name = 'Company 2'
-                await connection.manager.save(org2)
-
-                const noneSpecifiedGrade = new Grade()
-                noneSpecifiedGrade.name = 'None Specified'
-                noneSpecifiedGrade.system = true
-                await connection.manager.save(noneSpecifiedGrade)
-            })
-
             it('should create grades', async () => {
                 const filename = correctFilename
 
@@ -672,12 +922,29 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         let filename = 'classes.csv'
-
+        let nonAdminUser: User
+        let org: Organization
+        let orgMembership: OrganizationMembership
+        let createClassesRole: Role
         let arbitraryUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
+
+            org = createOrganization()
+            org.organization_name = 'my-org'
+            await org.save()
+
+            createClassesRole = await createRole('create classes', org, {
+                permissions: [PermissionName.create_class_20224],
+            }).save()
+
+            orgMembership = await createOrganizationMembership({
+                user: nonAdminUser,
+                organization: org,
+                roles: [createClassesRole],
+            }).save()
         })
 
         context('when operation is not a mutation', () => {
@@ -703,6 +970,46 @@ describe('model.csv', () => {
                 expect(classesCreated).eq(0)
             })
         })
+
+        context(
+            'when uploader is not authorised to upload classes to the org',
+            () => {
+                beforeEach(async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+                    orgMembership.roles = Promise.resolve([])
+                    await orgMembership.save()
+                })
+
+                it('throws an unauthorized code error', async () => {
+                    const expectedCSVErrors = [
+                        buildCsvError(
+                            customErrors.unauthorized_org_upload.code,
+                            1,
+                            'organization_name',
+                            customErrors.unauthorized_org_upload.message,
+                            {
+                                entity: 'class',
+                                organizationName: org.organization_name,
+                            }
+                        ),
+                    ]
+
+                    const e = await expect(
+                        uploadClasses(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    checkCSVErrorsMatch(e, expectedCSVErrors)
+                })
+            }
+        )
 
         // TODO : functionality and tests to add: 1) missing column check; 2) duplicate column check
         context('when file data is not correct', () => {
@@ -762,6 +1069,9 @@ describe('model.csv', () => {
                     )
                 })
                 it('should throw an error with correct code for non-existent organization', async () => {
+                    org.organization_name = 'not-my-org'
+                    await org.save()
+
                     const expectedCSVErrors = [
                         buildCsvError(
                             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
@@ -828,14 +1138,7 @@ describe('model.csv', () => {
                 })
 
                 it('should throw an error with correct code for non-existent program', async () => {
-                    const expectedOrg = createOrganization()
-                    expectedOrg.organization_name = 'my-org'
-                    await connection.manager.save(expectedOrg)
-
-                    const expectedSchool = createSchool(
-                        expectedOrg,
-                        'test-school'
-                    )
+                    const expectedSchool = createSchool(org, 'test-school')
                     await connection.manager.save(expectedSchool)
 
                     const expectedCSVErrors = [
@@ -870,17 +1173,10 @@ describe('model.csv', () => {
                 })
 
                 it('should throw an error with correct code for non-existent grade', async () => {
-                    const expectedOrg = createOrganization()
-                    expectedOrg.organization_name = 'my-org'
-                    await connection.manager.save(expectedOrg)
-
-                    const expectedSchool = createSchool(
-                        expectedOrg,
-                        'test-school'
-                    )
+                    const expectedSchool = createSchool(org, 'test-school')
                     await connection.manager.save(expectedSchool)
 
-                    const expectedProg = createProgram(expectedOrg)
+                    const expectedProg = createProgram(org)
                     expectedProg.name = 'outdoor activities'
                     await connection.manager.save(expectedProg)
 
@@ -916,21 +1212,14 @@ describe('model.csv', () => {
                 })
 
                 it('should throw an error with correct code for non-existent subject', async () => {
-                    const expectedOrg = createOrganization()
-                    expectedOrg.organization_name = 'my-org'
-                    await connection.manager.save(expectedOrg)
-
-                    const expectedSchool = createSchool(
-                        expectedOrg,
-                        'test-school'
-                    )
+                    const expectedSchool = createSchool(org, 'test-school')
                     await connection.manager.save(expectedSchool)
 
-                    const expectedProg = createProgram(expectedOrg)
+                    const expectedProg = createProgram(org)
                     expectedProg.name = 'outdoor activities'
                     await connection.manager.save(expectedProg)
 
-                    const expectedGrade = createGrade(expectedOrg)
+                    const expectedGrade = createGrade(org)
                     expectedGrade.name = 'first grade'
                     await connection.manager.save(expectedGrade)
 
@@ -966,25 +1255,18 @@ describe('model.csv', () => {
                 })
 
                 it('should throw an error with correct code for non-existent age range', async () => {
-                    const expectedOrg = createOrganization()
-                    expectedOrg.organization_name = 'my-org'
-                    await connection.manager.save(expectedOrg)
-
-                    const expectedSchool = createSchool(
-                        expectedOrg,
-                        'test-school'
-                    )
+                    const expectedSchool = createSchool(org, 'test-school')
                     await connection.manager.save(expectedSchool)
 
-                    const expectedProg = createProgram(expectedOrg)
+                    const expectedProg = createProgram(org)
                     expectedProg.name = 'outdoor activities'
                     await connection.manager.save(expectedProg)
 
-                    const expectedGrade = createGrade(expectedOrg)
+                    const expectedGrade = createGrade(org)
                     expectedGrade.name = 'first grade'
                     await connection.manager.save(expectedGrade)
 
-                    const expectedSubject = createSubject(expectedOrg)
+                    const expectedSubject = createSubject(org)
                     expectedSubject.name = 'pilates'
                     await connection.manager.save(expectedSubject)
 
@@ -1071,7 +1353,6 @@ describe('model.csv', () => {
             context(
                 'when class already exists in a parent entity in the DB',
                 () => {
-                    let expectedOrg: Organization
                     let expectedSchool: School
 
                     beforeEach(async () => {
@@ -1079,21 +1360,11 @@ describe('model.csv', () => {
                             resolve(`tests/fixtures/${filename}`)
                         )
 
-                        expectedOrg = createOrganization()
-                        expectedOrg.organization_name = 'my-org'
-                        await connection.manager.save(expectedOrg)
-
-                        expectedSchool = createSchool(
-                            expectedOrg,
-                            'test-school'
-                        )
+                        expectedSchool = createSchool(org, 'test-school')
                         await connection.manager.save(expectedSchool)
                     })
                     it('throws an error with correct code for organization parent entity', async () => {
-                        const existentClass = createClass(
-                            undefined,
-                            expectedOrg
-                        )
+                        const existentClass = createClass(undefined, org)
                         existentClass.class_name = 'class1'
                         await connection.manager.save(existentClass)
 
@@ -1127,10 +1398,7 @@ describe('model.csv', () => {
                     })
 
                     it('throws an error with correct code for duplicate shortcode child entity in org', async () => {
-                        const existentClass = createClass(
-                            undefined,
-                            expectedOrg
-                        )
+                        const existentClass = createClass(undefined, org)
                         existentClass.class_name = 'class1-differentname'
                         existentClass.shortcode = 'CSCODE'
                         await connection.manager.save(existentClass)
@@ -1170,7 +1438,6 @@ describe('model.csv', () => {
         })
 
         context('when file data is correct', () => {
-            let expectedOrg: Organization
             let expectedProg: Program
             let noneSpecifiedProg: Program
             let expectedSchool: School
@@ -1183,30 +1450,27 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
-                expectedOrg = createOrganization()
-                expectedOrg.organization_name = 'my-org'
-                await connection.manager.save(expectedOrg)
 
-                expectedProg = createProgram(expectedOrg)
+                expectedProg = createProgram(org)
                 expectedProg.name = 'outdoor activities'
                 await connection.manager.save(expectedProg)
 
-                noneSpecifiedProg = createPrograms(1, expectedOrg)[0]
+                noneSpecifiedProg = createPrograms(1, org)[0]
                 noneSpecifiedProg.name = 'None Specified'
                 await connection.manager.save(noneSpecifiedProg)
 
-                expectedSchool = createSchool(expectedOrg, 'test-school')
+                expectedSchool = createSchool(org, 'test-school')
                 await connection.manager.save(expectedSchool)
 
-                expectedGrade = createGrade(expectedOrg)
+                expectedGrade = createGrade(org)
                 expectedGrade.name = 'first grade'
                 await connection.manager.save(expectedGrade)
 
-                expectedSubject = createSubject(expectedOrg)
+                expectedSubject = createSubject(org)
                 expectedSubject.name = 'pilates'
                 await connection.manager.save(expectedSubject)
 
-                expectedAgeRange = createAgeRange(expectedOrg, 5, 7)
+                expectedAgeRange = createAgeRange(org, 5, 7)
                 expectedAgeRange.name = '5 - 7 year(s)'
                 expectedAgeRange.low_value_unit = AgeRangeUnit.YEAR
                 expectedAgeRange.high_value_unit = AgeRangeUnit.YEAR
@@ -1223,7 +1487,7 @@ describe('model.csv', () => {
                     arbitraryUserToken
                 )
                 const dbClass = await Class.findOneOrFail({
-                    where: { class_name: 'class1', organization: expectedOrg },
+                    where: { class_name: 'class1', organization: org },
                     relations: ['programs', 'grades', 'subjects', 'age_ranges'],
                 })
                 const schools = (await dbClass.schools) || []
@@ -1262,7 +1526,7 @@ describe('model.csv', () => {
                         const dbClass = await Class.findOneOrFail({
                             where: {
                                 class_name: 'class1',
-                                organization: expectedOrg,
+                                organization: org,
                             },
                             relations: [
                                 'programs',
@@ -1291,6 +1555,9 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'schoolsExample.csv'
+        let nonAdminUser: User
+        let orgs: Organization[]
+        let orgMemberships: OrganizationMembership[]
         let arbitraryUserToken: string
 
         beforeEach(async () => {
@@ -1300,8 +1567,35 @@ describe('model.csv', () => {
             await SubcategoriesInitializer.run()
             await CategoriesInitializer.run()
             await ProgramsInitializer.run()
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
+
+            orgs = []
+            orgMemberships = []
+
+            for (let i = 1; i <= 4; i += 1) {
+                const org = createOrganization()
+                org.organization_name = `Company ${i}`
+                // eslint-disable-next-line no-await-in-loop
+                await org.save()
+                orgs.push(org)
+
+                // eslint-disable-next-line no-await-in-loop
+                const createSchoolsRole = await createRole(
+                    `create schools ${i}`,
+                    org,
+                    { permissions: [PermissionName.create_school_20220] }
+                ).save()
+
+                const orgMembership = createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [createSchoolsRole],
+                })
+                // eslint-disable-next-line no-await-in-loop
+                await orgMembership.save()
+                orgMemberships.push(orgMembership)
+            }
         })
 
         context('when operation is not a mutation', () => {
@@ -1325,7 +1619,53 @@ describe('model.csv', () => {
             })
         })
 
+        context(
+            'when uploader is not authorised to upload schools in the organization',
+            () => {
+                beforeEach(async () => {
+                    for await (const orgMemb of orgMemberships) {
+                        orgMemb.roles = Promise.resolve([])
+                        await orgMemb.save()
+                    }
+                })
+
+                it('it throws an authorized code error', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const actualErrors = await expect(
+                        uploadSchools(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    actualErrors.errors.map((error: CSVError) => {
+                        expect(error.code).to.eq(
+                            customErrors.unauthorized_org_upload.code
+                        )
+                        expect(error.column).to.eq('organization_name')
+                        expect(error.entity).to.eq('school')
+                        expect(
+                            orgs.map((org) => org.organization_name)
+                        ).to.include(error.organizationName)
+                    })
+                })
+            }
+        )
+
         context('when file data is not correct', () => {
+            beforeEach(() => {
+                orgs.map(async (org, idx) => {
+                    org.organization_name = `Not Company ${idx + 1}`
+                    await org.save()
+                })
+            })
+
             it('should throw an error', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -1346,14 +1686,6 @@ describe('model.csv', () => {
             })
         })
         context('when file data is correct', () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    const org = createOrganization()
-                    org.organization_name = `Company ${i}`
-                    await connection.manager.save(org)
-                }
-            })
-
             it('should create schools', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -1382,11 +1714,30 @@ describe('model.csv', () => {
         let file: ReadStream
         const mimetype = 'text/csv'
         const encoding = '7bit'
+        let nonAdminUser: User
+        let org: Organization
+        let orgMembership: OrganizationMembership
         let arbitraryUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
+
+            org = createOrganization()
+            org.organization_name = 'my-org'
+            await org.save()
+
+            const createSubcategoriesRole = await createRole(
+                `create subcategories`,
+                org,
+                { permissions: [PermissionName.create_subjects_20227] }
+            ).save()
+
+            orgMembership = await createOrganizationMembership({
+                user: nonAdminUser,
+                organization: org,
+                roles: [createSubcategoriesRole],
+            }).save()
         })
 
         context('when operation is not a mutation', () => {
@@ -1410,7 +1761,49 @@ describe('model.csv', () => {
             })
         })
 
+        context(
+            'when uploader is not authorised to upload subcategories in the organization',
+            () => {
+                beforeEach(async () => {
+                    orgMembership.roles = Promise.resolve([])
+                    await orgMembership.save()
+                })
+
+                it('it throws an authorized code error', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const actualErrors = await expect(
+                        uploadSubCategories(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    actualErrors.errors.map((error: CSVError) => {
+                        expect(error.code).to.eq(
+                            customErrors.unauthorized_org_upload.code
+                        )
+                        expect(error.column).to.eq('organization_name')
+                        expect(error.entity).to.eq('subcategory')
+                        expect(error.organizationName).to.eq(
+                            org.organization_name
+                        )
+                    })
+                })
+            }
+        )
+
         context('when file data is not correct', () => {
+            beforeEach(async () => {
+                org.organization_name = 'not-my-org'
+                await org.save()
+            })
+
             it('should throw an error', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -1437,10 +1830,6 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const expectedOrg: Organization = createOrganization()
-                expectedOrg.organization_name = 'my-org'
-                await connection.manager.save(expectedOrg)
-
                 const result = await uploadSubCategories(
                     testClient,
                     file,
@@ -1451,7 +1840,7 @@ describe('model.csv', () => {
                 )
 
                 const dbSubcategory = await Subcategory.findOneOrFail({
-                    where: { name: 'sc1', organization: expectedOrg },
+                    where: { name: 'sc1', organization: org },
                 })
 
                 expect(result.filename).eq(filename)
@@ -1844,12 +2233,50 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'categoriesExample.csv'
-
+        let nonAdminUser: User
+        let orgs: Organization[]
+        let orgMemberships: OrganizationMembership[]
         let arbitraryUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
+
+            orgs = []
+            orgMemberships = []
+
+            for (let i = 1; i <= 2; i += 1) {
+                const org = createOrganization()
+                org.organization_name = `Company ${i}`
+                // eslint-disable-next-line no-await-in-loop
+                await org.save()
+                orgs.push(org)
+
+                const subcategory = createSubcategory(org)
+                subcategory.name = `Subcategory ${i}`
+                // eslint-disable-next-line no-await-in-loop
+                await subcategory.save()
+
+                // eslint-disable-next-line no-await-in-loop
+                const createCategoriesRole = await createRole(
+                    `create categories`,
+                    org,
+                    { permissions: [PermissionName.create_subjects_20227] }
+                ).save()
+
+                // eslint-disable-next-line no-await-in-loop
+                const orgMembership = await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [createCategoriesRole],
+                }).save()
+                orgMemberships.push(orgMembership)
+            }
+
+            const noneSpecifiedSubcategory = new Subcategory()
+            noneSpecifiedSubcategory.name = 'None Specified'
+            noneSpecifiedSubcategory.system = true
+            await connection.manager.save(noneSpecifiedSubcategory)
         })
 
         context('when operation is not a mutation', () => {
@@ -1876,7 +2303,53 @@ describe('model.csv', () => {
             })
         })
 
+        context(
+            'when uploader is not authorised to upload categories in the organization',
+            () => {
+                beforeEach(async () => {
+                    for await (const orgMemb of orgMemberships) {
+                        orgMemb.roles = Promise.resolve([])
+                        await orgMemb.save()
+                    }
+                })
+
+                it('it throws an authorized code error', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const actualErrors = await expect(
+                        uploadCategories(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    actualErrors.errors.map((error: CSVError) => {
+                        expect(error.code).to.eq(
+                            customErrors.unauthorized_org_upload.code
+                        )
+                        expect(error.column).to.eq('organization_name')
+                        expect(error.entity).to.eq('category')
+                        expect(
+                            orgs.map((org) => org.organization_name)
+                        ).to.include(error.organizationName)
+                    })
+                })
+            }
+        )
+
         context('when file data is not correct', () => {
+            beforeEach(() => {
+                orgs.map(async (org, idx) => {
+                    org.organization_name = `Not Company ${idx + 1}`
+                    await org.save()
+                })
+            })
+
             it('should throw an error', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -1901,23 +2374,6 @@ describe('model.csv', () => {
         })
 
         context('when file data is correct', () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 2; i += 1) {
-                    const org = await createOrganization()
-                    org.organization_name = `Company ${i}`
-                    await connection.manager.save(org)
-
-                    const subcategory = await createSubcategory(org)
-                    subcategory.name = `Subcategory ${i}`
-                    await connection.manager.save(subcategory)
-                }
-
-                const noneSpecifiedSubcategory = new Subcategory()
-                noneSpecifiedSubcategory.name = 'None Specified'
-                noneSpecifiedSubcategory.system = true
-                await connection.manager.save(noneSpecifiedSubcategory)
-            })
-
             it('should create categories', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -1948,11 +2404,109 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'programsExample.csv'
+        let nonAdminUser: User
+        let orgs: Organization[]
+        let orgMemberships: OrganizationMembership[]
         let arbitraryUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
+
+            orgs = []
+            orgMemberships = []
+
+            for (let i = 1; i <= 3; i += 1) {
+                const org = createOrganization()
+                org.organization_name = `Company ${i}`
+                // eslint-disable-next-line no-await-in-loop
+                await org.save()
+                orgs.push(org)
+
+                // eslint-disable-next-line no-await-in-loop
+                const createProgramsRole = await createRole(
+                    `create programs`,
+                    org,
+                    { permissions: [PermissionName.create_program_20221] }
+                ).save()
+
+                // eslint-disable-next-line no-await-in-loop
+                const orgMembership = await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [createProgramsRole],
+                }).save()
+                orgMemberships.push(orgMembership)
+
+                for (let j = 1; j <= 3; j += 1) {
+                    const subject = createSubject(org)
+                    subject.name = `Subject ${j}`
+                    // eslint-disable-next-line no-await-in-loop
+                    await subject.save()
+                }
+
+                const ageRange1 = createAgeRange(org)
+                ageRange1.name = '6 - 7 year(s)'
+                ageRange1.low_value = 6
+                ageRange1.high_value = 7
+                ageRange1.low_value_unit = AgeRangeUnit.YEAR
+                ageRange1.high_value_unit = AgeRangeUnit.YEAR
+                // eslint-disable-next-line no-await-in-loop
+                await ageRange1.save()
+
+                const ageRange2 = createAgeRange(org)
+                ageRange2.name = '9 - 10 year(s)'
+                ageRange2.low_value = 9
+                ageRange2.high_value = 10
+                ageRange2.low_value_unit = AgeRangeUnit.YEAR
+                ageRange2.high_value_unit = AgeRangeUnit.YEAR
+                // eslint-disable-next-line no-await-in-loop
+                await ageRange2.save()
+
+                const ageRange3 = createAgeRange(org)
+                ageRange3.name = '24 - 30 month(s)'
+                ageRange3.low_value = 24
+                ageRange3.high_value = 30
+                ageRange3.low_value_unit = AgeRangeUnit.MONTH
+                ageRange3.high_value_unit = AgeRangeUnit.MONTH
+                ageRange3.system = false
+                // eslint-disable-next-line no-await-in-loop
+                await ageRange3.save()
+
+                const grade1 = createGrade(org)
+                grade1.name = 'First Grade'
+                // eslint-disable-next-line no-await-in-loop
+                await grade1.save()
+
+                const grade2 = createGrade(org)
+                grade2.name = 'Second Grade'
+                // eslint-disable-next-line no-await-in-loop
+                await grade2.save()
+
+                const grade3 = createGrade(org)
+                grade3.name = 'Third Grade'
+                // eslint-disable-next-line no-await-in-loop
+                await grade3.save()
+            }
+
+            const noneSpecifiedAgeRange = new AgeRange()
+            noneSpecifiedAgeRange.name = 'None Specified'
+            noneSpecifiedAgeRange.low_value = 0
+            noneSpecifiedAgeRange.high_value = 99
+            noneSpecifiedAgeRange.low_value_unit = AgeRangeUnit.YEAR
+            noneSpecifiedAgeRange.high_value_unit = AgeRangeUnit.YEAR
+            noneSpecifiedAgeRange.system = true
+            await connection.manager.save(noneSpecifiedAgeRange)
+
+            const noneSpecifiedGrade = new Grade()
+            noneSpecifiedGrade.name = 'None Specified'
+            noneSpecifiedGrade.system = true
+            await connection.manager.save(noneSpecifiedGrade)
+
+            const noneSpecifiedSubject = new Subject()
+            noneSpecifiedSubject.name = 'None Specified'
+            noneSpecifiedSubject.system = true
+            await connection.manager.save(noneSpecifiedSubject)
         })
 
         context('when operation is not a mutation', () => {
@@ -1977,7 +2531,53 @@ describe('model.csv', () => {
             })
         })
 
+        context(
+            'when uploader is not authorised to upload programs in the organization',
+            () => {
+                beforeEach(async () => {
+                    for await (const orgMemb of orgMemberships) {
+                        orgMemb.roles = Promise.resolve([])
+                        await orgMemb.save()
+                    }
+                })
+
+                it('it throws an authorized code error', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const actualErrors = await expect(
+                        uploadPrograms(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    actualErrors.errors.map((error: CSVError) => {
+                        expect(error.code).to.eq(
+                            customErrors.unauthorized_org_upload.code
+                        )
+                        expect(error.column).to.eq('organization_name')
+                        expect(error.entity).to.eq('program')
+                        expect(
+                            orgs.map((org) => org.organization_name)
+                        ).to.include(error.organizationName)
+                    })
+                })
+            }
+        )
+
         context('when file data is not correct', () => {
+            beforeEach(() => {
+                orgs.map(async (org, idx) => {
+                    org.organization_name = `Not Company ${idx + 1}`
+                    await org.save()
+                })
+            })
+
             it('should throw an error', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -2033,76 +2633,6 @@ describe('model.csv', () => {
         })
 
         context('when file data is correct', () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 3; i += 1) {
-                    const org = await createOrganization()
-                    org.organization_name = `Company ${i}`
-                    await connection.manager.save(org)
-
-                    for (let i = 1; i <= 3; i += 1) {
-                        const subject = await createSubject(org)
-                        subject.name = `Subject ${i}`
-                        await connection.manager.save(subject)
-                    }
-
-                    const ageRange1 = await createAgeRange(org)
-                    ageRange1.name = '6 - 7 year(s)'
-                    ageRange1.low_value = 6
-                    ageRange1.high_value = 7
-                    ageRange1.low_value_unit = AgeRangeUnit.YEAR
-                    ageRange1.high_value_unit = AgeRangeUnit.YEAR
-                    await connection.manager.save(ageRange1)
-
-                    const ageRange2 = await createAgeRange(org)
-                    ageRange2.name = '9 - 10 year(s)'
-                    ageRange2.low_value = 9
-                    ageRange2.high_value = 10
-                    ageRange2.low_value_unit = AgeRangeUnit.YEAR
-                    ageRange2.high_value_unit = AgeRangeUnit.YEAR
-                    await connection.manager.save(ageRange2)
-
-                    const ageRange3 = await createAgeRange(org)
-                    ageRange3.name = '24 - 30 month(s)'
-                    ageRange3.low_value = 24
-                    ageRange3.high_value = 30
-                    ageRange3.low_value_unit = AgeRangeUnit.MONTH
-                    ageRange3.high_value_unit = AgeRangeUnit.MONTH
-                    ageRange3.system = false
-                    await connection.manager.save(ageRange3)
-
-                    const grade1 = await createGrade(org)
-                    grade1.name = 'First Grade'
-                    await connection.manager.save(grade1)
-
-                    const grade2 = await createGrade(org)
-                    grade2.name = 'Second Grade'
-                    await connection.manager.save(grade2)
-
-                    const grade3 = await createGrade(org)
-                    grade3.name = 'Third Grade'
-                    await connection.manager.save(grade3)
-                }
-
-                const noneSpecifiedAgeRange = new AgeRange()
-                noneSpecifiedAgeRange.name = 'None Specified'
-                noneSpecifiedAgeRange.low_value = 0
-                noneSpecifiedAgeRange.high_value = 99
-                noneSpecifiedAgeRange.low_value_unit = AgeRangeUnit.YEAR
-                noneSpecifiedAgeRange.high_value_unit = AgeRangeUnit.YEAR
-                noneSpecifiedAgeRange.system = true
-                await connection.manager.save(noneSpecifiedAgeRange)
-
-                const noneSpecifiedGrade = new Grade()
-                noneSpecifiedGrade.name = 'None Specified'
-                noneSpecifiedGrade.system = true
-                await connection.manager.save(noneSpecifiedGrade)
-
-                const noneSpecifiedSubject = new Subject()
-                noneSpecifiedSubject.name = 'None Specified'
-                noneSpecifiedSubject.system = true
-                await connection.manager.save(noneSpecifiedSubject)
-            })
-
             it('should create programs', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -2134,11 +2664,40 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'ageRangesExample.csv'
+        let nonAdminUser: User
+        let orgs: Organization[]
+        let orgMemberships: OrganizationMembership[]
         let arbitraryUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
             arbitraryUserToken = getNonAdminAuthToken()
+
+            orgs = []
+            orgMemberships = []
+
+            for (let i = 1; i <= 2; i += 1) {
+                const org = createOrganization()
+                org.organization_name = `Company ${i}`
+                // eslint-disable-next-line no-await-in-loop
+                await org.save()
+                orgs.push(org)
+
+                // eslint-disable-next-line no-await-in-loop
+                const createAgeRangesRole = await createRole(
+                    `create age ranges`,
+                    org,
+                    { permissions: [PermissionName.create_age_range_20222] }
+                ).save()
+
+                // eslint-disable-next-line no-await-in-loop
+                const orgMembership = await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: org,
+                    roles: [createAgeRangesRole],
+                }).save()
+                orgMemberships.push(orgMembership)
+            }
         })
 
         context('when operation is not a mutation', () => {
@@ -2165,7 +2724,53 @@ describe('model.csv', () => {
             })
         })
 
+        context(
+            'when uploader is not authorised to upload age ranges in the organization',
+            () => {
+                beforeEach(async () => {
+                    for await (const orgMemb of orgMemberships) {
+                        orgMemb.roles = Promise.resolve([])
+                        await orgMemb.save()
+                    }
+                })
+
+                it('it throws an authorized code error', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const actualErrors = await expect(
+                        uploadAgeRanges(
+                            testClient,
+                            file,
+                            filename,
+                            mimetype,
+                            encoding,
+                            arbitraryUserToken
+                        )
+                    ).to.be.rejected
+                    actualErrors.errors.map((error: CSVError) => {
+                        expect(error.code).to.eq(
+                            customErrors.unauthorized_org_upload.code
+                        )
+                        expect(error.column).to.eq('organization_name')
+                        expect(error.entity).to.eq('age range')
+                        expect(
+                            orgs.map((org) => org.organization_name)
+                        ).to.include(error.organizationName)
+                    })
+                })
+            }
+        )
+
         context('when file data is not correct', () => {
+            beforeEach(() => {
+                orgs.map(async (org, idx) => {
+                    org.organization_name = `Not Company ${idx + 1}`
+                    await org.save()
+                })
+            })
+
             it('should throw an error', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -2215,14 +2820,6 @@ describe('model.csv', () => {
         })
 
         context('when file data is correct', () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 2; i += 1) {
-                    const org = await createOrganization()
-                    org.organization_name = `Company ${i}`
-                    await connection.manager.save(org)
-                }
-            })
-
             it('should create age ranges', async () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
