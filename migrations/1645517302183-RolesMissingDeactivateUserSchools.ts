@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm'
+import { In, MigrationInterface, QueryRunner } from 'typeorm'
 import { Permission } from '../src/entities/permission'
 import { Role } from '../src/entities/role'
 import { logger } from '../src/logging'
@@ -26,12 +26,15 @@ export class RolesMissingDeactivateUserSchools1645517302183
             permission_name: 'deactivate_my_school_user_40885',
         })
 
-        if (permission === undefined) {
+        if (permission === null) {
             logger.warn(
                 `Couldn't find permission deactivate_my_school_user_40885, skipping migration ${this.name}`
             )
         } else {
-            const roles = await queryRunner.manager.findByIds(Role, roleIds)
+            const roles = await queryRunner.manager.findBy(Role, {
+                role_id: In(roleIds),
+            })
+
             const updatedRoles = await Promise.all(
                 roles.map(async (role) => {
                     const rolePromises = await role!.permissions!

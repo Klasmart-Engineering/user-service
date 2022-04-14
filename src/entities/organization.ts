@@ -150,7 +150,7 @@ export class Organization extends CustomBaseEntity {
             PermissionName.view_school_classes_20117
         )
 
-        let membership: OrganizationMembership | undefined
+        let membership: OrganizationMembership | null
 
         if (!context.permissions.isAdmin) {
             membership = await OrganizationMembership.findOneBy({
@@ -621,40 +621,44 @@ export class Organization extends CustomBaseEntity {
             }
         }
 
-        let existingUser: User | undefined
+        let existingUser: User | null
         if (validData?.given_name && validData?.family_name) {
             const personalInfo = {
                 given_name: given_name,
                 family_name: family_name,
             }
 
-            existingUser = await getRepository(User).findOne({
-                where: [
-                    { email: email, ...personalInfo },
-                    { phone: phone, ...personalInfo },
-                ],
-            })
+            const condition = []
+            if (email) condition.push({ email, ...personalInfo })
+            if (phone) condition.push({ phone, ...personalInfo })
 
-            if (existingUser) {
-                const existingMembership = await getRepository(
-                    OrganizationMembership
-                ).findOneBy({
-                    user_id: existingUser.user_id,
-                    organization_id: this.organization_id,
+            if (condition.length) {
+                existingUser = await getRepository(User).findOne({
+                    where: condition,
                 })
 
-                if (existingMembership) {
-                    errors.push(
-                        new APIError({
-                            code: customErrors.existent_child_entity.code,
-                            message: customErrors.existent_child_entity.message,
-                            variables: ['email', 'phone', 'user_id'],
-                            entity: 'User',
-                            entityName: existingUser.user_id,
-                            parentEntity: 'Organization',
-                            parentName: this.organization_name,
-                        })
-                    )
+                if (existingUser) {
+                    const existingMembership = await getRepository(
+                        OrganizationMembership
+                    ).findOneBy({
+                        user_id: existingUser.user_id,
+                        organization_id: this.organization_id,
+                    })
+
+                    if (existingMembership) {
+                        errors.push(
+                            new APIError({
+                                code: customErrors.existent_child_entity.code,
+                                message:
+                                    customErrors.existent_child_entity.message,
+                                variables: ['email', 'phone', 'user_id'],
+                                entity: 'User',
+                                entityName: existingUser.user_id,
+                                parentEntity: 'Organization',
+                                parentName: this.organization_name,
+                            })
+                        )
+                    }
                 }
             }
         }
@@ -813,7 +817,7 @@ export class Organization extends CustomBaseEntity {
             }
         }
 
-        let user: User | undefined
+        let user: User | null = null
         if (validData?.user_id) {
             user = await User.findOneBy({ user_id })
             if (!user) {
@@ -829,7 +833,7 @@ export class Organization extends CustomBaseEntity {
             }
         }
 
-        let membership: OrganizationMembership | undefined
+        let membership: OrganizationMembership | null
         if (user) {
             membership = await OrganizationMembership.findOneBy({
                 user_id,
@@ -1033,7 +1037,7 @@ export class Organization extends CustomBaseEntity {
         alternate_email?: string | null
         alternate_phone?: string | null
     }): Promise<User> {
-        let user: User | undefined
+        let user: User | null
         // eslint-disable-next-line prefer-const
         let { user_id, ...rest } = partialUser
         if (user_id) {

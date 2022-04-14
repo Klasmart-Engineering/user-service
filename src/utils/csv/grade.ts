@@ -223,8 +223,8 @@ export const setGradeFromToFields = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let toGrade: Grade | undefined
-    let fromGrade: Grade | undefined
+    let toGrade: Grade | null
+    let fromGrade: Grade | null
 
     const {
         organization_name,

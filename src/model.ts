@@ -1293,7 +1293,7 @@ export class Model {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        let orgBranding: Branding | undefined
+        let orgBranding: Branding | undefined | null
         const primaryColor = args.primaryColor
         const iconImage = await args.iconImage
         const organizationId = args.organizationId

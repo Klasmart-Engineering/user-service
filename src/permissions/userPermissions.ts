@@ -41,9 +41,9 @@ export class UserPermissions {
     private readonly email?: string
     private readonly phone?: string
     private readonly username?: string
-    private user?: User
+    private user?: User | null
     public readonly isAdmin: boolean = false
-    private _userResolver?: Promise<User | undefined>
+    private _userResolver?: Promise<User | null>
 
     // Used to mark that auth was done by API Key, but checks use isAdmin
     // for consistency

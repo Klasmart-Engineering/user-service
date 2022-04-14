@@ -17,7 +17,7 @@ export const processAgeRangeFromCSVRow = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let ageRange: AgeRange | undefined
+    let ageRange: AgeRange | null
 
     const {
         organization_name,

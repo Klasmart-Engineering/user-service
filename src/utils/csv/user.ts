@@ -283,10 +283,10 @@ export const processUserFromCSVRow = async (
     }
 
     // Now check dynamic constraints
-    let org: Organization | undefined
-    let organizationRole: Role | undefined
-    let school: School | undefined
-    let cls: Class | undefined
+    let org: Organization | undefined | null
+    let organizationRole: Role | undefined | null
+    let school: School | undefined | null
+    let cls: Class | undefined | null
 
     // Does the organization exist? And is the client user part of it?
     org = queryResultCache.validatedOrgs.get(row.organization_name)
@@ -600,6 +600,10 @@ export const processUserFromCSVRow = async (
         return { rowErrors }
     }
 
+    if (cls === null) cls = undefined
+    if (school === null) school = undefined
+    if (organizationRole === null) organizationRole = undefined
+
     return { rowErrors, entities: { user, cls, org, organizationRole, school } }
 }
 
@@ -643,7 +647,7 @@ export const createOrUpdateMemberships = async (
         }
     }
 
-    let schoolMembership: SchoolMembership | undefined
+    let schoolMembership: SchoolMembership | undefined | null
 
     if (school) {
         schoolMembership = await manager.findOne(SchoolMembership, {
@@ -662,6 +666,7 @@ export const createOrUpdateMemberships = async (
         }
     }
 
+    if (schoolMembership === null) schoolMembership = undefined
     return { organizationMembership, schoolMembership }
 }
 

@@ -16,8 +16,8 @@ export const processCategoryFromCSVRow = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let category: Category | undefined
-    let subcategory: Subcategory | undefined
+    let category: Category | null
+    let subcategory: Subcategory | null
     let subcategories: Subcategory[] = []
     const { organization_name, category_name, subcategory_name } = row
 

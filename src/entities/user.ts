@@ -617,7 +617,7 @@ export class User extends CustomBaseEntity {
         const otherUser = await getRepository(User).findOneBy({
             user_id: other_id,
         })
-        if (otherUser !== undefined) {
+        if (otherUser !== null) {
             return this.retryMerge(otherUser, context)
         }
         return null

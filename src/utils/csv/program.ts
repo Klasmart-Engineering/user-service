@@ -19,10 +19,10 @@ export const processProgramFromCSVRow = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let ageRange: AgeRange | undefined
-    let grade: Grade | undefined
-    let subject: Subject | undefined
-    let program: Program | undefined
+    let ageRange: AgeRange | null
+    let grade: Grade | null
+    let subject: Subject | null
+    let program: Program | null
     let programAgeRanges: AgeRange[] = []
     let programGrades: Grade[] = []
     let programSubjects: Subject[] = []
