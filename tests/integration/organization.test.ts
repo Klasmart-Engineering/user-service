@@ -7,6 +7,7 @@ import {
     getRepository,
     In,
     getConnection,
+    Equal,
 } from 'typeorm'
 import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
 import { Model } from '../../src/model'
@@ -2633,9 +2634,7 @@ describe('organization', () => {
 
                     const dbAgeRanges = await AgeRange.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
                     expect(dbAgeRanges).to.be.empty
@@ -2672,12 +2671,7 @@ describe('organization', () => {
                         ).to.be.rejected
 
                         const dbAgeRanges = await AgeRange.find({
-                            where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
-                            },
+                            where: { organization: Equal(organization) },
                         })
 
                         expect(dbAgeRanges).not.to.be.empty
@@ -2718,12 +2712,7 @@ describe('organization', () => {
                             ).to.be.rejected
 
                             const dbAgeRanges = await AgeRange.find({
-                                where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
-                                },
+                                where: { organization: Equal(organization) },
                             })
                             expect(dbAgeRanges).to.be.empty
                         })
@@ -2783,10 +2772,7 @@ describe('organization', () => {
 
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -2838,10 +2824,7 @@ describe('organization', () => {
 
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -2888,10 +2871,7 @@ describe('organization', () => {
 
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -2940,10 +2920,7 @@ describe('organization', () => {
 
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -2970,10 +2947,7 @@ describe('organization', () => {
 
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -3018,10 +2992,7 @@ describe('organization', () => {
 
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -3066,10 +3037,7 @@ describe('organization', () => {
 
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -3129,9 +3097,7 @@ describe('organization', () => {
 
                 const dbAgeRanges = await AgeRange.find({
                     where: {
-                        organization: {
-                            organization_id: organization.organization_id,
-                        },
+                        organization: Equal(organization),
                     },
                 })
                 expect(dbAgeRanges).not.to.be.empty
@@ -3166,10 +3132,7 @@ describe('organization', () => {
 
                         const dbAgeRanges = await AgeRange.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         expect(dbAgeRanges).not.to.be.empty
@@ -3290,9 +3253,7 @@ describe('organization', () => {
 
                     const dbGrades = await Grade.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
                     const dGradesDetails = await Promise.all(
@@ -3336,9 +3297,7 @@ describe('organization', () => {
 
                     const dbGrades = await Grade.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
                     const dGradesDetails = await Promise.all(
@@ -3385,10 +3344,7 @@ describe('organization', () => {
 
                             const dbGrades = await Grade.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
                             const dGradesDetails = await Promise.all(
@@ -3457,10 +3413,7 @@ describe('organization', () => {
 
                                 const dbGrades = await Grade.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
                                 const dGradesDetails = await Promise.all(
@@ -3518,10 +3471,7 @@ describe('organization', () => {
 
                             const dbGrades = await Grade.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -3574,10 +3524,7 @@ describe('organization', () => {
 
                                 const dbGrades = await Grade.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
                                 const dGradesDetails = await Promise.all(
@@ -3629,10 +3576,7 @@ describe('organization', () => {
 
                                 const dbGrades = await Grade.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
                                 const dGradesDetails = await Promise.all(
@@ -3668,10 +3612,7 @@ describe('organization', () => {
 
                             const dbGrades = await Grade.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -3724,10 +3665,7 @@ describe('organization', () => {
 
                                 const dbGrades = await Grade.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
                                 const dGradesDetails = await Promise.all(
@@ -3781,10 +3719,7 @@ describe('organization', () => {
 
                                 const dbGrades = await Grade.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
                                 const dGradesDetails = await Promise.all(
@@ -3836,10 +3771,7 @@ describe('organization', () => {
 
                         const dbGrades = await Grade.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         const dGradesDetails = await Promise.all(
@@ -3892,10 +3824,7 @@ describe('organization', () => {
 
                             const dbGrades = await Grade.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
                             const dGradesDetails = await Promise.all(
@@ -3972,9 +3901,7 @@ describe('organization', () => {
 
                 const dbGrades = await Grade.find({
                     where: {
-                        organization: {
-                            organization_id: organization.organization_id,
-                        },
+                        organization: Equal(organization),
                     },
                 })
                 const dGradesDetails = await Promise.all(
@@ -4012,9 +3939,7 @@ describe('organization', () => {
 
                     const dbGrades = await Grade.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
                     const dGradesDetails = await Promise.all(
@@ -4087,10 +4012,7 @@ describe('organization', () => {
 
                         const dbGrades = await Grade.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         const dGradesDetails = await Promise.all(
@@ -4151,9 +4073,7 @@ describe('organization', () => {
 
                     const dbSubcategories = await Subcategory.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
                     expect(dbSubcategories).to.be.empty
@@ -4189,10 +4109,7 @@ describe('organization', () => {
 
                         const dbSubcategories = await Subcategory.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
 
@@ -4235,10 +4152,7 @@ describe('organization', () => {
 
                             const dbSubcategories = await Subcategory.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
                             expect(dbSubcategories).to.be.empty
@@ -4297,10 +4211,7 @@ describe('organization', () => {
 
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -4352,10 +4263,7 @@ describe('organization', () => {
 
                             const dbSubcategories = await Subcategory.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -4400,10 +4308,7 @@ describe('organization', () => {
 
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -4452,10 +4357,7 @@ describe('organization', () => {
 
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -4482,10 +4384,7 @@ describe('organization', () => {
 
                             const dbSubcategories = await Subcategory.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -4528,10 +4427,7 @@ describe('organization', () => {
 
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -4576,10 +4472,7 @@ describe('organization', () => {
 
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -4640,9 +4533,7 @@ describe('organization', () => {
 
                 const dbSubcategories = await Subcategory.find({
                     where: {
-                        organization: {
-                            organization_id: organization.organization_id,
-                        },
+                        organization: Equal(organization),
                     },
                 })
                 expect(dbSubcategories).not.to.be.empty
@@ -4677,10 +4568,7 @@ describe('organization', () => {
 
                         const dbSubcategories = await Subcategory.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         expect(dbSubcategories).not.to.be.empty
@@ -4717,9 +4605,7 @@ describe('organization', () => {
 
                     const dbSubcategories = await Subcategory.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
 
@@ -4751,10 +4637,7 @@ describe('organization', () => {
 
                         const dbSubcategories = await Subcategory.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         expect(dbSubcategories).not.to.be.empty
@@ -4821,9 +4704,7 @@ describe('organization', () => {
 
                     const dbCategories = await Category.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
                     expect(dbCategories).to.be.empty
@@ -4859,10 +4740,7 @@ describe('organization', () => {
 
                         const dbCategories = await Category.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
 
@@ -4906,10 +4784,7 @@ describe('organization', () => {
 
                             const dbCategories = await Category.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
                             expect(dbCategories).to.be.empty
@@ -4968,10 +4843,7 @@ describe('organization', () => {
 
                                 const dbCategories = await Category.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5026,10 +4898,7 @@ describe('organization', () => {
 
                             const dbCategories = await Category.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -5078,10 +4947,7 @@ describe('organization', () => {
 
                                 let dbCategories = await Category.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5107,10 +4973,7 @@ describe('organization', () => {
 
                                 dbCategories = await Category.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5164,10 +5027,7 @@ describe('organization', () => {
 
                                 const dbCategories = await Category.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5197,10 +5057,7 @@ describe('organization', () => {
 
                             const dbCategories = await Category.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -5247,10 +5104,7 @@ describe('organization', () => {
 
                                 const dbCategories = await Category.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5300,10 +5154,7 @@ describe('organization', () => {
 
                                 const dbCategories = await Category.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5378,9 +5229,7 @@ describe('organization', () => {
 
                 const dbCategories = await Category.find({
                     where: {
-                        organization: {
-                            organization_id: organization.organization_id,
-                        },
+                        organization: Equal(organization),
                     },
                 })
                 expect(dbCategories).not.to.be.empty
@@ -5415,10 +5264,7 @@ describe('organization', () => {
 
                         const dbCategories = await Category.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         expect(dbCategories).not.to.be.empty
@@ -5455,9 +5301,7 @@ describe('organization', () => {
 
                     const dbCategories = await Category.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
 
@@ -5533,9 +5377,7 @@ describe('organization', () => {
 
                     const dbSubjects = await Subject.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
                     expect(dbSubjects).to.be.empty
@@ -5571,10 +5413,7 @@ describe('organization', () => {
 
                         const dbSubjects = await Subject.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
 
@@ -5618,10 +5457,7 @@ describe('organization', () => {
 
                             const dbSubjects = await Subject.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
                             expect(dbSubjects).to.be.empty
@@ -5680,10 +5516,7 @@ describe('organization', () => {
 
                                 const dbSubjects = await Subject.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5744,10 +5577,7 @@ describe('organization', () => {
 
                             const dbSubjects = await Subject.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -5794,10 +5624,7 @@ describe('organization', () => {
 
                                 let dbSubjects = await Subject.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5823,10 +5650,7 @@ describe('organization', () => {
 
                                 dbSubjects = await Subject.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5880,10 +5704,7 @@ describe('organization', () => {
 
                                 const dbSubjects = await Subject.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -5913,10 +5734,7 @@ describe('organization', () => {
 
                             const dbSubjects = await Subject.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -5963,10 +5781,7 @@ describe('organization', () => {
 
                                 const dbSubjects = await Subject.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -6016,10 +5831,7 @@ describe('organization', () => {
 
                                 const dbSubjects = await Subject.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -6094,9 +5906,7 @@ describe('organization', () => {
 
                 const dbSubjects = await Subject.find({
                     where: {
-                        organization: {
-                            organization_id: organization.organization_id,
-                        },
+                        organization: Equal(organization),
                     },
                 })
                 expect(dbSubjects).not.to.be.empty
@@ -6131,10 +5941,7 @@ describe('organization', () => {
 
                         const dbSubjects = await Subject.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         expect(dbSubjects).not.to.be.empty
@@ -6171,9 +5978,7 @@ describe('organization', () => {
 
                     const dbSubjects = await Subject.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
 
@@ -6260,9 +6065,7 @@ describe('organization', () => {
 
                     const dbPrograms = await Program.find({
                         where: {
-                            organization: {
-                                organization_id: organization.organization_id,
-                            },
+                            organization: Equal(organization),
                         },
                     })
                     expect(dbPrograms).to.be.empty
@@ -6298,10 +6101,7 @@ describe('organization', () => {
 
                         const dbPrograms = await Program.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
 
@@ -6345,10 +6145,7 @@ describe('organization', () => {
 
                             const dbPrograms = await Program.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
                             expect(dbPrograms).to.be.empty
@@ -6407,10 +6204,7 @@ describe('organization', () => {
 
                                 const dbPrograms = await Program.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -6465,10 +6259,7 @@ describe('organization', () => {
 
                             const dbPrograms = await Program.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -6515,10 +6306,7 @@ describe('organization', () => {
 
                                 let dbPrograms = await Program.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -6546,10 +6334,7 @@ describe('organization', () => {
 
                                 dbPrograms = await Program.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -6603,10 +6388,7 @@ describe('organization', () => {
 
                                 const dbPrograms = await Program.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -6636,10 +6418,7 @@ describe('organization', () => {
 
                             const dbPrograms = await Program.find({
                                 where: {
-                                    organization: {
-                                        organization_id:
-                                            organization.organization_id,
-                                    },
+                                    organization: Equal(organization),
                                 },
                             })
 
@@ -6686,10 +6465,7 @@ describe('organization', () => {
 
                                 const dbPrograms = await Program.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -6739,10 +6515,7 @@ describe('organization', () => {
 
                                 const dbPrograms = await Program.find({
                                     where: {
-                                        organization: {
-                                            organization_id:
-                                                organization.organization_id,
-                                        },
+                                        organization: Equal(organization),
                                     },
                                 })
 
@@ -6809,9 +6582,7 @@ describe('organization', () => {
 
                 const dbprograms = await Program.find({
                     where: {
-                        organization: {
-                            organization_id: organization.organization_id,
-                        },
+                        organization: Equal(organization),
                     },
                 })
                 const dprogramsDetails = await Promise.all(
@@ -6849,10 +6620,7 @@ describe('organization', () => {
 
                         const dbprograms = await Program.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         const dprogramsDetails = await Promise.all(
@@ -6916,10 +6684,7 @@ describe('organization', () => {
 
                         const dbprograms = await Program.find({
                             where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
+                                organization: Equal(organization),
                             },
                         })
                         const dprogramsDetails = await Promise.all(

@@ -12,7 +12,6 @@ import {
     OneToOne,
     SelectQueryBuilder,
     EntityManager,
-    Equal,
     IsNull,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
@@ -432,7 +431,7 @@ export class User extends CustomBaseEntity {
                     where: {
                         role_name: 'Organization Admin',
                         system_role: true,
-                        organization: Equal({ organization_id: IsNull() }),
+                        organization: IsNull(),
                     },
                 }),
             ]

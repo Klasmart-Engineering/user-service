@@ -1472,7 +1472,7 @@ export class Model {
         )
         const organizationBranding = await Branding.findOne({
             where: {
-                organization: Equal({ organization_id: organizationId }),
+                organization: { organization_id: organizationId },
             },
         })
 

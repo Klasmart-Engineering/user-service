@@ -175,7 +175,7 @@ export const processClassFromCSVRow = async (
     }
 
     const classInDatabase = await Class.findBy({
-        organization: { organization_id: org.organization_id },
+        organization: Equal(org),
         class_name,
     })
 

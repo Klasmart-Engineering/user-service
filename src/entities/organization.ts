@@ -115,13 +115,11 @@ export class Organization extends CustomBaseEntity {
             where: [
                 {
                     system_role: true,
-                    organization: Equal({ organization_id: IsNull() }),
+                    organization: IsNull(),
                 },
                 {
                     system_role: false,
-                    organization: Equal({
-                        organization_id: this.organization_id,
-                    }),
+                    organization: Equal(this),
                 },
             ],
         })
@@ -205,13 +203,11 @@ export class Organization extends CustomBaseEntity {
             where: [
                 {
                     system: true,
-                    organization: Equal({ organization_id: IsNull() }),
+                    organization: IsNull(),
                 },
                 {
                     system: false,
-                    organization: Equal({
-                        organization_id: this.organization_id,
-                    }),
+                    organization: Equal(this),
                 },
             ],
         })
@@ -232,13 +228,11 @@ export class Organization extends CustomBaseEntity {
             where: [
                 {
                     system: true,
-                    organization: Equal({ organization_id: IsNull() }),
+                    organization: IsNull(),
                 },
                 {
                     system: false,
-                    organization: Equal({
-                        organization_id: this.organization_id,
-                    }),
+                    organization: Equal(this),
                 },
             ],
         })
@@ -259,13 +253,11 @@ export class Organization extends CustomBaseEntity {
             where: [
                 {
                     system: true,
-                    organization: Equal({ organization_id: IsNull() }),
+                    organization: IsNull(),
                 },
                 {
                     system: false,
-                    organization: Equal({
-                        organization_id: this.organization_id,
-                    }),
+                    organization: Equal(this),
                 },
             ],
         })
@@ -286,13 +278,11 @@ export class Organization extends CustomBaseEntity {
             where: [
                 {
                     system: true,
-                    organization: Equal({ organization_id: IsNull() }),
+                    organization: IsNull(),
                 },
                 {
                     system: false,
-                    organization: Equal({
-                        organization_id: this.organization_id,
-                    }),
+                    organization: Equal(this),
                 },
             ],
         })
@@ -313,13 +303,11 @@ export class Organization extends CustomBaseEntity {
             where: [
                 {
                     system: true,
-                    organization: Equal({ organization_id: IsNull() }),
+                    organization: IsNull(),
                 },
                 {
                     system: false,
-                    organization: Equal({
-                        organization_id: this.organization_id,
-                    }),
+                    organization: Equal(this),
                 },
             ],
         })
@@ -340,13 +328,11 @@ export class Organization extends CustomBaseEntity {
             where: [
                 {
                     system: true,
-                    organization: Equal({ organization_id: IsNull() }),
+                    organization: IsNull(),
                 },
                 {
                     system: false,
-                    organization: Equal({
-                        organization_id: this.organization_id,
-                    }),
+                    organization: Equal(this),
                 },
             ],
         })
@@ -639,9 +625,7 @@ export class Organization extends CustomBaseEntity {
             ).findOne({
                 where: {
                     shortcode,
-                    organization: {
-                        organization_id: this.organization_id,
-                    },
+                    organization: { organization_id: this.organization_id },
                 },
             })
 
@@ -834,9 +818,7 @@ export class Organization extends CustomBaseEntity {
                 where: {
                     shortcode,
                     user_id: Not(user_id),
-                    organization: {
-                        organization_id: this.organization_id,
-                    },
+                    organization: Equal(this),
                 },
             })
 

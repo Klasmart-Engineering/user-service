@@ -1,4 +1,4 @@
-import { EntityManager, Equal, IsNull } from 'typeorm'
+import { EntityManager, IsNull } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 import { accountUUID, User } from '../../entities/user'
 import { OrganizationRow } from '../../types/csv/organizationRow'
@@ -92,7 +92,7 @@ async function createOrganization(
             where: {
                 role_name: 'Organization Admin',
                 system_role: true,
-                organization: Equal({ organization_id: IsNull() }),
+                organization: IsNull(),
             },
         }),
     ]

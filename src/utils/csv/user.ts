@@ -355,9 +355,7 @@ export const processUserFromCSVRow = async (
                 },
                 {
                     role_name: row.organization_role_name,
-                    organization: Equal({
-                        organization_id: org.organization_id,
-                    }),
+                    organization: Equal(org),
                 },
             ],
         })

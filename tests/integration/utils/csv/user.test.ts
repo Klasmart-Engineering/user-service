@@ -1639,7 +1639,7 @@ describe('processUserFromCSVRow', async () => {
 
             const orgMembership = await OrganizationMembership.findOneByOrFail({
                 user: { user_id: dbUser.user_id },
-                organization: { organization_id: organization.organization_id },
+                organization: Equal(organization),
             })
 
             expect(orgMembership.shortcode).to.eq(row.user_shortcode)
@@ -1649,7 +1649,7 @@ describe('processUserFromCSVRow', async () => {
 
             const schoolMembership = await SchoolMembership.findOneByOrFail({
                 user: { user_id: dbUser.user_id },
-                school: { school_id: school.school_id },
+                school: Equal(school),
             })
 
             const schoolRoles = (await schoolMembership.roles) || []

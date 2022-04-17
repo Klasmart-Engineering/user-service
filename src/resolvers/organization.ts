@@ -45,7 +45,7 @@ import clean from '../utils/clean'
 import { ObjMap } from '../utils/stringUtils'
 import { OrganizationOwnership } from '../entities/organizationOwnership'
 import { v4 as uuid_v4 } from 'uuid'
-import { Equal, In, IsNull } from 'typeorm'
+import { In, IsNull } from 'typeorm'
 import { Status } from '../entities/status'
 import logger from '../logging'
 
@@ -125,7 +125,7 @@ export class CreateOrganizations extends CreateMutation<
             where: {
                 role_name: 'Organization Admin',
                 system_role: true,
-                organization: Equal({ organization_id: IsNull() }),
+                organization: IsNull(),
                 status: Status.ACTIVE,
             },
         })
