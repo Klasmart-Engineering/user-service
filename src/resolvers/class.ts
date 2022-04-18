@@ -2065,10 +2065,12 @@ export async function moveUsersToClassAuthorization(
             ? [
                   PermissionName.add_students_to_class_20225,
                   PermissionName.delete_student_from_class_roster_20445,
+                  PermissionName.move_students_to_another_class_20335,
               ]
             : [
                   PermissionName.add_teachers_to_class_20226,
                   PermissionName.delete_teacher_from_class_20446,
+                  PermissionName.move_teachers_to_another_class_20336,
               ]
 
     const permPromises: Promise<void>[] = []
