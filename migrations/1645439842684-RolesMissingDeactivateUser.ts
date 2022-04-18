@@ -26,7 +26,7 @@ export class RolesMissingDeactivateUser1645439842684
             permission_name: 'deactivate_user_40883',
         })
 
-        if (permission === null) {
+        if (!permission) {
             logger.warn(
                 `Couldn't find permission deactivate_user_40883, skipping migration ${this.name}`
             )
