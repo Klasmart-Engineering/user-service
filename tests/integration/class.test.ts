@@ -8801,6 +8801,7 @@ describe('class', () => {
         const permissions = [
             PermissionName.delete_teacher_from_class_20446,
             PermissionName.add_teachers_to_class_20226,
+            PermissionName.move_teachers_to_another_class_20336,
         ]
 
         beforeEach(async () => {
@@ -8822,7 +8823,7 @@ describe('class', () => {
         })
 
         context(
-            'when user does not have permissions to add and remove teachers from all classes',
+            'when user does not have permissions to add, remove, and move teachers from all classes',
             () => {
                 let veryNonAdminUser: User
                 beforeEach(async () => {
@@ -8942,6 +8943,7 @@ describe('class', () => {
         const permissions = [
             PermissionName.add_students_to_class_20225,
             PermissionName.delete_student_from_class_roster_20445,
+            PermissionName.move_students_to_another_class_20335,
         ]
 
         beforeEach(async () => {
@@ -8963,7 +8965,7 @@ describe('class', () => {
         })
 
         context(
-            'when user has permissions to add and remove students from all classes and the classes are not part of a school',
+            'when user has permissions to add, remove, and move students from all classes and the classes are not part of a school',
             () => {
                 beforeEach(async () => {
                     classes = createClasses(2, org)
@@ -9102,6 +9104,7 @@ describe('class', () => {
         const permissions = [
             PermissionName.add_students_to_class_20225,
             PermissionName.delete_student_from_class_roster_20445,
+            PermissionName.move_students_to_another_class_20335,
         ]
         beforeEach(async () => {
             const users = createUsers(1)
@@ -9109,7 +9112,7 @@ describe('class', () => {
             org = await createOrganization().save()
         })
         context(
-            'when user has permissions to add and remove students from all classes',
+            'when user has permissions to add, remove and move students from all classes',
             () => {
                 beforeEach(async () => {
                     const nonAdminRole = await createRoleFactory(
@@ -9169,7 +9172,7 @@ describe('class', () => {
             }
         )
         context(
-            'when user does not have permissions to add and remove students from all classes',
+            'when user does not have permissions to add, remove, and move students from all classes',
             () => {
                 beforeEach(async () => {
                     const nonAdminRole = await createRoleFactory(

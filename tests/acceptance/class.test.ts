@@ -1814,6 +1814,7 @@ describe('acceptance.class', () => {
             const permissions = [
                 PermissionName.delete_teacher_from_class_20446,
                 PermissionName.add_teachers_to_class_20226,
+                PermissionName.move_teachers_to_another_class_20336,
             ]
             const nonAdminRole = await createRoleFactory(
                 'Non Admin Role',
@@ -1901,6 +1902,7 @@ describe('acceptance.class', () => {
             const permissions = [
                 PermissionName.add_students_to_class_20225,
                 PermissionName.delete_student_from_class_roster_20445,
+                PermissionName.move_students_to_another_class_20335,
             ]
             const nonAdminRole = await createRoleFactory(
                 'Non Admin Role',
