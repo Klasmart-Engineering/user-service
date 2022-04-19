@@ -261,6 +261,11 @@ export const nonAdminUserScope: NonAdminScope<
         params: { user_id },
     })
 
+    const userFiltersAnd: {
+        where: string
+        params?: Record<string, unknown>
+    }[] = []
+
     // assuming no extra permissions, you should only be able to see
     // users whose profiles you can sign in as
     // meaning those that are returned by the profiles resolver
@@ -315,19 +320,7 @@ export const nonAdminUserScope: NonAdminScope<
 
     if (orgsWithSchools.length) {
         // find a schools the user is a member of in these orgs
-        const schoolIdsQuery = getRepository(SchoolMembership)
-            .createQueryBuilder()
-            .select('SchoolMembership.school_id')
-            .innerJoin('SchoolMembership.school', 'School')
-            .innerJoin('School.organization', 'Organization')
-            .where('Organization.organization_id in (:...orgsWithSchools)', {
-                orgsWithSchools,
-            })
-            .andWhere('SchoolMembership.userUserId = :user_id', { user_id })
-
-        const schoolIds = (await schoolIdsQuery.getRawMany()).map(
-            ({ SchoolMembership_school_id }) => SchoolMembership_school_id
-        )
+        const schoolIds = await getMyOrgsSchools(orgsWithSchools, user_id)
 
         if (schoolIds.length) {
             if (!scopeHasJoin(scope, SchoolMembership)) {
@@ -383,6 +376,42 @@ export const nonAdminUserScope: NonAdminScope<
         }
     }
 
+    // 4 - can we view admin users?
+    const orgsWithAdmins = (
+        await permissions.orgMembershipsWithPermissions([
+            PermissionName.view_my_admin_users_40113,
+        ])
+    ).filter((org) => !orgsWithFullAccess.includes(org))
+
+    if (orgsWithAdmins.length) {
+        // find a schools the user is a member of in these orgs
+        const schoolIds = await getMyOrgsSchools(orgsWithAdmins, user_id)
+        if (schoolIds.length) {
+            // add joins and where conds to find school admins of these schools
+            if (!scopeHasJoin(scope, SchoolMembership)) {
+                scope.leftJoin('User.school_memberships', 'SchoolMembership')
+            }
+            if (!scopeHasJoin(scope, OrganizationMembership)) {
+                scope.leftJoin('User.memberships', 'OrganizationMembership')
+            }
+            scope.leftJoin('OrganizationMembership.roles', 'Role')
+            scope.leftJoin('Role.permissions', 'Permission')
+            userFiltersAnd.push(
+                {
+                    where: 'Permission.permission_name = :permissionName',
+                    params: {
+                        permissionName:
+                            PermissionName.view_my_school_users_40111,
+                    },
+                },
+                {
+                    where: 'SchoolMembership.school_id IN (:...schoolIds)',
+                    params: { schoolIds },
+                }
+            )
+        }
+    }
+
     // encase all user filters in brackets to avoid conflicting
     // with subsequent conditions
     scope.andWhere(
@@ -391,7 +420,32 @@ export const nonAdminUserScope: NonAdminScope<
                 // match users that meet ANY of the conditions
                 qb.orWhere(where.where, where.params)
             }
+            if (userFiltersAnd.length > 0) {
+                qb.orWhere(
+                    new Brackets((qb2) => {
+                        for (const where of userFiltersAnd) {
+                            qb2.andWhere(where.where, where.params)
+                        }
+                    })
+                )
+            }
         })
+    )
+}
+
+const getMyOrgsSchools = async (orgIds: string[], user_id?: string) => {
+    const schoolIdsQuery = getRepository(SchoolMembership)
+        .createQueryBuilder()
+        .select('SchoolMembership.school_id')
+        .innerJoin('SchoolMembership.school', 'School')
+        .innerJoin('School.organization', 'Organization')
+        .where('Organization.organization_id in (:...orgIds)', {
+            orgIds,
+        })
+        .andWhere('SchoolMembership.userUserId = :user_id', { user_id })
+
+    return (await schoolIdsQuery.getRawMany()).map(
+        ({ SchoolMembership_school_id }) => SchoolMembership_school_id
     )
 }
 
