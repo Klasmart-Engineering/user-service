@@ -271,6 +271,7 @@ describe('isAdmin', () => {
         let roleList: Role[] = []
         let organizations: Organization[] = []
         let schools: School[] = []
+        let superAdmin: User
 
         beforeEach(async () => {
             usersList = []
@@ -278,7 +279,7 @@ describe('isAdmin', () => {
             organizations = []
             schools = []
 
-            const superAdmin = await createAdminUser(testClient)
+            superAdmin = await createAdminUser(testClient)
 
             // create two orgs and two schools
             for (let i = 0; i < 2; i++) {
@@ -730,6 +731,118 @@ describe('isAdmin', () => {
                     expect(
                         usersConnection.edges.map((edge) => edge.node.id)
                     ).to.have.same.members([user.user_id])
+                })
+            })
+
+            context('with view_my_admin_users_40113', () => {
+                let user: User
+                let schoolAdminSameSchool: User
+                let schoolAdminRole: Role
+
+                beforeEach(async () => {
+                    //grant view_my_admin_users_40113 permission to users[0]
+                    user = usersList[0]
+                    await grantPermission(
+                        testClient,
+                        roleList[0].role_id,
+                        PermissionName.view_my_admin_users_40113,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    //create school admin of the same school
+                    schoolAdminSameSchool = await createUser().save()
+                    schoolAdminRole = await createRole(
+                        'schoolAdmin',
+                        organizations[0]
+                    ).save()
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        schoolAdminSameSchool.user_id,
+                        organizations[0].organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        schoolAdminSameSchool.user_id,
+                        organizations[0].organization_id,
+                        schoolAdminRole.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        schoolAdminSameSchool.user_id,
+                        schools[0].school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await grantPermission(
+                        testClient,
+                        schoolAdminRole.role_id,
+                        PermissionName.view_my_school_users_40111,
+                        { authorization: getAdminAuthToken() }
+                    )
+                })
+
+                it('can see school admins from his school', async () => {
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: generateToken(userToPayload(user)) }
+                    )
+
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).to.have.same.members([
+                        user.user_id,
+                        schoolAdminSameSchool.user_id,
+                    ])
+                })
+
+                it('can not see school admins from another school', async () => {
+                    //create school admin of the same school
+                    const schoolAdminAnotherSchool = await createUser().save()
+                    const anotherRole = await createRole(
+                        'anotherRole',
+                        organizations[0]
+                    ).save()
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        schoolAdminAnotherSchool.user_id,
+                        organizations[0].organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        schoolAdminAnotherSchool.user_id,
+                        organizations[0].organization_id,
+                        anotherRole.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        schoolAdminAnotherSchool.user_id,
+                        schools[0].school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await grantPermission(
+                        testClient,
+                        anotherRole.role_id,
+                        PermissionName.view_my_school_users_40111,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: generateToken(userToPayload(user)) }
+                    )
+
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).not.to.have.same.members([
+                        schoolAdminAnotherSchool.user_id,
+                    ])
                 })
             })
 
