@@ -7,8 +7,8 @@ import { Role } from '../../src/entities/role'
 import { School } from '../../src/entities/school'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { User } from '../../src/entities/user'
+import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
 import { PermissionName } from '../../src/permissions/permissionNames'
-import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     CreateAcademicTermInput,
     DeleteAcademicTermInput,
@@ -57,7 +57,7 @@ describe('acceptance.academicTerm', () => {
             ])
             createATRole = await Role.save(
                 createRole('Create ATs', org, {
-                    permissions: [PermissionName.create_school_20220],
+                    permissions: [PermissionName.create_academic_term_20228],
                 })
             )
 
@@ -137,14 +137,24 @@ describe('acceptance.academicTerm', () => {
     })
 
     describe('deleteAcademicTerms', () => {
-        let adminUser: User
+        let orgAdminUser: User
         let inputs: DeleteAcademicTermInput[]
 
         beforeEach(async () => {
-            adminUser = await createUser({
-                email: UserPermissions.ADMIN_EMAILS[0],
-            }).save()
+            orgAdminUser = await createUser().save() // SuperAdmin role does not have required permissions, but OrgAdmin role does
             const org = await createOrganization().save()
+            const orgAdminRole = await createRole(
+                'Org Admin Role for org',
+                org,
+                {
+                    permissions: organizationAdminRole.permissions,
+                }
+            ).save()
+            await createOrganizationMembership({
+                user: orgAdminUser,
+                organization: org,
+                roles: [orgAdminRole],
+            }).save()
             const school = await createSchool(org).save()
             const term = await createAcademicTerm(school).save()
             inputs = [
@@ -158,7 +168,7 @@ describe('acceptance.academicTerm', () => {
                 request,
                 DELETE_ACADEMIC_TERMS,
                 { input: inputs },
-                generateToken(userToPayload(adminUser))
+                generateToken(userToPayload(orgAdminUser))
             )
             expect(response.status).to.eq(200)
             expect(response.body.errors).to.be.undefined
@@ -171,7 +181,7 @@ describe('acceptance.academicTerm', () => {
                 request,
                 DELETE_ACADEMIC_TERMS,
                 { input: [{}] },
-                generateToken(userToPayload(adminUser))
+                generateToken(userToPayload(orgAdminUser))
             )
             expect(response.status).to.eq(400)
             expect(response.body.errors).to.be.length(1)
