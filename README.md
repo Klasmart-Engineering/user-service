@@ -3,7 +3,7 @@
 Welcome to the admin service (formerly user service)!
 
 - Getting started? Follow installation & running instructions below.
-- Questions? Head over to [#ask-user-service](https://app.slack.com/client/T02SSP0AM/C02LP6QAQGZ) on Slack.
+- Questions? Visit the [API documentation](https://api.alpha.kidsloop.net/user/) or head over to [#ask-user-service](https://app.slack.com/client/T02SSP0AM/C02LP6QAQGZ) on Slack.
 
 <br>
 

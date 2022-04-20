@@ -2,7 +2,7 @@
 
 Welcome to the user service API documentation. 
 
-[Source code](https://bitbucket.org/calmisland/kidsloop-user-service)
+[Source code](https://github.com/KL-Engineering/user-service)
 |
 [Slack Channel](https://app.slack.com/client/T02SSP0AM/C02LP6QAQGZ)
 
@@ -13,5 +13,6 @@ Welcome to the user service API documentation.
 4. [Error Handling](#errors)
 5. [Constraints](#constraints)
 6. [Permissions](#permissions)
-7. [Architecture](#architecture)
+7. [API deprecation](#deprecation)
+8. [Architecture](#architecture)
 
