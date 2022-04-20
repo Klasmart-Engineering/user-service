@@ -28,6 +28,7 @@ import {
     RemoveUsersFromSchools,
 } from '../resolvers/school'
 import { mutate } from '../utils/mutations/commonStructure'
+import { AcademicTerm } from '../entities/academicTerm'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -190,6 +191,14 @@ const typeDefs = gql`
             filter: ProgramFilter
             sort: ProgramSortInput
         ): ProgramsConnectionResponse
+
+        academicTermsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: AcademicTermFilter
+            sort: AcademicTermSortInput
+        ): AcademicTermsConnectionResponse
     }
 
     input AddClassesToSchoolInput {
@@ -344,6 +353,36 @@ export async function loadProgramsForSchool(
     return context.loaders.programsConnectionChild.instance.load(key)
 }
 
+export async function academicTermsChildConnectionResolver(
+    school: Pick<ISchoolsConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadAcademicTermsForSchool(ctx, school.id, args, includeTotalCount)
+}
+
+export async function loadAcademicTermsForSchool(
+    context: Pick<Context, 'loaders'>,
+    schoolId: ISchoolsConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey<AcademicTerm> = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: schoolId,
+            filterKey: 'schoolId',
+            pivot: '"School"."school_id"',
+        },
+        primaryColumn: 'id',
+    }
+
+    return context.loaders.academicTermsConnectionChild.instance.load(key)
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -355,6 +394,7 @@ export default function getDefault(
                 schoolMembershipsConnection: schoolMembershipsConnectionResolver,
                 classesConnection: classesChildConnectionResolver,
                 programsConnection: programsChildConnectionResolver,
+                academicTermsConnection: academicTermsChildConnectionResolver,
             },
             Mutation: {
                 school: (_parent, args, ctx, _info) =>

@@ -26,6 +26,7 @@ import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
 import { scopeHasJoin } from '../utils/typeorm'
+import { AcademicTerm } from '../entities/academicTerm'
 
 //
 // changing permission rules? update the docs: permissions.md
@@ -46,6 +47,7 @@ type IEntityString =
     | 'permission'
     | 'schoolMembership'
     | 'organizationMembership'
+    | 'academicTerm'
 
 interface IsAdminDirectiveArgs {
     entity?: IEntityString
@@ -138,6 +140,9 @@ export const createEntityScope = async ({
             break
         case 'organizationMembership':
             scope = getRepository(OrganizationMembership).createQueryBuilder()
+            break
+        case 'academicTerm':
+            scope = getRepository(AcademicTerm).createQueryBuilder()
             break
         default:
             permissions.rejectIfNotAdmin()
