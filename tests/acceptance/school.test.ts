@@ -73,6 +73,8 @@ import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { createProgram, createPrograms } from '../factories/program.factory'
 import { Status } from '../../src/entities/status'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { AcademicTerm } from '../../src/entities/academicTerm'
+import { createSuccessiveAcademicTerms } from '../factories/academicTerm.factory'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -317,6 +319,47 @@ describe('acceptance.school', () => {
                     )
 
                     expect(programIds).to.deep.equalInAnyOrder(systemProgramIds)
+                }
+            )
+        })
+        it('has academicTermsConnection as a child', async () => {
+            const schoolATCount = 3
+            const school = await School.findOneOrFail(schoolId)
+            const schoolATs = await AcademicTerm.save(
+                createSuccessiveAcademicTerms(schoolATCount, school)
+            )
+            const schoolATIds = schoolATs.map((at) => at.id)
+            school.academicTerms = Promise.resolve(schoolATs)
+            await school.save()
+
+            const response = await makeRequest(
+                request,
+                print(SCHOOLS_CONNECTION_WITH_CHILDREN),
+                { direction: 'FORWARD' },
+                generateToken({
+                    id: clientUser.user_id,
+                    email: clientUser.email,
+                    iss: 'calmid-debug',
+                })
+            )
+
+            expect(response.status).to.eq(200)
+
+            const schoolsConnection = response.body.data.schoolsConnection
+            expect(schoolsConnection.edges).to.have.lengthOf(schoolsCount)
+            schoolsConnection.edges.forEach(
+                (s: { node: ISchoolsConnectionNode }) => {
+                    const academicTermsConnection =
+                        s.node.academicTermsConnection
+                    expect(academicTermsConnection?.edges).to.have.lengthOf(
+                        schoolATCount
+                    )
+
+                    const academicTermIds = academicTermsConnection?.edges.map(
+                        (at) => at.node.id
+                    )
+
+                    expect(academicTermIds).to.deep.equalInAnyOrder(schoolATIds)
                 }
             )
         })
