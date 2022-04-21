@@ -159,6 +159,7 @@ describe('organization', () => {
     let orgs: Organization[]
     let users: User[]
     let roles: Role[]
+    let statusUpdatedAtDate: Date
     const shortcode_re = /^[A-Z|0-9]+$/
 
     before(async () => {
@@ -7660,10 +7661,23 @@ describe('organization', () => {
 
                 // Check that each entry has the same set of roles
                 for (const membership of dbMemberships) {
+                    expect(membership.status_updated_at).to.exist
+
+                    // The dates to compare differs some milliseconds,
+                    // because there are some processes inside that take some time
+                    expect(membership.status_updated_at).to.be.at.least(
+                        statusUpdatedAtDate
+                    )
+
+                    expect(membership.status_updated_at).to.be.at.most(
+                        new Date(statusUpdatedAtDate.getTime() + 50)
+                    )
+
                     const dbRoles = new Set(
                         // eslint-disable-next-line no-await-in-loop
                         (await membership.roles)?.map((val) => val.role_id)
                     )
+
                     const inputRoles = new Set(organizationRoleIds)
                     expect(dbRoles.size).to.equal(inputRoles.size)
                     dbRoles.forEach(
@@ -7718,6 +7732,7 @@ describe('organization', () => {
             () => {
                 context('and all attributes are valid', () => {
                     it('adds all the users', async () => {
+                        statusUpdatedAtDate = new Date()
                         await expect(addUsers()).to.be.fulfilled
                         await checkOutput()
                     })

@@ -152,6 +152,7 @@ describe('school', () => {
     let organization: Organization
     let organization2: Organization
     let shortCode: string
+    let statusUpdatedAtDate: Date
 
     const orgUsersAndPermissions = async () => {
         const orgOwner = await createAdminUser(testClient)
@@ -3452,6 +3453,18 @@ describe('school', () => {
                 )
 
                 for (const m of memberships) {
+                    expect(m.status_updated_at).to.exist
+
+                    // The dates to compare differs some milliseconds,
+                    // because there are some processes inside that take some time
+                    expect(m.status_updated_at).to.be.at.least(
+                        statusUpdatedAtDate
+                    )
+
+                    expect(m.status_updated_at).to.be.at.most(
+                        new Date(statusUpdatedAtDate.getTime() + 50)
+                    )
+
                     const mRoles = await m.roles
                     expect(mRoles?.map((r) => r.role_id)).to.have.same.members(
                         i.schoolRoleIds ?? []
@@ -3479,6 +3492,7 @@ describe('school', () => {
         context('.run', () => {
             context('when all attributes are valid', () => {
                 it('adds all the users', async () => {
+                    statusUpdatedAtDate = new Date()
                     await expect(getAddUsersToSchools().run()).to.be.fulfilled
                     await checkUsersAdded()
                 })
