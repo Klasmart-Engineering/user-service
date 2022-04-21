@@ -194,6 +194,6 @@ export async function schoolMembershipCheckAllowed(
         })
 
     const res = await gqlTry(operation)
-    const isAllowed = res.data?.user.school_membership.checkAllowed as boolean
+    const isAllowed = res.data?.user?.school_membership.checkAllowed ?? false
     return isAllowed
 }

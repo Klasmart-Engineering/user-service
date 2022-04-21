@@ -309,6 +309,7 @@ const typeDefs = gql`
                 reason: "Use myUser.node. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
             )
         user(user_id: ID!): User
+            @isAdmin(entity: "user")
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
@@ -535,8 +536,11 @@ export default function getDefault(
                     return ctx.loaders.userNode.node.instance.load(args)
                 },
                 users: (_parent, _args, ctx, _info) => [],
-                user: (_parent, { user_id }, ctx: Context, _info) => {
-                    return ctx.loaders.user.user.instance.load(user_id)
+                user: (_parent, args, ctx: Context, _info) => {
+                    return ctx.loaders.user.user.instance.load({
+                        id: args.user_id,
+                        scope: args.scope,
+                    })
                 },
                 my_users: (_parent, _args, ctx: Context, _info) => {
                     if (ctx.token === undefined) {
