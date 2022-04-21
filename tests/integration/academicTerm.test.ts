@@ -134,7 +134,15 @@ describe('academicTerm', () => {
                 ).to.eq(Status.ACTIVE)
             })
 
-            it('creates maps from input schoolIds to any existing academic terms under the school', async () => {
+            it('creates maps from input schoolIds to any existing active academic terms under the school', async () => {
+                const inactiveAT = createAcademicTerm(schools[1], {
+                    name: 'School 2 Existing Inactive Academic Term',
+                    start_date: new Date('2020-09-01T00:00:00Z'),
+                    end_date: new Date('2021-05-01T00:00:00Z'),
+                })
+                inactiveAT.status = Status.INACTIVE
+                await inactiveAT.save()
+
                 const actualEntityMap = await createAcademicTerms().generateEntityMaps(
                     inputs
                 )

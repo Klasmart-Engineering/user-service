@@ -2,6 +2,7 @@ import { Context } from 'mocha'
 import { AcademicTerm } from '../entities/academicTerm'
 import { Class } from '../entities/class'
 import { School } from '../entities/school'
+import { Status } from '../entities/status'
 import { mapATtoATConnectionNode } from '../pagination/academicTermsConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import { APIError } from '../types/errors/apiError'
@@ -59,11 +60,16 @@ export class CreateAcademicTerms extends CreateMutation<
             AcademicTerm[]
         >()
         for (const [schoolId, school] of schoolMap) {
-            schoolIdsWithATsMap.set(
-                schoolId,
-                // eslint-disable-next-line no-await-in-loop
-                (await school.academicTerms) ?? []
-            )
+            // eslint-disable-next-line no-await-in-loop
+            const existingATs = await school.academicTerms
+            if (existingATs) {
+                schoolIdsWithATsMap.set(
+                    schoolId,
+                    existingATs.filter((at) => at.status === Status.ACTIVE) // Ignore inactive ATs, they will never be reactivated
+                )
+            } else {
+                schoolIdsWithATsMap.set(schoolId, [])
+            }
         }
 
         return {
