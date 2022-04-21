@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.0](https://github.com/KL-Engineering/user-service/compare/v4.2.1...v4.3.0) (2022-04-21)
+
+
+### Features
+
+* **AD-2081:** add my admin users permission ([#88](https://github.com/KL-Engineering/user-service/issues/88)) ([c3725ed](https://github.com/KL-Engineering/user-service/commit/c3725edc3f2f8d47387e46d771776756cd497438))
+* **AD-2100:** return academic terms on classes ([#57](https://github.com/KL-Engineering/user-service/issues/57)) ([391f8ec](https://github.com/KL-Engineering/user-service/commit/391f8ec852ad2f87d9dcfa6f962c1c0780344d81))
+* **AD-2341:** support academic terms in class CSV upload ([#89](https://github.com/KL-Engineering/user-service/issues/89)) ([475ddc1](https://github.com/KL-Engineering/user-service/commit/475ddc1ca946f879068529497cf1a124954d31bb))
+* **AD-2346:** academic term removal ([#76](https://github.com/KL-Engineering/user-service/issues/76)) ([2e0ab48](https://github.com/KL-Engineering/user-service/commit/2e0ab483fa453b1c9785b90792ed90f22d78830b))
+* **AD-2373:** added Github action to auto-generate svg diagram ([2f5feb4](https://github.com/KL-Engineering/user-service/commit/2f5feb4f682baecb6fba8549c9bae992e305be13))
+* get academic terms for school ([#96](https://github.com/KL-Engineering/user-service/issues/96)) ([0728585](https://github.com/KL-Engineering/user-service/commit/07285858a6a414168af4684e58a4cbd69e3bb7f9))
+
+
+### Bug Fixes
+
+* **AD-1134:** remove view_classes_20114 from teacher role ([#95](https://github.com/KL-Engineering/user-service/issues/95)) ([a31b4e7](https://github.com/KL-Engineering/user-service/commit/a31b4e73b01b8a95e136f699dcb2e872df555233))
+* **AD-2113:** updating cpy version ([#77](https://github.com/KL-Engineering/user-service/issues/77)) ([40da0cc](https://github.com/KL-Engineering/user-service/commit/40da0cc015bb06a377fc3281b3e71bae22348042))
+* **AD-2246:** ignoring punctuation in local compare for matching db so… ([#87](https://github.com/KL-Engineering/user-service/issues/87)) ([750ef69](https://github.com/KL-Engineering/user-service/commit/750ef69fe9b263cacbb45e2350b0ea1a944b8984))
+* **AD-2280:** enforce permissions for csv uploads ([#91](https://github.com/KL-Engineering/user-service/issues/91)) ([abc3347](https://github.com/KL-Engineering/user-service/commit/abc3347a0d7566f9933682b8697a1cd5668d2970))
+* **AD-2283:** add permission checks to branding mutations ([#92](https://github.com/KL-Engineering/user-service/issues/92)) ([1bc93b6](https://github.com/KL-Engineering/user-service/commit/1bc93b6784f6b3017108f4e28c2ae9932063e9b5))
+* **AD-2288:** prevent user data leaks via system entities ([#85](https://github.com/KL-Engineering/user-service/issues/85)) ([3e1add9](https://github.com/KL-Engineering/user-service/commit/3e1add97b9b7a55bf57ad65b1a06758487de4f0b))
+* **AD-2305:** protect users access via class ([#72](https://github.com/KL-Engineering/user-service/issues/72)) ([dded3f5](https://github.com/KL-Engineering/user-service/commit/dded3f51dca83425a82f6d6d860fb29001ab2047))
+* **AD-2398:** update regex to accept Thai strings ([#94](https://github.com/KL-Engineering/user-service/issues/94)) ([50dbc54](https://github.com/KL-Engineering/user-service/commit/50dbc5492390803e095a8a02d142fc93da51cc4d))
+* **AD-2429:** overlapping academic term check should not consider inactive ones in school ([#108](https://github.com/KL-Engineering/user-service/issues/108)) ([30d59b3](https://github.com/KL-Engineering/user-service/commit/30d59b344037828c4da5e06e74125ede40503703))
+* update permissions for creating and deleting academic terms ([#97](https://github.com/KL-Engineering/user-service/issues/97)) ([6b195ac](https://github.com/KL-Engineering/user-service/commit/6b195ac2786e730880e3507138fe6a8529da58bd))
+
 ### [4.2.1](https://github.com/KL-Engineering/user-service/compare/v4.2.0...v4.2.1) (2022-04-08)
 
 ## [4.2.0](https://github.com/KL-Engineering/user-service/compare/v4.1.1...v4.2.0) (2022-04-07)
