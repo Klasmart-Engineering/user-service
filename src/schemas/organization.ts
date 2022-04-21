@@ -245,7 +245,7 @@ const typeDefs = gql`
 
         #connections
         organization: Organization
-        user: User
+        user: User @isAdmin(entity: "user")
         roles: [Role]
         classes: [Class]
             @deprecated(
@@ -659,9 +659,10 @@ export default function getDefault(
                     ctx: Context,
                     _info
                 ) => {
-                    return ctx.loaders.user.user.instance.load(
-                        membership.user_id
-                    )
+                    return ctx.loaders.user.user.instance.load({
+                        id: membership.user_id,
+                        scope: args.scope,
+                    })
                 },
             },
         },
