@@ -83,9 +83,7 @@ export class CreateAcademicTerms extends CreateMutation<
                 ),
                 school_ids: Array.from(maps.schools.keys()),
             },
-            // At present, no academic term permissions exist - placeholder
-            // Academic Term creation can happen during school creation workflow, so use the create school permission
-            PermissionName.create_school_20220
+            PermissionName.create_academic_term_20228
         )
     }
 
@@ -284,7 +282,7 @@ export class DeleteAcademicTerms extends DeleteMutation<
                 organization_ids,
                 school_ids,
             },
-            PermissionName.edit_school_20330 // TODO: update with permissions from AD-2107
+            PermissionName.delete_academic_term_20448
         )
     }
 

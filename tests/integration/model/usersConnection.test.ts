@@ -15,6 +15,7 @@ import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
 import { mapUserToUserConnectionNode } from '../../../src/pagination/usersConnection'
 import { PermissionName } from '../../../src/permissions/permissionNames'
+import { schoolAdminRole } from '../../../src/permissions/schoolAdmin'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { convertDataToCursor } from '../../../src/utils/pagination/paginate'
@@ -434,6 +435,44 @@ describe('usersConnection', () => {
                             userWithSameEmail,
                             userWithSamePhone,
                         ].map(mapUserToUserConnectionNode)
+                    )
+                })
+            })
+
+            context('User with `view_my_admin_users_40113`', () => {
+                let schoolAdmin: User
+                beforeEach(async () => {
+                    await addPermission({
+                        user,
+                        organization,
+                        permission: PermissionName.view_my_admin_users_40113,
+                    })
+                    schoolAdmin = await User.save(createUser())
+                    const schAdminRole = await Role.findOne({
+                        role_name: schoolAdminRole.role_name,
+                    })
+                    await OrganizationMembership.save(
+                        createOrganizationMembership({
+                            user: schoolAdmin,
+                            organization: organizations[0],
+                            roles: [schAdminRole as Role],
+                        })
+                    )
+                })
+                it('can view School admins in his schools', async () => {
+                    const usersConnectionResponse = await usersConnectionNodes(
+                        testClient,
+                        {
+                            authorization: generateToken(userToPayload(user)),
+                        }
+                    )
+
+                    expect(
+                        usersConnectionResponse.edges.map((edge) => edge.node)
+                    ).to.deep.equalInAnyOrder(
+                        [user, userWithSameEmail, userWithSamePhone].map(
+                            mapUserToUserConnectionNode
+                        )
                     )
                 })
             })

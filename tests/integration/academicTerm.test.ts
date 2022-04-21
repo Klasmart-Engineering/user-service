@@ -10,6 +10,7 @@ import { Role } from '../../src/entities/role'
 import { School } from '../../src/entities/school'
 import { Status } from '../../src/entities/status'
 import { User } from '../../src/entities/user'
+import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
@@ -31,12 +32,12 @@ import { createAcademicTerm } from '../factories/academicTerm.factory'
 import { createClass, createClasses } from '../factories/class.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { createRole as createRoleFactory } from '../factories/role.factory'
-import { createSchool } from '../factories/school.factory'
 import {
-    createAdminUser as adminUserFactory,
-    createUser,
-} from '../factories/user.factory'
+    createRole,
+    createRole as createRoleFactory,
+} from '../factories/role.factory'
+import { createSchool } from '../factories/school.factory'
+import { createUser } from '../factories/user.factory'
 import { compareMultipleErrors } from '../utils/apiError'
 import { userToPayload } from '../utils/operations/userOps'
 import { TestConnection } from '../utils/testConnection'
@@ -52,15 +53,17 @@ describe('academicTerm', () => {
     })
 
     describe('createAcademicTerms', () => {
-        let adminUser: User
+        let orgAdminUser: User
         let org: Organization
+        let orgAdminMembership: OrganizationMembership
+        let orgAdminRole: Role
         let schools: School[]
         let academicTerms: AcademicTerm[]
         let inputs: CreateAcademicTermInput[]
 
         const createAcademicTerms = (
             input: CreateAcademicTermInput[] = [],
-            authUser = adminUser
+            authUser = orgAdminUser
         ) =>
             new CreateAcademicTerms(
                 input,
@@ -68,8 +71,16 @@ describe('academicTerm', () => {
             )
 
         beforeEach(async () => {
-            adminUser = await adminUserFactory().save()
+            orgAdminUser = await createUser().save() // SuperAdmin role does not have required permissions, but OrgAdmin role does
             org = await Organization.save(createOrganization())
+            orgAdminRole = await createRole('Org Admin Role for org', org, {
+                permissions: organizationAdminRole.permissions,
+            }).save()
+            orgAdminMembership = await createOrganizationMembership({
+                user: orgAdminUser,
+                organization: org,
+                roles: [orgAdminRole],
+            }).save()
             schools = await School.save([
                 createSchool(org, 'School1'),
                 createSchool(org, 'School2'),
@@ -162,7 +173,9 @@ describe('academicTerm', () => {
 
                 const role = await Role.save(
                     createRoleFactory(undefined, org, {
-                        permissions: [PermissionName.create_school_20220],
+                        permissions: [
+                            PermissionName.create_academic_term_20228,
+                        ],
                     })
                 )
 
@@ -197,7 +210,7 @@ describe('academicTerm', () => {
                         await expect(
                             authorize(inputs)
                         ).to.be.eventually.rejectedWith(
-                            /User\(.*\) does not have Permission\(create_school_20220\) in Organizations\(.*\)/
+                            /User\(.*\) does not have Permission\(create_academic_term_20228\) in Organizations\(.*\)/
                         )
                     })
                 }
@@ -342,7 +355,7 @@ describe('academicTerm', () => {
 
         context('.validate', () => {
             const validate = async (inputs: CreateAcademicTermInput[]) => {
-                const mutationClass = createAcademicTerms([], adminUser)
+                const mutationClass = createAcademicTerms([], orgAdminUser)
                 const maps = await mutationClass.generateEntityMaps(inputs)
                 return inputs.flatMap((input, idx) =>
                     mutationClass.validate(
@@ -520,16 +533,28 @@ describe('academicTerm', () => {
     })
 
     describe('deleteAcademicTerms', () => {
-        let adminUser: User
+        let orgAdminUser: User
         let inputs: DeleteAcademicTermInput[]
         let academicTerms: AcademicTerm[]
         let org: Organization
+        let orgAdminMembership: OrganizationMembership
+        let orgAdminRole: Role
 
         beforeEach(async () => {
-            adminUser = await adminUserFactory().save()
+            orgAdminUser = await createUser().save() // SuperAdmin role does not have required permissions, but OrgAdmin role does
 
             org = await createOrganization().save()
             const school = await createSchool(org).save()
+
+            orgAdminRole = await createRole('Org Admin Role for org', org, {
+                permissions: organizationAdminRole.permissions,
+            }).save()
+
+            orgAdminMembership = await createOrganizationMembership({
+                user: orgAdminUser,
+                organization: org,
+                roles: [orgAdminRole],
+            }).save()
 
             academicTerms = [
                 await createAcademicTerm(school, {}).save(),
@@ -543,7 +568,7 @@ describe('academicTerm', () => {
             })
         })
 
-        const deleteAcademicTerms = (authUser = adminUser) =>
+        const deleteAcademicTerms = (authUser = orgAdminUser) =>
             new DeleteAcademicTerms(
                 inputs,
                 new UserPermissions(userToPayload(authUser))
@@ -612,7 +637,7 @@ describe('academicTerm', () => {
             }
             it('passes when user has required permission in all orgs', async () => {
                 const role = await createRoleFactory('role', org, {
-                    permissions: [PermissionName.edit_school_20330],
+                    permissions: [PermissionName.delete_academic_term_20448],
                 }).save()
                 await createOrganizationMembership({
                     user: nonAdminUser,
@@ -625,7 +650,7 @@ describe('academicTerm', () => {
                 await expect(
                     authorize(nonAdminUser)
                 ).to.be.eventually.rejectedWith(
-                    /User\(.*\) does not have Permission\(edit_school_20330\) in Organizations\(.*\)/
+                    /User\(.*\) does not have Permission\(delete_academic_term_20448\) in Organizations\(.*\)/
                 )
             })
         })

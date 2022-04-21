@@ -549,6 +549,14 @@ export const SCHOOLS_CONNECTION_WITH_CHILDREN = gql`
                             }
                         }
                     }
+                    academicTermsConnection {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
                 }
             }
         }

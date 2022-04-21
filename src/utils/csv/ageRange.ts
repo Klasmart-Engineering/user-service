@@ -8,6 +8,8 @@ import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
+import { PermissionName } from '../../permissions/permissionNames'
+import { customErrors } from '../../types/errors/customError'
 
 export const processAgeRangeFromCSVRow = async (
     manager: EntityManager,
@@ -183,6 +185,28 @@ export const processAgeRangeFromCSVRow = async (
                 entity: 'organization',
             }
         )
+        return rowErrors
+    }
+
+    // Is the user authorized to upload age ranges to this org
+    if (
+        !(await userPermissions.allowed(
+            { organization_ids: [organization.organization_id] },
+            PermissionName.create_age_range_20222
+        ))
+    ) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_org_upload.code,
+            rowNumber,
+            'organization_name',
+            customErrors.unauthorized_org_upload.message,
+            {
+                entity: 'age range',
+                organizationName: organization.organization_name,
+            }
+        )
+        return rowErrors
     }
 
     const age_range_name = `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`
@@ -216,7 +240,7 @@ export const processAgeRangeFromCSVRow = async (
     }
 
     // Return if there are any errors
-    if (fileErrors.length > 0 || rowErrors.length > 0 || !organization) {
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
         return rowErrors
     }
 

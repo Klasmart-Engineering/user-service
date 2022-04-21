@@ -42,6 +42,45 @@ const typeDefs = gql`
     type AcademicTermsMutationResult {
         academicTerms: [AcademicTermConnectionNode!]!
     }
+
+    # pagination extension types start here
+    type AcademicTermsConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [AcademicTermsConnectionEdge]
+    }
+
+    type AcademicTermsConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: AcademicTermConnectionNode
+    }
+
+    enum AcademicTermSortBy {
+        id
+        name
+        startDate
+        endDate
+    }
+
+    input AcademicTermSortInput {
+        field: [AcademicTermSortBy!]!
+        order: SortOrder!
+    }
+
+    input AcademicTermFilter {
+        # Simple filters are supported
+
+        id: UUIDFilter
+        status: StringFilter
+        name: StringFilter
+
+        # // todo: filter on start/end dates and class ID?
+
+        AND: [AcademicTermFilter]
+        OR: [AcademicTermFilter]
+    }
+
+    # pagination extension types end here
 `
 
 export default function getDefault(): GraphQLSchemaModule {

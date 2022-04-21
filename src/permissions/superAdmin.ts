@@ -142,6 +142,7 @@ export const superAdminRole = {
         PermissionName.delete_role_30440,
         PermissionName.view_user_page_40101,
         PermissionName.view_users_40110,
+        PermissionName.view_my_admin_users_40113,
         PermissionName.create_users_40220,
         PermissionName.edit_users_40330,
         PermissionName.delete_users_40440,

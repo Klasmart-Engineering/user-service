@@ -7,6 +7,8 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { PermissionName } from '../../permissions/permissionNames'
+import { customErrors } from '../../types/errors/customError'
 
 export const processRoleFromCSVRow = async (
     manager: EntityManager,
@@ -83,6 +85,28 @@ export const processRoleFromCSVRow = async (
                 name: organization_name,
             }
         )
+        return rowErrors
+    }
+
+    // Is the user authorized to upload roles to this org
+    if (
+        !(await userPermissions.allowed(
+            { organization_ids: [organization.organization_id] },
+            PermissionName.create_role_with_permissions_30222
+        ))
+    ) {
+        addCsvError(
+            rowErrors,
+            customErrors.unauthorized_org_upload.code,
+            rowNumber,
+            'organization_name',
+            customErrors.unauthorized_org_upload.message,
+            {
+                entity: 'role',
+                organizationName: organization.organization_name,
+            }
+        )
+        return rowErrors
     }
 
     const permission = await Permission.findOne({
