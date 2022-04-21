@@ -585,6 +585,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
                     (r) => maps.roles.get(r) as Role
                 ) ?? []
             )
+            membership.status_updated_at = new Date()
             memberships.push(membership)
         }
 

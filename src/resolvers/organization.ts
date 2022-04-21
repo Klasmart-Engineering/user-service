@@ -413,6 +413,7 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
             membership.shortcode =
                 shortcode ||
                 generateShortCode(userId, config.limits.SHORTCODE_MAX_LENGTH)
+            membership.status_updated_at = new Date()
             memberships.push(membership)
         }
         return { outputEntity: currentEntity, modifiedEntity: memberships }
