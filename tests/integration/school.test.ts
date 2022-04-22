@@ -3453,16 +3453,10 @@ describe('school', () => {
                 )
 
                 for (const m of memberships) {
-                    expect(m.status_updated_at).to.exist
-
                     // The dates to compare differs some milliseconds,
                     // because there are some processes inside that take some time
                     expect(m.status_updated_at).to.be.at.least(
                         statusUpdatedAtDate
-                    )
-
-                    expect(m.status_updated_at).to.be.at.most(
-                        new Date(statusUpdatedAtDate.getTime() + 50)
                     )
 
                     const mRoles = await m.roles

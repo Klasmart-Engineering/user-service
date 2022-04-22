@@ -7661,16 +7661,10 @@ describe('organization', () => {
 
                 // Check that each entry has the same set of roles
                 for (const membership of dbMemberships) {
-                    expect(membership.status_updated_at).to.exist
-
                     // The dates to compare differs some milliseconds,
                     // because there are some processes inside that take some time
                     expect(membership.status_updated_at).to.be.at.least(
                         statusUpdatedAtDate
-                    )
-
-                    expect(membership.status_updated_at).to.be.at.most(
-                        new Date(statusUpdatedAtDate.getTime() + 50)
                     )
 
                     const dbRoles = new Set(
