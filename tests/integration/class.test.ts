@@ -8882,7 +8882,7 @@ describe('class', () => {
                         )
                     ).to.be.rejected) as Error
                     expect(error.message).to.equal(
-                        `User(${veryNonAdminUser.user_id}) does not have Permission(add_teachers_to_class_20226) in Organizations(${org.organization_id}) in Schools(${schools[0].school_id})`
+                        `User(${veryNonAdminUser.user_id}) does not have Permission(move_teachers_to_another_class_20336) in Organizations(${org.organization_id}) in Schools(${schools[0].school_id})`
                     )
 
                     await checkTeachersUnchanged(
@@ -9233,8 +9233,7 @@ describe('class', () => {
         let schools: School[]
         let nonAdminUser: User
         const permissions = [
-            PermissionName.add_students_to_class_20225,
-            PermissionName.delete_student_from_class_roster_20445,
+            PermissionName.move_students_to_another_class_20335,
         ]
         beforeEach(async () => {
             const users = createUsers(1)
@@ -9243,7 +9242,7 @@ describe('class', () => {
             const nonAdminRole = await createRoleFactory(
                 'Non Admin Role',
                 org,
-                { permissions: permissions }
+                { permissions }
             ).save()
             await createOrganizationMembership({
                 user: nonAdminUser,
@@ -9534,8 +9533,7 @@ describe('class', () => {
         let schools: School[]
         let nonAdminUser: User
         const permissions = [
-            PermissionName.add_students_to_class_20225,
-            PermissionName.delete_student_from_class_roster_20445,
+            PermissionName.move_students_to_another_class_20335,
         ]
         beforeEach(async () => {
             const users = createUsers(1)
@@ -9544,7 +9542,7 @@ describe('class', () => {
             const nonAdminRole = await createRoleFactory(
                 'Non Admin Role',
                 org,
-                { permissions: permissions }
+                { permissions }
             ).save()
             await createOrganizationMembership({
                 user: nonAdminUser,
