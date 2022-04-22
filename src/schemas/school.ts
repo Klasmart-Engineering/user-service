@@ -452,7 +452,6 @@ export default function getDefault(
                     ctx: Context,
                     _info
                 ) => {
-                    console.log("/////////passing?")
                     return ctx.loaders.user.user.instance.load({
                         id: membership.user_id,
                         scope: args.scope,
