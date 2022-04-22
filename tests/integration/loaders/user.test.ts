@@ -30,6 +30,7 @@ import { Model } from '../../../src/model'
 import { generateToken } from '../../utils/testConfig'
 import { userToPayload, viewUser } from '../../utils/operations/userOps'
 import { listMemberships } from '../../utils/operations/organizationOps'
+import { getSchoolMembershipsViaSchool } from '../../utils/operations/schoolOps'
 
 chai.use(deepEqualInAnyOrder)
 
@@ -202,6 +203,7 @@ context('User loaders', () => {
         let organization: Organization
         let connection: TestConnection
         let testClient: ApolloServerTestClient
+        let school: School
 
         before(async () => {
             connection = getConnection() as TestConnection
@@ -217,95 +219,119 @@ context('User loaders', () => {
                     organization,
                 })
             )
+            school = await createSchool().save()
+            await createSchoolMembership({
+                user: targetedUser,
+                school: school,
+            }).save()
         })
-        context(
-            'User with permission to see the nested targeted user (in their own organization)',
-            () => {
-                let userWithPermission: User
+        context('when user has enough permissions', () => {
+            let userWithPermission: User
 
-                beforeEach(async () => {
-                    userWithPermission = await User.save(createUser())
-                    const role = await createRole('role', organization, {
-                        permissions: [PermissionName.view_users_40110],
-                    }).save()
-                    await OrganizationMembership.save(
-                        createOrganizationMembership({
-                            user: userWithPermission,
-                            organization,
-                            roles: [role],
-                        })
-                    )
-                })
-                it('can view the nested targeted user through the organization membership resolver', async () => {
-                    const response = await listMemberships(
-                        testClient,
-                        organization.organization_id,
-                        {
-                            authorization: generateToken(
-                                userToPayload(userWithPermission)
-                            ),
-                        }
-                    )
-                    expect(
-                        (await response.organization.memberships[0].user)
-                            ?.user_id
-                    ).to.equal(targetedUser.user_id)
-                })
-                it('can view the nested targeted user through the user resolver', async () => {
-                    const response = await viewUser(
-                        testClient,
-                        targetedUser.user_id,
-                        {
-                            authorization: generateToken(
-                                userToPayload(userWithPermission)
-                            ),
-                        }
-                    )
-                    expect(response.user_id).to.equal(targetedUser.user_id)
-                })
-            }
-        )
-        context(
-            'User without permission to see the nested targeted user (in their own organization)',
-            () => {
-                let userWithoutPermission: User
+            beforeEach(async () => {
+                userWithPermission = await User.save(createUser())
+                const role = await createRole('role', organization, {
+                    permissions: [PermissionName.view_users_40110],
+                }).save()
+                await OrganizationMembership.save(
+                    createOrganizationMembership({
+                        user: userWithPermission,
+                        organization,
+                        roles: [role],
+                    })
+                )
+            })
+            it('can view the nested targeted user through the organization membership resolver', async () => {
+                const response = await listMemberships(
+                    testClient,
+                    organization.organization_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithPermission)
+                        ),
+                    }
+                )
+                expect(
+                    (await response.organization.memberships[0].user)?.user_id
+                ).to.equal(targetedUser.user_id)
+            })
+            it('can view the nested targeted user through the school membership resolver', async () => {
+                const response = await getSchoolMembershipsViaSchool(
+                    testClient,
+                    school.school_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithPermission)
+                        ),
+                    }
+                )
+                expect((await response[0].user)?.user_id).to.equal(
+                    targetedUser.user_id
+                )
+            })
+            it('can view the nested targeted user through the user resolver', async () => {
+                const response = await viewUser(
+                    testClient,
+                    targetedUser.user_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithPermission)
+                        ),
+                    }
+                )
+                expect(response.user_id).to.equal(targetedUser.user_id)
+            })
+        })
+        context('when user has not enough permissions', () => {
+            let userWithoutPermission: User
 
-                beforeEach(async () => {
-                    userWithoutPermission = await User.save(createUser())
-                    await OrganizationMembership.save(
-                        createOrganizationMembership({
-                            user: userWithoutPermission,
-                            organization,
-                        })
-                    )
-                })
-                it('cannot view the nested targeted user through the organization membership resolver', async () => {
-                    const response = await listMemberships(
-                        testClient,
-                        organization.organization_id,
-                        {
-                            authorization: generateToken(
-                                userToPayload(userWithoutPermission)
-                            ),
-                        }
-                    )
-                    expect(
-                        await response.organization.memberships[0].user
-                    ).to.be.a('null')
-                })
-                it('cannot view the nested targeted user through the user resolver', async () => {
-                    const response = await viewUser(
-                        testClient,
-                        targetedUser.user_id,
-                        {
-                            authorization: generateToken(
-                                userToPayload(userWithoutPermission)
-                            ),
-                        }
-                    )
-                    expect(response).to.be.a('null')
-                })
-            }
-        )
+            beforeEach(async () => {
+                userWithoutPermission = await User.save(createUser())
+                await OrganizationMembership.save(
+                    createOrganizationMembership({
+                        user: userWithoutPermission,
+                        organization,
+                    })
+                )
+            })
+            it('cannot view the nested targeted user through the organization membership resolver', async () => {
+                const response = await listMemberships(
+                    testClient,
+                    organization.organization_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithoutPermission)
+                        ),
+                    }
+                )
+                expect(await response.organization.memberships[0].user).to.be.a(
+                    'null'
+                )
+            })
+            it('can not view the nested targeted user through the school membership resolver', async () => {
+                const response = await getSchoolMembershipsViaSchool(
+                    testClient,
+                    school.school_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithoutPermission)
+                        ),
+                    }
+                )
+                expect(await response[0].user).to.be.a('null')
+            })
+            it('can not view the nested targeted user through the user resolver', async () => {
+                const response = await viewUser(
+                    testClient,
+                    targetedUser.user_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithoutPermission)
+                        ),
+                    }
+                )
+                expect(response).to.be.a('null')
+            })
+        })
     })
 })
