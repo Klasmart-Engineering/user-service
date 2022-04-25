@@ -6,8 +6,6 @@ import { generateToken } from '../utils/testConfig'
 import { createUser } from '../factories/user.factory'
 import { customErrors } from '../../src/types/errors/customError'
 import { stringInject } from '../../src/utils/stringUtils'
-import { Grade } from '../../src/entities/grade'
-import { Organization } from '../../src/entities/organization'
 
 use(chaiAsPromised)
 

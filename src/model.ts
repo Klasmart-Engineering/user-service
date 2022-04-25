@@ -51,7 +51,6 @@ import {
 import { isDOB, isEmail, isPhone } from './utils/validations'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
-import { renameDuplicatedGrades } from './utils/renameMigration/grade'
 import { Grade } from './entities/grade'
 import { Category } from './entities/category'
 import { Subcategory } from './entities/subcategory'
