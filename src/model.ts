@@ -49,7 +49,6 @@ import {
     renameDuplicatedOrganizations,
 } from './utils/renameMigration/organization'
 import { isDOB, isEmail, isPhone } from './utils/validations'
-import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
 import { Grade } from './entities/grade'
 import { Category } from './entities/category'
@@ -1223,31 +1222,6 @@ export class Model {
         try {
             await renameDuplicatedOrganizations(queryRunner.manager)
             await renameNullOrganizations(queryRunner.manager)
-            await queryRunner.commitTransaction()
-            return true
-        } catch (error) {
-            await queryRunner.rollbackTransaction()
-            return false
-        } finally {
-            await queryRunner.release()
-        }
-    }
-
-    public async renameDuplicateSubjects(
-        _args: Record<string, unknown>,
-        _context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        if (info.operation.operation !== 'mutation') {
-            return false
-        }
-
-        const queryRunner = this.connection.createQueryRunner()
-        await queryRunner.connect()
-        await queryRunner.startTransaction()
-
-        try {
-            await renameDuplicatedSubjects(queryRunner.manager)
             await queryRunner.commitTransaction()
             return true
         } catch (error) {

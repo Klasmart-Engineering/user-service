@@ -20,7 +20,6 @@ const typeDefs = gql`
         subject(id: ID!): Subject @isAdmin(entity: "subject")
         uploadSubjectsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
-        renameDuplicateSubjects: Boolean @isAdmin
         createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationResult
         updateSubjects(input: [UpdateSubjectInput!]!): SubjectsMutationResult
         deleteSubjects(input: [DeleteSubjectInput!]!): SubjectsMutationResult
@@ -175,8 +174,6 @@ export default function getDefault(
                     model.getSubject(args, ctx),
                 uploadSubjectsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSubjectsFromCSV(args, ctx, info),
-                renameDuplicateSubjects: (_parent, args, ctx, info) =>
-                    model.renameDuplicateSubjects(args, ctx, info),
                 createSubjects: (_parent, args, ctx) =>
                     mutate(CreateSubjects, args, ctx.permissions),
                 updateSubjects: (_parent, args, ctx) =>

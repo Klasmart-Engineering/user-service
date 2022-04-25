@@ -10,7 +10,6 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { Program } from '../../src/entities/program'
 import { Status } from '../../src/entities/status'
 import { Subcategory } from '../../src/entities/subcategory'
-import { Subject } from '../../src/entities/subject'
 import { User } from '../../src/entities/user'
 import { Model } from '../../src/model'
 import { createServer } from '../../src/utils/createServer'
@@ -41,10 +40,6 @@ import {
     renameDuplicateOrganizationsMutation,
     renameDuplicateOrganizationsQuery,
 } from '../utils/operations/renameDuplicateOrganizations'
-import {
-    renameDuplicateSubjectsMutation,
-    renameDuplicateSubjectsQuery,
-} from '../utils/operations/renameDuplicateSubjects'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
@@ -864,53 +859,6 @@ describe('model', () => {
                 })
                 expect(nullOrgs).eq(0)
                 expect(duplicatedOrgs).eq(1)
-            })
-        })
-    })
-
-    describe('renameDuplicateSubjects', () => {
-        const subjectName = 'Subject 1'
-        let organization: Organization
-
-        beforeEach(async () => {
-            organization = new Organization()
-            await organization.save()
-
-            for (let i = 0; i < 3; i += 1) {
-                const subject = new Subject()
-                subject.name = subjectName
-                subject.organization = Promise.resolve(organization)
-                await subject.save()
-            }
-        })
-
-        context('when operation is not a mutation', () => {
-            it('should throw an error', async () => {
-                await expect(renameDuplicateSubjectsQuery(testClient)).to.be
-                    .rejected
-
-                const duplicatedSubjects = await Subject.count({
-                    where: { name: subjectName, organization },
-                })
-
-                expect(duplicatedSubjects).eq(3)
-            })
-        })
-
-        context('when user has not Admin permissions', () => {
-            it('should throw an error', async () => {
-                const result = await renameDuplicateSubjectsMutation(
-                    testClient,
-                    getAdminAuthToken()
-                )
-
-                expect(result).eq(true)
-
-                const duplicatedSubjects = await Subject.count({
-                    where: { name: subjectName, organization },
-                })
-
-                expect(duplicatedSubjects).eq(1)
             })
         })
     })
