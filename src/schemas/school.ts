@@ -124,7 +124,7 @@ const typeDefs = gql`
         status: Status
 
         #connections
-        user: User
+        user: User @isAdmin(entity: "user")
         school: School
         roles: [Role]
 
@@ -445,6 +445,17 @@ export default function getDefault(
                     return ctx.loaders.school.schoolById.instance.load(
                         schoolMembership.school_id
                     )
+                },
+                user: (
+                    membership: SchoolMembership,
+                    args,
+                    ctx: Context,
+                    _info
+                ) => {
+                    return ctx.loaders.user.user.instance.load({
+                        id: membership.user_id,
+                        scope: args.scope,
+                    })
                 },
             },
             School: {
