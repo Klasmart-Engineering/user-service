@@ -2,10 +2,11 @@ import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
 import { expect, use } from 'chai'
 import { makeRequest } from './utils'
-import { generateToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { createUser } from '../factories/user.factory'
 import { customErrors } from '../../src/types/errors/customError'
 import { stringInject } from '../../src/utils/stringUtils'
+import { createOrganization } from '../factories/organization.factory'
 
 use(chaiAsPromised)
 
@@ -91,6 +92,47 @@ describe('acceptance.authentication', () => {
                     reason: 'Unknown authentication token issuer',
                 })
             )
+        })
+    })
+
+    context('apiKeyAuth', () => {
+        let organizationId: string
+
+        const queryOrganizations = (id: string) => `query {
+            organizationNode(id: "${id}") {
+                id
+            }
+        }`
+
+        beforeEach(async () => {
+            const organization = await createOrganization().save()
+            organizationId = organization.organization_id
+        })
+
+        it('accepts APIKeys', async () => {
+            const response = await makeRequest(
+                request,
+                queryOrganizations(organizationId),
+                {},
+                getAPIKeyAuth()
+            )
+
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.be.undefined
+        })
+
+        it('errors for invalid API key with correct message', async () => {
+            const response = await makeRequest(
+                request,
+                queryOrganizations(organizationId),
+                {},
+                'Bearer IncorrectAPIKey'
+            )
+
+            expect(response.status).to.eq(401)
+            expect(response.body.data).to.be.undefined
+
+            expect(response.body.code).to.eq(customErrors.invalid_api_key.code)
         })
     })
 })
