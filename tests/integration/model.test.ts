@@ -36,10 +36,6 @@ import {
     getSubcategory,
 } from '../utils/operations/modelOps'
 import { addUserToOrganizationAndValidate } from '../utils/operations/organizationOps'
-import {
-    renameDuplicateOrganizationsMutation,
-    renameDuplicateOrganizationsQuery,
-} from '../utils/operations/renameDuplicateOrganizations'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
@@ -793,72 +789,6 @@ describe('model', () => {
                         })
                     }
                 )
-            })
-        })
-    })
-
-    describe('renameDuplicateOrganizations', () => {
-        const organizationName = 'Organization 1'
-
-        beforeEach(async () => {
-            for (let i = 0; i < 3; i += 1) {
-                const organization = new Organization()
-                organization.organization_name = organizationName
-                await organization.save()
-
-                const nullOrganization = new Organization()
-                await nullOrganization.save()
-            }
-        })
-
-        context('when operation is not a mutation', () => {
-            it('should throw an error', async () => {
-                await expect(renameDuplicateOrganizationsQuery(testClient)).to
-                    .be.rejected
-
-                const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
-                })
-                const duplicatedOrgs = await Organization.count({
-                    where: { organization_name: organizationName },
-                })
-                expect(nullOrgs).eq(3)
-                expect(duplicatedOrgs).eq(3)
-            })
-        })
-
-        context('when user has not Admin permissions', () => {
-            it('should throw an error', async () => {
-                await expect(renameDuplicateOrganizationsMutation(testClient))
-                    .to.be.rejected
-
-                const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
-                })
-                const duplicatedOrgs = await Organization.count({
-                    where: { organization_name: organizationName },
-                })
-                expect(nullOrgs).eq(3)
-                expect(duplicatedOrgs).eq(3)
-            })
-        })
-
-        context('when user has Admin permissions', () => {
-            it('should throw an error', async () => {
-                const result = await renameDuplicateOrganizationsMutation(
-                    testClient,
-                    getAdminAuthToken()
-                )
-                expect(result).eq(true)
-
-                const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
-                })
-                const duplicatedOrgs = await Organization.count({
-                    where: { organization_name: organizationName },
-                })
-                expect(nullOrgs).eq(0)
-                expect(duplicatedOrgs).eq(1)
             })
         })
     })

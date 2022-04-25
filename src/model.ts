@@ -44,10 +44,6 @@ import { processSubjectFromCSVRow } from './utils/csv/subject'
 import { IPaginationArgs } from './utils/pagination/paginate'
 import { processProgramFromCSVRow } from './utils/csv/program'
 import { processAgeRangeFromCSVRow } from './utils/csv/ageRange'
-import {
-    renameNullOrganizations,
-    renameDuplicatedOrganizations,
-} from './utils/renameMigration/organization'
 import { isDOB, isEmail, isPhone } from './utils/validations'
 import { Program } from './entities/program'
 import { Grade } from './entities/grade'
@@ -1204,32 +1200,6 @@ export class Model {
         )
 
         return file
-    }
-
-    public async renameDuplicateOrganizations(
-        _args: Record<string, unknown>,
-        _context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        if (info.operation.operation !== 'mutation') {
-            return false
-        }
-
-        const queryRunner = this.connection.createQueryRunner()
-        await queryRunner.connect()
-        await queryRunner.startTransaction()
-
-        try {
-            await renameDuplicatedOrganizations(queryRunner.manager)
-            await renameNullOrganizations(queryRunner.manager)
-            await queryRunner.commitTransaction()
-            return true
-        } catch (error) {
-            await queryRunner.rollbackTransaction()
-            return false
-        } finally {
-            await queryRunner.release()
-        }
     }
 
     public async setBranding(

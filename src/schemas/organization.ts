@@ -74,7 +74,6 @@ const typeDefs = gql`
         ): Organization
         uploadOrganizationsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
-        renameDuplicateOrganizations: Boolean @isAdmin
         setBranding(
             organizationId: ID!
             iconImage: Upload
@@ -609,8 +608,6 @@ export default function getDefault(
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>
                     Model.uploadOrganizationsFromCSV(args, ctx),
-                renameDuplicateOrganizations: (_parent, args, ctx, info) =>
-                    model.renameDuplicateOrganizations(args, ctx, info),
                 setBranding: (_parent, args, ctx, info) =>
                     model.setBranding(args, ctx, info),
                 deleteBrandingImage: (_parent, args, ctx, info) =>
