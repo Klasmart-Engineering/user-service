@@ -1259,32 +1259,6 @@ export class Model {
         }
     }
 
-    public async renameDuplicateGrades(
-        _args: Record<string, unknown>,
-        _context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        if (info.operation.operation !== 'mutation') {
-            return false
-        }
-
-        const queryRunner = this.connection.createQueryRunner()
-        await queryRunner.connect()
-        await queryRunner.startTransaction()
-
-        try {
-            await renameDuplicatedGrades(queryRunner.manager)
-            await queryRunner.commitTransaction()
-
-            return true
-        } catch (error) {
-            await queryRunner.rollbackTransaction()
-            return false
-        } finally {
-            await queryRunner.release()
-        }
-    }
-
     public async setBranding(
         args: setBrandingInput,
         context: Context,

@@ -38,10 +38,6 @@ import {
 } from '../utils/operations/modelOps'
 import { addUserToOrganizationAndValidate } from '../utils/operations/organizationOps'
 import {
-    renameDuplicateGradesMutation,
-    renameDuplicateGradesQuery,
-} from '../utils/operations/renameDuplicateGrades'
-import {
     renameDuplicateOrganizationsMutation,
     renameDuplicateOrganizationsQuery,
 } from '../utils/operations/renameDuplicateOrganizations'
@@ -50,11 +46,7 @@ import {
     renameDuplicateSubjectsQuery,
 } from '../utils/operations/renameDuplicateSubjects'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
-import {
-    getAdminAuthToken,
-    getAPIKeyAuth,
-    getNonAdminAuthToken,
-} from '../utils/testConfig'
+import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 

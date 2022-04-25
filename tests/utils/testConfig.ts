@@ -70,7 +70,3 @@ export function getNonAdminAuthToken() {
 export function getAdminAuthToken() {
     return AdminAuthToken
 }
-
-export function getAPIKeyAuth() {
-    return APIKeyAuth
-}

@@ -2,7 +2,7 @@ import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
 import { expect, use } from 'chai'
 import { makeRequest } from './utils'
-import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
+import { generateToken } from '../utils/testConfig'
 import { createUser } from '../factories/user.factory'
 import { customErrors } from '../../src/types/errors/customError'
 import { stringInject } from '../../src/utils/stringUtils'
@@ -93,50 +93,6 @@ describe('acceptance.authentication', () => {
                     reason: 'Unknown authentication token issuer',
                 })
             )
-        })
-    })
-
-    context('apiKeyAuth', () => {
-        const RemoveDuplicateGrades = `mutation {
-                    renameDuplicateGrades
-                }`
-
-        beforeEach(async () => {
-            const organization = new Organization()
-            await organization.save()
-
-            for (let i = 0; i < 3; i += 1) {
-                const grade = new Grade()
-                grade.name = 'testGrade'
-                grade.organization = Promise.resolve(organization)
-                await grade.save()
-            }
-        })
-
-        it('accepts APIKeys', async () => {
-            const response = await makeRequest(
-                request,
-                RemoveDuplicateGrades,
-                {},
-                getAPIKeyAuth()
-            )
-
-            expect(response.status).to.eq(200)
-            expect(response.body.errors).to.be.undefined
-        })
-
-        it('errors for invalid API key with correct message', async () => {
-            const response = await makeRequest(
-                request,
-                RemoveDuplicateGrades,
-                {},
-                'Bearer IncorrectAPIKey'
-            )
-
-            expect(response.status).to.eq(401)
-            expect(response.body.data).to.be.undefined
-
-            expect(response.body.code).to.eq(customErrors.invalid_api_key.code)
         })
     })
 })
