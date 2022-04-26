@@ -31,6 +31,24 @@ const typeDefs = gql`
     scalar HexColor
     scalar Url
 
+    extend type Query {
+        organization(organization_id: ID!): Organization
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        organizations(organization_ids: [ID!]): [Organization]
+            @deprecated(reason: "Use 'organizationsConnection'.")
+            @isAdmin(entity: "organization")
+        organizationsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: OrganizationFilter
+            sort: OrganizationSortInput
+        ): OrganizationsConnectionResponse @isAdmin(entity: "organization")
+        organizationNode(id: ID!): OrganizationConnectionNode
+            @isAdmin(entity: "organization")
+    }
+
     extend type Mutation {
         """
         Creates a new organization, and makes the user its
@@ -86,25 +104,74 @@ const typeDefs = gql`
         ): Boolean
         deleteBrandingColor(organizationId: ID!): Boolean
     }
-    extend type Query {
-        organization(organization_id: ID!): Organization
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        organizations(organization_ids: [ID!]): [Organization]
-            @deprecated(reason: "Use 'organizationsConnection'.")
-            @isAdmin(entity: "organization")
-        organizationsConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: OrganizationFilter
-            sort: OrganizationSortInput
-        ): OrganizationsConnectionResponse @isAdmin(entity: "organization")
-        organizationNode(id: ID!): OrganizationConnectionNode
-            @isAdmin(entity: "organization")
-    }
 
-    # DB Entities
+    type OrganizationConnectionNode {
+        id: ID!
+        name: String
+        contactInfo: OrganizationContactInfo
+        shortCode: String
+        status: Status
+
+        # connections
+        owners: [UserSummaryNode]
+        branding: Branding
+
+        organizationMembershipsConnection(
+            count: PageSize
+            cursor: String
+            filter: OrganizationMembershipFilter
+            sort: OrganizationMembershipSortBy
+            direction: ConnectionDirection
+        ): OrganizationMembershipsConnectionResponse
+
+        schoolsConnection(
+            count: PageSize
+            cursor: String
+            filter: SchoolFilter
+            sort: SchoolSortInput
+            direction: ConnectionDirection
+        ): SchoolsConnectionResponse
+
+        rolesConnection(
+            count: PageSize
+            cursor: String
+            filter: RoleFilter
+            sort: RoleSortInput
+            direction: ConnectionDirection
+        ): RolesConnectionResponse
+
+        classesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
+
+        categoriesConnection(
+            count: PageSize
+            cursor: String
+            filter: CategoryFilter
+            sort: CategorySortInput
+            direction: ConnectionDirection
+        ): CategoriesConnectionResponse
+
+        subcategoriesConnection(
+            count: PageSize
+            cursor: String
+            filter: SubcategoryFilter
+            sort: SubcategorySortInput
+            direction: ConnectionDirection
+        ): SubcategoriesConnectionResponse
+
+        ageRangesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection!
+            filter: AgeRangeFilter
+            sort: AgeRangeSortInput
+        ): AgeRangesConnectionResponse
+    }
 
     type Organization {
         organization_id: ID!
@@ -387,74 +454,6 @@ const typeDefs = gql`
     type UserSummaryNode {
         id: String
         email: String
-    }
-
-    type OrganizationConnectionNode {
-        id: ID!
-        name: String
-        contactInfo: OrganizationContactInfo
-        shortCode: String
-        status: Status
-
-        # connections
-        owners: [UserSummaryNode]
-        branding: Branding
-
-        organizationMembershipsConnection(
-            count: PageSize
-            cursor: String
-            filter: OrganizationMembershipFilter
-            sort: OrganizationMembershipSortBy
-            direction: ConnectionDirection
-        ): OrganizationMembershipsConnectionResponse
-
-        schoolsConnection(
-            count: PageSize
-            cursor: String
-            filter: SchoolFilter
-            sort: SchoolSortInput
-            direction: ConnectionDirection
-        ): SchoolsConnectionResponse
-
-        rolesConnection(
-            count: PageSize
-            cursor: String
-            filter: RoleFilter
-            sort: RoleSortInput
-            direction: ConnectionDirection
-        ): RolesConnectionResponse
-
-        classesConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: ClassFilter
-            sort: ClassSortInput
-        ): ClassesConnectionResponse
-
-        categoriesConnection(
-            count: PageSize
-            cursor: String
-            filter: CategoryFilter
-            sort: CategorySortInput
-            direction: ConnectionDirection
-        ): CategoriesConnectionResponse
-
-        subcategoriesConnection(
-            count: PageSize
-            cursor: String
-            filter: SubcategoryFilter
-            sort: SubcategorySortInput
-            direction: ConnectionDirection
-        ): SubcategoriesConnectionResponse
-
-        ageRangesConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection!
-            filter: AgeRangeFilter
-            sort: AgeRangeSortInput
-        ): AgeRangesConnectionResponse
     }
 `
 

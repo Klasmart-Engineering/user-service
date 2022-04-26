@@ -19,6 +19,22 @@ import { Subject } from '../entities/subject'
 import { Subcategory } from '../entities/subcategory'
 
 const typeDefs = gql`
+    extend type Query {
+        category(id: ID!): Category
+            @isAdmin(entity: "category")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        categoryNode(id: ID!): CategoryConnectionNode
+            @isAdmin(entity: "category")
+        categoriesConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: CategoryFilter
+            sort: CategorySortInput
+        ): CategoriesConnectionResponse @isAdmin(entity: "category")
+    }
+
     extend type Mutation {
         category(id: ID!): Category
             @isAdmin(entity: "category")
@@ -42,6 +58,50 @@ const typeDefs = gql`
         removeSubcategoriesFromCategories(
             input: [RemoveSubcategoriesFromCategoryInput!]!
         ): CategoriesMutationResult
+    }
+
+    type CategoryConnectionNode {
+        id: ID!
+        name: String
+        status: Status!
+        system: Boolean!
+
+        subjectsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SubjectFilter
+            sort: SubjectSortInput
+        ): SubjectsConnectionResponse
+
+        subcategoriesConnection(
+            count: PageSize
+            cursor: String
+            filter: SubcategoryFilter
+            sort: SubcategorySortInput
+            direction: ConnectionDirection
+        ): SubcategoriesConnectionResponse
+    }
+
+    type Category {
+        id: ID!
+        name: String!
+        subcategories: [Subcategory!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
+        system: Boolean!
+        status: Status
+
+        # Mutations
+        editSubcategories(subcategory_ids: [ID!]): [Subcategory]
+            @deprecated(
+                reason: "Sunset Date: 22/02/2022 Details: https://calmisland.atlassian.net/l/c/U107XwHS"
+            )
+        delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 24/02/2022 Details: https://calmisland.atlassian.net/l/c/mTni58mA"
+            )
     }
 
     type CategoriesConnectionResponse implements iConnectionResponse {
@@ -72,29 +132,6 @@ const typeDefs = gql`
         OR: [CategoryFilter]
     }
 
-    type CategoryConnectionNode {
-        id: ID!
-        name: String
-        status: Status!
-        system: Boolean!
-
-        subjectsConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: SubjectFilter
-            sort: SubjectSortInput
-        ): SubjectsConnectionResponse
-
-        subcategoriesConnection(
-            count: PageSize
-            cursor: String
-            filter: SubcategoryFilter
-            sort: SubcategorySortInput
-            direction: ConnectionDirection
-        ): SubcategoriesConnectionResponse
-    }
-
     input CreateCategoryInput {
         name: String!
         organizationId: ID!
@@ -123,43 +160,6 @@ const typeDefs = gql`
     input RemoveSubcategoriesFromCategoryInput {
         categoryId: ID!
         subcategoryIds: [ID!]!
-    }
-
-    extend type Query {
-        category(id: ID!): Category
-            @isAdmin(entity: "category")
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        categoryNode(id: ID!): CategoryConnectionNode
-            @isAdmin(entity: "category")
-        categoriesConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: CategoryFilter
-            sort: CategorySortInput
-        ): CategoriesConnectionResponse @isAdmin(entity: "category")
-    }
-
-    type Category {
-        id: ID!
-        name: String!
-        subcategories: [Subcategory!]
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
-            )
-        system: Boolean!
-        status: Status
-
-        # Mutations
-        editSubcategories(subcategory_ids: [ID!]): [Subcategory]
-            @deprecated(
-                reason: "Sunset Date: 22/02/2022 Details: https://calmisland.atlassian.net/l/c/U107XwHS"
-            )
-        delete(_: Int): Boolean
-            @deprecated(
-                reason: "Sunset Date: 24/02/2022 Details: https://calmisland.atlassian.net/l/c/mTni58mA"
-            )
     }
 
     input CategoryDetail {

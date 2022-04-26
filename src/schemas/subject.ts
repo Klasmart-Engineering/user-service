@@ -16,6 +16,21 @@ import {
 } from '../resolvers/subject'
 
 const typeDefs = gql`
+    extend type Query {
+        subject(id: ID!): Subject
+            @deprecated(
+                reason: "Sunset Date: 09/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+            @isAdmin(entity: "subject")
+        subjectsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: SubjectFilter
+            sort: SubjectSortInput
+        ): SubjectsConnectionResponse @isAdmin(entity: "subject")
+        subjectNode(id: ID!): SubjectConnectionNode @isAdmin(entity: "subject")
+    }
+
     extend type Mutation {
         subject(id: ID!): Subject @isAdmin(entity: "subject")
         uploadSubjectsFromCSV(file: Upload!): File
@@ -24,6 +39,45 @@ const typeDefs = gql`
         createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationResult
         updateSubjects(input: [UpdateSubjectInput!]!): SubjectsMutationResult
         deleteSubjects(input: [DeleteSubjectInput!]!): SubjectsMutationResult
+    }
+
+    type SubjectConnectionNode {
+        id: ID!
+        name: String
+        status: Status!
+        system: Boolean!
+        categories: [CategoryConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
+        categoriesConnection(
+            count: PageSize
+            cursor: String
+            filter: CategoryFilter
+            sort: CategorySortInput
+            direction: ConnectionDirection
+        ): CategoriesConnectionResponse
+    }
+
+    type Subject {
+        id: ID!
+        name: String!
+        categories: [Category!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
+        subcategories: [Subcategory!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
+        system: Boolean!
+        status: Status
+
+        # Mutations
+        delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 20/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
     }
 
     # pagination extension types start here
@@ -66,60 +120,6 @@ const typeDefs = gql`
 
         AND: [SubjectFilter]
         OR: [SubjectFilter]
-    }
-
-    type SubjectConnectionNode {
-        id: ID!
-        name: String
-        status: Status!
-        system: Boolean!
-        categories: [CategoryConnectionNode!]
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
-            )
-        categoriesConnection(
-            count: PageSize
-            cursor: String
-            filter: CategoryFilter
-            sort: CategorySortInput
-            direction: ConnectionDirection
-        ): CategoriesConnectionResponse
-    }
-
-    extend type Query {
-        subject(id: ID!): Subject
-            @deprecated(
-                reason: "Sunset Date: 09/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-            @isAdmin(entity: "subject")
-        subjectsConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: SubjectFilter
-            sort: SubjectSortInput
-        ): SubjectsConnectionResponse @isAdmin(entity: "subject")
-        subjectNode(id: ID!): SubjectConnectionNode @isAdmin(entity: "subject")
-    }
-
-    type Subject {
-        id: ID!
-        name: String!
-        categories: [Category!]
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
-            )
-        subcategories: [Subcategory!]
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
-            )
-        system: Boolean!
-        status: Status
-
-        # Mutations
-        delete(_: Int): Boolean
-            @deprecated(
-                reason: "Sunset Date: 20/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
-            )
     }
 
     input SubjectDetail {

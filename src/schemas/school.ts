@@ -31,6 +31,20 @@ import { mutate } from '../utils/mutations/commonStructure'
 import { AcademicTerm } from '../entities/academicTerm'
 
 const typeDefs = gql`
+    extend type Query {
+        school(school_id: ID!): School
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        schoolNode(id: ID!): SchoolConnectionNode @isAdmin(entity: "school")
+        schoolsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: SchoolFilter
+            sort: SchoolSortInput
+        ): SchoolsConnectionResponse @isAdmin(entity: "school")
+    }
+
     extend type Mutation {
         school(school_id: ID!): School
         uploadSchoolsFromCSV(file: Upload!): File
@@ -76,19 +90,47 @@ const typeDefs = gql`
             input: [RemoveClassesFromSchoolInput!]!
         ): SchoolsMutationResult
     }
-    extend type Query {
-        school(school_id: ID!): School
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        schoolNode(id: ID!): SchoolConnectionNode @isAdmin(entity: "school")
-        schoolsConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: SchoolFilter
-            sort: SchoolSortInput
-        ): SchoolsConnectionResponse @isAdmin(entity: "school")
+
+    type SchoolConnectionNode {
+        id: ID!
+        name: String!
+        status: Status!
+        shortCode: String
+        organizationId: ID!
+
+        schoolMembershipsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SchoolMembershipFilter
+            sort: SchoolMembershipSortInput
+        ): SchoolMembershipsConnectionResponse
+
+        classesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
+
+        programsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ProgramFilter
+            sort: ProgramSortInput
+        ): ProgramsConnectionResponse
+
+        academicTermsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: AcademicTermFilter
+            sort: AcademicTermSortInput
+        ): AcademicTermsConnectionResponse
     }
+
     type School {
         school_id: ID!
 
@@ -159,46 +201,6 @@ const typeDefs = gql`
     type SchoolsConnectionEdge implements iConnectionEdge {
         cursor: String
         node: SchoolConnectionNode
-    }
-
-    type SchoolConnectionNode {
-        id: ID!
-        name: String!
-        status: Status!
-        shortCode: String
-        organizationId: ID!
-
-        schoolMembershipsConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: SchoolMembershipFilter
-            sort: SchoolMembershipSortInput
-        ): SchoolMembershipsConnectionResponse
-
-        classesConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: ClassFilter
-            sort: ClassSortInput
-        ): ClassesConnectionResponse
-
-        programsConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: ProgramFilter
-            sort: ProgramSortInput
-        ): ProgramsConnectionResponse
-
-        academicTermsConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: AcademicTermFilter
-            sort: AcademicTermSortInput
-        ): AcademicTermsConnectionResponse
     }
 
     input AddClassesToSchoolInput {
