@@ -81,28 +81,28 @@ describe('CreateAcademicTermEntity1648053310507 migration', () => {
                 await expect(
                     insert(undefined, new Date(), new Date(), school.school_id)
                 ).to.be.rejectedWith(
-                    'null value in column "name" of relation "academic_term" violates not-null constraint'
+                    'null value in column "name" violates not-null constraint'
                 )
             })
             it('makes start_date non-nullable', async () => {
                 await expect(
                     insert('AT', undefined, new Date(), school.school_id)
                 ).to.be.rejectedWith(
-                    'null value in column "start_date" of relation "academic_term" violates not-null constraint'
+                    'null value in column "start_date" violates not-null constraint'
                 )
             })
             it('makes end_date non-nullable', async () => {
                 await expect(
                     insert('AT', new Date(), undefined, school.school_id)
                 ).to.be.rejectedWith(
-                    'null value in column "end_date" of relation "academic_term" violates not-null constraint'
+                    'null value in column "end_date" violates not-null constraint'
                 )
             })
             it('makes school non-nullable', async () => {
                 await expect(
                     insert('AT', new Date(), new Date(), undefined)
                 ).to.be.rejectedWith(
-                    'null value in column "school_id" of relation "academic_term" violates not-null constraint'
+                    'null value in column "school_id" violates not-null constraint'
                 )
             })
         })
