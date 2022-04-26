@@ -61,10 +61,9 @@ e.g.
 Default reviewer list - deleted/add to as appropriate:
 
 |     Reviewer     |  Status  | Color  |
-|------------------|----------|-------:|
-| Enrique          | Pending  |   🟡   |
+|------------------|----------|--------|
+| Toghrul          | Pending  |   🟡   |
 | Oliver           | Pending  |   🟡   |
-| Max              | Pending  |   🟡
 | Matthew          | Pending  |   🟡   |
 | Richard          | Pending  |   🟡   |
 | Matt             | Pending  |   🟡   |
