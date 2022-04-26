@@ -29,7 +29,10 @@ import { createServer } from '../../../src/utils/createServer'
 import { Model } from '../../../src/model'
 import { generateToken } from '../../utils/testConfig'
 import { userToPayload, viewUser } from '../../utils/operations/userOps'
-import { listMemberships } from '../../utils/operations/organizationOps'
+import {
+    listMemberships,
+    listOwnerAndPrimaryContact,
+} from '../../utils/operations/organizationOps'
 import { getSchoolMembershipsViaSchool } from '../../utils/operations/schoolOps'
 
 chai.use(deepEqualInAnyOrder)
@@ -200,6 +203,7 @@ context('User loaders', () => {
 
     describe('User visibility in UserDataLoader', () => {
         let targetedUser: User
+        let orgOwner: User
         let organization: Organization
         let connection: TestConnection
         let testClient: ApolloServerTestClient
@@ -212,10 +216,19 @@ context('User loaders', () => {
         })
         beforeEach(async () => {
             targetedUser = await User.save(createUser())
-            organization = await Organization.save(createOrganization())
+            orgOwner = await User.save(createUser())
+            organization = await Organization.save(createOrganization(orgOwner))
+            organization.primary_contact = Promise.resolve(orgOwner)
+            await organization.save()
             await OrganizationMembership.save(
                 createOrganizationMembership({
                     user: targetedUser,
+                    organization,
+                })
+            )
+            await OrganizationMembership.save(
+                createOrganizationMembership({
+                    user: orgOwner,
                     organization,
                 })
             )
@@ -281,6 +294,23 @@ context('User loaders', () => {
                 )
                 expect(response.user_id).to.equal(targetedUser.user_id)
             })
+            it('can view the nested owner and primary contact through the organization resolver', async () => {
+                const response = await listOwnerAndPrimaryContact(
+                    testClient,
+                    organization.organization_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithPermission)
+                        ),
+                    }
+                )
+                expect(response.organization.owner.user_id).to.equal(
+                    orgOwner.user_id
+                )
+                expect(response.organization.primary_contact.user_id).to.equal(
+                    orgOwner.user_id
+                )
+            })
         })
         context('when user has not enough permissions', () => {
             let userWithoutPermission: User
@@ -331,6 +361,19 @@ context('User loaders', () => {
                     }
                 )
                 expect(response).to.be.a('null')
+            })
+            it('can not view the nested owner or primary contact through the organization resolver', async () => {
+                const response = await listOwnerAndPrimaryContact(
+                    testClient,
+                    organization.organization_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithoutPermission)
+                        ),
+                    }
+                )
+                expect(response.organization.owner).to.be.a('null')
+                expect(response.organization.primary_contact).to.be.a('null')
             })
         })
     })
