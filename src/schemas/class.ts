@@ -36,6 +36,21 @@ import { SelectQueryBuilder } from 'typeorm'
 import { User } from '../entities/user'
 
 const typeDefs = gql`
+    extend type Query {
+        classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
+        class(class_id: ID!): Class
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        classNode(id: ID!): ClassConnectionNode @isAdmin(entity: "class")
+        classesConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse @isAdmin(entity: "class")
+    }
+
     extend type Mutation {
         classes: [Class]
         class(class_id: ID!): Class
@@ -74,66 +89,6 @@ const typeDefs = gql`
         moveTeachersToClass(
             input: MoveUsersToClassInput
         ): MoveUsersToClassMutationResult
-    }
-
-    # pagination extension types start here
-    type ClassesConnectionResponse implements iConnectionResponse {
-        totalCount: Int
-        pageInfo: ConnectionPageInfo
-        edges: [ClassesConnectionEdge]
-    }
-
-    type ClassesConnectionEdge implements iConnectionEdge {
-        cursor: String
-        node: ClassConnectionNode
-    }
-
-    # pagination extension types end here
-
-    enum ClassSortBy {
-        id
-        name
-    }
-
-    input ClassSortInput {
-        field: ClassSortBy!
-        order: SortOrder!
-    }
-
-    input MoveUsersToClassInput {
-        fromClassId: ID!
-        toClassId: ID!
-        userIds: [ID!]!
-    }
-
-    type MoveUsersToClassMutationResult {
-        fromClass: ClassConnectionNode!
-        toClass: ClassConnectionNode!
-    }
-
-    input ClassFilter {
-        id: UUIDFilter
-        name: StringFilter
-        status: StringFilter
-
-        #joined columns
-        organizationId: UUIDFilter
-        ageRangeValueFrom: AgeRangeValueFilter
-        ageRangeUnitFrom: AgeRangeUnitFilter
-        ageRangeValueTo: AgeRangeValueFilter
-        ageRangeUnitTo: AgeRangeUnitFilter
-        schoolId: UUIDExclusiveFilter
-        gradeId: UUIDFilter
-        subjectId: UUIDFilter
-        academicTermId: UUIDExclusiveFilter
-
-        #connections - extra filters
-        studentId: UUIDFilter
-        teacherId: UUIDFilter
-        programId: UUIDFilter
-
-        AND: [ClassFilter!]
-        OR: [ClassFilter!]
     }
 
     type ClassConnectionNode {
@@ -221,28 +176,6 @@ const typeDefs = gql`
         ): AgeRangesConnectionResponse
     }
 
-    type CoreProgramConnectionNode {
-        id: ID!
-        name: String
-        status: Status!
-        system: Boolean!
-    }
-
-    extend type Query {
-        classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
-        class(class_id: ID!): Class
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        classNode(id: ID!): ClassConnectionNode @isAdmin(entity: "class")
-        classesConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: ClassFilter
-            sort: ClassSortInput
-        ): ClassesConnectionResponse @isAdmin(entity: "class")
-    }
-
     type Class {
         class_id: ID!
 
@@ -302,6 +235,73 @@ const typeDefs = gql`
             @deprecated(reason: "Use deleteClasses() method")
         # addSchedule(id: ID!, timestamp: Date): Boolean
         # removeSchedule(id: ID!): Boolean
+    }
+
+    # pagination extension types start here
+    type ClassesConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [ClassesConnectionEdge]
+    }
+
+    type ClassesConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: ClassConnectionNode
+    }
+
+    # pagination extension types end here
+
+    enum ClassSortBy {
+        id
+        name
+    }
+
+    input ClassSortInput {
+        field: ClassSortBy!
+        order: SortOrder!
+    }
+
+    input MoveUsersToClassInput {
+        fromClassId: ID!
+        toClassId: ID!
+        userIds: [ID!]!
+    }
+
+    type MoveUsersToClassMutationResult {
+        fromClass: ClassConnectionNode!
+        toClass: ClassConnectionNode!
+    }
+
+    input ClassFilter {
+        id: UUIDFilter
+        name: StringFilter
+        status: StringFilter
+
+        #joined columns
+        organizationId: UUIDFilter
+        ageRangeValueFrom: AgeRangeValueFilter
+        ageRangeUnitFrom: AgeRangeUnitFilter
+        ageRangeValueTo: AgeRangeValueFilter
+        ageRangeUnitTo: AgeRangeUnitFilter
+        schoolId: UUIDExclusiveFilter
+        gradeId: UUIDFilter
+        subjectId: UUIDFilter
+        academicTermId: UUIDExclusiveFilter
+
+        #connections - extra filters
+        studentId: UUIDFilter
+        teacherId: UUIDFilter
+        programId: UUIDFilter
+
+        AND: [ClassFilter!]
+        OR: [ClassFilter!]
+    }
+
+    type CoreProgramConnectionNode {
+        id: ID!
+        name: String
+        status: Status!
+        system: Boolean!
     }
 
     # Mutation related definitions
