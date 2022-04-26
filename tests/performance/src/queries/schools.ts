@@ -221,9 +221,8 @@ export const meMembershipForTeacher5 =`
     }
 `;
 
-export const meMembershipForStudent1 =`
-    query meMembership { 
-        me {
+export const meMembershipForStudent1 =`{ 
+    meMembership: me {
             membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
                 create_schedule_page_501: checkAllowed(
                     permission_name: "create_schedule_page_501")
@@ -234,9 +233,8 @@ export const meMembershipForStudent1 =`
 }
 `;
 
-export const meMembershipForStudent2 =`
-    query meMembership { 
-        me {
+export const meMembershipForStudent2 =`{ 
+    meMembership: me {
             membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
                 attend_live_class_as_a_teacher_186: checkAllowed(
                   permission_name: "attend_live_class_as_a_teacher_186")
@@ -252,9 +250,8 @@ export const meMembershipForStudent2 =`
     }
 `;
 
-export const meMembershipForStudent3 =`
-    query meMembership { 
-        me {
+export const meMembershipForStudent3 =`{ 
+    meMembership: me {
             membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
                 create_live_calendar_events_524: checkAllowed(
                   permission_name: "create_live_calendar_events_524")
@@ -269,9 +266,8 @@ export const meMembershipForStudent3 =`
     }
 `;
 
-export const meMembershipForStudent4 =`
-    query meMembership { 
-        me {
+export const meMembershipForStudent4 =`{ 
+    meMembership: me {
             membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
                 attend_live_class_as_a_student_187: checkAllowed(
                   permission_name: "attend_live_class_as_a_student_187")
@@ -283,9 +279,8 @@ export const meMembershipForStudent4 =`
     }
 `;
 
-export const meMembershipForStudent5 =`
-    query meMembership { 
-        me {
+export const meMembershipForStudent5 =`{ 
+        meMembership: me {
             membership(organization_id: "360b46fe-3579-42d4-9a39-dc48726d033f") {
                 create_event_520: checkAllowed(permission_name: "create_event_520")
                 create_my_schools_schedule_events_522: checkAllowed(

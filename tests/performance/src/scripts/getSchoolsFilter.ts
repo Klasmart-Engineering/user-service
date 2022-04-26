@@ -46,7 +46,7 @@ export default function (roleType?: string) {
     
     check(res, {
         '"Get SCHOOL filter list" status is 200': () => res.status === 200,
-       // '"Get school filter list" query returns data': (r) => JSON.parse(r.body as string).data?.schoolsConnection?.edges ?? false,
+       '"Get school filter list" query returns data': (r) => JSON.parse(r.body as string).data?.schoolsConnection?.totalCount !== undefined,
     }, {
         userRoleType: roleType
     });

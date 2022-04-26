@@ -49,7 +49,7 @@ export default function (roleType?: string) {
     
     check(res, {
         '"Get CLASS filter list" status is 200': () => res.status === 200,
-        // '"Get CLASS filter list" query returns data': (r) => JSON.parse(r.body as string).data !== undefined,
+        '"Get CLASS filter list" query returns data': (r) => JSON.parse(r.body as string).data?.classesConnection?.totalCount !== undefined,
     }, {
         userRoleType: roleType
     });

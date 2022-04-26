@@ -95,7 +95,7 @@ export function students02() {
     });
 
     // landingV2(studentLoginData);
-    landingV3Students(studentLoginData);
+    // landingV3Students(studentLoginData);
     
 }
 

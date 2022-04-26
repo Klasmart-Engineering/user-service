@@ -7,14 +7,14 @@ import scheduleFilterProgram from "./scheduleFilterProgram";
 import meMembershipsForStudents from "./meMembershipsForStudents";
 
 export default function() {
-    schedulesTimeViewMonth(); // CMS service
-    scheduleFilterProgram(); // CMS service
+    schedulesTimeViewMonth(); // CMS service - Ok
+    scheduleFilterProgram(); // CMS service - Ok
     //sleep(0.5);
     // schedulesTimeViewDay(); // CMS service
     // sleep(5);
     // scheduleFilterClass();
-    getSchoolsFilter(); // User service
-    getClassFilters(); //  User service
+    getSchoolsFilter(); // User service - ok
+    getClassFilters(); //  User service - ok
     
     //this function checks the permission for teachers. 
     meMembershipsForStudents(); // 6 Requests

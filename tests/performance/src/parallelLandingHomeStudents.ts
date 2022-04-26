@@ -2,7 +2,7 @@ import { Options } from 'k6/options';
 import http from 'k6/http';
 import { config } from './config/parallelLanding';
 import loginSetup from './utils/loginSetup';
-import landingV3Students from './scripts/landingV3Students';
+import landingV4Students from './scripts/landingV4Students';
 
 /*
 export const options: Options = {
@@ -166,6 +166,10 @@ export const options: Options = {
         loadimpact: {
             projectID: 3560234,
             // projectID: 3559532,
+            distribution: {
+                distributionLabel1: { loadZone: 'amazon:gb:london', percent: 50 },
+                distributionLabel2: { loadZone: 'amazon:ie:dublin', percent: 50 },
+              },
         }
     },
 
@@ -270,8 +274,8 @@ export function students00(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students00);
-    
+    // landingV3Students(data.students00);1
+    landingV4Students();
 }
 
 
@@ -284,7 +288,8 @@ export function students01(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students01);
+   // landingV3Students(data.students01);
+   landingV4Students();
     
 }
 
@@ -297,8 +302,9 @@ export function students02(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students02);
-  
+   // landingV3Students(data.students02);
+   landingV4Students();
+
 }
 export function students03(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -309,7 +315,8 @@ export function students03(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students03);
+    // landingV3Students(data.students03);
+    landingV4Students();
   
 } 
 
@@ -322,7 +329,8 @@ export function students04(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students04);
+    // landingV3Students(data.students04);
+    landingV4Students();
 }
  
 
@@ -335,7 +343,8 @@ export function students05(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students05);
+    // landingV3Students(data.students05);
+    landingV4Students();
  }
 
 export function students06(data: { [key: string]: { res: any, userId: string }}) {
@@ -347,7 +356,8 @@ export function students06(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data.students06);
+    // landingV3Students(data.students06);
+    landingV4Students();
 }
 
 export function students07(data: { [key: string]: { res: any, userId: string }}) {
@@ -359,7 +369,8 @@ export function students07(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students07);
+    // landingV3Students(data.students07);
+    landingV4Students();
 }
 export function students08(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -370,7 +381,8 @@ export function students08(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
 
-    landingV3Students(data.students08);
+    // landingV3Students(data.students08);
+    landingV4Students();
 }
 export function students09(data: { [key: string]: { res: any, userId: string }}) {
     const jar = http.cookieJar();
@@ -381,5 +393,6 @@ export function students09(data: { [key: string]: { res: any, userId: string }})
         domain: process.env.COOKIE_DOMAIN,
     });
     
-    landingV3Students(data.students09);
+    // landingV3Students(data.students09);
+    landingV4Students();
 }

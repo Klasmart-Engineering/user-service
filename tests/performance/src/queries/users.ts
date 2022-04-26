@@ -376,8 +376,8 @@ export const meQueryOrganizationReq3 = `{ me {
 }`;
 
 
-export const meQueryOrganizationReq5 = `{ me {
-        memberships {
+/* export const meQueryOrganizationReq5 = `{ me {
+        membership {
             organization_id
             roles {
                 permissions {
@@ -386,7 +386,19 @@ export const meQueryOrganizationReq5 = `{ me {
             }
         }
     }
-}`;
+}`; */
+
+export const meQueryOrganizationReq5 = `query ($organizationId: ID!) {
+    me { membership(organization_id: $organizationId) {
+        organization_id
+        roles {
+          permissions {
+            permission_id
+          }
+        }
+      }
+    }
+}`
 
 
 // Users in Plural
@@ -408,7 +420,7 @@ export const getMyUsers = ` { my_users {
 `;
 
 // User in Singular
-export const getMyUser = ` { myUser {
+/* export const getMyUser = ` { myUser {
     node {
         id
         familyName
@@ -421,6 +433,63 @@ export const getMyUser = ` { myUser {
     }
 }
 }
+`; */
+
+// Updated on April 19, 2022
+export const getMyUser = ` { myUser {
+      profiles {
+        id
+        givenName
+        familyName
+        avatar
+        contactInfo {
+          email
+          phone
+          username
+        }
+      }
+      node {
+        id
+        givenName
+        familyName
+        avatar
+        contactInfo {
+          email
+          phone
+          username
+        }
+        username
+        organizationMembershipsConnection(direction: FORWARD) {
+          edges {
+            node {
+              organization {
+                id
+                name
+                branding {
+                  primaryColor
+                  iconImageURL
+                }
+                owners {
+                  email
+                }
+                contactInfo {
+                  phone
+                }
+              }
+              rolesConnection(direction: FORWARD) {
+                edges {
+                  node {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 `;
 
 

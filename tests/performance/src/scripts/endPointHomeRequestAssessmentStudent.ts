@@ -14,11 +14,11 @@ const errorCounter400 = new Counter('endPointHomeRequestAssessmentStudentError40
 const errorCounter500 = new Counter('endPointHomeRequestAssessmentStudentError500');
 
 export default function (roleType?: string) {
-    let res = http.get(`${process.env.ASSESSMENT_STUDENT_URL}?complete_at_ge=1646313164&complete_at_le=1647522764&order_by=-complete_at&org_id=${process.env.ORG_ID}&page=1&page_size=5&type=home_fun_study` as string, params);
+    let res = http.get(`${process.env.ASSESSMENT_STUDENT_URL}?complete_at_ge=1649252737&complete_at_le=1650462337&order_by=-complete_at&org_id=${process.env.ORG_ID}&page=1&page_size=5&type=home_fun_study` as string, params);
 
     if (res.status === 401) {
         http.get(`https://auth.${process.env.APP_URL}/refresh`, params);
-        res = http.get(`${process.env.ASSESSMENT_STUDENT_URL}?complete_at_ge=1646313164&complete_at_le=1647522764&order_by=-complete_at&org_id=${process.env.ORG_ID}&page=1&page_size=5&type=home_fun_study` as string, params);
+        res = http.get(`${process.env.ASSESSMENT_STUDENT_URL}?complete_at_ge=1649252737&complete_at_le=1650462337&order_by=-complete_at&org_id=${process.env.ORG_ID}&page=1&page_size=5&type=home_fun_study` as string, params);
     }
     
     check(res, {
