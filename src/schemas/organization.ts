@@ -191,8 +191,10 @@ const typeDefs = gql`
         """
         'owner' is the User that created this Organization
         """
-        owner: User @deprecated(reason: "Use 'organization_ownerships'.")
-        primary_contact: User
+        owner: User
+            @isAdmin(entity: "user")
+            @deprecated(reason: "Use 'organization_ownerships'.")
+        primary_contact: User @isAdmin(entity: "user")
         roles: [Role]
         memberships: [OrganizationMembership]
         teachers: [OrganizationMembership]
@@ -639,6 +641,31 @@ export default function getDefault(
                     return ctx.loaders.organization.branding.instance.load(
                         org.organization_id
                     )
+                },
+                owner: async (
+                    organization: Organization,
+                    args,
+                    ctx: Context,
+                    _info
+                ) => {
+                    const ownerId = (await organization.owner)?.user_id ?? ''
+                    return ctx.loaders.user.user.instance.load({
+                        id: ownerId,
+                        scope: args.scope,
+                    })
+                },
+                primary_contact: async (
+                    organization: Organization,
+                    args,
+                    ctx: Context,
+                    _info
+                ) => {
+                    const contactId =
+                        (await organization.primary_contact)?.user_id ?? ''
+                    return ctx.loaders.user.user.instance.load({
+                        id: contactId,
+                        scope: args.scope,
+                    })
                 },
             },
             OrganizationMembership: {
