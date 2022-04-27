@@ -392,28 +392,43 @@ export const nonAdminUserScope: NonAdminScope<
         // find a schools the user is a member of in these orgs
         const schoolIds = await getMyOrgsSchools(orgsWithAdmins, user_id)
         if (schoolIds.length) {
-            // add joins and where conds to find school admins of these schools
-            if (!scopeHasJoin(scope, SchoolMembership)) {
-                scope.leftJoin('User.school_memberships', 'SchoolMembership')
+            // find school admins in these schools
+            const schoolAdminUserIds = (
+                await User.createQueryBuilder()
+                    .select('User.user_id')
+                    .distinct(true)
+                    .innerJoin(
+                        'User.school_memberships',
+                        'SchoolMembership',
+                        'SchoolMembership.school_id in (:...schoolIds)',
+                        { schoolIds }
+                    )
+                    .innerJoin(
+                        'User.memberships',
+                        'OrganizationMembership',
+                        'OrganizationMembership.organization_id IN (:...orgsWithAdmins)',
+                        {
+                            orgsWithAdmins,
+                        }
+                    )
+                    .innerJoin('OrganizationMembership.roles', 'Role')
+                    .innerJoin(
+                        'Role.permissions',
+                        'Permission',
+                        'Permission.permission_name = :name',
+                        {
+                            name: PermissionName.view_my_school_users_40111,
+                        }
+                    )
+                    .getRawMany()
+            ).map((row) => row.User_user_id)
+
+            if (schoolAdminUserIds.length) {
+                userFilters.push({
+                    where: 'User.user_id IN (:...schoolAdminUserIds)',
+                    params: { schoolAdminUserIds },
+                })
             }
-            if (!scopeHasJoin(scope, OrganizationMembership)) {
-                scope.leftJoin('User.memberships', 'OrganizationMembership')
-            }
-            scope.leftJoin('OrganizationMembership.roles', 'Role')
-            scope.leftJoin('Role.permissions', 'Permission')
-            userFiltersAnd.push(
-                {
-                    where: 'Permission.permission_name = :permissionName',
-                    params: {
-                        permissionName:
-                            PermissionName.view_my_school_users_40111,
-                    },
-                },
-                {
-                    where: 'SchoolMembership.school_id IN (:...schoolIds)',
-                    params: { schoolIds },
-                }
-            )
         }
     }
 
