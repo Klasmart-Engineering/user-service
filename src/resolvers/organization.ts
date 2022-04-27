@@ -402,6 +402,7 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
 
         // Create new memberships in organisation
         const memberships: OrganizationMembership[] = []
+        const updatedAt = new Date()
         for (const userId of userIds) {
             const user = maps.users.get(userId) as User
             const membership = new OrganizationMembership()
@@ -413,7 +414,7 @@ export class AddUsersToOrganizations extends AddMembershipMutation<
             membership.shortcode =
                 shortcode ||
                 generateShortCode(userId, config.limits.SHORTCODE_MAX_LENGTH)
-            membership.status_updated_at = new Date()
+            membership.status_updated_at = updatedAt
             memberships.push(membership)
         }
         return { outputEntity: currentEntity, modifiedEntity: memberships }

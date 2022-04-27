@@ -145,6 +145,8 @@ import { APIError } from '../../src/types/errors/apiError'
 import { customErrors } from '../../src/types/errors/customError'
 import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
 import { ObjMap } from '../../src/utils/stringUtils'
+import { SinonFakeTimers } from 'sinon'
+import sinon from 'sinon'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -159,7 +161,6 @@ describe('organization', () => {
     let orgs: Organization[]
     let users: User[]
     let roles: Role[]
-    let statusUpdatedAtDate: Date
     const shortcode_re = /^[A-Z|0-9]+$/
 
     before(async () => {
@@ -7625,6 +7626,7 @@ describe('organization', () => {
 
     describe('AddUsersToOrganizations', () => {
         let input: AddUsersToOrganizationInput[]
+        let clock: SinonFakeTimers
 
         function addUsers(authUser = adminUser) {
             const permissions = new UserPermissions(userToPayload(authUser))
@@ -7663,8 +7665,8 @@ describe('organization', () => {
                 for (const membership of dbMemberships) {
                     // The dates to compare differs some milliseconds,
                     // because there are some processes inside that take some time
-                    expect(membership.status_updated_at).to.be.at.least(
-                        statusUpdatedAtDate
+                    expect(membership.status_updated_at).to.deep.equal(
+                        new clock.Date()
                     )
 
                     const dbRoles = new Set(
@@ -7725,8 +7727,15 @@ describe('organization', () => {
             'when caller has permissions to add users to organizations',
             () => {
                 context('and all attributes are valid', () => {
+                    beforeEach(() => {
+                        clock = sinon.useFakeTimers()
+                    })
+
+                    afterEach(() => {
+                        clock.restore()
+                    })
+
                     it('adds all the users', async () => {
-                        statusUpdatedAtDate = new Date()
                         await expect(addUsers()).to.be.fulfilled
                         await checkOutput()
                     })
