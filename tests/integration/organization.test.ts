@@ -7661,12 +7661,12 @@ describe('organization', () => {
                     (val) => expect(userIdsSet.has(val)).to.be.true
                 )
 
+                const expectedDate = new clock.Date()
+
                 // Check that each entry has the same set of roles
                 for (const membership of dbMemberships) {
-                    // The dates to compare differs some milliseconds,
-                    // because there are some processes inside that take some time
                     expect(membership.status_updated_at).to.deep.equal(
-                        new clock.Date()
+                        expectedDate
                     )
 
                     const dbRoles = new Set(
