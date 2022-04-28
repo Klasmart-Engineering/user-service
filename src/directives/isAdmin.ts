@@ -342,7 +342,9 @@ export const nonAdminUserScope: NonAdminScope<
         PermissionName.view_my_class_users_40112,
     ])
     if (orgsWithClasses.length) {
-        const classesTaught = await permissions.classesTeaching()
+        const classesTaught = await permissions.classesTeachingInOrgs(
+            orgsWithClasses
+        )
         if (classesTaught?.length) {
             const distinctMembers = (
                 membershipTable: string,
@@ -355,9 +357,7 @@ export const nonAdminUserScope: NonAdminScope<
                     .andWhere(
                         'membership_table.classClassId IN (:...classIds)',
                         {
-                            classIds: classesTaught.map(
-                                ({ class_id }) => class_id
-                            ),
+                            classIds: classesTaught,
                         }
                     )
             }

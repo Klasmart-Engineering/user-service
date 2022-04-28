@@ -48,7 +48,7 @@ export class UserPermissions {
     // resolvers for cached queries
     private _userResolver?: Promise<User | undefined>
     private _schoolsPerOrgResolver?: Promise<Record<string, string>[]>
-    private _classesTeachingResolver?: Promise<Class[]>
+    private _classesTeachingResolver?: Promise<Record<string, string>[]>
     private _schoolAdminsInSchoolsResolver?: Promise<Record<string, string>[]>
 
     // Used to mark that auth was done by API Key, but checks use isAdmin
@@ -584,12 +584,31 @@ export class UserPermissions {
     /**
      * Fetches all the classes the user is teaching and caches results
      */
-    public async classesTeaching() {
+    public async classesTeachingInOrgs(orgIds: string[]) {
         if (!this._classesTeachingResolver) {
-            const user = await this.getUser()
-            this._classesTeachingResolver = user.classesTeaching
+            const query = Class.createQueryBuilder()
+                .select('Class.class_id', 'class_id')
+                .addSelect('Organization.organization_id', 'organization_id')
+                .innerJoin(
+                    'Class.teachers',
+                    'Teacher',
+                    'Teacher.user_id = :user_id',
+                    {
+                        user_id: this.getUserIdOrError(),
+                    }
+                )
+                .innerJoin('Class.organization', 'Organization')
+
+            this._classesTeachingResolver = query.getRawMany()
         }
-        return this._classesTeachingResolver
+        const result = await this._classesTeachingResolver
+
+        const classesFilteredByOrgIds =
+            result.filter(({ organization_id }) =>
+                orgIds.includes(organization_id)
+            ) ?? []
+
+        return classesFilteredByOrgIds.map(({ class_id }) => class_id)
     }
 
     /**
