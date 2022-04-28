@@ -390,29 +390,17 @@ export const nonAdminUserScope: NonAdminScope<
     if (orgsWithAdmins.length) {
         // find a schools the user is a member of in these orgs
         const schoolIds = await permissions.schoolsInOrgs(orgsWithAdmins)
+
         if (schoolIds.length) {
-            // add joins and where conds to find school admins of these schools
-            if (!scopeHasJoin(scope, SchoolMembership)) {
-                scope.leftJoin('User.school_memberships', 'SchoolMembership')
-            }
-            if (!scopeHasJoin(scope, OrganizationMembership)) {
-                scope.leftJoin('User.memberships', 'OrganizationMembership')
-            }
-            scope.leftJoin('OrganizationMembership.roles', 'Role')
-            scope.leftJoin('Role.permissions', 'Permission')
-            userFiltersAnd.push(
-                {
-                    where: 'Permission.permission_name = :permissionName',
-                    params: {
-                        permissionName:
-                            PermissionName.view_my_school_users_40111,
-                    },
-                },
-                {
-                    where: 'SchoolMembership.school_id IN (:...schoolIds)',
-                    params: { schoolIds },
-                }
+            const schoolAdminIds = await permissions.schoolAdminsInSchools(
+                schoolIds
             )
+            if (schoolAdminIds.length) {
+                userFilters.push({
+                    where: 'User.user_id IN (:...schoolAdminUserIds)',
+                    params: { schoolAdminIds },
+                })
+            }
         }
     }
 

@@ -49,6 +49,7 @@ export class UserPermissions {
     private _userResolver?: Promise<User | undefined>
     private _schoolsPerOrgResolver?: Promise<Record<string, string>[]>
     private _classesTeachingResolver?: Promise<Class[]>
+    private _schoolAdminsInSchoolsResolver?: Promise<Record<string, string>[]>
 
     // Used to mark that auth was done by API Key, but checks use isAdmin
     // for consistency
@@ -621,6 +622,35 @@ export class UserPermissions {
             ) ?? []
 
         return schoolsFilteredByOrgIds.map(({ school_id }) => school_id)
+    }
+
+    public async schoolAdminsInSchools(schoolIds: string[]) {
+        if (!this._schoolAdminsInSchoolsResolver) {
+            const query = User.createQueryBuilder()
+                .select('User.user_id')
+                .distinct(true)
+                .innerJoin(
+                    'User.school_memberships',
+                    'SchoolMembership',
+                    'SchoolMembership.school_id in (:...schoolIds)',
+                    { schoolIds }
+                )
+                .innerJoin('User.memberships', 'OrganizationMembership')
+                .innerJoin('OrganizationMembership.roles', 'Role')
+                .innerJoin(
+                    'Role.permissions',
+                    'Permission',
+                    'Permission.permission_name = :name',
+                    {
+                        name: PermissionName.view_my_school_users_40111,
+                    }
+                )
+
+            this._schoolAdminsInSchoolsResolver = query.getRawMany()
+        }
+
+        const result = await this._schoolAdminsInSchoolsResolver
+        return result.map(({ User_user_id }) => User_user_id)
     }
 }
 
