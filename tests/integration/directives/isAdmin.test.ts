@@ -156,6 +156,8 @@ describe('isAdmin', () => {
                 /* eslint-enable no-await-in-loop */
             }
         })
+        // isAdmin directives MUST cache queries as they are called for every
+        // field in the _response_, and will otherwise repeat those queries
         it('does not repeat DB queries if called multiple times', async () => {
             for (const [entity, maxQueryCount] of Object.entries(
                 maxQueryCountPerEntity

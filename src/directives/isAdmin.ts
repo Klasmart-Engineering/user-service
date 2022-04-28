@@ -342,7 +342,7 @@ export const nonAdminUserScope: NonAdminScope<
         PermissionName.view_my_class_users_40112,
     ])
     if (orgsWithClasses.length) {
-        const classesTaught = await permissions.classTeaching()
+        const classesTaught = await permissions.classesTeaching()
         if (classesTaught?.length) {
             const distinctMembers = (
                 membershipTable: string,

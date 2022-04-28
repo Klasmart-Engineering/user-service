@@ -580,7 +580,7 @@ export class UserPermissions {
         return orgsWithPermission
     }
 
-    public async classTeaching() {
+    public async classesTeaching() {
         const user = await this.getUser()
         if (!this._classesTeachingResolver) {
             this._classesTeachingResolver = user.classesTeaching
@@ -589,6 +589,9 @@ export class UserPermissions {
     }
 
     public async schoolsInOrgs(orgIds: string[]) {
+        if (orgIds.length === 0) {
+            return []
+        }
         if (!this._schoolsPerOrgResolver) {
             this._schoolsPerOrgResolver = getRepository(SchoolMembership)
                 .createQueryBuilder()
