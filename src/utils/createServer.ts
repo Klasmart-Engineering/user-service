@@ -14,7 +14,7 @@ import {
     isMIMETypeTransformer,
 } from '../directives'
 import { loadPlugins } from './plugins'
-
+import appPackage from '../../package.json'
 import newrelic from 'newrelic'
 import { withCorrelation } from '@kl-engineering/kidsloop-nodejs-logger'
 
@@ -75,6 +75,11 @@ async function createContext({
     const requestOrigin = req.headers.origin
     if (requestOrigin) {
         newrelic.addCustomAttribute('requestOrigin', requestOrigin)
+    }
+
+    const appVersion = appPackage.version
+    if (appVersion) {
+        newrelic.addCustomAttribute('appVersion', appVersion)
     }
 
     return {
