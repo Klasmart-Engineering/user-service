@@ -47,7 +47,10 @@ import { Role } from '../../../src/entities/role'
 import { School } from '../../../src/entities/school'
 import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
-import { createOrganization } from '../../factories/organization.factory'
+import {
+    createOrganization,
+    createOrganizations,
+} from '../../factories/organization.factory'
 import { createUser, createUsers } from '../../factories/user.factory'
 import { createClass, createClasses } from '../../factories/class.factory'
 import { Class } from '../../../src/entities/class'
@@ -66,6 +69,7 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Permission } from '../../../src/entities/permission'
 import {
     createEntityScope,
+    IEntityString,
     nonAdminOrganizationScope,
     nonAdminSchoolScope,
     nonAdminUserScope,
@@ -103,6 +107,81 @@ describe('isAdmin', () => {
         connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
+    })
+
+    context('performance', () => {
+        let user: User
+        // this setup is design to trigger all possible queries in isAdmin directives
+        const maxQueryCountPerEntity: Record<IEntityString, number> = {
+            organization: 1,
+            user: 4,
+            role: 1,
+            class: 2,
+            ageRange: 0,
+            grade: 0,
+            category: 0,
+            subcategory: 0,
+            subject: 0,
+            program: 0,
+            school: 2,
+            permission: 1,
+            schoolMembership: 5,
+            organizationMembership: 4,
+            academicTerm: 0,
+        }
+
+        beforeEach(async () => {
+            // assign a user to an org for each system role
+            // along with a class & school
+            user = await createUser().save()
+            const roles = await Role.find({ where: { system_role: true } })
+            const orgs = await Organization.save(
+                createOrganizations(roles.length)
+            )
+            for (let i = 0; i < orgs.length; i++) {
+                /* eslint-disable no-await-in-loop */
+                const school = await createSchool(orgs[i]).save()
+                await createClass([school], orgs[i], {
+                    teachers: [user],
+                }).save()
+                await createOrganizationMembership({
+                    user,
+                    organization: orgs[i],
+                    roles: [roles[i]],
+                }).save()
+                await createSchoolMembership({
+                    user,
+                    school,
+                }).save()
+                /* eslint-enable no-await-in-loop */
+            }
+        })
+        it('does not repeat DB queries if called multiple times', async () => {
+            for (const [entity, maxQueryCount] of Object.entries(
+                maxQueryCountPerEntity
+            )) {
+                /* eslint-disable no-await-in-loop */
+                const permissions = new UserPermissions({
+                    id: user.user_id,
+                    email: user.email,
+                })
+
+                connection.logger.reset()
+                await createEntityScope({
+                    permissions,
+                    entity: entity as IEntityString,
+                })
+                expect(connection.logger.count).to.be.eq(maxQueryCount)
+
+                connection.logger.reset()
+                await createEntityScope({
+                    permissions,
+                    entity: entity as IEntityString,
+                })
+                expect(connection.logger.count).to.eq(0)
+                /* eslint-enable no-await-in-loop */
+            }
+        })
     })
 
     describe('organizations', () => {
