@@ -91,7 +91,11 @@ const typeDefs = gql`
         grant(permission_name: String!): Permission
         revoke(permission_name: String!): Boolean
         edit_permissions(permission_names: [String!]): [Permission]
-        deny(permission_name: String!): Permission @isAdmin
+        deny(permission_name: String!): Permission
+            @isAdmin
+            @deprecated(
+                reason: "Sunset Date: 29/07/2022 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2664824833/Mutation+Role.deny"
+            )
 
         delete_role(_: Int): Boolean
             @deprecated(
