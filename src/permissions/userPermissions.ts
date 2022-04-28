@@ -580,14 +580,22 @@ export class UserPermissions {
         return orgsWithPermission
     }
 
+    /**
+     * Fetches all the classes the user is teaching and caches results
+     */
     public async classesTeaching() {
-        const user = await this.getUser()
         if (!this._classesTeachingResolver) {
+            const user = await this.getUser()
             this._classesTeachingResolver = user.classesTeaching
         }
         return this._classesTeachingResolver
     }
 
+    /**
+     * Fetches all the schools the user is a member of and caches results
+     * Accepts a list of organization IDs to only return schools belonging to
+     * the specified organizations
+     */
     public async schoolsInOrgs(orgIds: string[]) {
         if (orgIds.length === 0) {
             return []
