@@ -17,6 +17,7 @@ import { loadPlugins } from './plugins'
 import appPackage from '../../package.json'
 import newrelic from 'newrelic'
 import { withCorrelation } from '@kl-engineering/kidsloop-nodejs-logger'
+import { isDeprecatedLoggerTransformer } from '../directives/isDeprecatedLogger'
 
 /* accessing a child via a connection field takes 3 depth
     myconnection { // 0
@@ -102,6 +103,7 @@ export const createServer = async (model: Model) => {
         isAdminTransformer,
         isAuthenticatedTransformer,
         isMIMETypeTransformer,
+        isDeprecatedLoggerTransformer,
     ].reduce(
         (previousSchema, transformer) => transformer(previousSchema),
         schema
@@ -111,7 +113,6 @@ export const createServer = async (model: Model) => {
     return new ApolloServer({
         schema: schema,
         context: createContext,
-
         plugins: await loadPlugins(),
         formatError: (error) => {
             if (error.originalError instanceof CustomError) {
