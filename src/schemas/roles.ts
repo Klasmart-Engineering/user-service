@@ -94,7 +94,7 @@ const typeDefs = gql`
         deny(permission_name: String!): Permission
             @isAdmin
             @deprecated(
-                reason: "Sunset Date: 29/07/2022 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2664824833/Mutation+Role.deny"
+                reason: "Sunset Date: 29/07/2022 Details: https://calmisland.atlassian.net/l/c/rW1taT08"
             )
 
         delete_role(_: Int): Boolean
