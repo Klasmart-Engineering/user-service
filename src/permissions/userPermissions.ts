@@ -9,6 +9,7 @@ import { uniqueAndTruthy } from '../utils/clean'
 import { Organization } from '../entities/organization'
 import { TokenPayload } from '../token'
 import logger from '../logging'
+import { Class } from '../entities/class'
 
 export interface PermissionContext {
     school_ids?: string[]
@@ -43,7 +44,11 @@ export class UserPermissions {
     private readonly username?: string
     private user?: User
     public readonly isAdmin: boolean = false
+
+    // resolvers for cached queries
     private _userResolver?: Promise<User | undefined>
+    private _schoolsPerOrgResolver?: Promise<Record<string, string>[]>
+    private _classesTeachingResolver?: Promise<Class[]>
 
     // Used to mark that auth was done by API Key, but checks use isAdmin
     // for consistency
@@ -573,6 +578,49 @@ export class UserPermissions {
             }
         }
         return orgsWithPermission
+    }
+
+    /**
+     * Fetches all the classes the user is teaching and caches results
+     */
+    public async classesTeaching() {
+        const user = await this.getUser()
+        if (!this._classesTeachingResolver) {
+            this._classesTeachingResolver = user.classesTeaching
+        }
+        return this._classesTeachingResolver
+    }
+
+    /**
+     * Fetches all the schools the user is a member of and caches results
+     * Accepts a list of organization IDs to only return schools belonging to
+     * the specified organizations
+     */
+    public async schoolsInOrgs(orgIds: string[]) {
+        if (orgIds.length === 0) {
+            return []
+        }
+        if (!this._schoolsPerOrgResolver) {
+            this._schoolsPerOrgResolver = getRepository(SchoolMembership)
+                .createQueryBuilder()
+                .select('SchoolMembership.school_id', 'school_id')
+                .addSelect('Organization.organization_id', 'organization_id')
+                .innerJoin('SchoolMembership.school', 'School')
+                .innerJoin('School.organization', 'Organization')
+                .andWhere('SchoolMembership.userUserId = :user_id', {
+                    user_id: this.getUserIdOrError(),
+                })
+                .getRawMany()
+        }
+
+        const result = await this._schoolsPerOrgResolver
+
+        const schoolsFilteredByOrgIds =
+            result.filter(({ organization_id }) =>
+                orgIds.includes(organization_id)
+            ) ?? []
+
+        return schoolsFilteredByOrgIds.map(({ school_id }) => school_id)
     }
 }
 

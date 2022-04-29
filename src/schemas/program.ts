@@ -18,6 +18,21 @@ import {
 } from '../resolvers/program'
 
 const typeDefs = gql`
+    extend type Query {
+        program(id: ID!): Program
+            @isAdmin(entity: "program")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        programNode(id: ID!): ProgramConnectionNode @isAdmin(entity: "program")
+        programsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: ProgramFilter
+            sort: ProgramSortInput
+        ): ProgramsConnectionResponse @isAdmin(entity: "program")
+    }
+
     extend type Mutation {
         program(id: ID!): Program @isAdmin(entity: "program")
         uploadProgramsFromCSV(file: Upload!): File
@@ -25,6 +40,72 @@ const typeDefs = gql`
         createPrograms(input: [CreateProgramInput!]!): ProgramsMutationResult
         updatePrograms(input: [UpdateProgramInput!]!): ProgramsMutationResult
         deletePrograms(input: [DeleteProgramInput!]!): ProgramsMutationResult
+    }
+
+    type ProgramConnectionNode {
+        id: ID!
+        name: String
+        status: Status!
+        system: Boolean!
+        ageRanges: [AgeRangeConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
+        grades: [GradeSummaryNode!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
+        subjects: [CoreSubjectConnectionNode!]
+            @deprecated(
+                reason: "Sunset Date: 07/03/2022 Details: https://calmisland.atlassian.net/l/c/Ts9fp60C"
+            )
+
+        subjectsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SubjectFilter
+            sort: SubjectSortInput
+        ): SubjectsConnectionResponse
+
+        gradesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: GradeFilter
+            sort: GradeSortInput
+        ): GradesConnectionResponse
+
+        ageRangesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: AgeRangeFilter
+            sort: AgeRangeSortInput
+        ): AgeRangesConnectionResponse
+    }
+
+    type Program {
+        id: ID!
+        name: String!
+        system: Boolean!
+        status: Status
+        age_ranges: [AgeRange!]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
+            )
+        grades: [Grade!]
+        subjects: [Subject!]
+
+        # Mutations
+        editAgeRanges(age_range_ids: [ID!]): [AgeRange]
+        editGrades(grade_ids: [ID!]): [Grade]
+        editSubjects(subject_ids: [ID!]): [Subject]
+
+        delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 28/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
     }
 
     # pagination extension types start here
@@ -71,49 +152,6 @@ const typeDefs = gql`
         OR: [ProgramFilter!]
     }
 
-    type ProgramConnectionNode {
-        id: ID!
-        name: String
-        status: Status!
-        system: Boolean!
-        ageRanges: [AgeRangeConnectionNode!]
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
-            )
-        grades: [GradeSummaryNode!]
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
-            )
-        subjects: [CoreSubjectConnectionNode!]
-            @deprecated(
-                reason: "Sunset Date: 07/03/2022 Details: https://calmisland.atlassian.net/l/c/Ts9fp60C"
-            )
-
-        subjectsConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: SubjectFilter
-            sort: SubjectSortInput
-        ): SubjectsConnectionResponse
-
-        gradesConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: GradeFilter
-            sort: GradeSortInput
-        ): GradesConnectionResponse
-
-        ageRangesConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: AgeRangeFilter
-            sort: AgeRangeSortInput
-        ): AgeRangesConnectionResponse
-    }
-
     type GradeSummaryNode {
         id: ID!
         name: String
@@ -128,43 +166,6 @@ const typeDefs = gql`
         system: Boolean!
     }
 
-    extend type Query {
-        program(id: ID!): Program
-            @isAdmin(entity: "program")
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        programNode(id: ID!): ProgramConnectionNode @isAdmin(entity: "program")
-        programsConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: ProgramFilter
-            sort: ProgramSortInput
-        ): ProgramsConnectionResponse @isAdmin(entity: "program")
-    }
-
-    type Program {
-        id: ID!
-        name: String!
-        system: Boolean!
-        status: Status
-        age_ranges: [AgeRange!]
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2473459840"
-            )
-        grades: [Grade!]
-        subjects: [Subject!]
-
-        # Mutations
-        editAgeRanges(age_range_ids: [ID!]): [AgeRange]
-        editGrades(grade_ids: [ID!]): [Grade]
-        editSubjects(subject_ids: [ID!]): [Subject]
-
-        delete(_: Int): Boolean
-            @deprecated(
-                reason: "Sunset Date: 28/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
-            )
-    }
     input ProgramDetail {
         id: ID
         name: String

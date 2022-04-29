@@ -264,7 +264,7 @@ describe('organizationMembership', () => {
                         idOfUserToBeQueried,
                         school1Id,
                         permissionName,
-                        { authorization: arbitraryUserToken }
+                        { authorization: tokenOfOrg1Owner }
                     )
                     expect(isAllowed).to.be.true
                     expect(gqlMemberships).to.exist
@@ -324,7 +324,7 @@ describe('organizationMembership', () => {
                         idOfUserToBeQueried,
                         school1Id,
                         permissionName,
-                        { authorization: arbitraryUserToken }
+                        { authorization: tokenOfOrg1Owner }
                     )
                     expect(isAllowed).to.be.true
                     expect(gqlMemberships).to.exist

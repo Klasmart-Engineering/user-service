@@ -1,6 +1,6 @@
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
-import { expect, use } from 'chai'
+import chai, { expect, use } from 'chai'
 import { before } from 'mocha'
 import { TestConnection } from '../utils/testConnection'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
@@ -63,8 +63,10 @@ import { UserPermissions } from '../../src/permissions/userPermissions'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { v4 } from 'uuid'
 import { getConnection } from 'typeorm'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 
 use(chaiAsPromised)
+chai.use(deepEqualInAnyOrder)
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -169,7 +171,11 @@ describe('acceptance.user', () => {
     context('school membership dataloaders', () => {
         let myUser: User
         let myOrg: Organization
+        let adminUser: User
         beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
             myUser = await createUser().save()
             myOrg = await createOrganization().save()
             const mySchools = await School.save(
@@ -201,7 +207,7 @@ describe('acceptance.user', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: generateToken(userToPayload(adminUser)),
                 })
                 .send({
                     query: GET_SCHOOL_MEMBERSHIPS_WITH_ORG,

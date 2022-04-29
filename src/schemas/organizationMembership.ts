@@ -13,6 +13,24 @@ import { IDataLoaders } from '../loaders/setup'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
+    type OrganizationMembershipConnectionNode {
+        userId: String!
+        organizationId: String!
+        status: Status!
+        shortCode: String
+        joinTimestamp: Date
+        user: UserConnectionNode @isAdmin(entity: "user")
+        organization: OrganizationConnectionNode
+            @isAdmin(entity: "organization")
+        rolesConnection(
+            count: PageSize
+            cursor: String
+            filter: RoleFilter
+            sort: RoleSortInput
+            direction: ConnectionDirection
+        ): RolesConnectionResponse
+    }
+
     type OrganizationMembershipsConnectionResponse implements iConnectionResponse {
         totalCount: Int
         pageInfo: ConnectionPageInfo
@@ -46,24 +64,6 @@ const typeDefs = gql`
     enum OrganizationMembershipSortBy {
         userId
         organizationId
-    }
-
-    type OrganizationMembershipConnectionNode {
-        userId: String!
-        organizationId: String!
-        status: Status!
-        shortCode: String
-        joinTimestamp: Date
-        user: UserConnectionNode @isAdmin(entity: "user")
-        organization: OrganizationConnectionNode
-            @isAdmin(entity: "organization")
-        rolesConnection(
-            count: PageSize
-            cursor: String
-            filter: RoleFilter
-            sort: RoleSortInput
-            direction: ConnectionDirection
-        ): RolesConnectionResponse
     }
 `
 

@@ -433,6 +433,19 @@ export const LIST_MEMBERSHIPS = gql`
     }
 `
 
+export const LIST_OWNER_AND_PRIMARY_CONTACT = gql`
+    query getOrganizationMembershipsWithUser($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            owner {
+                user_id
+            }
+            primary_contact {
+                user_id
+            }
+        }
+    }
+`
+
 const ORGANIZATIONS_MUTATION_RESULT = `organizations {
                 id
                 name
@@ -1093,6 +1106,29 @@ export async function listMemberships(
     return res.data as {
         organization: {
             memberships: OrganizationMembership[]
+        }
+    }
+}
+
+export async function listOwnerAndPrimaryContact(
+    testClient: ApolloServerTestClient,
+    organization_id: string,
+    headers: Headers
+) {
+    const { query } = testClient
+
+    const operation = () =>
+        query({
+            query: LIST_OWNER_AND_PRIMARY_CONTACT,
+            variables: { organization_id },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data as {
+        organization: {
+            owner: User
+            primary_contact: User
         }
     }
 }
