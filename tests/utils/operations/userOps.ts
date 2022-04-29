@@ -219,33 +219,6 @@ const GET_SCHOOL_MEMBERSHIPS_WITH_PERMISSION = `
     }
 `
 
-const MERGE_USER = `
-mutation myMutation($user_id: ID!, $other_id: String) {
-    user(user_id: $user_id) {
-        merge(other_id: $other_id) {
-            user_id
-            given_name
-            family_name
-            avatar
-            memberships{
-                user_id
-                organization_id
-            }
-            school_memberships{
-                user_id
-                school_id
-            }
-            classesStudying{
-                class_id
-            }
-            classesTeaching{
-                class_id
-            }
-        }
-    }
-}
-`
-
 const ADD_SCHOOL = `
     mutation myMutation($user_id: ID!, $school_id: ID!) {
         user(user_id: $user_id) {
@@ -708,48 +681,6 @@ export async function getUserSchoolMembershipsWithPermission(
     const gqlMemberships = res.data?.user
         .schoolsWithPermission as SchoolMembership[]
     return gqlMemberships
-}
-
-export type MergeUserResponse = {
-    user_id: string
-    given_name: string
-    family_name: string
-    avatar: string
-    memberships: {
-        user_id: string
-        organization_id: string
-    }[]
-    school_memberships: {
-        user_id: string
-        school_id: string
-    }[]
-    classesStudying: {
-        class_id: string
-    }[]
-    classesTeaching: {
-        class_id: string
-    }[]
-} | null
-
-export async function mergeUser(
-    testClient: ApolloServerTestClient,
-    userId: string,
-    otherId: string,
-    headers?: Headers
-) {
-    const { mutate } = testClient
-
-    headers = headers ?? { authorization: getAdminAuthToken() }
-    const operation = () =>
-        mutate({
-            mutation: MERGE_USER,
-            variables: { user_id: userId, other_id: otherId },
-            headers: headers,
-        })
-
-    const res = await gqlTry(operation)
-    const gqlUser = res.data?.user.merge as MergeUserResponse
-    return gqlUser
 }
 
 export function userToSuperPayload(user: User): any {
