@@ -51,6 +51,8 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
 import { buildPermissionError } from '../utils/errors'
 import { getConnection } from 'typeorm'
+import { createClass } from '../factories/class.factory'
+import { Class } from '../../src/entities/class'
 
 chai.use(chaiAsPromised)
 
@@ -1133,6 +1135,80 @@ describe('userPermissions', () => {
                 school.school_id
             )
             expect(permissions).to.have.lengthOf(studentRole.permissions.length)
+        })
+    })
+
+    describe('classesTeaching', () => {
+        let user: User
+        let permissions: UserPermissions
+        let classes: Class[]
+        beforeEach(async () => {
+            user = await createUser().save()
+            classes = await Class.save([
+                createClass(undefined, undefined, {
+                    teachers: [user],
+                }),
+                createClass(undefined, undefined, {
+                    teachers: [user],
+                }),
+            ])
+
+            permissions = new UserPermissions(userToPayload(user))
+        })
+        it('returns classes the user is teaching', async () => {
+            const result = await permissions.classesTeaching()
+            expect(result?.map((r) => r.class_id)).to.have.same.members(
+                classes.map((c) => c.class_id)
+            )
+        })
+        it('caches the result', async () => {
+            await permissions.classesTeaching()
+            connection.logger.reset()
+            await permissions.classesTeaching()
+            expect(connection.logger.count).to.eq(0)
+        })
+    })
+    describe('schoolsInOrgs', () => {
+        let user: User
+        let permissions: UserPermissions
+        let org1: Organization
+        let org2: Organization
+        let org1School: School
+        let org2School: School
+        beforeEach(async () => {
+            user = await createUser().save()
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            org1School = await createSchoolFactory(org1).save()
+            org2School = await createSchoolFactory(org2).save()
+            await createSchoolMembership({ user, school: org1School }).save()
+            await createSchoolMembership({ user, school: org2School }).save()
+            permissions = new UserPermissions(userToPayload(user))
+        })
+        it('returns schools belonging to the orgs that the user is a member', async () => {
+            const allSchools = await permissions.schoolsInOrgs([
+                org1.organization_id,
+                org2.organization_id,
+            ])
+            expect(allSchools).to.have.same.members(
+                [org1School, org2School].map((s) => s.school_id)
+            )
+
+            const school1 = await permissions.schoolsInOrgs([
+                org1.organization_id,
+            ])
+            expect(school1).to.have.same.members([org1School.school_id])
+
+            const school2 = await permissions.schoolsInOrgs([
+                org2.organization_id,
+            ])
+            expect(school2).to.have.same.members([org2School.school_id])
+        })
+        it('caches the result', async () => {
+            await permissions.schoolsInOrgs([org1.organization_id])
+            connection.logger.reset()
+            await permissions.schoolsInOrgs([org2.organization_id])
+            expect(connection.logger.count).to.eq(0)
         })
     })
 })

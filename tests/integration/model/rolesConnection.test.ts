@@ -885,8 +885,8 @@ describe('rolesConnection', () => {
                 authorization: getNonAdminAuthToken(),
             })
             expect(connection.logger.count).to.be.eq(
-                expectedCount + 2,
-                'two extra for permission checks (orgMemberships, schoolMemberships)'
+                expectedCount + 1,
+                'one extra for permission checks'
             )
         })
     })
