@@ -2,7 +2,6 @@ import {
     Column,
     Entity,
     getManager,
-    In,
     JoinColumn,
     JoinTable,
     ManyToMany,
@@ -56,122 +55,6 @@ export class Program extends CustomBaseEntity {
 
     @ManyToMany(() => Class, (class_) => class_.programs)
     public classes?: Promise<Class>
-
-    public async editAgeRanges(
-        { age_range_ids }: { age_range_ids: string[] },
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const organization_id = (await this.organization)?.organization_id
-        if (
-            info.operation.operation !== 'mutation' ||
-            !organization_id ||
-            this.status !== Status.ACTIVE
-        ) {
-            return null
-        }
-
-        const permissionContext = { organization_ids: [organization_id] }
-        await context.permissions.rejectIfNotAllowed(
-            permissionContext,
-            PermissionName.edit_program_20331
-        )
-
-        const validAgeRanges: AgeRange[] = await this.getAgeRanges(
-            age_range_ids
-        )
-        this.age_ranges = Promise.resolve(validAgeRanges)
-
-        await this.save()
-
-        return validAgeRanges
-    }
-
-    public async editGrades(
-        { grade_ids }: { grade_ids: string[] },
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const organization_id = (await this.organization)?.organization_id
-        if (
-            info.operation.operation !== 'mutation' ||
-            !organization_id ||
-            this.status !== Status.ACTIVE
-        ) {
-            return null
-        }
-
-        const permissionContext = { organization_ids: [organization_id] }
-        await context.permissions.rejectIfNotAllowed(
-            permissionContext,
-            PermissionName.edit_program_20331
-        )
-
-        const validGrades: Grade[] = await this.getGrades(grade_ids)
-        this.grades = Promise.resolve(validGrades)
-
-        await this.save()
-
-        return validGrades
-    }
-
-    public async editSubjects(
-        { subject_ids }: { subject_ids: string[] },
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const organization_id = (await this.organization)?.organization_id
-        if (
-            info.operation.operation !== 'mutation' ||
-            !organization_id ||
-            this.status !== Status.ACTIVE
-        ) {
-            return null
-        }
-
-        const permissionContext = { organization_ids: [organization_id] }
-        await context.permissions.rejectIfNotAllowed(
-            permissionContext,
-            PermissionName.edit_program_20331
-        )
-
-        const validSubjects: Subject[] = await this.getSubjects(subject_ids)
-        this.subjects = Promise.resolve(validSubjects)
-
-        await this.save()
-
-        return validSubjects
-    }
-
-    private async getAgeRanges(ids: string[]) {
-        if (ids.length === 0) {
-            return []
-        }
-
-        return await AgeRange.find({
-            where: { id: In(ids) },
-        })
-    }
-
-    private async getGrades(ids: string[]) {
-        if (ids.length === 0) {
-            return []
-        }
-
-        return await Grade.find({
-            where: { id: In(ids) },
-        })
-    }
-
-    private async getSubjects(ids: string[]) {
-        if (ids.length === 0) {
-            return []
-        }
-
-        return await Subject.find({
-            where: { id: In(ids) },
-        })
-    }
 
     public async delete(
         args: Record<string, unknown>,

@@ -34,7 +34,6 @@ const typeDefs = gql`
     }
 
     extend type Mutation {
-        program(id: ID!): Program @isAdmin(entity: "program")
         uploadProgramsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         createPrograms(input: [CreateProgramInput!]!): ProgramsMutationResult
@@ -96,16 +95,6 @@ const typeDefs = gql`
             )
         grades: [Grade!]
         subjects: [Subject!]
-
-        # Mutations
-        editAgeRanges(age_range_ids: [ID!]): [AgeRange]
-        editGrades(grade_ids: [ID!]): [Grade]
-        editSubjects(subject_ids: [ID!]): [Subject]
-
-        delete(_: Int): Boolean
-            @deprecated(
-                reason: "Sunset Date: 28/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
-            )
     }
 
     # pagination extension types start here
@@ -272,8 +261,6 @@ export default function getDefault(
                 ageRangesConnection: ageRangesChildConnectionResolver,
             },
             Mutation: {
-                program: (_parent, args, ctx, _info) =>
-                    model.getProgram(args, ctx),
                 uploadProgramsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadProgramsFromCSV(args, ctx, info),
                 createPrograms: (_parent, args, ctx) =>
