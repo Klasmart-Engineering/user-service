@@ -55,36 +55,4 @@ export class Program extends CustomBaseEntity {
 
     @ManyToMany(() => Class, (class_) => class_.programs)
     public classes?: Promise<Class>
-
-    public async delete(
-        args: Record<string, unknown>,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const organization_id = (await this.organization)?.organization_id
-        if (
-            info.operation.operation !== 'mutation' ||
-            this.status !== Status.ACTIVE
-        ) {
-            return false
-        }
-
-        if (this.system) {
-            context.permissions.rejectIfNotAdmin()
-        }
-
-        const permissionContext = {
-            organization_ids: organization_id ? [organization_id] : undefined,
-        }
-        await context.permissions.rejectIfNotAllowed(
-            permissionContext,
-            PermissionName.delete_program_20441
-        )
-
-        await getManager().transaction(async (manager) => {
-            await this.inactivate(manager)
-        })
-
-        return true
-    }
 }
