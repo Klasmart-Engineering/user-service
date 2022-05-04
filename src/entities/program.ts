@@ -1,7 +1,6 @@
 import {
     Column,
     Entity,
-    getManager,
     JoinColumn,
     JoinTable,
     ManyToMany,
@@ -10,9 +9,6 @@ import {
 } from 'typeorm'
 import { Status } from './status'
 import { Organization } from './organization'
-import { Context } from '../main'
-import { GraphQLResolveInfo } from 'graphql'
-import { PermissionName } from '../permissions/permissionNames'
 import { Subject } from './subject'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
