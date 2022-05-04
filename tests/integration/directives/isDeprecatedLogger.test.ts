@@ -46,12 +46,15 @@ describe('isDeprecatedLogger', () => {
                 }`,
             })
             assert(
-                logSpy.calledOnceWith('warn', '%o', {
-                    operationType: 'query',
-                    operationName: 'MyRequest',
-                    deprecatedField: 'username',
-                    originURL,
-                })
+                logSpy.calledOnceWith(
+                    'warn',
+                    JSON.stringify({
+                        operationType: 'query',
+                        operationName: 'MyRequest',
+                        deprecatedField: 'username',
+                        originURL,
+                    })
+                )
             )
         })
     })
@@ -67,12 +70,15 @@ describe('isDeprecatedLogger', () => {
                 variables: { user_id: '123' },
             })
             assert(
-                logSpy.calledOnceWith('warn', '%o', {
-                    operationType: 'query',
-                    operationName: 'MyRequest',
-                    deprecatedField: 'getUserById',
-                    originURL,
-                })
+                logSpy.calledOnceWith(
+                    'warn',
+                    JSON.stringify({
+                        operationType: 'query',
+                        operationName: 'MyRequest',
+                        deprecatedField: 'getUserById',
+                        originURL,
+                    })
+                )
             )
         })
     })
@@ -89,12 +95,15 @@ describe('isDeprecatedLogger', () => {
                 variables: { username: '123' },
             })
             assert(
-                logSpy.calledOnceWith('warn', '%o', {
-                    operationType: 'mutation',
-                    operationName: 'MyRequest',
-                    deprecatedField: 'setUsername',
-                    originURL,
-                })
+                logSpy.calledOnceWith(
+                    'warn',
+                    JSON.stringify({
+                        operationType: 'mutation',
+                        operationName: 'MyRequest',
+                        deprecatedField: 'setUsername',
+                        originURL,
+                    })
+                )
             )
         })
     })
@@ -113,20 +122,26 @@ describe('isDeprecatedLogger', () => {
             })
             assert(logSpy.calledTwice)
             assert(
-                logSpy.calledWith('warn', '%o', {
-                    operationType: 'query',
-                    operationName: 'MyRequest',
-                    deprecatedField: 'myOrganization',
-                    originURL,
-                })
+                logSpy.calledWith(
+                    'warn',
+                    JSON.stringify({
+                        operationType: 'query',
+                        operationName: 'MyRequest',
+                        deprecatedField: 'myOrganization',
+                        originURL,
+                    })
+                )
             )
             assert(
-                logSpy.calledWith('warn', '%o', {
-                    operationType: 'query',
-                    operationName: 'MyRequest',
-                    deprecatedField: 'orgId',
-                    originURL,
-                })
+                logSpy.calledWith(
+                    'warn',
+                    JSON.stringify({
+                        operationType: 'query',
+                        operationName: 'MyRequest',
+                        deprecatedField: 'orgId',
+                        originURL,
+                    })
+                )
             )
         })
     })
