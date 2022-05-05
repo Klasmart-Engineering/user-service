@@ -92,6 +92,6 @@ export const teacherRole = {
         PermissionName.view_subjects_20115,
         PermissionName.view_user_page_40101,
         PermissionName.view_my_class_users_40112,
-        PermissionName.view_my_admin_users_40113,
+        PermissionName.view_my_admin_users_40114,
     ],
 }

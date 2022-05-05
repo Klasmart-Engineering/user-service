@@ -2060,24 +2060,12 @@ export async function moveUsersToClassAuthorization(
 
     const permissions = context.permissions
 
-    const permNames =
+    const permName =
         usersType === moveUsersTypeToClass.students
-            ? [
-                  PermissionName.add_students_to_class_20225,
-                  PermissionName.delete_student_from_class_roster_20445,
-              ]
-            : [
-                  PermissionName.add_teachers_to_class_20226,
-                  PermissionName.delete_teacher_from_class_20446,
-              ]
+            ? PermissionName.move_students_to_another_class_20335
+            : PermissionName.move_teachers_to_another_class_20340
 
-    const permPromises: Promise<void>[] = []
-    for (const permName of permNames) {
-        permPromises.push(
-            permissions.rejectIfNotAllowed(permissionContext, permName)
-        )
-    }
-    await Promise.all(permPromises)
+    await permissions.rejectIfNotAllowed(permissionContext, permName)
 }
 
 export async function moveUsersToClassProcessAndWrite(
