@@ -24,6 +24,6 @@ export const parentRole = {
         PermissionName.view_school_classes_20117,
         PermissionName.view_my_classes_20118,
         PermissionName.view_subjects_20115,
-        PermissionName.view_my_admin_users_40113,
+        PermissionName.view_my_admin_users_40114,
     ],
 }
