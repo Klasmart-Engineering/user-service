@@ -383,7 +383,7 @@ export const nonAdminUserScope: NonAdminScope<
     // 4 - can we view admin users?
     const orgsWithAdmins = (
         await permissions.orgMembershipsWithPermissions([
-            PermissionName.view_my_admin_users_40113,
+            PermissionName.view_my_admin_users_40114,
         ])
     ).filter((org) => !orgsWithFullAccess.includes(org))
 

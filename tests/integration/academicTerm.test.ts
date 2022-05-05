@@ -182,7 +182,7 @@ describe('academicTerm', () => {
                 const role = await Role.save(
                     createRoleFactory(undefined, org, {
                         permissions: [
-                            PermissionName.create_academic_term_20228,
+                            PermissionName.create_academic_term_20229,
                         ],
                     })
                 )
@@ -218,7 +218,7 @@ describe('academicTerm', () => {
                         await expect(
                             authorize(inputs)
                         ).to.be.eventually.rejectedWith(
-                            /User\(.*\) does not have Permission\(create_academic_term_20228\) in Organizations\(.*\)/
+                            /User\(.*\) does not have Permission\(create_academic_term_20229\) in Organizations\(.*\)/
                         )
                     })
                 }
@@ -645,7 +645,7 @@ describe('academicTerm', () => {
             }
             it('passes when user has required permission in all orgs', async () => {
                 const role = await createRoleFactory('role', org, {
-                    permissions: [PermissionName.delete_academic_term_20448],
+                    permissions: [PermissionName.delete_academic_term_20449],
                 }).save()
                 await createOrganizationMembership({
                     user: nonAdminUser,
@@ -658,7 +658,7 @@ describe('academicTerm', () => {
                 await expect(
                     authorize(nonAdminUser)
                 ).to.be.eventually.rejectedWith(
-                    /User\(.*\) does not have Permission\(delete_academic_term_20448\) in Organizations\(.*\)/
+                    /User\(.*\) does not have Permission\(delete_academic_term_20449\) in Organizations\(.*\)/
                 )
             })
         })

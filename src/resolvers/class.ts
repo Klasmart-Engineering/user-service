@@ -2063,7 +2063,7 @@ export async function moveUsersToClassAuthorization(
     const permName =
         usersType === moveUsersTypeToClass.students
             ? PermissionName.move_students_to_another_class_20335
-            : PermissionName.move_teachers_to_another_class_20336
+            : PermissionName.move_teachers_to_another_class_20340
 
     await permissions.rejectIfNotAllowed(permissionContext, permName)
 }

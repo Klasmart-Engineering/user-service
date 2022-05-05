@@ -1812,7 +1812,7 @@ describe('acceptance.class', () => {
             org = await createOrganization().save()
 
             const permissions = [
-                PermissionName.move_teachers_to_another_class_20336,
+                PermissionName.move_teachers_to_another_class_20340,
             ]
 
             const nonAdminRole = await createRoleFactory(

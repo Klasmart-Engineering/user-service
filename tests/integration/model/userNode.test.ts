@@ -258,7 +258,7 @@ describe('userNode', () => {
                     )
                 })
             })
-            context('User with view_my_admin_users_40113', () => {
+            context('User with view_my_admin_users_40114', () => {
                 let userWithPermission: User
                 let schoolAdmin: User
                 beforeEach(async () => {
@@ -266,7 +266,7 @@ describe('userNode', () => {
                     await addPermission({
                         user: userWithPermission,
                         organization: organizations[1],
-                        permission: PermissionName.view_my_admin_users_40113,
+                        permission: PermissionName.view_my_admin_users_40114,
                     })
                     schoolAdmin = await User.save(createUser())
                     const schAdminRole = await Role.findOne({
