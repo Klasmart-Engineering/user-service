@@ -13,7 +13,6 @@ import {
     In,
     RelationId,
     JoinColumn,
-    SelectQueryBuilder,
 } from 'typeorm'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
@@ -30,9 +29,6 @@ import { CustomBaseEntity } from './customBaseEntity'
 import logger from '../logging'
 import { reportError } from '../utils/resolvers/errors'
 import { AcademicTerm } from './academicTerm'
-import { scopeHasJoin } from '../utils/typeorm'
-import { OrganizationMembership } from './organizationMembership'
-import { SchoolMembership } from './schoolMembership'
 
 @Entity()
 @Check(`"class_name" <> ''`)
@@ -124,42 +120,31 @@ export class Class extends CustomBaseEntity {
         }
     }
 
-    public async eligibleTeachers(
-        scope: SelectQueryBuilder<User>
-    ): Promise<User[] | IterableIterator<User>> {
+    public async eligibleTeachers(): Promise<User[] | IterableIterator<User>> {
         const members = await this._membersWithPermission(
-            PermissionName.attend_live_class_as_a_teacher_186,
-            scope
+            PermissionName.attend_live_class_as_a_teacher_186
         )
         return this.filterMembersForClass(members)
     }
 
-    public async eligibleStudents(
-        scope: SelectQueryBuilder<User>
-    ): Promise<User[] | IterableIterator<User>> {
+    public async eligibleStudents(): Promise<User[] | IterableIterator<User>> {
         const members = await this._membersWithPermission(
-            PermissionName.attend_live_class_as_a_student_187,
-            scope
+            PermissionName.attend_live_class_as_a_student_187
         )
         return this.filterMembersForClass(members)
     }
 
-    private async _membersWithPermission(
-        permission_name: PermissionName,
-        scope: SelectQueryBuilder<User>
-    ) {
+    public async _membersWithPermission(permission_name: PermissionName) {
         const results = new Map<string, User>()
-        const orgMemScope = scope.clone()
-        const schoolMemScope = scope.clone()
-        if (!scopeHasJoin(scope, OrganizationMembership)) {
-            orgMemScope.leftJoin('User.memberships', 'OrganizationMembership')
-        }
-        const organizationPromise = orgMemScope
+        const userRepo = getRepository(User)
+        const organizationPromise = userRepo
+            .createQueryBuilder()
+            .innerJoin('User.memberships', 'OrganizationMembership')
             .innerJoin('OrganizationMembership.organization', 'Organization')
             .innerJoin('OrganizationMembership.roles', 'Role')
             .innerJoin('Role.permissions', 'Permission')
             .innerJoin('Organization.classes', 'Class')
-            .andWhere('Class.class_id = :class_id', { class_id: this.class_id })
+            .where('Class.class_id = :class_id', { class_id: this.class_id })
             .andWhere('Permission.permission_name = :permission_name', {
                 permission_name,
             })
@@ -169,18 +154,14 @@ export class Class extends CustomBaseEntity {
             .having('bool_and(Permission.allow) = :allowed', { allowed: true })
             .getMany()
 
-        if (!scopeHasJoin(scope, SchoolMembership)) {
-            schoolMemScope.leftJoin(
-                'User.school_memberships',
-                'SchoolMembership'
-            )
-        }
-        const schoolPromise = schoolMemScope
+        const schoolPromise = userRepo
+            .createQueryBuilder()
+            .innerJoin('User.school_memberships', 'SchoolMembership')
             .innerJoin('SchoolMembership.school', 'School')
             .innerJoin('SchoolMembership.roles', 'Role')
             .innerJoin('Role.permissions', 'Permission')
             .innerJoin('School.classes', 'Class')
-            .andWhere('Class.class_id = :class_id', { class_id: this.class_id })
+            .where('Class.class_id = :class_id', { class_id: this.class_id })
             .andWhere('Permission.permission_name = :permission_name', {
                 permission_name,
             })

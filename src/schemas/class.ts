@@ -31,9 +31,6 @@ import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
 import { mutate } from '../utils/mutations/commonStructure'
 import { CoreClassConnectionNode } from '../pagination/classesConnection'
-import { Class } from '../entities/class'
-import { SelectQueryBuilder } from 'typeorm'
-import { User } from '../entities/user'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -253,8 +250,8 @@ const typeDefs = gql`
         #connections
         organization: Organization
         schools: [School]
-        teachers: [User] @isAdmin(entity: "user")
-        students: [User] @isAdmin(entity: "user")
+        teachers: [User]
+        students: [User]
         # schedule: [ScheduleEntry]
 
         # query
@@ -263,12 +260,10 @@ const typeDefs = gql`
         grades: [Grade!]
         subjects: [Subject!]
         eligibleTeachers: [User]
-            @isAdmin(entity: "user")
             @deprecated(
                 reason: "Sunset Date: 31/03/2022 Details: [https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2478735554]"
             )
         eligibleStudents: [User]
-            @isAdmin(entity: "user")
             @deprecated(
                 reason: "Sunset Date: 31/03/2022 Details: [https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2478735554]"
             )
@@ -479,32 +474,6 @@ export async function loadGradesForClass(
     })
 }
 
-export async function teachers(
-    parent: Class,
-    args: { scope: SelectQueryBuilder<User> }
-): Promise<User[]> {
-    const scope = args.scope as SelectQueryBuilder<User>
-    return scope
-        .innerJoin('User.classesTeaching', 'ClassTeaching')
-        .andWhere('ClassTeaching.class_id = :class_id', {
-            class_id: parent.class_id,
-        })
-        .getMany()
-}
-
-export async function students(
-    parent: Class,
-    args: { scope: SelectQueryBuilder<User> }
-): Promise<User[]> {
-    const scope = args.scope as SelectQueryBuilder<User>
-    return scope
-        .innerJoin('User.classesStudying', 'ClassStudying')
-        .andWhere('ClassStudying.class_id = :class_id', {
-            class_id: parent.class_id,
-        })
-        .getMany()
-}
-
 export default function getDefault(
     model: Model,
     context?: Context
@@ -618,16 +587,6 @@ export default function getDefault(
                 subjectsConnection: subjectsChildConnectionResolver,
                 programsConnection: programsChildConnectionResolver,
                 ageRangesConnection: ageRangesChildConnectionResolver,
-            },
-            Class: {
-                students,
-                teachers,
-                eligibleStudents: async (parent: Class, args) => {
-                    return parent.eligibleStudents(args.scope)
-                },
-                eligibleTeachers: async (parent: Class, args) => {
-                    return parent.eligibleTeachers(args.scope)
-                },
             },
             Mutation: {
                 deleteClasses: (_parent, args, ctx, _info) =>
