@@ -117,6 +117,8 @@ import { ObjMap } from '../../src/utils/stringUtils'
 import { getMap } from '../../src/utils/resolvers/entityMaps'
 import { customErrors } from '../../src/types/errors/customError'
 import { createAcademicTerm } from '../factories/academicTerm.factory'
+import { SinonFakeTimers } from 'sinon'
+import sinon from 'sinon'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -3414,6 +3416,7 @@ describe('school', () => {
         let roles: Role[]
 
         let input: AddUsersToSchoolInput[]
+        let clock: SinonFakeTimers
 
         beforeEach(async () => {
             adminUser = await createAdminUser(testClient)
@@ -3452,12 +3455,9 @@ describe('school', () => {
                     i.userIds
                 )
 
+                const expectedDate = new clock.Date()
                 for (const m of memberships) {
-                    // The dates to compare differs some milliseconds,
-                    // because there are some processes inside that take some time
-                    expect(m.status_updated_at).to.be.at.least(
-                        statusUpdatedAtDate
-                    )
+                    expect(m.status_updated_at).to.deep.equal(expectedDate)
 
                     const mRoles = await m.roles
                     expect(mRoles?.map((r) => r.role_id)).to.have.same.members(
@@ -3485,6 +3485,14 @@ describe('school', () => {
 
         context('.run', () => {
             context('when all attributes are valid', () => {
+                beforeEach(() => {
+                    clock = sinon.useFakeTimers()
+                })
+
+                afterEach(() => {
+                    clock.restore()
+                })
+
                 it('adds all the users', async () => {
                     statusUpdatedAtDate = new Date()
                     await expect(getAddUsersToSchools().run()).to.be.fulfilled
