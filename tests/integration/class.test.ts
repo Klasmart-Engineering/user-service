@@ -8608,7 +8608,7 @@ describe('class', () => {
         }
 
         const permissions = [
-            PermissionName.move_teachers_to_another_class_20336,
+            PermissionName.move_teachers_to_another_class_20340,
         ]
 
         beforeEach(async () => {
@@ -8691,7 +8691,7 @@ describe('class', () => {
                         )
                     ).to.be.rejected) as Error
                     expect(error.message).to.equal(
-                        `User(${veryNonAdminUser.user_id}) does not have Permission(move_teachers_to_another_class_20336) in Organizations(${org.organization_id}) in Schools(${schools[0].school_id})`
+                        `User(${veryNonAdminUser.user_id}) does not have Permission(move_teachers_to_another_class_20340) in Organizations(${org.organization_id}) in Schools(${schools[0].school_id})`
                     )
 
                     await checkTeachersUnchanged(

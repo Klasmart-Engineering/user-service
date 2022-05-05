@@ -815,18 +815,18 @@ describe('isAdmin', () => {
                 })
             })
 
-            context('with view_my_admin_users_40113', () => {
+            context('with view_my_admin_users_40114', () => {
                 let user: User
                 let schoolAdminSameSchool: User
                 let schoolAdminRole: Role
 
                 beforeEach(async () => {
-                    //grant view_my_admin_users_40113 permission to users[0]
+                    //grant view_my_admin_users_40114 permission to users[0]
                     user = usersList[0]
                     await grantPermission(
                         testClient,
                         roleList[0].role_id,
-                        PermissionName.view_my_admin_users_40113,
+                        PermissionName.view_my_admin_users_40114,
                         { authorization: getAdminAuthToken() }
                     )
 

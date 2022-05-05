@@ -57,7 +57,7 @@ describe('acceptance.academicTerm', () => {
             ])
             createATRole = await Role.save(
                 createRole('Create ATs', org, {
-                    permissions: [PermissionName.create_academic_term_20228],
+                    permissions: [PermissionName.create_academic_term_20229],
                 })
             )
 

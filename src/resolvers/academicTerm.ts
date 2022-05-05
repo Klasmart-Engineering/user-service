@@ -89,7 +89,7 @@ export class CreateAcademicTerms extends CreateMutation<
                 ),
                 school_ids: Array.from(maps.schools.keys()),
             },
-            PermissionName.create_academic_term_20228
+            PermissionName.create_academic_term_20229
         )
     }
 
@@ -288,7 +288,7 @@ export class DeleteAcademicTerms extends DeleteMutation<
                 organization_ids,
                 school_ids,
             },
-            PermissionName.delete_academic_term_20448
+            PermissionName.delete_academic_term_20449
         )
     }
 
