@@ -156,8 +156,10 @@ describe('model', () => {
                     direction: 'FORWARD',
                     directionArgs: { count: pageSize },
                     scope,
-                })
-                checkPageInfo(result, permissionsCount, pageSize)
+                    }
+                )
+
+                checkPageInfo(result, permissionsCount)
             })
         })
 
@@ -173,8 +175,10 @@ describe('model', () => {
                     direction: 'FORWARD',
                     directionArgs: { count: pageSize },
                     scope,
-                })
-                checkPageInfo(result, roleInvolvedPermissionsCount, pageSize)
+                    }
+                )
+
+                checkPageInfo(result, roleInvolvedPermissionsCount)
             })
         })
 
@@ -247,6 +251,8 @@ describe('model', () => {
     context('filtering', () => {
         let customRole: Role
         const customRolePermissionIds = [
+            PermissionName.add_content_learning_outcomes_433,
+            PermissionName.add_learning_outcome_to_content_485,
             PermissionName.add_students_to_class_20225,
             PermissionName.add_teachers_to_class_20226,
         ]
@@ -373,7 +379,7 @@ describe('model', () => {
                 filter,
             })
 
-            expect(result.totalCount).to.eql(3)
+            expect(result.totalCount).to.eql(5)
 
             result.edges.forEach((edge) => {
                 expect(edge.node.name).includes(searching)
