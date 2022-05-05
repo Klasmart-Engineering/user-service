@@ -241,13 +241,19 @@ function doesUserAlreadyExist(
     // value instead of the normalized value.
     // this could be removed if a DB migration was run to normalize all email values.
     if (usersWhoMatchByName !== undefined) {
-        const usersWhoMatchByLogin = usersWhoMatchByName?.filter(
-            (u) =>
-                u.email === row.user_email ||
-                clean.email(u.email) === row.user_email ||
-                u.phone === row.user_phone ||
-                u.username === row.user_username
-        )
+        const usersWhoMatchByLogin = usersWhoMatchByName?.filter((u) => {
+            const isSameEmail =
+                row.user_email &&
+                (u.email === row.user_email ||
+                    clean.email(u.email) === row.user_email)
+
+            const isSamePhone = row.user_phone && u.phone === row.user_phone
+            const isSameUsername =
+                row.user_username && u.username === row.user_username
+
+            return isSameEmail || isSamePhone || isSameUsername
+        })
+
         if (usersWhoMatchByLogin.length > 0) {
             return usersWhoMatchByLogin.pop()
         }

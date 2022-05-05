@@ -2094,6 +2094,94 @@ describe('processUserFromCSVRow', async () => {
                 }
             )
         })
+
+        context(
+            'and given name and family name already exists on another user',
+            () => {
+                let existentUser: User
+
+                function shouldCreateANewUser() {
+                    it('should create a new user', async () => {
+                        await processUserFromCSVRows(
+                            connection.manager,
+                            [row],
+                            1,
+                            [],
+                            adminPermissions,
+                            queryResultCache
+                        )
+
+                        const sameFullNameUsers = await User.find({
+                            where: {
+                                given_name: existentUser.given_name,
+                                family_name: existentUser.family_name,
+                            },
+                        })
+
+                        expect(sameFullNameUsers.length).to.eq(2)
+                        expect(sameFullNameUsers[0].user_id).to.not.eq(
+                            sameFullNameUsers[1].user_id
+                        )
+                    })
+                }
+
+                beforeEach(async () => {
+                    existentUser = await createUser().save()
+                    await createOrganizationMembership({
+                        user: existentUser,
+                        organization,
+                    })
+
+                    row = {
+                        ...row,
+                        user_given_name: existentUser.given_name!,
+                        user_family_name: existentUser.family_name!,
+                    }
+                })
+
+                context(
+                    'and user_username is not provided, also existent user has not username',
+                    () => {
+                        beforeEach(async () => {
+                            existentUser.username = undefined
+                            await existentUser.save()
+
+                            row.user_username = undefined
+                        })
+
+                        shouldCreateANewUser()
+                    }
+                )
+
+                context(
+                    'and user_email is not provided, also existent user has not email',
+                    () => {
+                        beforeEach(async () => {
+                            existentUser.email = undefined
+                            await existentUser.save()
+
+                            row.user_email = undefined
+                        })
+
+                        shouldCreateANewUser()
+                    }
+                )
+
+                context(
+                    'and user_phone is not provided, also existent user has not phone',
+                    () => {
+                        beforeEach(async () => {
+                            existentUser.phone = undefined
+                            await existentUser.save()
+
+                            row.user_phone = undefined
+                        })
+
+                        shouldCreateANewUser()
+                    }
+                )
+            }
+        )
     })
 
     context('performance', () => {
