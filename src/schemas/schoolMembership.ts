@@ -13,6 +13,22 @@ import {
 } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
+    type SchoolMembershipConnectionNode {
+        userId: String!
+        schoolId: String!
+        status: Status!
+        joinTimestamp: Date
+        user: UserConnectionNode @isAdmin(entity: "user")
+        school: SchoolConnectionNode @isAdmin(entity: "school")
+        rolesConnection(
+            count: PageSize
+            cursor: String
+            filter: RoleFilter
+            sort: RoleSortInput
+            direction: ConnectionDirection
+        ): RolesConnectionResponse
+    }
+
     type SchoolMembershipsConnectionResponse implements iConnectionResponse {
         totalCount: Int
         pageInfo: ConnectionPageInfo
@@ -45,22 +61,6 @@ const typeDefs = gql`
     enum SchoolMembershipSortBy {
         userId
         schoolId
-    }
-
-    type SchoolMembershipConnectionNode {
-        userId: String!
-        schoolId: String!
-        status: Status!
-        joinTimestamp: Date
-        user: UserConnectionNode @isAdmin(entity: "user")
-        school: SchoolConnectionNode @isAdmin(entity: "school")
-        rolesConnection(
-            count: PageSize
-            cursor: String
-            filter: RoleFilter
-            sort: RoleSortInput
-            direction: ConnectionDirection
-        ): RolesConnectionResponse
     }
 `
 

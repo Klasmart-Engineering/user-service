@@ -32,7 +32,7 @@ import { AcademicTerm } from '../entities/academicTerm'
 // changing permission rules? update the docs: permissions.md
 //
 
-type IEntityString =
+export type IEntityString =
     | 'organization'
     | 'user'
     | 'role'
@@ -250,7 +250,6 @@ export const nonAdminUserScope: NonAdminScope<
     User | OrganizationMembership | SchoolMembership
 > = async (scope, permissions) => {
     const user_id = permissions.getUserId()
-    const user = getRepository(User).create({ user_id })
     const email = permissions.getEmail()
     const phone = permissions.getPhone()
 
@@ -325,7 +324,7 @@ export const nonAdminUserScope: NonAdminScope<
 
     if (orgsWithSchools.length) {
         // find a schools the user is a member of in these orgs
-        const schoolIds = await getMyOrgsSchools(orgsWithSchools, user_id)
+        const schoolIds = await permissions.schoolsInOrgs(orgsWithSchools)
 
         if (schoolIds.length) {
             if (!scopeHasJoin(scope, SchoolMembership)) {
@@ -343,7 +342,7 @@ export const nonAdminUserScope: NonAdminScope<
         PermissionName.view_my_class_users_40112,
     ])
     if (orgsWithClasses.length) {
-        const classesTaught = await user.classesTeaching
+        const classesTaught = await permissions.classesTeaching()
         if (classesTaught?.length) {
             const distinctMembers = (
                 membershipTable: string,
@@ -384,13 +383,13 @@ export const nonAdminUserScope: NonAdminScope<
     // 4 - can we view admin users?
     const orgsWithAdmins = (
         await permissions.orgMembershipsWithPermissions([
-            PermissionName.view_my_admin_users_40113,
+            PermissionName.view_my_admin_users_40114,
         ])
     ).filter((org) => !orgsWithFullAccess.includes(org))
 
     if (orgsWithAdmins.length) {
         // find a schools the user is a member of in these orgs
-        const schoolIds = await getMyOrgsSchools(orgsWithAdmins, user_id)
+        const schoolIds = await permissions.schoolsInOrgs(orgsWithAdmins)
         if (schoolIds.length) {
             // add joins and where conds to find school admins of these schools
             if (!scopeHasJoin(scope, SchoolMembership)) {
@@ -435,22 +434,6 @@ export const nonAdminUserScope: NonAdminScope<
                 )
             }
         })
-    )
-}
-
-const getMyOrgsSchools = async (orgIds: string[], user_id?: string) => {
-    const schoolIdsQuery = getRepository(SchoolMembership)
-        .createQueryBuilder()
-        .select('SchoolMembership.school_id')
-        .innerJoin('SchoolMembership.school', 'School')
-        .innerJoin('School.organization', 'Organization')
-        .where('Organization.organization_id in (:...orgIds)', {
-            orgIds,
-        })
-        .andWhere('SchoolMembership.userUserId = :user_id', { user_id })
-
-    return (await schoolIdsQuery.getRawMany()).map(
-        ({ SchoolMembership_school_id }) => SchoolMembership_school_id
     )
 }
 
@@ -787,12 +770,8 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
     scope,
     permissions
 ) => {
-    const userId = permissions.getUserId() || ''
-    const orgMembership = await OrganizationMembership.findOne({
-        where: { user_id: userId },
-    })
-
-    if (orgMembership) {
+    const orgIds = await permissions.orgMembershipsWithPermissions([])
+    if (orgIds.length) {
         scope.innerJoin('Permission.roles', 'Role')
         return
     }

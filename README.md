@@ -98,7 +98,7 @@ INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>');
 
 #### 2 - Your user has been assigned to a organisation
 
-- Create an organisation on your local DB for your user
+Start the user-service and create an organization on your local DB for your user
 
 ```graphql
 mutation {
@@ -110,22 +110,26 @@ mutation {
 }
 ```
 
-#### 3 - You switched to local frontend environment variables settings in `.env`
+#### 3 - You've updated .env in both repositories
 
 ```dotenv
+# hub-frontend
+API_ENDPOINT=https://fe.alpha.kidsloop.net:3000/
+
+# user-service
 NODE_ENV=dev
 DOMAIN=fe.alpha.kidsloop.net
 ```
 
 ### **Starting local development servers**
 
-- Follow [instructions to set up the frontend on your machine](https://bitbucket.org/calmisland/kidsloop-hub-frontend/src/dev/README.md)
+- Follow [instructions to set up the frontend on your machine](https://github.com/KL-Engineering/kidsloop-hub-frontend)
 - Start the backend in local mode: `npm run start:local`
 - Start the frontend: `npm run start`
 - Open the frontend in your browser and login using your credentials from the process above
 - Note: you may need to allow the insecure hosts (frontend and backend) in your browser when launching for the first time
 
-### **Docker**
+## **Docker**
 
 You can also run the application with its dependencies through a docker-compose. For this just run:
 

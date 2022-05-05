@@ -14,6 +14,35 @@ import { RoleConnectionNode } from '../types/graphQL/role'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
+    extend type Query {
+        permissionsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            sort: PermissionSortInput
+            filter: PermissionFilter
+        ): PermissionsConnectionResponse @isAdmin(entity: "permission")
+        permissionNode(id: ID!): PermissionsConnectionNode
+            @isAdmin(entity: "permission")
+    }
+
+    type PermissionsConnectionNode {
+        id: ID!
+        name: String!
+        category: String
+        group: String
+        level: String
+        description: String
+        allow: Boolean!
+
+        rolesConnection(
+            count: PageSize
+            cursor: String
+            filter: RoleFilter
+            sort: RoleSortInput
+            direction: ConnectionDirection
+        ): RolesConnectionResponse
+    }
+
     type Permission {
         permission_id: ID
         permission_name: ID!
@@ -33,24 +62,6 @@ const typeDefs = gql`
     type PermissionsConnectionEdge implements iConnectionEdge {
         cursor: String
         node: PermissionsConnectionNode
-    }
-
-    type PermissionsConnectionNode {
-        id: ID!
-        name: String!
-        category: String
-        group: String
-        level: String
-        description: String
-        allow: Boolean!
-
-        rolesConnection(
-            count: PageSize
-            cursor: String
-            filter: RoleFilter
-            sort: RoleSortInput
-            direction: ConnectionDirection
-        ): RolesConnectionResponse
     }
 
     enum PermissionSortBy {
@@ -73,17 +84,6 @@ const typeDefs = gql`
 
         AND: [PermissionFilter!]
         OR: [PermissionFilter!]
-    }
-
-    extend type Query {
-        permissionsConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            sort: PermissionSortInput
-            filter: PermissionFilter
-        ): PermissionsConnectionResponse @isAdmin(entity: "permission")
-        permissionNode(id: ID!): PermissionsConnectionNode
-            @isAdmin(entity: "permission")
     }
 `
 export async function rolesConnectionChildResolver(

@@ -11,6 +11,22 @@ import {
 import { mutate } from '../utils/mutations/commonStructure'
 
 const typeDefs = gql`
+    extend type Query {
+        subcategory(id: ID!): Subcategory
+            @isAdmin(entity: "subcategory")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        subcategoryNode(id: ID!): SubcategoryConnectionNode
+            @isAdmin(entity: "subcategory")
+        subcategoriesConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            sort: SubcategorySortInput
+            filter: SubcategoryFilter
+        ): SubcategoriesConnectionResponse @isAdmin(entity: "subcategory")
+    }
+
     extend type Mutation {
         subcategory(id: ID!): Subcategory
             @isAdmin(entity: "subcategory")
@@ -30,20 +46,11 @@ const typeDefs = gql`
         ): SubcategoriesMutationResult
     }
 
-    extend type Query {
-        subcategory(id: ID!): Subcategory
-            @isAdmin(entity: "subcategory")
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        subcategoryNode(id: ID!): SubcategoryConnectionNode
-            @isAdmin(entity: "subcategory")
-        subcategoriesConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            sort: SubcategorySortInput
-            filter: SubcategoryFilter
-        ): SubcategoriesConnectionResponse @isAdmin(entity: "subcategory")
+    type SubcategoryConnectionNode {
+        id: ID!
+        name: String!
+        status: Status!
+        system: Boolean!
     }
 
     type Subcategory {
@@ -74,13 +81,6 @@ const typeDefs = gql`
     type SubcategoriesConnectionEdge implements iConnectionEdge {
         cursor: String
         node: SubcategoryConnectionNode
-    }
-
-    type SubcategoryConnectionNode {
-        id: ID!
-        name: String!
-        status: Status!
-        system: Boolean!
     }
 
     enum SubcategorySortBy {

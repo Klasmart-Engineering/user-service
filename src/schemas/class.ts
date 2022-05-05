@@ -31,11 +31,23 @@ import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
 import { mutate } from '../utils/mutations/commonStructure'
 import { CoreClassConnectionNode } from '../pagination/classesConnection'
-import { Class } from '../entities/class'
-import { SelectQueryBuilder } from 'typeorm'
-import { User } from '../entities/user'
 
 const typeDefs = gql`
+    extend type Query {
+        classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
+        class(class_id: ID!): Class
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        classNode(id: ID!): ClassConnectionNode @isAdmin(entity: "class")
+        classesConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse @isAdmin(entity: "class")
+    }
+
     extend type Mutation {
         classes: [Class]
         class(class_id: ID!): Class
@@ -74,66 +86,6 @@ const typeDefs = gql`
         moveTeachersToClass(
             input: MoveUsersToClassInput
         ): MoveUsersToClassMutationResult
-    }
-
-    # pagination extension types start here
-    type ClassesConnectionResponse implements iConnectionResponse {
-        totalCount: Int
-        pageInfo: ConnectionPageInfo
-        edges: [ClassesConnectionEdge]
-    }
-
-    type ClassesConnectionEdge implements iConnectionEdge {
-        cursor: String
-        node: ClassConnectionNode
-    }
-
-    # pagination extension types end here
-
-    enum ClassSortBy {
-        id
-        name
-    }
-
-    input ClassSortInput {
-        field: ClassSortBy!
-        order: SortOrder!
-    }
-
-    input MoveUsersToClassInput {
-        fromClassId: ID!
-        toClassId: ID!
-        userIds: [ID!]!
-    }
-
-    type MoveUsersToClassMutationResult {
-        fromClass: ClassConnectionNode!
-        toClass: ClassConnectionNode!
-    }
-
-    input ClassFilter {
-        id: UUIDFilter
-        name: StringFilter
-        status: StringFilter
-
-        #joined columns
-        organizationId: UUIDFilter
-        ageRangeValueFrom: AgeRangeValueFilter
-        ageRangeUnitFrom: AgeRangeUnitFilter
-        ageRangeValueTo: AgeRangeValueFilter
-        ageRangeUnitTo: AgeRangeUnitFilter
-        schoolId: UUIDExclusiveFilter
-        gradeId: UUIDFilter
-        subjectId: UUIDFilter
-        academicTermId: UUIDExclusiveFilter
-
-        #connections - extra filters
-        studentId: UUIDFilter
-        teacherId: UUIDFilter
-        programId: UUIDFilter
-
-        AND: [ClassFilter!]
-        OR: [ClassFilter!]
     }
 
     type ClassConnectionNode {
@@ -221,28 +173,6 @@ const typeDefs = gql`
         ): AgeRangesConnectionResponse
     }
 
-    type CoreProgramConnectionNode {
-        id: ID!
-        name: String
-        status: Status!
-        system: Boolean!
-    }
-
-    extend type Query {
-        classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
-        class(class_id: ID!): Class
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        classNode(id: ID!): ClassConnectionNode @isAdmin(entity: "class")
-        classesConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: ClassFilter
-            sort: ClassSortInput
-        ): ClassesConnectionResponse @isAdmin(entity: "class")
-    }
-
     type Class {
         class_id: ID!
 
@@ -253,8 +183,8 @@ const typeDefs = gql`
         #connections
         organization: Organization
         schools: [School]
-        teachers: [User] @isAdmin(entity: "user")
-        students: [User] @isAdmin(entity: "user")
+        teachers: [User]
+        students: [User]
         # schedule: [ScheduleEntry]
 
         # query
@@ -263,12 +193,10 @@ const typeDefs = gql`
         grades: [Grade!]
         subjects: [Subject!]
         eligibleTeachers: [User]
-            @isAdmin(entity: "user")
             @deprecated(
                 reason: "Sunset Date: 31/03/2022 Details: [https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2478735554]"
             )
         eligibleStudents: [User]
-            @isAdmin(entity: "user")
             @deprecated(
                 reason: "Sunset Date: 31/03/2022 Details: [https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2478735554]"
             )
@@ -302,6 +230,73 @@ const typeDefs = gql`
             @deprecated(reason: "Use deleteClasses() method")
         # addSchedule(id: ID!, timestamp: Date): Boolean
         # removeSchedule(id: ID!): Boolean
+    }
+
+    # pagination extension types start here
+    type ClassesConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [ClassesConnectionEdge]
+    }
+
+    type ClassesConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: ClassConnectionNode
+    }
+
+    # pagination extension types end here
+
+    enum ClassSortBy {
+        id
+        name
+    }
+
+    input ClassSortInput {
+        field: ClassSortBy!
+        order: SortOrder!
+    }
+
+    input MoveUsersToClassInput {
+        fromClassId: ID!
+        toClassId: ID!
+        userIds: [ID!]!
+    }
+
+    type MoveUsersToClassMutationResult {
+        fromClass: ClassConnectionNode!
+        toClass: ClassConnectionNode!
+    }
+
+    input ClassFilter {
+        id: UUIDFilter
+        name: StringFilter
+        status: StringFilter
+
+        #joined columns
+        organizationId: UUIDFilter
+        ageRangeValueFrom: AgeRangeValueFilter
+        ageRangeUnitFrom: AgeRangeUnitFilter
+        ageRangeValueTo: AgeRangeValueFilter
+        ageRangeUnitTo: AgeRangeUnitFilter
+        schoolId: UUIDExclusiveFilter
+        gradeId: UUIDFilter
+        subjectId: UUIDFilter
+        academicTermId: UUIDExclusiveFilter
+
+        #connections - extra filters
+        studentId: UUIDFilter
+        teacherId: UUIDFilter
+        programId: UUIDFilter
+
+        AND: [ClassFilter!]
+        OR: [ClassFilter!]
+    }
+
+    type CoreProgramConnectionNode {
+        id: ID!
+        name: String
+        status: Status!
+        system: Boolean!
     }
 
     # Mutation related definitions
@@ -479,32 +474,6 @@ export async function loadGradesForClass(
     })
 }
 
-export async function teachers(
-    parent: Class,
-    args: { scope: SelectQueryBuilder<User> }
-): Promise<User[]> {
-    const scope = args.scope as SelectQueryBuilder<User>
-    return scope
-        .innerJoin('User.classesTeaching', 'ClassTeaching')
-        .andWhere('ClassTeaching.class_id = :class_id', {
-            class_id: parent.class_id,
-        })
-        .getMany()
-}
-
-export async function students(
-    parent: Class,
-    args: { scope: SelectQueryBuilder<User> }
-): Promise<User[]> {
-    const scope = args.scope as SelectQueryBuilder<User>
-    return scope
-        .innerJoin('User.classesStudying', 'ClassStudying')
-        .andWhere('ClassStudying.class_id = :class_id', {
-            class_id: parent.class_id,
-        })
-        .getMany()
-}
-
 export default function getDefault(
     model: Model,
     context?: Context
@@ -618,16 +587,6 @@ export default function getDefault(
                 subjectsConnection: subjectsChildConnectionResolver,
                 programsConnection: programsChildConnectionResolver,
                 ageRangesConnection: ageRangesChildConnectionResolver,
-            },
-            Class: {
-                students,
-                teachers,
-                eligibleStudents: async (parent: Class, args) => {
-                    return parent.eligibleStudents(args.scope)
-                },
-                eligibleTeachers: async (parent: Class, args) => {
-                    return parent.eligibleTeachers(args.scope)
-                },
             },
             Mutation: {
                 deleteClasses: (_parent, args, ctx, _info) =>

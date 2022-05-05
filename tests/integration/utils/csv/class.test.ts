@@ -7,7 +7,10 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../../utils/createTestClient'
-import { TestConnection } from '../../../utils/testConnection'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../../utils/testConnection'
 import { Organization } from '../../../../src/entities/organization'
 import { Program } from '../../../../src/entities/program'
 import { School } from '../../../../src/entities/school'
@@ -27,6 +30,8 @@ import { createAcademicTerm } from '../../../factories/academicTerm.factory'
 import { AcademicTerm } from '../../../../src/entities/academicTerm'
 import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 import { customErrors } from '../../../../src/types/errors/customError'
+import { transactionalContext } from '../../hooks'
+import { createAdminUser as createAdminUserFactory } from '../../../factories/user.factory'
 
 use(chaiAsPromised)
 
@@ -543,7 +548,9 @@ describe('processClassFromCSVRow', () => {
         let academicTerm: AcademicTerm
 
         beforeEach(async () => {
-            academicTerm = await createAcademicTerm(secondSchool).save()
+            academicTerm = await createAcademicTerm(secondSchool, {
+                name: 'test academic term',
+            }).save()
         })
 
         it('should return an error if the academic term is for a different school then the class', async () => {
@@ -630,14 +637,51 @@ describe('processClassFromCSVRow', () => {
             expect(dbClass.length).to.equal(1)
         })
 
-        // todo: if the same class is provided on 2 different rows
-        // then its possible to give it 2 schools
-        // but this is not possible to test as the class
-        // must be created in the current transaction in production
-        // which does not work with our transactional test setup
-        it.skip('should return an error if class has more then one school', async () => {
-            const queryRunner = connection.createQueryRunner()
+        it('should return an error if class has more then one school', async () => {
+            // this needs to use a dedicated connection because
+            // it tests the case where a class is not commited to the DB
+            // but does already exist in the CSV transaction,
+            // having been created by a previous row
+            // This does not work in the test setup with the defaut connection
+            // as it relies on $entity.find not using the CSV transaction
+            // and so not seeing uncommited class entities
+            transactionalContext.restoreCreateQueryRunner()
+            const connectionForThisTest = await createTestConnection({
+                name:
+                    'should return an error if class has more then one school',
+                synchronize: false,
+                drop: false,
+            })
+
+            // we must make these outside of a transaction as postgres does not
+            // have an isolation level that uncommited writes to be seen in other transactions
+            // (see "Dirty Read" in https://www.postgresql.org/docs/current/transaction-iso.html)
+            // which also means we cannot see anything made in previous beforeEachs
+            const expectedOrg = createOrganization()
+            expectedOrg.organization_name = orgName
+            await connectionForThisTest.manager.save(expectedOrg)
+
+            const expectedSchool = createSchool(expectedOrg, school1Name)
+            await connectionForThisTest.manager.save(expectedSchool)
+
+            const expectedSchool2 = createSchool(expectedOrg, school2Name)
+            await connectionForThisTest.manager.save(expectedSchool2)
+
+            const adminUser = await createAdminUserFactory()
+            await connectionForThisTest.manager.save(adminUser)
+
+            const userPermissions = new UserPermissions({
+                id: adminUser.user_id,
+                email: adminUser.email,
+            })
+
+            const academicTerm = createAcademicTerm(expectedSchool)
+            academicTerm.name = 'test academic term'
+            await connectionForThisTest.manager.save(academicTerm)
+
+            const queryRunner = connectionForThisTest.createQueryRunner()
             await queryRunner.connect()
+
             await queryRunner.startTransaction()
 
             const classFromPreviousRow = createClass(
@@ -659,8 +703,9 @@ describe('processClassFromCSVRow', () => {
                 row,
                 1,
                 fileErrors,
-                adminPermissions
+                userPermissions
             )
+
             expect(rowErrors).to.have.length(1)
 
             const classRowError = rowErrors[0]
@@ -671,8 +716,23 @@ describe('processClassFromCSVRow', () => {
                 `On row number 1, Class class1 must have exactly 1 School.`
             )
 
-            const dbClass = await Class.find()
-            expect(dbClass.length).to.equal(1)
+            await expect(classFromPreviousRow.academicTerm).to.eventually.be
+                .null
+
+            await queryRunner.rollbackTransaction()
+            await queryRunner.release()
+
+            // because these were created outside of the transaction
+            // we have to clean them up ourselves
+            await adminUser.remove()
+            await academicTerm.remove()
+            await expectedSchool2.remove()
+            await expectedSchool.remove()
+            await expectedOrg.remove()
+
+            await connectionForThisTest.close()
+
+            transactionalContext.disableQueryRunnerCreation()
         })
     })
 })

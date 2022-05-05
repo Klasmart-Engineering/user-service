@@ -9,7 +9,8 @@
     {"type": "style", "hidden": true},
     {"type": "refactor", "hidden": true},
     {"type": "perf", "hidden": true},
-    {"type": "build", "hidden": true}
+    {"type": "build", "hidden": true},
+    {"type": "revert", "section":"Reversions"}
   ],
   "commitUrlFormat": "https://github.com/KL-Engineering/user-service/commit/{{hash}}",
   "compareUrlFormat": "https://github.com/KL-Engineering/user-service/compare/{{previousTag}}...{{currentTag}}"

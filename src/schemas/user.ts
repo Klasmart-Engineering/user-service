@@ -38,6 +38,44 @@ import { mutate } from '../utils/mutations/commonStructure'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
+    extend type Query {
+        me: User
+            @deprecated(
+                reason: "Use myUser.node. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
+            )
+        user(user_id: ID!): User
+            @isAdmin(entity: "user")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        userNode(id: ID!): UserConnectionNode @isAdmin(entity: "user")
+        usersConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: UserFilter
+            sort: UserSortInput
+        ): UsersConnectionResponse @isAdmin(entity: "user")
+        eligibleStudentsConnection(
+            classId: ID!
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: EligibleMembersFilter
+            sort: UserSortInput
+        ): UsersConnectionResponse @isAdmin(entity: "user")
+        eligibleTeachersConnection(
+            classId: ID!
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: EligibleMembersFilter
+            sort: UserSortInput
+        ): UsersConnectionResponse @isAdmin(entity: "user")
+        users: [User] @deprecated(reason: "Unused")
+        my_users: [User!]
+            @deprecated(
+                reason: "Use myUser.profiles. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
+            )
+    }
+
     extend type Mutation {
         addOrganizationRolesToUsers(
             input: [AddOrganizationRolesToUserInput!]!
@@ -81,6 +119,137 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         createUsers(input: [CreateUserInput!]!): UsersMutationResult
         updateUsers(input: [UpdateUserInput!]!): UsersMutationResult
+    }
+
+    type UserConnectionNode @key(fields: "id") {
+        id: ID!
+        givenName: String
+        familyName: String
+        avatar: String
+        contactInfo: ContactInfo
+        alternateContactInfo: ContactInfo
+        status: Status!
+        dateOfBirth: String
+        username: String
+        gender: String
+
+        organizationMembershipsConnection(
+            count: PageSize
+            cursor: String
+            filter: OrganizationMembershipFilter
+            sort: OrganizationMembershipSortBy
+            direction: ConnectionDirection
+        ): OrganizationMembershipsConnectionResponse
+
+        schoolMembershipsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SchoolMembershipFilter
+            sort: SchoolMembershipSortInput
+        ): SchoolMembershipsConnectionResponse
+
+        classesStudyingConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
+
+        classesTeachingConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
+
+        roles: [RoleSummaryNode!]
+            @deprecated(
+                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
+            )
+        schools: [SchoolSummaryNode!]
+            @deprecated(
+                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
+            )
+        organizations: [OrganizationSummaryNode!]
+            @deprecated(
+                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
+            )
+    }
+
+    type User @key(fields: "user_id") {
+        user_id: ID!
+
+        #properties
+        user_name: String @deprecated(reason: "Use 'full_name'.")
+        full_name: String
+        given_name: String
+        family_name: String
+        email: String
+        phone: String
+        date_of_birth: String
+        avatar: String
+        username: String
+        primary: Boolean
+        alternate_email: String
+        alternate_phone: String
+        gender: String
+        #connections
+        """
+        'my_organization' is the Organization that this user has created
+        """
+        my_organization: Organization
+            @deprecated(reason: "Use 'organization_ownerships'.")
+        organization_ownerships: [OrganizationOwnership]
+        memberships: [OrganizationMembership]
+        membership(organization_id: ID!): OrganizationMembership
+
+        school_memberships: [SchoolMembership]
+        school_membership(school_id: ID!): SchoolMembership
+
+        classesTeaching: [Class]
+        classesStudying: [Class]
+
+        #query
+        organizationsWithPermission(
+            permission_name: String!
+        ): [OrganizationMembership]
+        schoolsWithPermission(permission_name: String!): [SchoolMembership]
+        subjectsTeaching: [Subject] @isAdmin(entity: "subject")
+
+        #mutations
+        set(
+            given_name: String
+            family_name: String
+            email: String
+            phone: String
+            username: String
+            date_of_birth: String
+            gender: String
+            avatar: String
+            alternate_email: String
+            alternate_phone: String
+        ): User
+        createOrganization(
+            organization_name: String
+            email: String # Not being used in resolver.
+            address1: String
+            address2: String
+            phone: String
+            shortCode: String
+        ): Organization
+            @deprecated(
+                reason: "Sunset Date: 01/05/22 Details: https://calmisland.atlassian.net/l/c/hKbcoRyx"
+            )
+        merge(other_id: String): User
+        addOrganization(organization_id: ID!): OrganizationMembership
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2462417870/"
+            )
+        addSchool(school_id: ID!): SchoolMembership
+        setPrimary(_: Int): Boolean @isAdmin(entity: "user")
     }
 
     input UpdateUserInput {
@@ -214,64 +383,6 @@ const typeDefs = gql`
         OR: [UserFilter!]
     }
 
-    type UserConnectionNode @key(fields: "id") {
-        id: ID!
-        givenName: String
-        familyName: String
-        avatar: String
-        contactInfo: ContactInfo
-        alternateContactInfo: ContactInfo
-        status: Status!
-        dateOfBirth: String
-        username: String
-        gender: String
-
-        organizationMembershipsConnection(
-            count: PageSize
-            cursor: String
-            filter: OrganizationMembershipFilter
-            sort: OrganizationMembershipSortBy
-            direction: ConnectionDirection
-        ): OrganizationMembershipsConnectionResponse
-
-        schoolMembershipsConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: SchoolMembershipFilter
-            sort: SchoolMembershipSortInput
-        ): SchoolMembershipsConnectionResponse
-
-        classesStudyingConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: ClassFilter
-            sort: ClassSortInput
-        ): ClassesConnectionResponse
-
-        classesTeachingConnection(
-            count: PageSize
-            cursor: String
-            direction: ConnectionDirection
-            filter: ClassFilter
-            sort: ClassSortInput
-        ): ClassesConnectionResponse
-
-        roles: [RoleSummaryNode!]
-            @deprecated(
-                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
-            )
-        schools: [SchoolSummaryNode!]
-            @deprecated(
-                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
-            )
-        organizations: [OrganizationSummaryNode!]
-            @deprecated(
-                reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
-            )
-    }
-
     type ContactInfo {
         email: String
         phone: String
@@ -301,116 +412,6 @@ const typeDefs = gql`
         organizationId: String
         status: Status
         userStatus: Status
-    }
-
-    extend type Query {
-        me: User
-            @deprecated(
-                reason: "Use myUser.node. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
-            )
-        user(user_id: ID!): User
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        userNode(id: ID!): UserConnectionNode @isAdmin(entity: "user")
-        usersConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: UserFilter
-            sort: UserSortInput
-        ): UsersConnectionResponse @isAdmin(entity: "user")
-        eligibleStudentsConnection(
-            classId: ID!
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: EligibleMembersFilter
-            sort: UserSortInput
-        ): UsersConnectionResponse @isAdmin(entity: "user")
-        eligibleTeachersConnection(
-            classId: ID!
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: EligibleMembersFilter
-            sort: UserSortInput
-        ): UsersConnectionResponse @isAdmin(entity: "user")
-        users: [User] @deprecated(reason: "Unused")
-        my_users: [User!]
-            @deprecated(
-                reason: "Use myUser.profiles. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
-            )
-    }
-
-    type User @key(fields: "user_id") {
-        user_id: ID!
-
-        #properties
-        user_name: String @deprecated(reason: "Use 'full_name'.")
-        full_name: String
-        given_name: String
-        family_name: String
-        email: String
-        phone: String
-        date_of_birth: String
-        avatar: String
-        username: String
-        primary: Boolean
-        alternate_email: String
-        alternate_phone: String
-        gender: String
-        #connections
-        """
-        'my_organization' is the Organization that this user has created
-        """
-        my_organization: Organization
-            @deprecated(reason: "Use 'organization_ownerships'.")
-        organization_ownerships: [OrganizationOwnership]
-        memberships: [OrganizationMembership]
-        membership(organization_id: ID!): OrganizationMembership
-
-        school_memberships: [SchoolMembership]
-        school_membership(school_id: ID!): SchoolMembership
-
-        classesTeaching: [Class]
-        classesStudying: [Class]
-
-        #query
-        organizationsWithPermission(
-            permission_name: String!
-        ): [OrganizationMembership]
-        schoolsWithPermission(permission_name: String!): [SchoolMembership]
-        subjectsTeaching: [Subject] @isAdmin(entity: "subject")
-
-        #mutations
-        set(
-            given_name: String
-            family_name: String
-            email: String
-            phone: String
-            username: String
-            date_of_birth: String
-            gender: String
-            avatar: String
-            alternate_email: String
-            alternate_phone: String
-        ): User
-        createOrganization(
-            organization_name: String
-            email: String # Not being used in resolver.
-            address1: String
-            address2: String
-            phone: String
-            shortCode: String
-        ): Organization
-            @deprecated(
-                reason: "Sunset Date: 01/05/22 Details: https://calmisland.atlassian.net/l/c/hKbcoRyx"
-            )
-        merge(other_id: String): User
-        addOrganization(organization_id: ID!): OrganizationMembership
-            @deprecated(
-                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2462417870/"
-            )
-        addSchool(school_id: ID!): SchoolMembership
-        setPrimary(_: Int): Boolean @isAdmin(entity: "user")
     }
 `
 
@@ -535,8 +536,11 @@ export default function getDefault(
                     return ctx.loaders.userNode.node.instance.load(args)
                 },
                 users: (_parent, _args, ctx, _info) => [],
-                user: (_parent, { user_id }, ctx: Context, _info) => {
-                    return ctx.loaders.user.user.instance.load(user_id)
+                user: (_parent, args, ctx: Context, _info) => {
+                    return ctx.loaders.user.user.instance.load({
+                        id: args.user_id,
+                        scope: args.scope,
+                    })
                 },
                 my_users: (_parent, _args, ctx: Context, _info) => {
                     if (ctx.token === undefined) {

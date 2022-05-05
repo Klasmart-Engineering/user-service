@@ -31,6 +31,20 @@ import { mutate } from '../utils/mutations/commonStructure'
 import { AcademicTerm } from '../entities/academicTerm'
 
 const typeDefs = gql`
+    extend type Query {
+        school(school_id: ID!): School
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        schoolNode(id: ID!): SchoolConnectionNode @isAdmin(entity: "school")
+        schoolsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: SchoolFilter
+            sort: SchoolSortInput
+        ): SchoolsConnectionResponse @isAdmin(entity: "school")
+    }
+
     extend type Mutation {
         school(school_id: ID!): School
         uploadSchoolsFromCSV(file: Upload!): File
@@ -76,90 +90,6 @@ const typeDefs = gql`
             input: [RemoveClassesFromSchoolInput!]!
         ): SchoolsMutationResult
     }
-    extend type Query {
-        school(school_id: ID!): School
-            @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
-            )
-        schoolNode(id: ID!): SchoolConnectionNode @isAdmin(entity: "school")
-        schoolsConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
-            filter: SchoolFilter
-            sort: SchoolSortInput
-        ): SchoolsConnectionResponse @isAdmin(entity: "school")
-    }
-    type School {
-        school_id: ID!
-
-        #properties
-        school_name: String
-        shortcode: String
-        status: Status
-
-        #connections
-        organization: Organization
-        memberships: [SchoolMembership]
-        membership(user_id: ID!): SchoolMembership
-        classes: [Class]
-        programs: [Program!]
-
-        #mutations
-        set(school_name: String, shortcode: String): School
-        addUser(user_id: ID!): SchoolMembership
-        editPrograms(program_ids: [ID!]): [Program]
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
-            )
-        delete(_: Int): Boolean
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
-            )
-    }
-    type SchoolMembership {
-        #properties
-        user_id: ID!
-        school_id: ID!
-        join_timestamp: Date
-        status: Status
-
-        #connections
-        user: User
-        school: School
-        roles: [Role]
-
-        #query
-        checkAllowed(permission_name: ID!): Boolean
-
-        #mutations
-        addRole(role_id: ID!): Role
-        addRoles(role_ids: [ID!]!): [Role]
-        removeRole(role_id: ID!): SchoolMembership
-            @deprecated(
-                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/ezmgXfSg"
-            )
-        leave(_: Int): Boolean
-            @deprecated(
-                reason: "Sunset Date: 21/03/22 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
-            )
-    }
-    type MembershipUpdate {
-        user: User
-        membership: OrganizationMembership
-        schoolMemberships: [SchoolMembership]
-    }
-
-    # pagination, filtering & sorting types
-    type SchoolsConnectionResponse implements iConnectionResponse {
-        totalCount: Int
-        pageInfo: ConnectionPageInfo
-        edges: [SchoolsConnectionEdge]
-    }
-
-    type SchoolsConnectionEdge implements iConnectionEdge {
-        cursor: String
-        node: SchoolConnectionNode
-    }
 
     type SchoolConnectionNode {
         id: ID!
@@ -199,6 +129,78 @@ const typeDefs = gql`
             filter: AcademicTermFilter
             sort: AcademicTermSortInput
         ): AcademicTermsConnectionResponse
+    }
+
+    type School {
+        school_id: ID!
+
+        #properties
+        school_name: String
+        shortcode: String
+        status: Status
+
+        #connections
+        organization: Organization
+        memberships: [SchoolMembership]
+        membership(user_id: ID!): SchoolMembership
+        classes: [Class]
+        programs: [Program!]
+
+        #mutations
+        set(school_name: String, shortcode: String): School
+        addUser(user_id: ID!): SchoolMembership
+        editPrograms(program_ids: [ID!]): [Program]
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
+            )
+        delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
+            )
+    }
+    type SchoolMembership {
+        #properties
+        user_id: ID!
+        school_id: ID!
+        join_timestamp: Date
+        status: Status
+
+        #connections
+        user: User @isAdmin(entity: "user")
+        school: School
+        roles: [Role]
+
+        #query
+        checkAllowed(permission_name: ID!): Boolean
+
+        #mutations
+        addRole(role_id: ID!): Role
+        addRoles(role_ids: [ID!]!): [Role]
+        removeRole(role_id: ID!): SchoolMembership
+            @deprecated(
+                reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/ezmgXfSg"
+            )
+        leave(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 21/03/22 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
+    }
+    type MembershipUpdate {
+        user: User
+        membership: OrganizationMembership
+        schoolMemberships: [SchoolMembership]
+    }
+
+    # pagination, filtering & sorting types
+    type SchoolsConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [SchoolsConnectionEdge]
+    }
+
+    type SchoolsConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: SchoolConnectionNode
     }
 
     input AddClassesToSchoolInput {
@@ -445,6 +447,17 @@ export default function getDefault(
                     return ctx.loaders.school.schoolById.instance.load(
                         schoolMembership.school_id
                     )
+                },
+                user: (
+                    membership: SchoolMembership,
+                    args,
+                    ctx: Context,
+                    _info
+                ) => {
+                    return ctx.loaders.user.user.instance.load({
+                        id: membership.user_id,
+                        scope: args.scope,
+                    })
                 },
             },
             School: {

@@ -1,21 +1,41 @@
-import { expect } from 'chai'
+import chai, { expect } from 'chai'
 import faker from 'faker'
 import { pick } from 'lodash'
 import { Organization } from '../../../src/entities/organization'
 import { User } from '../../../src/entities/user'
 import { School } from '../../../src/entities/school'
-import { createUser } from '../../factories/user.factory'
+import { createUser, createUsers } from '../../factories/user.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createSchool } from '../../factories/school.factory'
 import {
     orgMembershipsForUsers,
     schoolMembershipsForUsers,
+    UserDataLoader,
 } from '../../../src/loaders/user'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
-import { usersByIds } from '../../../src/loaders/user'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { SelectQueryBuilder, createQueryBuilder, getConnection } from 'typeorm'
+import { PermissionName } from '../../../src/permissions/permissionNames'
+import { createRole } from '../../factories/role.factory'
+import {
+    ApolloServerTestClient,
+    createTestClient,
+} from '../../utils/createTestClient'
+import { TestConnection } from '../../utils/testConnection'
+import { createServer } from '../../../src/utils/createServer'
+import { Model } from '../../../src/model'
+import { generateToken } from '../../utils/testConfig'
+import { userToPayload, viewUser } from '../../utils/operations/userOps'
+import {
+    listMemberships,
+    listOwnerAndPrimaryContact,
+} from '../../utils/operations/organizationOps'
+import { getSchoolMembershipsViaSchool } from '../../utils/operations/schoolOps'
+
+chai.use(deepEqualInAnyOrder)
 
 context('User loaders', () => {
     describe('memberships', () => {
@@ -93,14 +113,21 @@ context('User loaders', () => {
         })
     })
 
-    context('usersByIds', () => {
+    describe('UserDataLoader', () => {
+        let loader: UserDataLoader
         let users: User[]
+        let scope: SelectQueryBuilder<User>
 
-        function extractUserOrErrorData(userOrError: User | Error) {
-            if (userOrError instanceof Error) {
-                return pick(userOrError, ['message'])
+        function extractUserOrErrorData(
+            userOrNullOrError: User | null | Error
+        ) {
+            if (!userOrNullOrError) {
+                return userOrNullOrError
             }
-            return pick(userOrError, [
+            if (userOrNullOrError instanceof Error) {
+                return pick(userOrNullOrError, ['message'])
+            }
+            return pick(userOrNullOrError, [
                 'user_id',
                 'given_name',
                 'family_name',
@@ -114,40 +141,240 @@ context('User loaders', () => {
         }
 
         beforeEach(async () => {
-            users = await User.save(Array(3).fill(undefined).map(createUser))
+            users = await User.save(createUsers(3))
+            scope = createQueryBuilder('user')
+            loader = new UserDataLoader()
         })
 
-        it('always returns an array of equal length', async () => {
-            const loadedUsers = (
-                await usersByIds([
-                    users[0].user_id,
-                    faker.datatype.uuid(),
-                    users[1].user_id,
-                    faker.datatype.uuid(),
-                ])
-            ).map(extractUserOrErrorData)
+        afterEach(async () => {
+            loader.clearAll()
+        })
 
-            expect(loadedUsers).to.deep.equalInAnyOrder(
-                [
-                    users[0],
-                    Error("User doesn't exist"),
-                    users[1],
-                    Error("User doesn't exist"),
-                ].map(extractUserOrErrorData)
+        it('returns an array of the same length as the keys', async () => {
+            const keys = [
+                { id: users[0].user_id, scope },
+                { id: users[1].user_id, scope },
+                { id: faker.datatype.uuid(), scope },
+            ]
+
+            const data = await loader.loadMany(keys)
+            expect(data).to.have.length(keys.length)
+            expect(data.map(extractUserOrErrorData)).to.deep.equalInAnyOrder(
+                [users[0], users[1], null].map(extractUserOrErrorData)
             )
         })
 
-        it('returns the expected data in order', async () => {
-            // DB by default would return in A-Z `id` order, test the reverse
-            const sortedUsers = users
-                .sort((a, b) => -a.user_id.localeCompare(b.user_id))
-                .map(extractUserOrErrorData) as User[]
+        it('returns an array with the same order as the keys', async () => {
+            // Reverse order UUIDs (which will be opposite to the default order from the DB)
+            const ids = users
+                .map((u) => u.user_id)
+                .sort((a, b) => -a.localeCompare(b))
+            const keys = []
+            for (const id of ids) {
+                keys.push({ id, scope })
+            }
+            const data = await loader.loadMany(keys)
+            const dataIds: string[] = data.map((u) => (u as User).user_id)
+            expect(dataIds).to.deep.equal(keys.map((k) => k.id))
+        })
 
-            const loadedUsers = (
-                await usersByIds(sortedUsers.map((u) => u.user_id))
-            ).map(extractUserOrErrorData)
+        it('returns an Entity object for an existing key', async () => {
+            const entity = await loader.load({
+                id: users[0].user_id,
+                scope: createQueryBuilder('user'),
+            })
 
-            expect(loadedUsers).to.deep.equal(sortedUsers)
+            expect(extractUserOrErrorData(entity)).to.deep.equal(
+                extractUserOrErrorData(users[0])
+            )
+        })
+
+        it('returns a null for a non-existent key', async () => {
+            const key = faker.datatype.uuid()
+
+            expect(
+                await loader.load({
+                    id: key,
+                    scope: createQueryBuilder('user'),
+                })
+            ).to.be.a('null')
+        })
+    })
+
+    describe('User visibility in UserDataLoader', () => {
+        let targetedUser: User
+        let orgOwner: User
+        let organization: Organization
+        let connection: TestConnection
+        let testClient: ApolloServerTestClient
+        let school: School
+
+        before(async () => {
+            connection = getConnection() as TestConnection
+            const server = await createServer(new Model(connection))
+            testClient = await createTestClient(server)
+        })
+        beforeEach(async () => {
+            targetedUser = await User.save(createUser())
+            orgOwner = await User.save(createUser())
+            organization = await Organization.save(createOrganization(orgOwner))
+            organization.primary_contact = Promise.resolve(orgOwner)
+            await organization.save()
+            await OrganizationMembership.save(
+                createOrganizationMembership({
+                    user: targetedUser,
+                    organization,
+                })
+            )
+            await OrganizationMembership.save(
+                createOrganizationMembership({
+                    user: orgOwner,
+                    organization,
+                })
+            )
+            school = await createSchool().save()
+            await createSchoolMembership({
+                user: targetedUser,
+                school: school,
+            }).save()
+        })
+        context('when user has enough permissions', () => {
+            let userWithPermission: User
+
+            beforeEach(async () => {
+                userWithPermission = await User.save(createUser())
+                const role = await createRole('role', organization, {
+                    permissions: [PermissionName.view_users_40110],
+                }).save()
+                await OrganizationMembership.save(
+                    createOrganizationMembership({
+                        user: userWithPermission,
+                        organization,
+                        roles: [role],
+                    })
+                )
+            })
+            it('can view the nested targeted user through the organization membership resolver', async () => {
+                const response = await listMemberships(
+                    testClient,
+                    organization.organization_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithPermission)
+                        ),
+                    }
+                )
+                expect(
+                    (await response.organization.memberships[0].user)?.user_id
+                ).to.equal(targetedUser.user_id)
+            })
+            it('can view the nested targeted user through the school membership resolver', async () => {
+                const response = await getSchoolMembershipsViaSchool(
+                    testClient,
+                    school.school_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithPermission)
+                        ),
+                    }
+                )
+                expect((await response[0].user)?.user_id).to.equal(
+                    targetedUser.user_id
+                )
+            })
+            it('can view the nested targeted user through the user resolver', async () => {
+                const response = await viewUser(
+                    testClient,
+                    targetedUser.user_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithPermission)
+                        ),
+                    }
+                )
+                expect(response.user_id).to.equal(targetedUser.user_id)
+            })
+            it('can view the nested owner and primary contact through the organization resolver', async () => {
+                const response = await listOwnerAndPrimaryContact(
+                    testClient,
+                    organization.organization_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithPermission)
+                        ),
+                    }
+                )
+                expect(response.organization.owner.user_id).to.equal(
+                    orgOwner.user_id
+                )
+                expect(response.organization.primary_contact.user_id).to.equal(
+                    orgOwner.user_id
+                )
+            })
+        })
+        context('when user has not enough permissions', () => {
+            let userWithoutPermission: User
+
+            beforeEach(async () => {
+                userWithoutPermission = await User.save(createUser())
+                await OrganizationMembership.save(
+                    createOrganizationMembership({
+                        user: userWithoutPermission,
+                        organization,
+                    })
+                )
+            })
+            it('cannot view the nested targeted user through the organization membership resolver', async () => {
+                const response = await listMemberships(
+                    testClient,
+                    organization.organization_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithoutPermission)
+                        ),
+                    }
+                )
+                expect(await response.organization.memberships[0].user).to.be.a(
+                    'null'
+                )
+            })
+            it('can not view the nested targeted user through the school membership resolver', async () => {
+                const response = await getSchoolMembershipsViaSchool(
+                    testClient,
+                    school.school_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithoutPermission)
+                        ),
+                    }
+                )
+                expect(await response[0].user).to.be.a('null')
+            })
+            it('can not view the nested targeted user through the user resolver', async () => {
+                const response = await viewUser(
+                    testClient,
+                    targetedUser.user_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithoutPermission)
+                        ),
+                    }
+                )
+                expect(response).to.be.a('null')
+            })
+            it('can not view the nested owner or primary contact through the organization resolver', async () => {
+                const response = await listOwnerAndPrimaryContact(
+                    testClient,
+                    organization.organization_id,
+                    {
+                        authorization: generateToken(
+                            userToPayload(userWithoutPermission)
+                        ),
+                    }
+                )
+                expect(response.organization.owner).to.be.a('null')
+                expect(response.organization.primary_contact).to.be.a('null')
+            })
         })
     })
 })

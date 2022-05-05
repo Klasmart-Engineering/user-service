@@ -37,6 +37,9 @@ const GET_MEMBERSHIPS = `
             memberships {
                 user_id
                 school_id
+                user{
+                    user_id
+                }
             }
         }
     }

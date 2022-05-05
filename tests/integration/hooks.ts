@@ -6,7 +6,7 @@ import { truncateTables } from '../utils/database'
 import TransactionalTestContext from '../utils/transactionalTestContext'
 
 let connection: TestConnection
-let transactionalContext: TransactionalTestContext
+export let transactionalContext: TransactionalTestContext
 let originalAdmins: string[]
 
 before(async () => {
