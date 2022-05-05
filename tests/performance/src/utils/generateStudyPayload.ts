@@ -1,32 +1,5 @@
 import random from './randomNumber';
 
-
-// attachment: {id: "", name: ""}
-// attachment_path: ""
-// class_id: "a6c6ac2b-07fa-43fb-a22f-b5b876fc89cb"
-// class_roster_student_ids: ["0e1c3145-af1d-40a2-9fe9-da0ff4f6c507", "19a4b61f-d0d6-470d-ac6b-66a5fbd77e43",…]
-// class_roster_teacher_ids: ["520e3b27-10c8-485b-bd73-c530b54d96cd"]
-// class_type: "OnlineClass"
-// description: ""
-// due_at: 0
-// end_at: 1643240460
-// is_all_day: false
-// is_force: false
-// is_home_fun: false
-// is_repeat: false
-// lesson_plan_id: "6193b6fe0d0935f062be64ad"
-// outcome_ids: []
-// participants_student_ids: []
-// participants_teacher_ids: ["019440e0-7e65-457a-b160-e3bb7996967b", "0a9373da-7570-4719-8f94-6ac2e5327eb3",…]
-// program_id: "4d5b9056-5a6f-40bf-8602-7f8934aef045"
-// repeat: {}
-// start_at: 1643240220
-// subject_id: "36c4f793-9aa3-4fb8-84f0-68a2ab920d5a"
-// subject_ids: ["36c4f793-9aa3-4fb8-84f0-68a2ab920d5a"]
-// teacher_ids: ["520e3b27-10c8-485b-bd73-c530b54d96cd", "0e1c3145-af1d-40a2-9fe9-da0ff4f6c507",…]
-// time_zone_offset: -21600
-// title: "001"
-
 export default function() {
     const payload = {
         attachment: {

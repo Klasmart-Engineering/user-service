@@ -14,6 +14,10 @@ export const options: Options = {
         loadimpact: {
             projectID: 3560234,
             // projectID: 3559532,
+            distribution: {
+                distributionLabel1: { loadZone: 'amazon:gb:london', percent: 50 },
+                distributionLabel2: { loadZone: 'amazon:ie:dublin', percent: 50 },
+              },
         }
     },
     scenarios: {
@@ -190,7 +194,7 @@ export const options: Options = {
         
     },
 
-    setupTimeout: '180m',
+    //setupTimeout: '180m',
 };
 
 const params = {

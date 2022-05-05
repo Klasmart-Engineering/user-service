@@ -1,16 +1,8 @@
-
-import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
-import { sleep } from 'k6';
 import landingScheduleStudents from './scripts/landingScheduleStudents';
 import http from 'k6/http';
-import viewStudyClass from './scripts/viewStudyClass';
-//import loginSetup from './utils/uniqueUserCookies';
-import loginSetup from './utils/loginSetup';
-import landingV3Students from './scripts/landingV3Students';
-
-// This script simulate the a student select a Study class from the calendar
-// click on the Go Study button
+//import loginSetup from './utils/loginSetup';
+import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 
 /* export const options: Options = {
     

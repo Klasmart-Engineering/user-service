@@ -1,12 +1,9 @@
 
-import landingV2 from './scripts/landingV2';
 import { Options } from 'k6/options';
 import { fail, sleep } from 'k6';
-import landingSchedule from './scripts/landingSchedule';
 import http from 'k6/http';
 import { loginSetupV2 as loginSetup } from './utils/loginSetupV2';
 import landingScheduleStudents from './scripts/landingScheduleStudents';
-import landingV3Students from './scripts/landingV3Students';
 
 // Command:
 // k6 -e VUS=50 run parallelLandingScheduleUniqueConstantCSplitB2c.js
