@@ -154,7 +154,6 @@ describe('school', () => {
     let organization: Organization
     let organization2: Organization
     let shortCode: string
-    let statusUpdatedAtDate: Date
 
     const orgUsersAndPermissions = async () => {
         const orgOwner = await createAdminUser(testClient)
@@ -3494,7 +3493,6 @@ describe('school', () => {
                 })
 
                 it('adds all the users', async () => {
-                    statusUpdatedAtDate = new Date()
                     await expect(getAddUsersToSchools().run()).to.be.fulfilled
                     await checkUsersAdded()
                 })
