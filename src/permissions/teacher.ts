@@ -131,7 +131,6 @@ export const teacherRole = {
         PermissionName.view_program_20111,
         PermissionName.view_age_range_20112,
         PermissionName.view_grades_20113,
-        PermissionName.view_classes_20114,
         PermissionName.view_school_classes_20117,
         PermissionName.view_my_classes_20118,
         PermissionName.view_subjects_20115,
