@@ -574,6 +574,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
         const memberships: SchoolMembership[] = []
         const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
 
+        const statusUpdatedAt = new Date()
         for (const userId of currentInput.userIds) {
             const membership = new SchoolMembership()
             membership.school_id = currentEntity.school_id
@@ -585,6 +586,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
                     (r) => maps.roles.get(r) as Role
                 ) ?? []
             )
+            membership.status_updated_at = statusUpdatedAt
             memberships.push(membership)
         }
 
