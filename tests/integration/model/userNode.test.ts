@@ -12,7 +12,6 @@ import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
 import { mapUserToUserConnectionNode } from '../../../src/pagination/usersConnection'
 import { PermissionName } from '../../../src/permissions/permissionNames'
-import { schoolAdminRole } from '../../../src/permissions/schoolAdmin'
 import { createServer } from '../../../src/utils/createServer'
 import { createClass } from '../../factories/class.factory'
 import { createOrganizations } from '../../factories/organization.factory'
@@ -277,49 +276,6 @@ describe('userNode', () => {
                     )
                     expect(userNodeResponse).to.deep.equal(
                         mapUserToUserConnectionNode(student)
-                    )
-                })
-            })
-            context('User with view_my_admin_users_40114', () => {
-                let userWithPermission: User
-                let schoolAdmin: User
-                beforeEach(async () => {
-                    userWithPermission = users[1]
-                    await addPermission({
-                        user: userWithPermission,
-                        organization: organizations[1],
-                        permission: PermissionName.view_my_admin_users_40114,
-                    })
-                    schoolAdmin = await User.save(createUser())
-                    const schAdminRole = await Role.findOne({
-                        role_name: schoolAdminRole.role_name,
-                    })
-                    await OrganizationMembership.save(
-                        createOrganizationMembership({
-                            user: schoolAdmin,
-                            organization: organizations[1],
-                            roles: [schAdminRole as Role],
-                        })
-                    )
-                    await SchoolMembership.save(
-                        createSchoolMembership({
-                            user: schoolAdmin,
-                            school: schools[1],
-                        })
-                    )
-                })
-                it('can view school admin of their schools', async () => {
-                    const userNodeResponse = await userNode(
-                        testClient,
-                        {
-                            authorization: generateToken(
-                                userToPayload(userWithPermission)
-                            ),
-                        },
-                        schoolAdmin.user_id
-                    )
-                    expect(userNodeResponse).to.deep.equal(
-                        mapUserToUserConnectionNode(schoolAdmin)
                     )
                 })
             })
