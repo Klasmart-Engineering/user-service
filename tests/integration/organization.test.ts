@@ -145,6 +145,8 @@ import { APIError } from '../../src/types/errors/apiError'
 import { customErrors } from '../../src/types/errors/customError'
 import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
 import { ObjMap } from '../../src/utils/stringUtils'
+import { SinonFakeTimers } from 'sinon'
+import sinon from 'sinon'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -7624,6 +7626,7 @@ describe('organization', () => {
 
     describe('AddUsersToOrganizations', () => {
         let input: AddUsersToOrganizationInput[]
+        let clock: SinonFakeTimers
 
         function addUsers(authUser = adminUser) {
             const permissions = new UserPermissions(userToPayload(authUser))
@@ -7658,12 +7661,19 @@ describe('organization', () => {
                     (val) => expect(userIdsSet.has(val)).to.be.true
                 )
 
+                const expectedDate = new clock.Date()
+
                 // Check that each entry has the same set of roles
                 for (const membership of dbMemberships) {
+                    expect(membership.status_updated_at).to.deep.equal(
+                        expectedDate
+                    )
+
                     const dbRoles = new Set(
                         // eslint-disable-next-line no-await-in-loop
                         (await membership.roles)?.map((val) => val.role_id)
                     )
+
                     const inputRoles = new Set(organizationRoleIds)
                     expect(dbRoles.size).to.equal(inputRoles.size)
                     dbRoles.forEach(
@@ -7717,6 +7727,14 @@ describe('organization', () => {
             'when caller has permissions to add users to organizations',
             () => {
                 context('and all attributes are valid', () => {
+                    beforeEach(() => {
+                        clock = sinon.useFakeTimers()
+                    })
+
+                    afterEach(() => {
+                        clock.restore()
+                    })
+
                     it('adds all the users', async () => {
                         await expect(addUsers()).to.be.fulfilled
                         await checkOutput()
