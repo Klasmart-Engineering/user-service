@@ -1,9 +1,6 @@
 import chai, { expect, use } from 'chai'
 import { Connection, QueryRunner } from 'typeorm'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { createTestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
 import chaiAsPromised from 'chai-as-promised'
 import { runPreviousMigrations } from '../utils/migrations'
@@ -13,44 +10,34 @@ use(chaiAsPromised)
 
 describe('SyncDivergentSchemasHighPriority1649243393191 migration', () => {
     let baseConnection: Connection
-    let migrationsConnection: Connection
     let runner: QueryRunner
 
-    before(async () => {
-        baseConnection = await createTestConnection()
-        // every test has to use the same runner
-        // otherwise `is benign if run twice` will
-        // cause `baseConnection?.close()` to hang in `after`
-        // todo: find out why
-        runner = baseConnection.createQueryRunner()
-    })
-
-    after(async () => {
-        await baseConnection?.close()
-    })
-
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
+        baseConnection = await createTestConnection({
+            drop: true,
+        })
+        runner = baseConnection.createQueryRunner()
+        const pendingMigrations = await baseConnection.showMigrations()
+        expect(pendingMigrations).to.eq(true)
     })
 
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await baseConnection?.close()
     })
 
     context('when database is populated', () => {
         beforeEach(async () => {
-            await migrationsConnection.runMigrations({ transaction: 'each' })
+            await baseConnection.runMigrations({ transaction: 'each' })
             await RoleInitializer.run()
         })
 
+        afterEach(async () => {
+            const pendingMigrations = await baseConnection.showMigrations()
+            expect(pendingMigrations).to.eq(false)
+        })
+
         const runMigration = async () => {
-            const migration = migrationsConnection.migrations.find(
+            const migration = baseConnection.migrations.find(
                 (m) =>
                     m.name === 'SyncDivergentSchemasHighPriority1649243393191'
             )
@@ -153,7 +140,7 @@ describe('SyncDivergentSchemasHighPriority1649243393191 migration', () => {
 
     it('is benign if run twice', async () => {
         const currentMigration = await runPreviousMigrations(
-            migrationsConnection,
+            baseConnection,
             runner,
             'SyncDivergentSchemasHighPriority1649243393191'
         )

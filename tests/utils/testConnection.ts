@@ -106,6 +106,7 @@ export const createTestConnection = async ({
         synchronize: synchronize,
         dropSchema: drop,
         entities: ['src/entities/*{.ts,.js}'],
+        migrations: ['migrations/*{.ts,.js}'],
         logger: new QueryMetricsLogger(),
         replication: {
             master: {
@@ -116,25 +117,5 @@ export const createTestConnection = async ({
             },
             slaves: slavesURLList,
         },
-    }) as Promise<TestConnection>
-}
-
-export const createMigrationsTestConnection = async (
-    drop = false,
-    synchronize = false,
-    name = 'default'
-): Promise<TestConnection> => {
-    return createConnection({
-        name: name,
-        type: 'postgres',
-        url: getEnvVar(
-            'DATABASE_URL',
-            'postgres://postgres:kidsloop@localhost/testdb'
-        ),
-        synchronize,
-        dropSchema: drop,
-        migrations: ['migrations/*{.ts,.js}'],
-        entities: ['src/entities/*{.ts,.js}'],
-        logger: new QueryMetricsLogger(),
     }) as Promise<TestConnection>
 }

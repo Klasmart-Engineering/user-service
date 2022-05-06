@@ -7,36 +7,20 @@ import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createUser } from '../factories/user.factory'
 import { runPreviousMigrations } from '../utils/migrations'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { createTestConnection } from '../utils/testConnection'
 
 chai.should()
 use(chaiAsPromised)
 
 describe('OrganizationMembershipDeletionStatus1645033794324 migration', () => {
-    let baseConnection: Connection
     let migrationsConnection: Connection
 
-    before(async () => {
-        baseConnection = await createTestConnection()
-    })
-    after(async () => {
-        await baseConnection?.close()
-    })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
         await migrationsConnection?.close()
     })
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
+        migrationsConnection = await createTestConnection({ drop: true })
     })
 
     context('when all migrations have run', () => {
@@ -45,6 +29,11 @@ describe('OrganizationMembershipDeletionStatus1645033794324 migration', () => {
             // Only migrations which have not been run before will be in the same transaction.
             // 'each' is therefore closer to the behaviour of existing environments.
             await migrationsConnection.runMigrations({ transaction: 'each' })
+        })
+
+        afterEach(async () => {
+            const pendingMigrations = await migrationsConnection.showMigrations()
+            expect(pendingMigrations).to.eq(false)
         })
 
         for (const status of [Status.ACTIVE, Status.INACTIVE]) {
@@ -56,7 +45,7 @@ describe('OrganizationMembershipDeletionStatus1645033794324 migration', () => {
                     organization: org,
                     status: status,
                 }).save()
-                const runner = baseConnection.createQueryRunner()
+                const runner = migrationsConnection.createQueryRunner()
                 await runner.startTransaction()
                 const currentMigration = migrationsConnection.migrations.find(
                     (m) =>

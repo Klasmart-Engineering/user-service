@@ -1,37 +1,17 @@
 import { expect } from 'chai'
 import fs from 'fs'
-import { Connection, MigrationInterface, QueryRunner } from 'typeorm'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { Connection, MigrationInterface } from 'typeorm'
+import { createTestConnection } from '../utils/testConnection'
 
 describe('migration name validation', () => {
     let baseConnection: Connection
-    let migrationsConnection: Connection
-    let runner: QueryRunner
-
-    before(async () => {
-        baseConnection = await createTestConnection()
-        runner = baseConnection.createQueryRunner()
-    })
-
-    after(async () => {
-        await baseConnection?.close()
-    })
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
+        baseConnection = await createTestConnection()
     })
 
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await baseConnection?.close()
     })
 
     context(
@@ -41,7 +21,7 @@ describe('migration name validation', () => {
             const migrationFilenameList: string[] = []
 
             beforeEach(async () => {
-                migrationList = migrationsConnection.migrations
+                migrationList = baseConnection.migrations
 
                 for (const file of fs.readdirSync('./migrations/')) {
                     if (
