@@ -21,6 +21,8 @@ export const ageRangesConnectionSortingConfig: IConnectionSortingConfig = {
         id: 'id',
         lowValue: 'low_value',
         lowValueUnit: 'low_value_unit',
+        highValueUnit: 'high_value_unit',
+        highValue: 'high_value',
     },
 }
 
@@ -37,12 +39,7 @@ export async function ageRangesConnectionResolver(
         directionArgs,
         scope,
         sort: {
-            primaryKey: 'id',
-            aliases: {
-                id: 'id',
-                lowValue: 'low_value',
-                lowValueUnit: 'low_value_unit',
-            },
+            ...ageRangesConnectionSortingConfig,
             sort,
         },
         includeTotalCount,

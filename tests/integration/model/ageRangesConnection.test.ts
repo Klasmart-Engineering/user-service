@@ -30,8 +30,6 @@ import {
 } from '../../utils/createTestClient'
 import { ageRangesConnection } from '../../utils/operations/modelOps'
 import {
-    isNumberArraySortedAscending,
-    isNumberArraySortedDescending,
     isStringArraySortedAscending,
     isStringArraySortedDescending,
 } from '../../utils/sorting'
@@ -48,6 +46,9 @@ import {
 } from '../../../src/schemas/program'
 import { checkPageInfo } from '../../acceptance/utils'
 import { getConnection } from 'typeorm'
+import { IEdge } from '../../../src/utils/pagination/paginate'
+import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRange'
+import faker from 'faker'
 
 use(chaiAsPromised)
 
@@ -78,28 +79,28 @@ describe('model', () => {
         })
 
         admin = await createAdminUser(testClient)
-        org1 = await createOrganization(admin)
-        org2 = await createOrganization(admin)
+        org1 = createOrganization(admin)
+        org2 = createOrganization(admin)
         await connection.manager.save([org1, org2])
 
         org1AgeRanges = []
         org2AgeRanges = []
         ageRanges = []
-
+        const units = [AgeRangeUnit.MONTH, AgeRangeUnit.YEAR]
         for (let i = 1; i <= ageRangesCount; i++) {
-            const ageRange = await createAgeRange(org1, i, i + 1)
+            const ageRange = createAgeRange(org1, i, faker.datatype.number(99))
             ageRange.name = `age range ${i}`
-            ageRange.low_value_unit = AgeRangeUnit.YEAR
-            ageRange.high_value_unit = AgeRangeUnit.YEAR
+            ageRange.low_value_unit = units[faker.datatype.number(1)]
+            ageRange.high_value_unit = units[faker.datatype.number(1)]
             ageRange.status = Status.ACTIVE
             org1AgeRanges.push(ageRange)
         }
 
         for (let i = 1; i <= ageRangesCount; i++) {
-            const ageRange = await createAgeRange(org2, i, i + 1)
+            const ageRange = createAgeRange(org2, i, faker.datatype.number(99))
             ageRange.name = `age range ${i}`
-            ageRange.low_value_unit = AgeRangeUnit.MONTH
-            ageRange.high_value_unit = AgeRangeUnit.MONTH
+            ageRange.low_value_unit = units[faker.datatype.number(1)]
+            ageRange.high_value_unit = units[faker.datatype.number(1)]
             ageRange.status = Status.INACTIVE
             org2AgeRanges.push(ageRange)
         }
@@ -124,6 +125,64 @@ describe('model', () => {
     })
 
     context('sorting', () => {
+        const checkIfOrdered = (
+            edges: IEdge<AgeRangeConnectionNode>[],
+            order: 'ASC' | 'DESC'
+        ) => {
+            for (let x = 1; x < edges.length; x++) {
+                const currentNode = edges[x].node
+                const previousNode = edges[x - 1].node
+                if (
+                    order === 'ASC'
+                        ? currentNode.lowValueUnit < previousNode.lowValueUnit
+                        : currentNode.lowValueUnit > previousNode.lowValueUnit
+                ) {
+                    return false
+                } else if (
+                    currentNode.lowValueUnit === previousNode.lowValueUnit
+                ) {
+                    if (
+                        order === 'ASC'
+                            ? currentNode.lowValue < previousNode.lowValue
+                            : currentNode.lowValue > previousNode.lowValue
+                    ) {
+                        return false
+                    } else if (currentNode.lowValue === previousNode.lowValue) {
+                        if (
+                            order === 'ASC'
+                                ? currentNode.highValueUnit <
+                                  previousNode.highValueUnit
+                                : currentNode.highValueUnit >
+                                  previousNode.highValueUnit
+                        ) {
+                            return false
+                        } else if (
+                            currentNode.highValueUnit ===
+                            previousNode.highValueUnit
+                        ) {
+                            if (
+                                order === 'ASC'
+                                    ? currentNode.highValue <
+                                      previousNode.highValue
+                                    : currentNode.highValue >
+                                      previousNode.highValue
+                            ) {
+                                return false
+                            } else if (
+                                currentNode.highValue ===
+                                    previousNode.highValue &&
+                                (order === 'ASC'
+                                    ? currentNode.id < previousNode.id
+                                    : currentNode.id > previousNode.id)
+                            ) {
+                                return false
+                            }
+                        }
+                    }
+                }
+            }
+            return true
+        }
         it('returns age ranges sorted by id in an ascending order', async () => {
             const result = await ageRangesConnection(
                 testClient,
@@ -162,7 +221,7 @@ describe('model', () => {
             expect(isSorted).to.be.true
         })
 
-        it('returns age ranges sorted by age range (low value unit, low value) in an ascending order', async () => {
+        it('returns age ranges sorted by age range (low value unit, low value, high value unit, high value) in an ascending order', async () => {
             const result = await ageRangesConnection(
                 testClient,
                 'FORWARD',
@@ -170,31 +229,23 @@ describe('model', () => {
                 true,
                 { authorization: getAdminAuthToken() },
                 undefined,
-                { field: ['lowValueUnit', 'lowValue'], order: 'ASC' }
+                {
+                    field: [
+                        'lowValueUnit',
+                        'lowValue',
+                        'highValueUnit',
+                        'highValue',
+                    ],
+                    order: 'ASC',
+                }
             )
 
             checkPageInfo(result, ageRanges.length + systemAgeRanges.length)
-
-            const units = result.edges.map((edge) => edge.node.lowValueUnit)
-            const monthValues = result.edges
-                .filter((edge) => edge.node.lowValueUnit === AgeRangeUnit.MONTH)
-                .map((edge) => edge.node.lowValue)
-            const yearValues = result.edges
-                .filter((edge) => edge.node.lowValueUnit === AgeRangeUnit.YEAR)
-                .map((edge) => edge.node.lowValue)
-
-            const isUnitsSorted = isStringArraySortedAscending(units)
-            const isYearValuesSorted = isNumberArraySortedAscending(yearValues)
-            const isMonthValuesSorted = isNumberArraySortedAscending(
-                monthValues
-            )
-
-            expect(isUnitsSorted).to.be.true
-            expect(isMonthValuesSorted).to.be.true
-            expect(isYearValuesSorted).to.be.true
+            const isItOrdered = checkIfOrdered(result.edges, 'ASC')
+            expect(isItOrdered).to.be.true
         })
 
-        it('returns age ranges sorted by age range (low value unit, low value) in a descending order', async () => {
+        it('returns age ranges sorted by age range (low value unit, low value, high value unit, high value) in a descending order', async () => {
             const result = await ageRangesConnection(
                 testClient,
                 'FORWARD',
@@ -202,28 +253,20 @@ describe('model', () => {
                 true,
                 { authorization: getAdminAuthToken() },
                 undefined,
-                { field: ['lowValueUnit', 'lowValue'], order: 'DESC' }
+                {
+                    field: [
+                        'lowValueUnit',
+                        'lowValue',
+                        'highValueUnit',
+                        'highValue',
+                    ],
+                    order: 'DESC',
+                }
             )
 
             checkPageInfo(result, ageRanges.length + systemAgeRanges.length)
-
-            const units = result.edges.map((edge) => edge.node.lowValueUnit)
-            const monthValues = result.edges
-                .filter((edge) => edge.node.lowValueUnit === AgeRangeUnit.MONTH)
-                .map((edge) => edge.node.lowValue)
-            const yearValues = result.edges
-                .filter((edge) => edge.node.lowValueUnit === AgeRangeUnit.YEAR)
-                .map((edge) => edge.node.lowValue)
-
-            const isUnitsSorted = isStringArraySortedDescending(units)
-            const isYearValuesSorted = isNumberArraySortedDescending(yearValues)
-            const isMonthValuesSorted = isNumberArraySortedDescending(
-                monthValues
-            )
-
-            expect(isUnitsSorted).to.be.true
-            expect(isMonthValuesSorted).to.be.true
-            expect(isYearValuesSorted).to.be.true
+            const isItOrdered = checkIfOrdered(result.edges, 'DESC')
+            expect(isItOrdered).to.be.true
         })
     })
 
@@ -319,7 +362,10 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(ageRangesCount)
+            const actualAgeRangesCount = ageRanges.filter(
+                (a) => a.low_value_unit === unit
+            )
+            expect(result.totalCount).to.eq(actualAgeRangesCount.length)
 
             const filteredAgeRanges = result.edges.map((edge) => edge.node)
             filteredAgeRanges.every((ar) => ar.lowValueUnit === unit)
@@ -343,9 +389,11 @@ describe('model', () => {
                 filter
             )
 
-            // customAgeRanges + systemAgeRanges
+            const actualAgeRangesCount = ageRanges.filter(
+                (a) => a.high_value_unit === unit
+            )
             expect(result.totalCount).to.eq(
-                ageRangesCount + systemAgeRanges.length
+                actualAgeRangesCount.length + systemAgeRanges.length
             )
 
             const filteredAgeRanges = result.edges.map((edge) => edge.node)
@@ -370,7 +418,10 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(2)
+            const actualAgeRangesCount = ageRanges.filter(
+                (a) => a.low_value === value
+            )
+            expect(result.totalCount).to.eq(actualAgeRangesCount.length)
 
             const filteredAgeRanges = result.edges.map((edge) => edge.node)
             filteredAgeRanges.every((ar) => ar.lowValue === value)
@@ -394,7 +445,10 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(2)
+            const actualAgeRangesCount = ageRanges.filter(
+                (a) => a.high_value === value
+            )
+            expect(result.totalCount).to.eq(actualAgeRangesCount.length)
 
             const filteredAgeRanges = result.edges.map((edge) => edge.node)
             filteredAgeRanges.every((ar) => ar.highValue === value)
@@ -423,7 +477,10 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(1)
+            const actualAgeRangesCount = ageRanges.filter(
+                (a) => a.low_value === value && a.low_value_unit === unit
+            )
+            expect(result.totalCount).to.eq(actualAgeRangesCount.length)
 
             const filteredAgeRanges = result.edges.map((edge) => edge.node)
             filteredAgeRanges.every((ar) => {
@@ -455,7 +512,10 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(1)
+            const actualAgeRangesCount = ageRanges.filter(
+                (a) => a.high_value === value && a.high_value_unit === unit
+            )
+            expect(result.totalCount).to.eq(actualAgeRangesCount.length)
 
             const filteredAgeRanges = result.edges.map((edge) => edge.node)
             filteredAgeRanges.every((ar) => {
