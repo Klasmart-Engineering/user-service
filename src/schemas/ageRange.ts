@@ -67,6 +67,8 @@ const typeDefs = gql`
         id
         lowValue
         lowValueUnit
+        highValueUnit
+        highValue
     }
 
     input AgeRangeSortInput {
