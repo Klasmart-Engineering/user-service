@@ -33,6 +33,7 @@ import { AcademicTerm } from '../entities/academicTerm'
 const typeDefs = gql`
     extend type Query {
         school(school_id: ID!): School
+            @isAdmin(entity: "school")
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
@@ -399,8 +400,7 @@ export default function getDefault(
                 academicTermsConnection: academicTermsChildConnectionResolver,
             },
             Mutation: {
-                school: (_parent, args, ctx, _info) =>
-                    model.getSchool(args, ctx),
+                school: (_parent, args) => model.getSchool(args),
                 uploadSchoolsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSchoolsFromCSV(args, ctx, info),
                 deleteSchools: (_parent, args, ctx, _info) =>
@@ -428,8 +428,7 @@ export default function getDefault(
                     mutate(RemoveClassesFromSchools, args, ctx.permissions),
             },
             Query: {
-                school: (_parent, args, ctx, _info) =>
-                    model.getSchool(args, ctx),
+                school: (_parent, args) => model.getSchool(args),
                 schoolsConnection: (_parent, args, ctx, info) => {
                     return model.schoolsConnection(ctx, info, args)
                 },

@@ -695,15 +695,23 @@ export class Model {
         }
     }
 
-    public async getSchool({ school_id }: School, context: Context) {
-        try {
-            const school = await this.schoolRepository.findOneOrFail({
+    public async getSchool({
+        school_id,
+        scope,
+    }: {
+        school_id: string
+        scope: SelectQueryBuilder<School> | undefined
+    }) {
+        //if it's a mutation, the isAdmin scope is not needed to be injected because the permissions are checked on the further method
+        if (!scope) {
+            scope = this.schoolRepository.createQueryBuilder('School')
+        }
+        const school = await scope
+            .andWhere('School.school_id = :school_id', {
                 school_id,
             })
-            return school
-        } catch (e) {
-            logger.warn(e)
-        }
+            .getOne()
+        return school ?? null
     }
 
     public async getAgeRange(
