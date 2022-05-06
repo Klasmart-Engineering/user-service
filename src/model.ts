@@ -528,22 +528,34 @@ export class Model {
             paginationArgs
         )
 
-    public async getRole({ role_id }: Role, context: Context) {
-        try {
-            const role = await this.roleRepository.findOneOrFail({ role_id })
-            return role
-        } catch (e) {
-            logger.warn(e)
+    public async getRole({
+        role_id,
+        scope,
+    }: {
+        role_id: string
+        scope: SelectQueryBuilder<Role> | undefined
+    }) {
+        //if it's a mutation, the isAdmin scope is not needed to be injected because the permissions are checked on the further method
+        if (!scope) {
+            scope = this.roleRepository.createQueryBuilder('Role')
         }
+        const role = await scope
+            .andWhere('Role.role_id = :role_id', {
+                role_id,
+            })
+            .getOne()
+        return role ?? null
     }
 
-    public async getRoles(context: Context) {
-        try {
-            const roles = await this.roleRepository.find()
-            return roles
-        } catch (e) {
-            logger.warn(e)
+    public async getRoles({
+        scope,
+    }: {
+        scope: SelectQueryBuilder<Role> | undefined
+    }) {
+        if (!scope) {
+            scope = this.roleRepository.createQueryBuilder('Role')
         }
+        return await scope.getMany()
     }
 
     public async replaceRole(

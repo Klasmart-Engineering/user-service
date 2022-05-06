@@ -17,10 +17,11 @@ import { Role } from '../entities/role'
 const typeDefs = gql`
     extend type Query {
         role(role_id: ID!): Role
+            @isAdmin(entity: "role")
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
-        roles: [Role]
+        roles: [Role] @isAdmin(entity: "role")
         rolesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -213,8 +214,8 @@ export default function getDefault(
                 permissionsConnection: permissionsChildConnectionResolver,
             },
             Mutation: {
-                roles: (_parent, _args, ctx) => model.getRoles(ctx),
-                role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
+                roles: (_parent, args) => model.getRoles(args),
+                role: (_parent, args) => model.getRole(args),
                 uploadRolesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadRolesFromCSV(args, ctx, info),
                 replaceRole: (_parent, args, ctx, info) =>
@@ -227,8 +228,8 @@ export default function getDefault(
                     mutate(DeleteRoles, args, ctx.permissions),
             },
             Query: {
-                roles: (_parent, _args, ctx) => model.getRoles(ctx),
-                role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
+                roles: (_parent, args) => model.getRoles(args),
+                role: (_parent, args) => model.getRole(args),
                 rolesConnection: (_parent, args, ctx: Context, info) => {
                     return model.rolesConnection(ctx, info, args)
                 },

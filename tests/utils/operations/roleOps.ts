@@ -121,6 +121,14 @@ const ROLE_FIELDS = gql`
     }
 `
 
+const GET_ROLE = `
+    query myQuery($role_id: ID!) {
+        role(role_id: $role_id) {
+            role_id
+        }
+    }
+`
+
 export const CREATE_ROLES = gql`
     ${ROLE_FIELDS}
 
@@ -297,4 +305,22 @@ export async function deleteRole(
 
     const res = await gqlTry(operation)
     return res.data?.role.delete_role as boolean
+}
+
+export async function getRole(
+    testClient: ApolloServerTestClient,
+    roleId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
+
+    const operation = () =>
+        query({
+            query: GET_ROLE,
+            variables: { role_id: roleId },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.role
 }

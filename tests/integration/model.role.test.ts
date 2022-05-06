@@ -6,14 +6,21 @@ import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Role } from '../../src/entities/role'
 import { createRole } from '../factories/role.factory'
-import { createOrganizationAndValidate } from '../utils/operations/userOps'
+import {
+    createOrganizationAndValidate,
+    userToPayload,
+} from '../utils/operations/userOps'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
-import { accountUUID, User } from '../../src/entities/user'
+import { User } from '../../src/entities/user'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
+import {
+    generateToken,
+    getAdminAuthToken,
+    getNonAdminAuthToken,
+} from '../utils/testConfig'
 import { Organization } from '../../src/entities/organization'
 import { School } from '../../src/entities/school'
 import { createUsers } from '../factories/user.factory'
@@ -26,6 +33,8 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { replaceRole } from '../utils/operations/modelOps'
 import { expectAPIError } from '../utils/apiError'
 import { Status } from '../../src/entities/status'
+import { getRole } from '../utils/operations/roleOps'
+import faker from 'faker'
 
 use(chaiAsPromised)
 
@@ -61,6 +70,13 @@ describe('model.role', () => {
     })
 
     describe('#getRoles', () => {
+        let organization: Organization
+        let systemRoles: Role[]
+        beforeEach(async () => {
+            systemRoles = await Role.find({
+                where: { system_role: true },
+            })
+        })
         context('when none', () => {
             it('returns only the system roles', async () => {
                 await createNonAdminUser(testClient)
@@ -74,9 +90,6 @@ describe('model.role', () => {
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
-                const systemRoles = await Role.find({
-                    where: { system_role: true },
-                })
 
                 const roles = res.data?.roles as Role[]
                 expect(roles.map(roleInfo)).to.deep.equalInAnyOrder(
@@ -90,7 +103,7 @@ describe('model.role', () => {
 
             beforeEach(async () => {
                 const user = await createAdminUser(testClient)
-                const organization = await createOrganizationAndValidate(
+                organization = await createOrganizationAndValidate(
                     testClient,
                     user.user_id
                 )
@@ -99,72 +112,122 @@ describe('model.role', () => {
                 arbitraryUserToken = getNonAdminAuthToken()
             })
 
-            it('should return an array containing the default roles', async () => {
-                const { query } = testClient
+            context('when user does not belong to the org', () => {
+                it('should return an array containing just the system roles', async () => {
+                    const { query } = testClient
 
-                const res = await query({
-                    query: GET_ROLES,
-                    headers: { authorization: arbitraryUserToken },
+                    const res = await query({
+                        query: GET_ROLES,
+                        headers: { authorization: arbitraryUserToken },
+                    })
+
+                    expect(res.errors, res.errors?.toString()).to.be.undefined
+                    const roles = res.data?.roles as Role[]
+                    expect(roles).to.exist
+                    expect(roles).to.have.lengthOf(systemRoles.length)
                 })
+            })
 
-                const dbRoles = await Role.find()
+            context('when user belongs to the org', () => {
+                let user: User
+                let role: Role
 
-                expect(res.errors, res.errors?.toString()).to.be.undefined
-                const roles = res.data?.roles as Role[]
-                expect(roles).to.exist
-                expect(roles).to.have.lengthOf(dbRoles.length)
+                beforeEach(async () => {
+                    user = await createNonAdminUser(testClient)
+                    await createOrganizationMembership({
+                        user,
+                        organization,
+                        roles: [role],
+                    }).save()
+                })
+                it('should return an array containing the system and custom roles belonging to the org', async () => {
+                    const { query } = testClient
+
+                    const res = await query({
+                        query: GET_ROLES,
+                        headers: {
+                            authorization: generateToken(userToPayload(user)),
+                        },
+                    })
+
+                    const dbRoles = await Role.find({
+                        where: { system_role: false },
+                    })
+
+                    expect(res.errors, res.errors?.toString()).to.be.undefined
+                    const roles = res.data?.roles as Role[]
+                    expect(roles).to.exist
+                    expect(roles).to.have.lengthOf(
+                        dbRoles.length + systemRoles.length
+                    )
+                })
             })
         })
     })
 
     describe('#getRole', () => {
-        context('when none', () => {
-            it('should return null', async () => {
-                const { query } = testClient
+        let orgOwner: User
+        let user: User
+        let role: Role
+        let organization: Organization
+        let token: string
 
-                await createNonAdminUser(testClient)
-                const arbitraryUserToken = getNonAdminAuthToken()
+        beforeEach(async () => {
+            orgOwner = await createAdminUser(testClient)
+            organization = await createOrganization(orgOwner).save()
+            user = await createNonAdminUser(testClient)
+            token = generateToken(userToPayload(user))
+            role = await createRole('role', organization).save()
+            await createOrganizationMembership({
+                user,
+                organization,
+                roles: [role],
+            }).save()
+        })
 
-                const res = await query({
-                    query: GET_ROLE,
-                    variables: { role_id: accountUUID() },
-                    headers: { authorization: arbitraryUserToken },
+        context('when user belongs to the org', () => {
+            it('should retrieve the expected role', async () => {
+                const response = await getRole(testClient, role.role_id, {
+                    authorization: token,
                 })
-
-                expect(res.errors, res.errors?.toString()).to.be.undefined
-                expect(res.data?.role).to.be.null
+                expect(response.role_id).to.equal(role.role_id)
             })
         })
 
-        context('when one', () => {
-            let role: Role
-            let arbitraryUserToken: string
+        context('when user does not belong to the org', async () => {
+            let anotherOrg: Organization
+            let anotherRole: Role
 
             beforeEach(async () => {
-                const user = await createAdminUser(testClient)
-                const organization = await createOrganizationAndValidate(
-                    testClient,
-                    user.user_id
-                )
-                role = await createRole(undefined, organization).save()
-
-                await createNonAdminUser(testClient)
-                arbitraryUserToken = getNonAdminAuthToken()
+                anotherOrg = await createOrganization().save()
+                anotherRole = await createRole(
+                    'another role',
+                    anotherOrg
+                ).save()
             })
 
-            it('should return an array containing the default roles', async () => {
-                const { query } = testClient
+            it('should return null', async () => {
+                const response = await getRole(
+                    testClient,
+                    anotherRole.role_id,
+                    {
+                        authorization: token,
+                    }
+                )
+                expect(response).to.be.a('null')
+            })
+        })
 
-                const res = await query({
-                    query: GET_ROLE,
-                    variables: { role_id: role.role_id },
-                    headers: { authorization: arbitraryUserToken },
-                })
-
-                expect(res.errors, res.errors?.toString()).to.be.undefined
-                const gqlRole = res.data?.role as Role
-                expect(gqlRole).to.exist
-                expect(role).to.include(gqlRole)
+        context('when the role does not exist', async () => {
+            it('should return null', async () => {
+                const response = await getRole(
+                    testClient,
+                    faker.datatype.uuid(),
+                    {
+                        authorization: token,
+                    }
+                )
+                expect(response).to.be.a('null')
             })
         })
     })
