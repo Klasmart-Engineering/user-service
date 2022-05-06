@@ -26,12 +26,12 @@ export const permissionInfo = async () => {
                     name: row['Permission Name (BE)'],
                     category:
                         row[
-                            'Permission Category (BE)\n(Accounts, Academic Profile, Live, Library, Assessments, Schedule, Reports, General)'
-                        ],
+                            'Permission Category (BE)\r\n(Accounts, Academic Profile, Live, Library, Assessments, Schedule, Reports, General)'
+                            ],
                     level:
                         row[
-                            'Permission Level \n(Super Admin, Org Admin, School Admin, Teacher, Parent, Student, None)'
-                        ],
+                            'Permission Level\r\n(Super Admin, Org Admin, School Admin, Teacher, Parent, Student, None)'
+                            ],
                     group: row['Permission Group'],
                     description: row['Description'],
                 })
