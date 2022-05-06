@@ -78,7 +78,7 @@ describe('SchoolMembership', () => {
             testClient,
             schoolId,
             userId,
-            { authorization: getNonAdminAuthToken() }
+            { authorization: getAdminAuthToken() }
         )
     })
 

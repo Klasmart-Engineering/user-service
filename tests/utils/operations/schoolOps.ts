@@ -126,6 +126,14 @@ const SCHOOL_FIELDS = gql`
     }
 `
 
+const GET_SCHOOL = `
+    query myQuery($school_id: ID!) {
+        school(school_id: $school_id) {
+            school_id
+        }
+    }
+`
+
 export const REMOVE_PROGRAMS_FROM_SCHOOLS = gql`
     ${SCHOOL_FIELDS}
     mutation myMutation($input: [RemoveProgramsFromSchoolInput!]!) {
@@ -426,4 +434,22 @@ export async function editPrograms(
     const res = await gqlTry(operation)
     const gqlPrograms = res.data?.school?.editPrograms as Program[]
     return gqlPrograms
+}
+
+export async function getSchool(
+    testClient: ApolloServerTestClient,
+    schoolId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
+
+    const operation = () =>
+        query({
+            query: GET_SCHOOL,
+            variables: { school_id: schoolId },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.school
 }

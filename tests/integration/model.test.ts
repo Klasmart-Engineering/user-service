@@ -1,6 +1,7 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import faker from 'faker'
 import { before } from 'mocha'
 import { getConnection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
@@ -8,11 +9,13 @@ import { Grade } from '../../src/entities/grade'
 import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Program } from '../../src/entities/program'
+import { School } from '../../src/entities/school'
 import { Status } from '../../src/entities/status'
 import { Subcategory } from '../../src/entities/subcategory'
 import { Subject } from '../../src/entities/subject'
 import { User } from '../../src/entities/user'
 import { Model } from '../../src/model'
+import { PermissionName } from '../../src/permissions/permissionNames'
 import { createServer } from '../../src/utils/createServer'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
@@ -22,6 +25,7 @@ import {
     createOrganizationMemberships,
 } from '../factories/organizationMembership.factory'
 import { createProgram } from '../factories/program.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createSubcategory } from '../factories/subcategory.factory'
 import { createUser, createUsers } from '../factories/user.factory'
 import {
@@ -36,7 +40,11 @@ import {
     getProgram,
     getSubcategory,
 } from '../utils/operations/modelOps'
-import { addUserToOrganizationAndValidate } from '../utils/operations/organizationOps'
+import {
+    addUserToOrganizationAndValidate,
+    createRole,
+    createSchool,
+} from '../utils/operations/organizationOps'
 import {
     renameDuplicateGradesMutation,
     renameDuplicateGradesQuery,
@@ -49,8 +57,14 @@ import {
     renameDuplicateSubjectsMutation,
     renameDuplicateSubjectsQuery,
 } from '../utils/operations/renameDuplicateSubjects'
-import { createOrganizationAndValidate } from '../utils/operations/userOps'
+import { grantPermission } from '../utils/operations/roleOps'
+import { getSchool } from '../utils/operations/schoolOps'
 import {
+    createOrganizationAndValidate,
+    userToPayload,
+} from '../utils/operations/userOps'
+import {
+    generateToken,
     getAdminAuthToken,
     getAPIKeyAuth,
     getNonAdminAuthToken,
@@ -1016,6 +1030,92 @@ describe('model', () => {
                 })
 
                 expect(duplicatedGrades).eq(3)
+            })
+        })
+    })
+
+    describe('.getSchool', () => {
+        let orgOwner: User
+        let user: User
+        let school: School
+        let organization: Organization
+        let token: string
+
+        beforeEach(async () => {
+            orgOwner = await createAdminUser(testClient)
+            organization = await createOrganization(orgOwner).save()
+            school = await createSchool(
+                testClient,
+                organization.organization_id,
+                'school x',
+                undefined,
+                { authorization: getAdminAuthToken() }
+            )
+            user = await createNonAdminUser(testClient)
+            token = generateToken(userToPayload(user))
+            const role = await createRole(
+                testClient,
+                organization.organization_id
+            )
+            await grantPermission(
+                testClient,
+                role.role_id,
+                PermissionName.view_my_school_20119,
+                { authorization: getAdminAuthToken() }
+            )
+            await createOrganizationMembership({
+                user,
+                organization,
+                roles: [role],
+            }).save()
+            await createSchoolMembership({
+                user,
+                school: school,
+            }).save()
+        })
+
+        context('when user has permissions to view the school', () => {
+            it('should retrieve the expected school', async () => {
+                const response = await getSchool(testClient, school.school_id, {
+                    authorization: token,
+                })
+                expect(response.school_id).to.equal(school.school_id)
+            })
+        })
+
+        context(
+            'when user has not permissions to view the school',
+            async () => {
+                const anotherSchool = await createSchool(
+                    testClient,
+                    organization.organization_id,
+                    'school y',
+                    undefined,
+                    { authorization: getAdminAuthToken() }
+                )
+                it('should return null', async () => {
+                    const response = await getSchool(
+                        testClient,
+                        anotherSchool.school_id,
+                        {
+                            authorization: token,
+                        }
+                    )
+                    expect(response).to.be.a('null')
+                })
+            }
+        )
+
+        context('when the school does not exist', async () => {
+            it('should return null', async () => {
+                const response = await getSchool(
+                    testClient,
+                    faker.datatype.uuid(),
+                    {
+                        authorization: token,
+                    }
+                )
+                expect(response).to.be.a('null')
             })
         })
     })

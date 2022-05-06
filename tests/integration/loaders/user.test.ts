@@ -232,7 +232,7 @@ context('User loaders', () => {
                     organization,
                 })
             )
-            school = await createSchool().save()
+            school = await createSchool(organization).save()
             await createSchoolMembership({
                 user: targetedUser,
                 school: school,
@@ -244,7 +244,10 @@ context('User loaders', () => {
             beforeEach(async () => {
                 userWithPermission = await User.save(createUser())
                 const role = await createRole('role', organization, {
-                    permissions: [PermissionName.view_users_40110],
+                    permissions: [
+                        PermissionName.view_users_40110,
+                        PermissionName.view_my_school_20119,
+                    ],
                 }).save()
                 await OrganizationMembership.save(
                     createOrganizationMembership({
@@ -253,6 +256,10 @@ context('User loaders', () => {
                         roles: [role],
                     })
                 )
+                await createSchoolMembership({
+                    user: userWithPermission,
+                    school: school,
+                }).save()
             })
             it('can view the nested targeted user through the organization membership resolver', async () => {
                 const response = await listMemberships(
@@ -317,12 +324,20 @@ context('User loaders', () => {
 
             beforeEach(async () => {
                 userWithoutPermission = await User.save(createUser())
+                const role = await createRole('role', organization, {
+                    permissions: [PermissionName.view_my_school_20119],
+                }).save()
                 await OrganizationMembership.save(
                     createOrganizationMembership({
                         user: userWithoutPermission,
                         organization,
+                        roles: [role],
                     })
                 )
+                await createSchoolMembership({
+                    user: userWithoutPermission,
+                    school: school,
+                }).save()
             })
             it('cannot view the nested targeted user through the organization membership resolver', async () => {
                 const response = await listMemberships(

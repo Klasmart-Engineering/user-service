@@ -272,18 +272,16 @@ describe('school', () => {
             expect(school.status).to.eq(Status.ACTIVE)
         })
 
-        context('no permissions required', () => {
-            it('should return the organization', async () => {
-                const gqlOrganization = await getSchoolOrganization(
-                    testClient,
-                    schoolId,
-                    { authorization: getNonAdminAuthToken() }
-                )
+        it('should return the organization', async () => {
+            const gqlOrganization = await getSchoolOrganization(
+                testClient,
+                schoolId,
+                { authorization: getAdminAuthToken() }
+            )
 
-                expect(gqlOrganization).to.exist
-                expect(gqlOrganization).to.include({
-                    organization_id: organizationId,
-                })
+            expect(gqlOrganization).to.exist
+            expect(gqlOrganization).to.include({
+                organization_id: organizationId,
             })
         })
     })
@@ -318,17 +316,13 @@ describe('school', () => {
             })
         })
 
-        context('no permissions required', () => {
-            it('should return all classes', async () => {
-                const gqlClasses = await getSchoolClasses(
-                    testClient,
-                    schoolId,
-                    { authorization: getNonAdminAuthToken() }
-                )
-
-                expect(gqlClasses).to.exist.with.lengthOf(1)
-                expect(gqlClasses[0]).to.include({ class_id: classId })
+        it('should return all classes', async () => {
+            const gqlClasses = await getSchoolClasses(testClient, schoolId, {
+                authorization: getAdminAuthToken(),
             })
+
+            expect(gqlClasses).to.exist.with.lengthOf(1)
+            expect(gqlClasses[0]).to.include({ class_id: classId })
         })
     })
 
@@ -367,20 +361,18 @@ describe('school', () => {
             })
         })
 
-        context('no permissions required', () => {
-            it('should return all memberships', async () => {
-                const gqlMemberships = await getSchoolMembershipsViaSchool(
-                    testClient,
-                    schoolId,
-                    { authorization: getNonAdminAuthToken() }
-                )
+        it('should return all memberships', async () => {
+            const gqlMemberships = await getSchoolMembershipsViaSchool(
+                testClient,
+                schoolId,
+                { authorization: getAdminAuthToken() }
+            )
 
-                expect(gqlMemberships).to.exist
-                expect(gqlMemberships).to.have.lengthOf(1)
-                expect(gqlMemberships[0]).to.include({
-                    user_id: userId,
-                    school_id: schoolId,
-                })
+            expect(gqlMemberships).to.exist
+            expect(gqlMemberships).to.have.lengthOf(1)
+            expect(gqlMemberships[0]).to.include({
+                user_id: userId,
+                school_id: schoolId,
             })
         })
     })
@@ -420,20 +412,18 @@ describe('school', () => {
             })
         })
 
-        context('no permissions required', () => {
-            it('should return the membership', async () => {
-                const gqlMembership = await getSchoolMembershipViaSchool(
-                    testClient,
-                    schoolId,
-                    userId,
-                    { authorization: getNonAdminAuthToken() }
-                )
+        it('should return the membership', async () => {
+            const gqlMembership = await getSchoolMembershipViaSchool(
+                testClient,
+                schoolId,
+                userId,
+                { authorization: getAdminAuthToken() }
+            )
 
-                expect(gqlMembership).to.exist
-                expect(gqlMembership).to.include({
-                    user_id: userId,
-                    school_id: schoolId,
-                })
+            expect(gqlMembership).to.exist
+            expect(gqlMembership).to.include({
+                user_id: userId,
+                school_id: schoolId,
             })
         })
     })
