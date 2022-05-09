@@ -21,7 +21,11 @@ const typeDefs = gql`
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
-        roles: [Role] @isAdmin(entity: "role")
+        roles: [Role]
+            @isAdmin(entity: "role")
+            @deprecated(
+                reason: "Sunset Date: 09/08/2022 Details: https://calmisland.atlassian.net/l/c/Z7e0ZCzm"
+            )
         rolesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -34,6 +38,9 @@ const typeDefs = gql`
     extend type Mutation {
         role(role_id: ID!): Role
         roles: [Role]
+            @deprecated(
+                reason: "Sunset Date: 09/08/2022 Details: https://calmisland.atlassian.net/l/c/Z7e0ZCzm"
+            )
         uploadRolesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         replaceRole(
@@ -90,9 +97,19 @@ const typeDefs = gql`
                 reason: "Sunset Date: 03/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
             )
         grant(permission_name: String!): Permission
+            @deprecated(
+                reason: "Sunset Date: 09/08/2022 Details: https://calmisland.atlassian.net/l/c/Z7e0ZCzm"
+            )
         revoke(permission_name: String!): Boolean
+            @deprecated(
+                reason: "Sunset Date: 09/08/2022 Details: https://calmisland.atlassian.net/l/c/Z7e0ZCzm"
+            )
         edit_permissions(permission_names: [String!]): [Permission]
-        deny(permission_name: String!): Permission @isAdmin
+        deny(permission_name: String!): Permission
+            @isAdmin
+            @deprecated(
+                reason: "Sunset Date: 09/08/2022 Details: https://calmisland.atlassian.net/l/c/Z7e0ZCzm"
+            )
 
         delete_role(_: Int): Boolean
             @deprecated(
