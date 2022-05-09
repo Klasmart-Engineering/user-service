@@ -34,7 +34,11 @@ const typeDefs = gql`
     }
 
     extend type Mutation {
-        program(id: ID!): Program @isAdmin(entity: "program")
+        program(id: ID!): Program
+            @isAdmin(entity: "program")
+            @deprecated(
+                reason: "Sunset Date: 08/08/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2669379612."
+            )
         uploadProgramsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         createPrograms(input: [CreateProgramInput!]!): ProgramsMutationResult
@@ -99,8 +103,17 @@ const typeDefs = gql`
 
         # Mutations
         editAgeRanges(age_range_ids: [ID!]): [AgeRange]
+            @deprecated(
+                reason: "Sunset Date: 08/08/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2669346881"
+            )
         editGrades(grade_ids: [ID!]): [Grade]
+            @deprecated(
+                reason: "Sunset Date: 08/08/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2669379603"
+            )
         editSubjects(subject_ids: [ID!]): [Subject]
+            @deprecated(
+                reason: "Sunset Date: 08/08/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2669346890"
+            )
 
         delete(_: Int): Boolean
             @deprecated(
