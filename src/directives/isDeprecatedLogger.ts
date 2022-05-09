@@ -17,12 +17,15 @@ export function isDeprecatedLoggerTransformer(schema: GraphQLSchema) {
                 context: Context,
                 info
             ) => {
-                deprecatedLogger.log('warn', '%o', {
-                    operationType: info.operation.operation ?? '',
-                    operationName: info.operation.name?.value ?? '',
-                    deprecatedField: info.fieldName,
-                    originURL: context.req.headers.origin ?? '',
-                })
+                deprecatedLogger.log(
+                    'warn',
+                    JSON.stringify({
+                        operationType: info.operation.operation ?? '',
+                        operationName: info.operation.name?.value ?? '',
+                        deprecatedField: info.fieldName,
+                        originURL: context.req.headers.origin ?? '',
+                    })
+                )
                 return resolve(source, args, context, info)
             }
             return fieldConfig

@@ -81,7 +81,7 @@ async function didResolveOperation(
             maxComplexity,
             complexity,
         }
-        logger.log('warn', '%o', { loggingContext })
+        logger.log('warn', JSON.stringify(loggingContext))
     }
 
     requestContext.context.complexity = {
