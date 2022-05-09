@@ -1,9 +1,6 @@
 import chai, { expect, use } from 'chai'
 import { Connection, getRepository, QueryRunner } from 'typeorm'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { createTestConnection } from '../utils/testConnection'
 import { createUser } from '../factories/user.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { Organization } from '../../src/entities/organization'
@@ -54,8 +51,6 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
         await baseConnection?.close()
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
         await migrationsConnection?.close()
     })
 
@@ -99,11 +94,11 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
                 }');`
             )
 
-            migrationsConnection = await createMigrationsTestConnection(
-                false,
-                false,
-                'migrations'
-            )
+            migrationsConnection = await createTestConnection({
+                synchronize: false,
+                drop: false,
+                name: 'migrations',
+            })
             await runMigration()
 
             const updatedOrgMemb = await OrganizationMembership.findOne({
@@ -119,11 +114,11 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
     })
 
     it('is benign if run twice', async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
+        migrationsConnection = await createTestConnection({
+            drop: true,
+            synchronize: false,
+            name: 'migrations',
+        })
         const currentMigration = await runPreviousMigrations(
             migrationsConnection,
             runner,

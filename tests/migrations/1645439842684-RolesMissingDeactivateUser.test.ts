@@ -2,10 +2,7 @@ import chai, { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Connection, MigrationInterface, QueryRunner } from 'typeorm'
 import { Role } from '../../src/entities/role'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { createTestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
 import { createRole } from '../factories/role.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
@@ -17,34 +14,17 @@ use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('RolesMissingDeactivateUser1645439842684 migration', () => {
-    let baseConnection: Connection
     let migrationsConnection: Connection
     let runner: QueryRunner
     let currentMigration: MigrationInterface
 
-    before(async () => {
-        baseConnection = await createTestConnection()
-        // every test has to use the same runner
-        // otherwise `is benign if run twice` will
-        // cause `baseConnection?.close()` to hang in `after`
-        // todo: find out why
-        runner = baseConnection.createQueryRunner()
-    })
-    after(async () => {
-        await baseConnection?.close()
-    })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
         await migrationsConnection?.close()
     })
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
+        migrationsConnection = await createTestConnection({ drop: true })
+        runner = migrationsConnection.createQueryRunner()
         currentMigration = (await runPreviousMigrations(
             migrationsConnection,
             runner,
