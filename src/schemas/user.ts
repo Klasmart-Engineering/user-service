@@ -244,6 +244,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 01/05/22 Details: https://calmisland.atlassian.net/l/c/hKbcoRyx"
             )
         merge(other_id: String): User
+            @deprecated(
+                reason: "Sunset Date: 01/08/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2665513259/"
+            )
         addOrganization(organization_id: ID!): OrganizationMembership
             @deprecated(
                 reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2462417870/"
