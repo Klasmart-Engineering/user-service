@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { Connection, QueryRunner } from 'typeorm'
+import { QueryRunner } from 'typeorm'
 import {
     DeletingDuplicatedSystemRoles1647009770308,
     rolesToDeleteIds,
@@ -22,28 +22,15 @@ import { createRole } from '../factories/role.factory'
 import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createUser } from '../factories/user.factory'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-    TestConnection,
-} from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 
 use(deepEqualInAnyOrder)
 
 describe('DeletingDuplicatedSystemRoles', () => {
-    let baseConnection: Connection
     let migrationsConnection: TestConnection
     let originalSystemRoles: Role[]
     let duplicatedSystemRoles: Role[]
     let organization: Organization
-
-    before(async () => {
-        baseConnection = await createTestConnection()
-    })
-
-    after(async () => {
-        await baseConnection?.close()
-    })
 
     const runMigration = async (runner: QueryRunner) => {
         const migration = migrationsConnection.migrations.find(
@@ -104,18 +91,20 @@ describe('DeletingDuplicatedSystemRoles', () => {
     }
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            true,
-            'migrations'
-        )
+        migrationsConnection = await createTestConnection({
+            drop: true,
+            synchronize: true,
+        })
         await createDuplicateRoles()
+        const pendingMigrations = await migrationsConnection.showMigrations()
+        expect(pendingMigrations).to.eq(true)
         await migrationsConnection.runMigrations()
+        await expect(migrationsConnection.showMigrations()).to.eventually.eq(
+            false
+        )
     })
 
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
         await migrationsConnection?.close()
     })
 

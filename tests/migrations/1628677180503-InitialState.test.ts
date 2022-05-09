@@ -1,13 +1,10 @@
 import { Connection, QueryRunner } from 'typeorm'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { createTestConnection } from '../utils/testConnection'
 import { expect } from 'chai'
 import { InitialState1628677180503 } from '../../migrations/1628677180503-InitialState'
 
-export async function getDatabaseTables(connection: Connection) {
-    const tables = (await connection.createQueryRunner().query(`
+export async function getDatabaseTables(queryRunner: QueryRunner) {
+    const tables = (await queryRunner.query(`
         SELECT table_name
             FROM information_schema.tables
         WHERE table_schema='public'
@@ -55,28 +52,16 @@ const expectedTables: string[] = [
 ]
 
 describe('InitialState1628677180503 migration', () => {
-    let baseConnection: Connection
     let migrationsConnection: Connection
     let queryRunner: QueryRunner
-    before(async () => {
-        baseConnection = await createTestConnection()
-        queryRunner = baseConnection.createQueryRunner()
-    })
-    after(async () => {
-        await baseConnection?.close()
+    beforeEach(async () => {
+        migrationsConnection = await createTestConnection({ drop: true })
+        queryRunner = migrationsConnection.createQueryRunner()
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
-        await migrationsConnection?.close()
+        await migrationsConnection.close()
     })
     it('initializes the full schema when pointed at an empty DB', async () => {
-        // drop schema and connect with synchronize disabled
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
         const migration = migrationsConnection.migrations.find(
             (m) => m.name === InitialState1628677180503.name
         )
@@ -84,27 +69,21 @@ describe('InitialState1628677180503 migration', () => {
 
         await migration!.up(queryRunner)
 
-        const tables = await getDatabaseTables(migrationsConnection)
+        const tables = await getDatabaseTables(queryRunner)
         for (const table of expectedTables) {
             expect(tables).to.include(table)
         }
     })
 
     it('is benign when run against an existing database', async () => {
-        // DON'T drop schema and connect with synchronize disabled
-        migrationsConnection = await createMigrationsTestConnection(
-            false,
-            false,
-            'migrations'
-        )
         const migration = migrationsConnection.migrations.find(
             (m) => m.name === InitialState1628677180503.name
         )
-        expect(migration).to.exist
+        await migration!.up(queryRunner)
 
         await migration!.up(queryRunner)
 
-        const tables = await getDatabaseTables(migrationsConnection)
+        const tables = await getDatabaseTables(queryRunner)
         for (const table of expectedTables) {
             expect(tables).to.include(table)
         }

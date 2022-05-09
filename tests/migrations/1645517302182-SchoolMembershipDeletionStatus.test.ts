@@ -7,42 +7,31 @@ import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createUser } from '../factories/user.factory'
 import { runPreviousMigrations } from '../utils/migrations'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { createTestConnection } from '../utils/testConnection'
 
 chai.should()
 use(chaiAsPromised)
 
 describe('SchoolMembershipDeletionStatus1645438258990 migration', () => {
-    let baseConnection: Connection
     let migrationsConnection: Connection
 
-    before(async () => {
-        baseConnection = await createTestConnection()
-    })
-    after(async () => {
-        await baseConnection?.close()
-    })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
         await migrationsConnection?.close()
     })
 
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
+        migrationsConnection = await createTestConnection({ drop: true })
     })
 
     context('when all migrations have run', () => {
         beforeEach(() =>
             migrationsConnection.runMigrations({ transaction: 'each' })
         )
+
+        afterEach(async () => {
+            const pendingMigrations = await migrationsConnection.showMigrations()
+            expect(pendingMigrations).to.eq(false)
+        })
 
         for (const status of [Status.ACTIVE, Status.INACTIVE]) {
             it(`preserves rows with a status of ${status}`, async () => {
@@ -53,7 +42,7 @@ describe('SchoolMembershipDeletionStatus1645438258990 migration', () => {
                     school,
                     status,
                 }).save()
-                const runner = baseConnection.createQueryRunner()
+                const runner = migrationsConnection.createQueryRunner()
                 await runner.startTransaction()
                 const currentMigration = migrationsConnection.migrations.find(
                     (m) =>

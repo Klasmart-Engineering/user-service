@@ -23,38 +23,22 @@ import { createSubcategory } from '../factories/subcategory.factory'
 import { createSubject } from '../factories/subject.factory'
 import { createUser } from '../factories/user.factory'
 import { runPreviousMigrations } from '../utils/migrations'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { createTestConnection } from '../utils/testConnection'
 
 chai.should()
 use(chaiAsPromised)
 
 describe('AddTimestampColumns1630420895212 migration', () => {
-    let baseConnection: Connection
     let migrationsConnection: Connection
     let entities: CustomBaseEntity[]
     let orgMemb: OrganizationMembership
     let schoolMemb: SchoolMembership
 
-    before(async () => {
-        baseConnection = await createTestConnection()
-    })
-    after(async () => {
-        await baseConnection?.close()
-    })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
         await migrationsConnection?.close()
     })
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
+        migrationsConnection = await createTestConnection({ drop: true })
     })
     context('when database is populated', () => {
         beforeEach(async () => {
@@ -91,6 +75,11 @@ describe('AddTimestampColumns1630420895212 migration', () => {
             for (const entity of entities) {
                 await entity.save()
             }
+        })
+
+        afterEach(async () => {
+            const pendingMigrations = await migrationsConnection.showMigrations()
+            expect(pendingMigrations).to.eq(false)
         })
         it('manages the created_at column', async () => {
             for (const entity of entities) {

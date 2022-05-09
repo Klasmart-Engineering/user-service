@@ -5,39 +5,28 @@ import { CreateAcademicTermEntity1648053310507 } from '../../migrations/16480533
 import { School } from '../../src/entities/school'
 import { createClass } from '../factories/class.factory'
 import { createSchool } from '../factories/school.factory'
-import {
-    createMigrationsTestConnection,
-    createTestConnection,
-} from '../utils/testConnection'
+import { createTestConnection } from '../utils/testConnection'
 import { getDatabaseTables } from './1628677180503-InitialState.test'
 
 use(chaiAsPromised)
 
 describe('CreateAcademicTermEntity1648053310507 migration', () => {
-    let baseConnection: Connection
     let migrationsConnection: Connection
     let runner: QueryRunner
 
-    before(async () => {
-        baseConnection = await createTestConnection()
-        runner = baseConnection.createQueryRunner()
-    })
-
-    after(async () => {
-        await baseConnection?.close()
-    })
-
     beforeEach(async () => {
-        migrationsConnection = await createMigrationsTestConnection(
-            true,
-            false,
-            'migrations'
-        )
+        migrationsConnection = await createTestConnection({
+            drop: true,
+        })
+        runner = migrationsConnection.createQueryRunner()
+        const pendingMigrations = await migrationsConnection.showMigrations()
+        expect(pendingMigrations).to.eq(true)
         await migrationsConnection.runMigrations()
+        await expect(migrationsConnection.showMigrations()).to.eventually.eq(
+            false
+        )
     })
     afterEach(async () => {
-        const pendingMigrations = await baseConnection.showMigrations()
-        expect(pendingMigrations).to.eq(false)
         await migrationsConnection?.close()
     })
 
@@ -57,7 +46,7 @@ describe('CreateAcademicTermEntity1648053310507 migration', () => {
 
     context('migration is run once', () => {
         it('creates the academic term table', async () => {
-            const tables = await getDatabaseTables(migrationsConnection)
+            const tables = await getDatabaseTables(runner)
             expect(tables).to.include('academic_term')
         })
 
