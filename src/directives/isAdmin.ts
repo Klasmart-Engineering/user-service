@@ -352,12 +352,23 @@ export const nonAdminUserScope: NonAdminScope<
                     .select('membership_table.userUserId', 'user_id')
                     .distinct(true)
                     .from(membershipTable, 'membership_table')
+                    .innerJoin(
+                        'Class',
+                        'classes_with_orgs',
+                        'membership_table.classClassId = classes_with_orgs.class_id'
+                    )
                     .andWhere(
                         'membership_table.classClassId IN (:...classIds)',
                         {
                             classIds: classesTaught.map(
                                 ({ class_id }) => class_id
                             ),
+                        }
+                    )
+                    .andWhere(
+                        'classes_with_orgs.organizationOrganizationId IN (:...orgsWithClasses)',
+                        {
+                            orgsWithClasses,
                         }
                     )
             }

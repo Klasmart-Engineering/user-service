@@ -813,6 +813,30 @@ describe('isAdmin', () => {
                         usersConnection.edges.map((edge) => edge.node.id)
                     ).to.have.same.members([user.user_id])
                 })
+
+                it("can't see students from classes they teach but don't have the permission in the org", async () => {
+                    const teacher = user
+                    const student1 = usersList[0]
+                    const student2 = usersList[1]
+
+                    const _class1 = await makeClass([teacher], [student1]) //organizations[0] by default
+                    const class2 = await makeClass([teacher], [student2]) //organizations[0] by default
+
+                    // Change class2's org to the org that the user does not have view_my_class_users_40112 in
+                    class2.organization = Promise.resolve(organizations[1])
+                    await class2.save()
+
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: token }
+                    )
+                    // Student2 should not be visible
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).to.have.same.members([user.user_id, student1.user_id])
+                })
             })
 
             context('with view_my_admin_users_40114', () => {
