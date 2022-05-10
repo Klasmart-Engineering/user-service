@@ -13,7 +13,7 @@ before(async () => {
     // it will be inserted into the DB with the value of the local time
     // when the DB is supposed to hold values in UTC
     process.env.TZ = 'UTC'
-    connection = await createTestConnection({ synchronize: true })
+    connection = await createTestConnection()
     await truncateTables(connection)
 })
 

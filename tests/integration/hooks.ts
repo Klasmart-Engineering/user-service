@@ -2,8 +2,9 @@ import faker from 'faker'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { truncateTables } from '../utils/database'
 import TransactionalTestContext from '../utils/transactionalTestContext'
+import { runMigrations } from '../../src/initializers/migrations'
+import { truncateTables } from '../utils/database'
 
 let connection: TestConnection
 export let transactionalContext: TransactionalTestContext
@@ -17,7 +18,8 @@ before(async () => {
     // it will be inserted into the DB with the value of the local time
     // when the DB is supposed to hold values in UTC
     process.env.TZ = 'UTC'
-    connection = await createTestConnection({ synchronize: true })
+    connection = await createTestConnection()
+    await runMigrations(connection)
     await truncateTables(connection)
     originalAdmins = UserPermissions.ADMIN_EMAILS
     UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
