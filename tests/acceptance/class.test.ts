@@ -52,6 +52,9 @@ import {
     REMOVE_STUDENTS_FROM_CLASSES,
     REMOVE_TEACHERS_FROM_CLASSES,
     UPDATE_CLASSES,
+    CLASSES,
+    CLASSES_STUDENTS,
+    CLASSES_TEACHERS,
 } from '../utils/operations/classOps'
 import {
     CLASS_NODE,
@@ -97,6 +100,7 @@ import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createSchools } from '../factories/school.factory'
 import { createRole as createRoleFactory } from '../factories/role.factory'
+import { compareMultipleEntityFields } from '../utils/assertions'
 
 use(deepEqualInAnyOrder)
 
@@ -394,6 +398,88 @@ describe('acceptance.class', () => {
         await addSchoolsToClass(class1Ids[2], [schoolId], getAdminAuthToken())
         await addGradesToClass(class1Ids[3], [gradeId], getAdminAuthToken())
         await addSubjectsToClass(class1Ids[4], [subjectId], getAdminAuthToken())
+    })
+
+    context('classes', () => {
+        let adminUser: User
+        let activeClasses: Class[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+
+            activeClasses = await Class.find()
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                CLASSES,
+                {},
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            type ClassResponse = { class_id: string; class_name: string }
+            const resClasses: ClassResponse[] = response.body.data.classes
+            expect(resClasses).to.have.length(activeClasses.length)
+        })
+
+        context('students', () => {
+            let students: User[]
+
+            beforeEach(async () => {
+                students = await User.save(createUsers(2))
+                activeClasses.map(async (cls) => {
+                    cls.students = Promise.resolve(students)
+                })
+                await Class.save(activeClasses)
+            })
+
+            it('returns the expected values', async () => {
+                const response = await makeRequest(
+                    request,
+                    CLASSES_STUDENTS,
+                    {},
+                    generateToken(userToPayload(adminUser))
+                )
+                type ClassResponse = { students: User[] }
+                const resClasses: ClassResponse[] = response.body.data.classes
+                for (const cls of resClasses) {
+                    compareMultipleEntityFields(cls.students, students, [
+                        'user_id',
+                    ])
+                }
+            })
+        })
+
+        context('teachers', () => {
+            let teachers: User[]
+
+            beforeEach(async () => {
+                teachers = await User.save(createUsers(2))
+                activeClasses.map(async (cls) => {
+                    cls.teachers = Promise.resolve(teachers)
+                })
+                await Class.save(activeClasses)
+            })
+
+            it('returns the expected values', async () => {
+                const response = await makeRequest(
+                    request,
+                    CLASSES_TEACHERS,
+                    {},
+                    generateToken(userToPayload(adminUser))
+                )
+                type ClassResponse = { teachers: User[] }
+                const resClasses: ClassResponse[] = response.body.data.classes
+                for (const cls of resClasses) {
+                    compareMultipleEntityFields(cls.teachers, teachers, [
+                        'user_id',
+                    ])
+                }
+            })
+        })
     })
 
     context('classesConnection', () => {

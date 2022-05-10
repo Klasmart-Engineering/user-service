@@ -193,6 +193,7 @@ import {
     academicTermsConnectionSortingConfig,
     mapATtoATConnectionNode,
 } from '../pagination/academicTermsConnection'
+import { IClassLoaders, usersForClasses } from './class'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -203,6 +204,7 @@ export interface IDataLoaders {
     subjectsConnection: ISubjectsConnectionLoaders
     organizationsConnection: IOrganizationsConnectionLoaders
     user: IUsersLoaders
+    class: IClassLoaders
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
@@ -345,6 +347,20 @@ export function createContextLazyLoaders(
             >(() => new DataLoader(organizationsForSchools)),
             schoolById: new Lazy<DataLoader<string, School | undefined>>(
                 () => new DataLoader(schoolsByIds)
+            ),
+        },
+        class: {
+            teachers: new Lazy<DataLoader<string, User[]>>(
+                () =>
+                    new DataLoader((items) =>
+                        usersForClasses(items, permissions, 'classesTeaching')
+                    )
+            ),
+            students: new Lazy<DataLoader<string, User[]>>(
+                () =>
+                    new DataLoader((items) =>
+                        usersForClasses(items, permissions, 'classesStudying')
+                    )
             ),
         },
         usersConnectionChild: new Lazy(

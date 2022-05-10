@@ -2,25 +2,26 @@
 import { use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { getConnection } from 'typeorm'
-import { Role } from '../../src/entities/role'
-import { Model } from '../../src/model'
-import { createServer } from '../../src/utils/createServer'
-import { createClasses } from '../factories/class.factory'
-import { createOrganizationPlus } from '../factories/organization.factory'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { createUser, createUsers } from '../factories/user.factory'
+import { Role } from '../../../src/entities/role'
+import { Model } from '../../../src/model'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { createServer } from '../../../src/utils/createServer'
+import { createClasses } from '../../factories/class.factory'
+import { createOrganizationPlus } from '../../factories/organization.factory'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { createUser, createUsers } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
-} from '../utils/createTestClient'
-import { runQuery } from '../utils/operations/modelOps'
-import { userToPayload } from '../utils/operations/userOps'
-import { generateToken } from '../utils/testConfig'
-import { TestConnection } from '../utils/testConnection'
+} from '../../utils/createTestClient'
+import { runQuery } from '../../utils/operations/modelOps'
+import { userToPayload } from '../../utils/operations/userOps'
+import { generateToken } from '../../utils/testConfig'
+import { TestConnection } from '../../utils/testConnection'
 
 use(chaiAsPromised)
 
-describe('isAdmin benchmarks', () => {
+describe('class loaders benchmark', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
 
@@ -30,17 +31,18 @@ describe('isAdmin benchmarks', () => {
         testClient = await createTestClient(server)
     })
 
-    it('nonAdminUserScope for many classes', async () => {
-        //
+    it('usersForClasses', async () => {
         // HISTORY
         //
-        // Running on Mac M1, 8GB memory
-        //
+        // Running on 13in 2020 MacBook Pro, 32GB memory, 2.3 GHz Quad-Core Intel Core i7:
+        //  AD-2463: 455ms -> 170ms
+        //  AD-2463 (with `getMany()` instead of `getRawMany()`): 454ms -> >10s
+        //  AD-2463 (with `getRawMany()` + `convertRawToEntities()`): 454ms -> 335ms
+        //  AD-2316: 455ms -> 520ms
 
         const numClasses = 100
         const numTeachersPerClass = 50
-        // AD-2305: 367ms > 1616ms
-        // AD-2464: 1616ms > 691ms
+        const iterations = 10
 
         console.log('Starting setup...')
         console.time('setup')
@@ -49,7 +51,9 @@ describe('isAdmin benchmarks', () => {
             organization_name: 'org with many classes',
         }).save()
 
-        const clientUser = await createUser().save()
+        const clientUser = await createUser({
+            email: UserPermissions.ADMIN_EMAILS[0],
+        }).save()
         const teacherRole = await Role.findOneOrFail({
             where: { role_name: 'Teacher', system_role: true },
         })
@@ -64,7 +68,7 @@ describe('isAdmin benchmarks', () => {
 
         await Promise.all(
             classes.map(async (c) => {
-                const teachers = await createUsers(numTeachersPerClass)
+                const teachers = createUsers(numTeachersPerClass - 1) // there is already one teacher
                 await connection.manager.save(teachers)
                 c.teachers = Promise.resolve([clientUser, ...teachers])
                 await c.save()
@@ -87,7 +91,6 @@ describe('isAdmin benchmarks', () => {
         `
 
         console.log('Running query...')
-        const iterations = 10
         let avg = 0
         for (let i = 0; i < iterations; i++) {
             console.time('query')
