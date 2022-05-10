@@ -31,6 +31,7 @@ import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
 import { mutate } from '../utils/mutations/commonStructure'
 import { CoreClassConnectionNode } from '../pagination/classesConnection'
+import { Class } from '../entities/class'
 
 const typeDefs = gql`
     extend type Query {
@@ -588,6 +589,12 @@ export default function getDefault(
                 programsConnection: programsChildConnectionResolver,
                 ageRangesConnection: ageRangesChildConnectionResolver,
             },
+            Class: {
+                students: (parent: Class, _args, ctx: Context) =>
+                    ctx.loaders.class.students.instance.load(parent.class_id),
+                teachers: (parent: Class, _args, ctx: Context) =>
+                    ctx.loaders.class.teachers.instance.load(parent.class_id),
+            },
             Mutation: {
                 deleteClasses: (_parent, args, ctx, _info) =>
                     mutate(DeleteClasses, args, ctx.permissions),
@@ -627,9 +634,10 @@ export default function getDefault(
                     ),
             },
             Query: {
-                class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
+                class: (_parent, args, ctx): Promise<Class | undefined> =>
+                    model.getClass(args, ctx),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
-                classesConnection: (_parent, args, ctx: Context, info) => {
+                classesConnection: (_parent, args, _ctx: Context, info) => {
                     return model.classesConnection(info, args)
                 },
                 classNode: (_parent, args, ctx: Context) => {

@@ -53,3 +53,32 @@ export function compareMultipleEntities<T extends ComparableTypes>(
         compareEntities(objects[i], expectedObjects[i])
     }
 }
+
+export function compareEntityFields<T extends ComparableTypes>(
+    object: T,
+    expectedObject: T,
+    fields: (keyof T)[]
+) {
+    for (const field of fields) {
+        expect(object[field]).to.equal(expectedObject[field])
+    }
+}
+
+export function compareMultipleEntityFields<T extends ComparableTypes>(
+    objects: T[],
+    expectedObjects: T[],
+    fields: (keyof T)[],
+    sortOnProperty?: keyof T
+) {
+    expect(objects.length).to.equal(expectedObjects.length)
+
+    if (!sortOnProperty && fields.length == 1) sortOnProperty = fields[0]
+    if (sortOnProperty) {
+        objects = sortObjectArray(objects, sortOnProperty)
+        expectedObjects = sortObjectArray(expectedObjects, sortOnProperty)
+    }
+
+    for (let i = 0; i < objects.length; i++) {
+        compareEntityFields(objects[i], expectedObjects[i], fields)
+    }
+}

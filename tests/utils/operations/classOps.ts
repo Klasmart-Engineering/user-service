@@ -266,6 +266,35 @@ const CLASSES_MUTATION_RESULT = `classes {
             }
 `
 
+export const CLASSES = `
+    query myQuery {
+        classes {
+            class_id
+            class_name
+        }
+    }
+`
+
+export const CLASSES_STUDENTS = `
+    query myQuery {
+        classes {
+            students {
+                user_id
+            }
+        }
+    }
+`
+
+export const CLASSES_TEACHERS = `
+    query myQuery {
+        classes {
+            teachers {
+                user_id
+            }
+        }
+    }
+`
+
 export const MOVE_TEACHERS_TO_CLASS = gql`
     mutation myMutation($input: MoveUsersToClassInput!) {
         moveTeachersToClass(input: $input) {
