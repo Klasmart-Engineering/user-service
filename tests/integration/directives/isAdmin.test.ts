@@ -535,7 +535,7 @@ describe('isAdmin', () => {
 
                             const class_ = await createClass(
                                 undefined,
-                                undefined,
+                                organization,
                                 {
                                     teachers: [user],
                                 }

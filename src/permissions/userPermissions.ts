@@ -582,11 +582,22 @@ export class UserPermissions {
 
     /**
      * Fetches all the classes the user is teaching and caches results
+     * Accepts an optional list of organization IDs to only return classes belonging to them
      */
-    public async classesTeaching() {
+    public async classesTeaching(orgIds?: string[]) {
         const user = await this.getUser()
         if (!this._classesTeachingResolver) {
-            this._classesTeachingResolver = user.classesTeaching
+            if (user.classesTeaching && orgIds) {
+                this._classesTeachingResolver = Promise.resolve(
+                    (await user.classesTeaching).filter((cls) =>
+                        cls.organization_id
+                            ? orgIds.includes(cls.organization_id)
+                            : false
+                    )
+                )
+            } else {
+                this._classesTeachingResolver = user.classesTeaching
+            }
         }
         return this._classesTeachingResolver
     }

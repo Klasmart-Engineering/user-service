@@ -1140,15 +1140,21 @@ describe('userPermissions', () => {
 
     describe('classesTeaching', () => {
         let user: User
+        let orgs: Organization[]
         let permissions: UserPermissions
         let classes: Class[]
+        let org0Class: Class
         beforeEach(async () => {
             user = await createUser().save()
+            orgs = await Organization.save([
+                createOrganization(),
+                createOrganization(),
+            ])
             classes = await Class.save([
-                createClass(undefined, undefined, {
+                (org0Class = createClass(undefined, orgs[0], {
                     teachers: [user],
-                }),
-                createClass(undefined, undefined, {
+                })),
+                createClass(undefined, orgs[1], {
                     teachers: [user],
                 }),
             ])
@@ -1160,6 +1166,14 @@ describe('userPermissions', () => {
             expect(result?.map((r) => r.class_id)).to.have.same.members(
                 classes.map((c) => c.class_id)
             )
+        })
+        it('accepts org IDs and returns taught classes within those orgs only', async () => {
+            const result = await permissions.classesTeaching([
+                orgs[0].organization_id,
+            ])
+            expect(result?.map((r) => r.class_id)).to.have.same.members([
+                org0Class.class_id,
+            ])
         })
         it('caches the result', async () => {
             await permissions.classesTeaching()
