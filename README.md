@@ -11,7 +11,7 @@ Welcome to the admin service (formerly user service)!
 
 Install postgres:
 
-- `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres`
+- `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres:11.9`
 
 Setup environment variables:
 
