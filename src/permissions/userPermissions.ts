@@ -591,28 +591,30 @@ export class UserPermissions {
                 const orgIds = await this.orgMembershipsWithPermissions([
                     PermissionName.view_my_class_users_40112,
                 ])
-                // Send a query to filter DB side for performance benefits
-                const rawClassIdObjs = (await getRepository(Class)
-                    .createQueryBuilder()
-                    .select('Class.class_id', 'class_id')
-                    .innerJoin(
-                        'user_classes_teaching_class',
-                        'ClassTeaching',
-                        'Class.class_id = ClassTeaching.classClassId'
+                if (orgIds.length) {
+                    // Send a query to filter DB side for performance benefits
+                    const rawClassIdObjs = (await getRepository(Class)
+                        .createQueryBuilder()
+                        .select('Class.class_id', 'class_id')
+                        .innerJoin(
+                            'user_classes_teaching_class',
+                            'ClassTeaching',
+                            'Class.class_id = ClassTeaching.classClassId'
+                        )
+                        .where('ClassTeaching.userUserId = :userId', {
+                            userId: user.user_id,
+                        })
+                        .andWhere(
+                            'Class.organizationOrganizationId IN (:...orgIds)',
+                            {
+                                orgIds,
+                            }
+                        )
+                        .getRawMany()) as { class_id: string }[]
+                    this._classIdsTeachingResolver = Promise.resolve(
+                        rawClassIdObjs.map((obj) => obj.class_id)
                     )
-                    .where('ClassTeaching.userUserId = :userId', {
-                        userId: user.user_id,
-                    })
-                    .andWhere(
-                        'Class.organizationOrganizationId IN (:...orgIds)',
-                        {
-                            orgIds,
-                        }
-                    )
-                    .getRawMany()) as { class_id: string }[]
-                this._classIdsTeachingResolver = Promise.resolve(
-                    rawClassIdObjs.map((obj) => obj.class_id)
-                )
+                }
             } else {
                 this._classIdsTeachingResolver = undefined
             }
