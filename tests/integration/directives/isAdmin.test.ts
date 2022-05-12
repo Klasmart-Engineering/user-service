@@ -114,7 +114,7 @@ describe('isAdmin', () => {
         // this setup is design to trigger all possible queries in isAdmin directives
         const maxQueryCountPerEntity: Record<IEntityString, number> = {
             organization: 1,
-            user: 5,
+            user: 4,
             role: 1,
             class: 2,
             ageRange: 0,
