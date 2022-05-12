@@ -1162,23 +1162,17 @@ describe('userPermissions', () => {
             permissions = new UserPermissions(userToPayload(user))
         })
         it('returns classes the user is teaching', async () => {
-            const result = await permissions.classesTeaching()
-            expect(result?.map((r) => r.class_id)).to.have.same.members(
-                classes.map((c) => c.class_id)
-            )
+            const result = await permissions.classIdsTeaching()
+            expect(result).to.have.same.members(classes.map((c) => c.class_id))
         })
         it('accepts org IDs and returns taught classes within those orgs only', async () => {
-            const result = await permissions.classesTeaching([
-                orgs[0].organization_id,
-            ])
-            expect(result?.map((r) => r.class_id)).to.have.same.members([
-                org0Class.class_id,
-            ])
+            const result = await permissions.classIdsTeaching()
+            expect(result).to.have.same.members([org0Class.class_id])
         })
         it('caches the result', async () => {
-            await permissions.classesTeaching()
+            await permissions.classIdsTeaching()
             connection.logger.reset()
-            await permissions.classesTeaching()
+            await permissions.classIdsTeaching()
             expect(connection.logger.count).to.eq(0)
         })
     })

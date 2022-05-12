@@ -338,46 +338,36 @@ export const nonAdminUserScope: NonAdminScope<
     }
 
     // 3 - can we view class users?
-    const orgsWithClasses = await permissions.orgMembershipsWithPermissions([
-        PermissionName.view_my_class_users_40112,
-    ])
-    if (orgsWithClasses.length) {
-        const classesTaught = await permissions.classesTeaching(orgsWithClasses)
-        if (classesTaught?.length) {
-            const distinctMembers = (
-                membershipTable: string,
-                qb: SelectQueryBuilder<User>
-            ) => {
-                return qb
-                    .select('membership_table.userUserId', 'user_id')
-                    .distinct(true)
-                    .from(membershipTable, 'membership_table')
-                    .andWhere(
-                        'membership_table.classClassId IN (:...classIds)',
-                        {
-                            classIds: classesTaught.map(
-                                ({ class_id }) => class_id
-                            ),
-                        }
-                    )
-            }
-            scope.leftJoin(
-                (qb) => distinctMembers('user_classes_studying_class', qb),
-                'class_studying_membership',
-                'class_studying_membership.user_id = User.user_id'
-            )
-            scope.leftJoin(
-                (qb) => distinctMembers('user_classes_teaching_class', qb),
-                'class_teaching_membership',
-                'class_teaching_membership.user_id = User.user_id'
-            )
-            userFilters.push({
-                where: 'class_studying_membership.user_id IS NOT NULL',
-            })
-            userFilters.push({
-                where: 'class_teaching_membership.user_id IS NOT NULL',
-            })
+    const classIdsTeachingInOrgs = await permissions.classIdsTeaching()
+    if (classIdsTeachingInOrgs?.length) {
+        const distinctMembers = (
+            membershipTable: string,
+            qb: SelectQueryBuilder<User>
+        ) => {
+            return qb
+                .select('membership_table.userUserId', 'user_id')
+                .distinct(true)
+                .from(membershipTable, 'membership_table')
+                .andWhere('membership_table.classClassId IN (:...classIds)', {
+                    classIds: classIdsTeachingInOrgs,
+                })
         }
+        scope.leftJoin(
+            (qb) => distinctMembers('user_classes_studying_class', qb),
+            'class_studying_membership',
+            'class_studying_membership.user_id = User.user_id'
+        )
+        scope.leftJoin(
+            (qb) => distinctMembers('user_classes_teaching_class', qb),
+            'class_teaching_membership',
+            'class_teaching_membership.user_id = User.user_id'
+        )
+        userFilters.push({
+            where: 'class_studying_membership.user_id IS NOT NULL',
+        })
+        userFilters.push({
+            where: 'class_teaching_membership.user_id IS NOT NULL',
+        })
     }
 
     // 4 - can we view admin users?
