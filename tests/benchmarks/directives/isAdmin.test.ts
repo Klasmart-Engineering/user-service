@@ -25,7 +25,7 @@ import { TestConnection } from '../../utils/testConnection'
 
 use(chaiAsPromised)
 
-describe('nonAdminUserScope benchmark', () => {
+describe('usersConnection classesTeaching benchmark', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
 
