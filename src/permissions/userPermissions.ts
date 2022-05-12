@@ -587,39 +587,37 @@ export class UserPermissions {
     public async classIdsTeaching() {
         if (!this._classIdsTeachingResolver) {
             const user = await this.getUser()
-            if (user.classesTeaching) {
-                const orgIds = await this.orgMembershipsWithPermissions([
-                    PermissionName.view_my_class_users_40112,
-                ])
-                if (orgIds.length) {
-                    // Send a query to filter DB side for performance benefits
-                    this._classIdsTeachingResolver = Promise.resolve(
-                        await getRepository(Class)
-                            .createQueryBuilder()
-                            .select('Class.class_id', 'class_id')
-                            .innerJoin(
-                                'user_classes_teaching_class',
-                                'ClassTeaching',
-                                'Class.class_id = ClassTeaching.classClassId'
-                            )
-                            .where('ClassTeaching.userUserId = :userId', {
-                                userId: user.user_id,
-                            })
-                            .andWhere(
-                                'Class.organizationOrganizationId IN (:...orgIds)',
-                                {
-                                    orgIds,
-                                }
-                            )
-                            .getRawMany()
-                            .then((classIdsTeachingResults) => {
-                                const rawClassIdObjs = classIdsTeachingResults as {
-                                    class_id: string
-                                }[]
-                                return rawClassIdObjs.map((obj) => obj.class_id)
-                            })
-                    )
-                }
+            const orgIds = await this.orgMembershipsWithPermissions([
+                PermissionName.view_my_class_users_40112,
+            ])
+            if (orgIds.length) {
+                // Send a query to filter DB side for performance benefits
+                this._classIdsTeachingResolver = Promise.resolve(
+                    await getRepository(Class)
+                        .createQueryBuilder()
+                        .select('Class.class_id', 'class_id')
+                        .innerJoin(
+                            'user_classes_teaching_class',
+                            'ClassTeaching',
+                            'Class.class_id = ClassTeaching.classClassId'
+                        )
+                        .where('ClassTeaching.userUserId = :userId', {
+                            userId: user.user_id,
+                        })
+                        .andWhere(
+                            'Class.organizationOrganizationId IN (:...orgIds)',
+                            {
+                                orgIds,
+                            }
+                        )
+                        .getRawMany()
+                        .then((classIdsTeachingResults) => {
+                            const rawClassIdObjs = classIdsTeachingResults as {
+                                class_id: string
+                            }[]
+                            return rawClassIdObjs.map((obj) => obj.class_id)
+                        })
+                )
             } else {
                 this._classIdsTeachingResolver = undefined
             }
