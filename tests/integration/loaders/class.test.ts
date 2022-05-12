@@ -57,6 +57,44 @@ describe('class', () => {
         })
     })
 
+    context('when the client is in multiple organizations', () => {
+        let otherOrg: Organization
+        beforeEach(async () => {
+            otherOrg = await createOrganization().save()
+
+            const role1 = await createRole(undefined, organization, {
+                permissions: [PermissionName.view_users_40110],
+            }).save()
+            const role2 = await createRole(undefined, otherOrg, {
+                permissions: [PermissionName.view_users_40110],
+            }).save()
+
+            const myMembership1 = createOrganizationMembership({
+                user: myUser,
+                organization,
+                roles: [role1],
+            })
+            const myMembership2 = createOrganizationMembership({
+                user: myUser,
+                organization: otherOrg,
+            })
+            await OrganizationMembership.save([myMembership1, myMembership2])
+        })
+
+        it('there are no duplicates', async () => {
+            const cls = await createClass([], organization, {
+                students: [myUser],
+            }).save()
+
+            const usersFound = await usersForClasses(
+                [cls.class_id],
+                new UserPermissions(userToPayload(myUser)),
+                'classesStudying'
+            )
+            expect(usersFound[0]).to.have.lengthOf(1)
+        })
+    })
+
     context('when the client has permission to view users', () => {
         beforeEach(async () => {
             const role = await createRole(undefined, organization, {
@@ -132,6 +170,21 @@ describe('class', () => {
                     'classesStudying'
                 )
                 expect(connection.logger.count).to.equal(baseCount)
+            })
+
+            it('has user functions', async () => {
+                const cls = await createClass([], organization, {
+                    students: users.slice(0, 2),
+                }).save()
+
+                const usersFound = await usersForClasses(
+                    [cls.class_id],
+                    new UserPermissions(userToPayload(myUser)),
+                    'classesStudying'
+                )
+
+                expect('user_name' in usersFound[0][0]).to.be.true
+                expect('full_name' in usersFound[0][0]).to.be.true
             })
         })
 
