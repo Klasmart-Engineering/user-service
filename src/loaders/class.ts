@@ -17,14 +17,14 @@ export interface IClassLoaders {
  * @returns User type object
  */
 function mapToUser(rawUser: Record<string, unknown>): User {
+    const user = new User()
     const userTablePrefix = 'User_'
-    for (const key in rawUser) {
-        if (key.startsWith(userTablePrefix)) {
-            rawUser[key.slice(userTablePrefix.length)] = rawUser[key]
-        }
-        delete rawUser[key]
+    for (const rawKey in rawUser) {
+        if (!rawKey.startsWith(userTablePrefix)) continue
+        const key = rawKey.slice(userTablePrefix.length) as keyof User
+        user[key] = rawUser[rawKey] as never
     }
-    return (rawUser as unknown) as User
+    return user
 }
 
 export async function usersForClasses(
@@ -37,19 +37,22 @@ export async function usersForClasses(
         entity: 'user',
     })) as SelectQueryBuilder<User>
 
-    const alias =
-        property === 'classesTeaching' ? 'ClassTeaching' : 'ClassStudying'
+    const [joinTable, alias] =
+        property === 'classesTeaching'
+            ? ['user_classes_teaching_class', 'ClassTeaching']
+            : ['user_classes_studying_class', 'ClassStudying']
+
     const rawUsers = await scope
-        .addSelect(`${alias}.class_id`)
-        .innerJoin(`User.${property}`, alias)
-        .andWhere(`${alias}.class_id IN (:...class_ids)`, {
+        .distinct(true)
+        .addSelect(`${alias}.classClassId`, 'class_id')
+        .innerJoin(joinTable, alias, `${alias}.userUserId = User.user_id`)
+        .andWhere(`${alias}.classClassId IN (:...class_ids)`, {
             class_ids: classIds,
         })
         .getRawMany()
-
     const classUsers = new Map<string, User[]>()
     for (const rawUser of rawUsers) {
-        const classId = rawUser[`${alias}_class_id`] as string
+        const classId = rawUser[`class_id`] as string
         const user = mapToUser(rawUser)
         if (!classUsers.has(classId)) {
             classUsers.set(classId, [user])
@@ -57,5 +60,6 @@ export async function usersForClasses(
             classUsers.get(classId)!.push(user)
         }
     }
-    return classIds.map((id) => [...new Set(classUsers.get(id))] || [])
+
+    return classIds.map((id) => classUsers.get(id) || [])
 }
