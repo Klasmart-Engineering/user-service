@@ -48,7 +48,7 @@ export class UserPermissions {
     // resolvers for cached queries
     private _userResolver?: Promise<User | undefined>
     private _schoolsPerOrgResolver?: Promise<Record<string, string>[]>
-    private _classIdsTeachingResolver?: Promise<string[]>
+    private _classIdsTeachingResolver?: Promise<Class['class_id'][]>
 
     // Used to mark that auth was done by API Key, but checks use isAdmin
     // for consistency
@@ -585,34 +585,39 @@ export class UserPermissions {
      * Filters by those the user is allowed to see in their org(s)
      */
     public async classIdsTeaching() {
-        const user = await this.getUser()
         if (!this._classIdsTeachingResolver) {
+            const user = await this.getUser()
             if (user.classesTeaching) {
                 const orgIds = await this.orgMembershipsWithPermissions([
                     PermissionName.view_my_class_users_40112,
                 ])
                 if (orgIds.length) {
                     // Send a query to filter DB side for performance benefits
-                    const rawClassIdObjs = (await getRepository(Class)
-                        .createQueryBuilder()
-                        .select('Class.class_id', 'class_id')
-                        .innerJoin(
-                            'user_classes_teaching_class',
-                            'ClassTeaching',
-                            'Class.class_id = ClassTeaching.classClassId'
-                        )
-                        .where('ClassTeaching.userUserId = :userId', {
-                            userId: user.user_id,
-                        })
-                        .andWhere(
-                            'Class.organizationOrganizationId IN (:...orgIds)',
-                            {
-                                orgIds,
-                            }
-                        )
-                        .getRawMany()) as { class_id: string }[]
                     this._classIdsTeachingResolver = Promise.resolve(
-                        rawClassIdObjs.map((obj) => obj.class_id)
+                        await getRepository(Class)
+                            .createQueryBuilder()
+                            .select('Class.class_id', 'class_id')
+                            .innerJoin(
+                                'user_classes_teaching_class',
+                                'ClassTeaching',
+                                'Class.class_id = ClassTeaching.classClassId'
+                            )
+                            .where('ClassTeaching.userUserId = :userId', {
+                                userId: user.user_id,
+                            })
+                            .andWhere(
+                                'Class.organizationOrganizationId IN (:...orgIds)',
+                                {
+                                    orgIds,
+                                }
+                            )
+                            .getRawMany()
+                            .then((classIdsTeachingResults) => {
+                                const rawClassIdObjs = classIdsTeachingResults as {
+                                    class_id: string
+                                }[]
+                                return rawClassIdObjs.map((obj) => obj.class_id)
+                            })
                     )
                 }
             } else {

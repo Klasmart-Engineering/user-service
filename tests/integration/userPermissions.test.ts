@@ -1141,19 +1141,30 @@ describe('userPermissions', () => {
     describe('classesTeaching', () => {
         let user: User
         let orgs: Organization[]
+        let role: Role
         let permissions: UserPermissions
         let classes: Class[]
-        let org0Class: Class
         beforeEach(async () => {
             user = await createUser().save()
+            role = await createRoleFactory('View My Class Users', undefined, {
+                permissions: [PermissionName.view_my_class_users_40112],
+            }).save()
             orgs = await Organization.save([
                 createOrganization(),
                 createOrganization(),
             ])
+            for (const org of orgs) {
+                // eslint-disable-next-line no-await-in-loop
+                await createOrganizationMembership({
+                    user: user,
+                    organization: org,
+                    roles: [role],
+                }).save()
+            }
             classes = await Class.save([
-                (org0Class = createClass(undefined, orgs[0], {
+                createClass(undefined, orgs[0], {
                     teachers: [user],
-                })),
+                }),
                 createClass(undefined, orgs[1], {
                     teachers: [user],
                 }),
@@ -1164,10 +1175,6 @@ describe('userPermissions', () => {
         it('returns classes the user is teaching', async () => {
             const result = await permissions.classIdsTeaching()
             expect(result).to.have.same.members(classes.map((c) => c.class_id))
-        })
-        it('accepts org IDs and returns taught classes within those orgs only', async () => {
-            const result = await permissions.classIdsTeaching()
-            expect(result).to.have.same.members([org0Class.class_id])
         })
         it('caches the result', async () => {
             await permissions.classIdsTeaching()
