@@ -592,32 +592,30 @@ export class UserPermissions {
             ])
             if (orgIds.length) {
                 // Send a query to filter DB side for performance benefits
-                this._classIdsTeachingResolver = Promise.resolve(
-                    await getRepository(Class)
-                        .createQueryBuilder()
-                        .select('Class.class_id', 'class_id')
-                        .innerJoin(
-                            'user_classes_teaching_class',
-                            'ClassTeaching',
-                            'Class.class_id = ClassTeaching.classClassId'
-                        )
-                        .where('ClassTeaching.userUserId = :userId', {
-                            userId: user.user_id,
-                        })
-                        .andWhere(
-                            'Class.organizationOrganizationId IN (:...orgIds)',
-                            {
-                                orgIds,
-                            }
-                        )
-                        .getRawMany()
-                        .then((classIdsTeachingResults) => {
-                            const rawClassIdObjs = classIdsTeachingResults as {
-                                class_id: string
-                            }[]
-                            return rawClassIdObjs.map((obj) => obj.class_id)
-                        })
-                )
+                this._classIdsTeachingResolver = getRepository(Class)
+                    .createQueryBuilder()
+                    .select('Class.class_id', 'class_id')
+                    .innerJoin(
+                        'user_classes_teaching_class',
+                        'ClassTeaching',
+                        'Class.class_id = ClassTeaching.classClassId'
+                    )
+                    .where('ClassTeaching.userUserId = :userId', {
+                        userId: user.user_id,
+                    })
+                    .andWhere(
+                        'Class.organizationOrganizationId IN (:...orgIds)',
+                        {
+                            orgIds,
+                        }
+                    )
+                    .getRawMany()
+                    .then((classIdsTeachingResults) => {
+                        const rawClassIdObjs = classIdsTeachingResults as {
+                            class_id: string
+                        }[]
+                        return rawClassIdObjs.map((obj) => obj.class_id)
+                    })
             } else {
                 this._classIdsTeachingResolver = undefined
             }
