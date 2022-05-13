@@ -125,8 +125,8 @@ describe('isAdmin', () => {
             program: 0,
             school: 2,
             permission: 1,
-            schoolMembership: 6,
-            organizationMembership: 5,
+            schoolMembership: 5,
+            organizationMembership: 4,
             academicTerm: 0,
         }
 
