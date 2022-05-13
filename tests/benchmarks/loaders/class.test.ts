@@ -18,6 +18,7 @@ import { runQuery } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
 import { generateToken } from '../../utils/testConfig'
 import { TestConnection } from '../../utils/testConnection'
+import { reportAverageAndErrorBars } from '../utils'
 
 use(chaiAsPromised)
 
@@ -91,19 +92,11 @@ describe('class loaders benchmark', () => {
         `
 
         console.log('Running query...')
-        let avg = 0
-        for (let i = 0; i < iterations; i++) {
-            console.time('query')
-            const start = Date.now()
-            // eslint-disable-next-line no-await-in-loop
-            await runQuery(query, testClient, {
+
+        await reportAverageAndErrorBars(iterations, async () =>
+            runQuery(query, testClient, {
                 authorization: generateToken(userToPayload(clientUser)),
             })
-            const end = Date.now()
-            avg += end - start
-            console.timeEnd('query')
-        }
-        avg /= iterations
-        console.log(`AVERAGE: ${Math.floor(avg)}ms`)
+        )
     })
 })
