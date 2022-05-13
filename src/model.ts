@@ -715,25 +715,33 @@ export class Model {
         return newRole
     }
 
-    public async getClass({ class_id }: Class, context: Context) {
-        try {
-            const _class = await this.classRepository.findOneByOrFail({
+    public async getClass({
+        class_id,
+        scope 
+    }: { 
+        class_id: string, 
+        scope: SelectQueryBuilder<Class> | undefined
+    }) {
+        if (!scope) {
+            scope = this.classRepository.createQueryBuilder('Class')
+        }
+        const _class = await scope
+            .andWhere('Class.class_id = :class_id', {
                 class_id,
             })
-
-            return _class
-        } catch (e) {
-            logger.warn(e)
-        }
+            .getOne()
+        return _class ?? null
     }
 
-    public async getClasses(context: Context) {
-        try {
-            const classes = await this.classRepository.find()
-            return classes
-        } catch (e) {
-            logger.warn(e)
+    public async getClasses({
+        scope,
+    }: {
+        scope: SelectQueryBuilder<Class> | undefined
+    }) {
+        if (!scope) {
+            scope = this.classRepository.createQueryBuilder('Class')
         }
+        return await scope.getMany()
     }
 
     public async getSchool({

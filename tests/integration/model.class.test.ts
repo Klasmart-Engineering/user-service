@@ -13,6 +13,7 @@ import {
     createTestClient,
 } from '../utils/createTestClient'
 import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
+import faker from 'faker'
 
 const GET_CLASSES = `
     query getClasses {
@@ -28,6 +29,15 @@ const GET_CLASS = `
         class(class_id: $class_id) {
             class_id
             class_name
+        }
+    }
+`
+
+export const GET_CLASS_NODE = `
+    query myQuery($id: ID!) {
+        classNode(id: $id) {
+            id
+            name
         }
     }
 `
@@ -88,7 +98,7 @@ describe('model.class', () => {
 
                 const res = await query({
                     query: GET_CLASSES,
-                    headers: { authorization: arbitraryUserToken },
+                    headers: { authorization: getAdminAuthToken() },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
@@ -136,19 +146,45 @@ describe('model.class', () => {
                 )
             })
 
-            it('should return the class associated with the specified ID', async () => {
+            it('should return the class associated with the specified ID for an admin', async () => {
                 const { query } = testClient
 
                 const res = await query({
-                    query: GET_CLASS,
-                    variables: { class_id: cls.class_id },
-                    headers: { authorization: arbitraryUserToken },
+                    query: GET_CLASS_NODE,
+                    variables: { id: cls.class_id },
+                    headers: { authorization: getAdminAuthToken() },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
-                const gqlClass = res.data?.class as Class
+                const gqlClass = res.data?.classNode
                 expect(gqlClass).to.exist
-                expect(cls).to.include(gqlClass)
+                expect(cls.class_id).to.equal(gqlClass.id)
+            })
+
+            it('should return error with the specified ID for non admin / non member', async () => {
+                const { query } = testClient
+
+                const res = await query({
+                    query: GET_CLASS_NODE,
+                    variables: { id: cls.class_id },
+                    headers: { authorization: arbitraryUserToken },
+                })
+
+                expect(res.errors?.length).to.be.greaterThanOrEqual(1)
+                const gqlClass = res.data?.classNode
+                expect(gqlClass).to.be.null
+            })
+
+            it('should return error when the class does not exist with specified id', async () => {
+                const { query } = testClient
+
+                const res = await query({
+                    query: GET_CLASS_NODE,
+                    variables: { id: faker.datatype.uuid(), },
+                    headers: { authorization: arbitraryUserToken },
+                })
+
+                expect(res.errors?.length).to.be.greaterThanOrEqual(1)
             })
         })
     })

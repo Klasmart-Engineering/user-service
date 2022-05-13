@@ -39,8 +39,13 @@ import { Class } from '../entities/class'
 
 const typeDefs = gql`
     extend type Query {
-        classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
+        classes: [Class] 
+            @isAdmin(entity: "class") 
+            @deprecated(
+                reason: "Use 'classesConnection'."
+            )
         class(class_id: ID!): Class
+            @isAdmin(entity: "class")
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
@@ -638,8 +643,8 @@ export default function getDefault(
                     mutate(CreateClasses, args, ctx.permissions),
                 updateClasses: (_parent, args, ctx, _info) =>
                     mutate(UpdateClasses, args, ctx.permissions),
-                classes: (_parent, _args, ctx) => model.getClasses(ctx),
-                class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
+                classes: (_parent, args) => model.getClasses(args),
+                class: (_parent, args) => model.getClass(args),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadClassesFromCSV(args, ctx, info),
                 addProgramsToClasses: (_parent, args, ctx, _info) =>
@@ -678,9 +683,9 @@ export default function getDefault(
                     mutate(AddSubjectsToClasses, args, ctx.permissions),
             },
             Query: {
-                class: (_parent, args, ctx): Promise<Class | undefined> =>
-                    model.getClass(args, ctx),
-                classes: (_parent, _args, ctx) => model.getClasses(ctx),
+                class: (_parent, args): Promise<Class | null> =>
+                    model.getClass(args),
+                classes: (_parent, args) => model.getClasses(args),
                 classesConnection: (_parent, args, _ctx: Context, info) => {
                     return model.classesConnection(info, args)
                 },

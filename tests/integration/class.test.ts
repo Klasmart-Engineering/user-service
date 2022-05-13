@@ -1239,7 +1239,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: getAdminAuthToken() }
                         )
 
                         const userIds = gqlTeachers
@@ -1285,7 +1285,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: getAdminAuthToken() }
                         )
 
                         const userIds = gqlTeachers
@@ -1362,7 +1362,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: getAdminAuthToken() }
                         )
 
                         const userIds = gqlTeachers
@@ -1398,7 +1398,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: getAdminAuthToken() }
                         )
 
                         const userIds = gqlTeachers
@@ -1519,7 +1519,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: getAdminAuthToken() }
                         )
 
                         const userIds = gqlStudents
@@ -1565,7 +1565,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: getAdminAuthToken() }
                         )
 
                         const userIds = gqlStudents
@@ -1642,7 +1642,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: getAdminAuthToken() }
                         )
 
                         const userIds = gqlStudents
@@ -1678,7 +1678,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: getAdminAuthToken() }
                         )
 
                         const userIds = gqlStudents
@@ -1824,7 +1824,7 @@ describe('class', () => {
                 const gqlStudents = await eligibleStudents(
                     testClient,
                     class1.class_id,
-                    { authorization: arbitraryUserToken }
+                    { authorization: getAdminAuthToken() }
                 )
                 expect(gqlStudents.length).to.eq(2)
             })
@@ -1833,7 +1833,7 @@ describe('class', () => {
                 const gqlStudents = await eligibleTeachers(
                     testClient,
                     class1.class_id,
-                    { authorization: arbitraryUserToken }
+                    { authorization: getAdminAuthToken() }
                 )
                 expect(gqlStudents.length).to.eq(3) // 2 teachers, 1 org admin
             })
@@ -1851,7 +1851,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: getAdminAuthToken(),
                     }
                 )
                 expect(gqlStudents.length).to.eq(1)
@@ -1868,7 +1868,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: getAdminAuthToken(),
                     }
                 )
                 expect(gqlStudents.length).to.eq(2)
@@ -1887,7 +1887,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: getAdminAuthToken(),
                     }
                 )
                 expect(gqlTeachers.length).to.eq(2) // 1 teacher, 1 org admin
@@ -1904,7 +1904,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: getAdminAuthToken(),
                     }
                 )
                 expect(gqlTeachers.length).to.eq(3) // 2 teachers, 1 org admin
