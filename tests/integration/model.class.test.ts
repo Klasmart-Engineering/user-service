@@ -180,7 +180,7 @@ describe('model.class', () => {
 
                 const res = await query({
                     query: GET_CLASS_NODE,
-                    variables: { id: faker.datatype.uuid(), },
+                    variables: { id: faker.datatype.uuid() },
                     headers: { authorization: arbitraryUserToken },
                 })
 

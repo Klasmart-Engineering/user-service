@@ -39,11 +39,9 @@ import { Class } from '../entities/class'
 
 const typeDefs = gql`
     extend type Query {
-        classes: [Class] 
-            @isAdmin(entity: "class") 
-            @deprecated(
-                reason: "Use 'classesConnection'."
-            )
+        classes: [Class]
+            @isAdmin(entity: "class")
+            @deprecated(reason: "Use 'classesConnection'.")
         class(class_id: ID!): Class
             @isAdmin(entity: "class")
             @deprecated(

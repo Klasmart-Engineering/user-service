@@ -717,9 +717,9 @@ export class Model {
 
     public async getClass({
         class_id,
-        scope 
-    }: { 
-        class_id: string, 
+        scope,
+    }: {
+        class_id: string
         scope: SelectQueryBuilder<Class> | undefined
     }) {
         if (!scope) {
