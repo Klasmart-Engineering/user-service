@@ -184,7 +184,7 @@ describe('model.class', () => {
                     headers: { authorization: arbitraryUserToken },
                 })
 
-                expect(res.errors?.length).to.be.greaterThanOrEqual(1)
+                expect(res.errors?.length).to.equal(1)
             })
         })
     })

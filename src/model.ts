@@ -738,10 +738,7 @@ export class Model {
     }: {
         scope: SelectQueryBuilder<Class> | undefined
     }) {
-        if (!scope) {
-            scope = this.classRepository.createQueryBuilder('Class')
-        }
-        return await scope.getMany()
+        return scope?.getMany()
     }
 
     public async getSchool({
