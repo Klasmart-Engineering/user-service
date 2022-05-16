@@ -8,6 +8,7 @@ import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 import { getAdminAuthToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
+import { Subject } from '../../../src/entities/subject'
 import {
     UsersMutationResult,
     UserContactInfo,
@@ -15,14 +16,6 @@ import {
 } from '../../../src/types/graphQL/user'
 import { UpdateUserInput } from '../../../src/types/graphQL/user'
 import faker from 'faker'
-
-const VIEW_USER = `
-    query viewUser($user_id: ID!) {
-        user(user_id: $user_id) {
-            user_id
-        }
-    }
-`
 
 export const CREATE_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_name: String, $shortCode: String) {
@@ -452,25 +445,6 @@ export async function addOrganizationToUserAndValidate(
     return gqlMembership
 }
 
-export async function viewUser(
-    testClient: ApolloServerTestClient,
-    userId: string,
-    headers?: Headers
-) {
-    const { query } = testClient
-
-    const operation = () =>
-        query({
-            query: VIEW_USER,
-            variables: { user_id: userId },
-            headers: headers,
-        })
-
-    const res = await gqlTry(operation)
-    const gqlUser = res.data?.user as User
-    return gqlUser
-}
-
 export async function addOrganizationToUser(
     testClient: ApolloServerTestClient,
     userId: string,
@@ -796,7 +770,7 @@ export async function getSubjectsTeaching(
         })
 
     const res = await gqlTry(operation)
-    const gqlSubjects = res.data?.user?.subjectsTeaching
+    const gqlSubjects = res.data?.user.subjectsTeaching as Subject[]
     return gqlSubjects
 }
 

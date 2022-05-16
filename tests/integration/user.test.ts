@@ -769,7 +769,7 @@ describe('user', () => {
                         idOfUserToBeQueried,
                         school1Id,
                         permissionName,
-                        { authorization: tokenOfOrg1Owner }
+                        { authorization: arbitraryUserToken }
                     )
                     expect(isAllowed).to.be.true
                     expect(gqlMemberships).to.exist
@@ -827,7 +827,7 @@ describe('user', () => {
                         idOfUserToBeQueried,
                         school1Id,
                         permissionName,
-                        { authorization: tokenOfOrg1Owner }
+                        { authorization: arbitraryUserToken }
                     )
                     expect(isAllowed).to.be.true
                     expect(gqlMemberships).to.exist
@@ -892,14 +892,14 @@ describe('user', () => {
                         idOfUserToBeQueried,
                         school1Id,
                         permissionName,
-                        { authorization: tokenOfOrg1Owner }
+                        { authorization: arbitraryUserToken }
                     )
                     const isAllowed2 = await schoolMembershipCheckAllowed(
                         testClient,
                         idOfUserToBeQueried,
                         school2Id,
                         permissionName,
-                        { authorization: tokenOfOrg1Owner }
+                        { authorization: arbitraryUserToken }
                     )
                     expect(isAllowed1).to.be.true
                     expect(isAllowed2).to.be.true
@@ -1279,13 +1279,13 @@ describe('user', () => {
                             { authorization: getAdminAuthToken() }
                         )
                     })
-                    it('should return undefined', async () => {
+                    it('should return an empty', async () => {
                         const gqlSubjects = await getSubjectsTeaching(
                             testClient,
                             adminUser.user_id,
                             { authorization: getNonAdminAuthToken() }
                         )
-                        expect(gqlSubjects).to.be.an('undefined')
+                        expect(gqlSubjects).to.be.empty
                     })
                 })
             })

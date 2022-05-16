@@ -148,7 +148,7 @@ import {
     IUsersLoaders,
     orgMembershipsForUsers,
     schoolMembershipsForUsers,
-    UserDataLoader,
+    usersByIds,
 } from './user'
 import {
     IUsersConnectionLoaders,
@@ -325,7 +325,9 @@ export function createContextLazyLoaders(
 ): IDataLoaders {
     return {
         user: {
-            user: new Lazy<UserDataLoader>(() => new UserDataLoader()),
+            user: new Lazy<DataLoader<string, User | Error>>(
+                () => new DataLoader(usersByIds)
+            ),
             orgMemberships: new Lazy<
                 DataLoader<string, OrganizationMembership[]>
             >(() => new DataLoader(orgMembershipsForUsers)),

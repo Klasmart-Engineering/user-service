@@ -12,12 +12,10 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { pick } from 'lodash'
 import { loadFixtures } from '../utils/fixtures'
 import supertest from 'supertest'
-import { generateToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { print } from 'graphql'
 import { createRole } from '../factories/role.factory'
 import { makeRequest } from './utils'
-import { UserPermissions } from '../../src/permissions/userPermissions'
-import { userToPayload } from '../utils/operations/userOps'
 
 const request = supertest('http://localhost:8080/user')
 
@@ -44,11 +42,7 @@ describe('acceptance.OrganizationMembership', () => {
             let organization: Organization
             let dbMemberships: OrganizationMembership[]
             let users: User[]
-            let adminUser: User
             beforeEach(async () => {
-                adminUser = await createUser({
-                    email: UserPermissions.ADMIN_EMAILS[0],
-                }).save()
                 organization = await createOrganization().save()
 
                 const rawUsers = Array(5).fill(0).map(createUser)
@@ -82,7 +76,7 @@ describe('acceptance.OrganizationMembership', () => {
                     .post('/graphql')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: generateToken(userToPayload(adminUser)),
+                        Authorization: getAdminAuthToken(),
                     })
                     .send({
                         query: print(LIST_MEMBERSHIPS),

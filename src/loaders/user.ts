@@ -1,5 +1,4 @@
 import DataLoader from 'dataloader'
-import { SelectQueryBuilder } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
@@ -11,7 +10,7 @@ import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
 
 export interface IUsersLoaders {
-    user: Lazy<UserDataLoader>
+    user: Lazy<DataLoader<string, User | Error>>
     orgMemberships: Lazy<DataLoader<string, OrganizationMembership[]>>
     schoolMemberships: Lazy<DataLoader<string, SchoolMembership[]>>
 }
@@ -63,28 +62,18 @@ export const schoolMembershipsForUsers = async (
     return userIds.map((id) => memberships.get(id) || [])
 }
 
-export class UserDataLoader extends DataLoader<
-    { id: string; scope: SelectQueryBuilder<User> },
-    User | null
-> {
-    constructor() {
-        super(async function (
-            keys: readonly { id: string; scope: SelectQueryBuilder<User> }[]
-        ): Promise<(User | null)[]> {
-            const ids = []
-            const scope = keys[0].scope
-            for (const key of keys) {
-                ids.push(key.id)
-            }
-            scope.andWhere(`"User"."user_id" IN (:...ids)`, {
-                ids,
-            })
-            const entities = await scope.getMany()
-            const usersMap = new Map<string, User>(
-                entities.map((user) => [user.user_id, user])
-            )
+export async function usersByIds(
+    userIds: readonly string[]
+): Promise<(User | Error)[]> {
+    const users = new Map(
+        (await User.findByIds(userIds as string[])).map((user) => [
+            user.user_id,
+            user,
+        ])
+    )
 
-            return ids.map((id) => usersMap.get(id) ?? null)
-        })
-    }
+    return userIds.map(
+        // TODO: convert to APIError once hotfix branch is aligned to master
+        (id) => users.get(id) ?? Error("User doesn't exist")
+    )
 }
