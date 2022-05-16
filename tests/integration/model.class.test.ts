@@ -170,7 +170,7 @@ describe('model.class', () => {
                     headers: { authorization: arbitraryUserToken },
                 })
 
-                expect(res.errors?.length).to.be.greaterThanOrEqual(1)
+                expect(res.errors?.length).to.equal(1)
                 const gqlClass = res.data?.classNode
                 expect(gqlClass).to.be.null
             })
