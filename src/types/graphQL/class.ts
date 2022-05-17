@@ -110,3 +110,8 @@ export interface AddSubjectsToClassInput {
     classId: string
     subjectIds: string[]
 }
+
+export interface AddGradesToClassInput {
+    classId: string
+    gradeIds: string[]
+}

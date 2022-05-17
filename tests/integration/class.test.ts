@@ -65,6 +65,7 @@ import {
     EntityMapAddRemoveAgeRanges,
     AddSubjectsToClasses,
     AddSubjectsClassesEntityMap,
+    AddGradesToClasses,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -107,7 +108,7 @@ import {
 import { createSchool as createSchoolFactory } from '../factories/school.factory'
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createAgeRange } from '../factories/ageRange.factory'
-import { createGrade } from '../factories/grade.factory'
+import { createGrade, createGrades } from '../factories/grade.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createProgram, createPrograms } from '../factories/program.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
@@ -129,6 +130,7 @@ import {
     RemoveSubjectsFromClassInput,
     RemoveAgeRangesFromClassInput,
     AddSubjectsToClassInput,
+    AddGradesToClassInput,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
@@ -11351,5 +11353,232 @@ describe('class', () => {
                 )
             })
         })
+    })
+
+    describe('AddGradesToClasses', () => {
+        let adminUser: User
+        let nonAdminUser: User
+        let organization: Organization
+        let classes: Class[]
+        let grades: Grade[]
+        let input: AddGradesToClassInput[]
+
+        async function addGrades(authUser = adminUser) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return mutate(AddGradesToClasses, { input }, permissions)
+        }
+
+        async function checkOutput() {
+            for await (const classInputs of input) {
+                const { classId, gradeIds } = classInputs
+
+                const cls = await Class.findOne({
+                    where: { class_id: classId },
+                })
+                const dbGrades = await cls?.grades
+
+                const dbGradeIds = new Set(dbGrades?.map((val) => val.id))
+                const gradeIdsSet = new Set(gradeIds)
+
+                expect(dbGradeIds.size).to.equal(gradeIdsSet.size)
+                dbGradeIds.forEach(
+                    (val) => expect(gradeIdsSet.has(val)).to.be.true
+                )
+            }
+        }
+
+        async function checkNoChangesMade(useAdminUser = true) {
+            it('does not add the grades', async () => {
+                await expect(addGrades(useAdminUser ? adminUser : nonAdminUser))
+                    .to.be.rejected
+                let insertedGrades: Grade[] = []
+                for await (const cls of classes) {
+                    insertedGrades = (await cls.grades) ?? []
+                    if (insertedGrades) grades.push(...insertedGrades)
+                }
+                expect(insertedGrades).to.have.lengthOf(0)
+            })
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
+            organization = await createOrganizationAndValidate(
+                testClient,
+                adminUser.user_id
+            )
+
+            classes = await Class.save(createClassesFactory(3, organization))
+
+            grades = await Grade.save(createGrades(3, organization))
+            input = [
+                {
+                    classId: classes[0].class_id,
+                    gradeIds: [grades[0].id],
+                },
+                {
+                    classId: classes[1].class_id,
+                    gradeIds: [grades[1].id, grades[2].id],
+                },
+                {
+                    classId: classes[2].class_id,
+                    gradeIds: [grades[0].id, grades[2].id],
+                },
+            ]
+        })
+
+        context('when caller has permissions to add grades to classes', () => {
+            context('and all attributes are valid', () => {
+                it('adds all the grades', async () => {
+                    await expect(addGrades()).to.be.fulfilled
+                    await checkOutput()
+                })
+            })
+
+            context('and one of the grades was already added', () => {
+                beforeEach(async () => {
+                    classes[0].grades = Promise.resolve([grades[0]])
+                    await classes[0].save()
+                })
+
+                it('returns a duplicate key error', async () => {
+                    const res = await expect(addGrades()).to.be.rejected
+                    expectAPIError.existent_child_entity(
+                        res,
+                        {
+                            entity: 'Grade',
+                            entityName: grades[0].id,
+                            parentEntity: 'Class',
+                            parentName: classes[0].class_id,
+                            index: 0,
+                        },
+                        [''],
+                        0,
+                        1
+                    )
+                })
+            })
+
+            context('and one of the classes is inactive', async () => {
+                beforeEach(
+                    async () => await classes[2].inactivate(getManager())
+                )
+
+                it('returns an nonexistent class error', async () => {
+                    const res = await expect(addGrades()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Class',
+                            id: classes[2].class_id,
+                            entryIndex: 2,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of the grades is inactive', async () => {
+                beforeEach(async () => await grades[1].inactivate(getManager()))
+
+                it('returns an nonexistent grade error', async () => {
+                    const res = await expect(addGrades()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Grade',
+                            id: grades[1].id,
+                            entryIndex: 1,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        classes[2].inactivate(getManager()),
+                        grades[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent errors', async () => {
+                    const res = await expect(addGrades()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Grade',
+                            id: grades[1].id,
+                            entryIndex: 1,
+                        },
+                        {
+                            entity: 'Class',
+                            id: classes[2].class_id,
+                            entryIndex: 2,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('when adding 1 grade then 20 grades', () => {
+                it('makes the same number of database calls', async () => {
+                    const twentyGrades = createGrades(20, organization)
+                    connection.logger.reset()
+                    input = [
+                        {
+                            classId: classes[0].class_id,
+                            gradeIds: [grades[0].id],
+                        },
+                    ]
+                    await expect(addGrades()).to.be.fulfilled
+                    const baseCount = connection.logger.count
+                    await connection.manager.save([...twentyGrades])
+                    input = [
+                        {
+                            classId: classes[0].class_id,
+                            gradeIds: twentyGrades.map((p) => p.id),
+                        },
+                    ]
+                    connection.logger.reset()
+                    await expect(addGrades()).to.be.fulfilled
+                    expect(connection.logger.count).to.equal(baseCount)
+                })
+            })
+        })
+
+        context(
+            'when caller does not have permissions to add grades to all classes',
+            async () => {
+                beforeEach(async () => {
+                    const nonAdminRole = await createRoleFactory(
+                        'Non Admin Role',
+                        organization,
+                        {
+                            permissions: [],
+                        }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: organization,
+                        roles: [nonAdminRole],
+                    }).save()
+                })
+
+                it('returns a permission error', async () => {
+                    const errorMessage = buildPermissionError(
+                        PermissionName.edit_class_20334,
+                        nonAdminUser,
+                        undefined
+                    )
+                    await expect(addGrades(nonAdminUser)).to.be.rejectedWith(
+                        errorMessage
+                    )
+                })
+
+                await checkNoChangesMade(false)
+            }
+        )
     })
 })

@@ -36,7 +36,7 @@ export class Grade extends CustomBaseEntity {
     @JoinColumn({ name: 'progress_to_grade_id' })
     public progress_to_grade?: Promise<Grade>
 
-    @ManyToOne(() => Organization, (organization) => organization.ageRanges)
+    @ManyToOne(() => Organization, (organization) => organization.grades)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
 
