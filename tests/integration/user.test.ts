@@ -1279,13 +1279,13 @@ describe('user', () => {
                             { authorization: getAdminAuthToken() }
                         )
                     })
-                    it('should return undefined', async () => {
+                    it('should return an empty', async () => {
                         const gqlSubjects = await getSubjectsTeaching(
                             testClient,
                             adminUser.user_id,
                             { authorization: getNonAdminAuthToken() }
                         )
-                        expect(gqlSubjects).to.be.an('undefined')
+                        expect(gqlSubjects).to.be.empty
                     })
                 })
             })
