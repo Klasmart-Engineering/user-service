@@ -2,7 +2,7 @@ import { AuthenticationError } from 'apollo-server-errors'
 import Dataloader from 'dataloader'
 import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
-import { SelectQueryBuilder } from 'typeorm'
+import { getRepository, SelectQueryBuilder } from 'typeorm'
 import { createEntityScope } from '../directives/isAdmin'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
@@ -44,7 +44,6 @@ const typeDefs = gql`
                 reason: "Use myUser.node. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
             )
         user(user_id: ID!): User
-            @isAdmin(entity: "user")
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
@@ -540,9 +539,12 @@ export default function getDefault(
                 },
                 users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, args, ctx: Context, _info) => {
+                    // todo: remove in favour of isAdmin scope when
+                    // AD-2514 is resolved
+                    const scope = getRepository(User).createQueryBuilder('User')
                     return ctx.loaders.user.user.instance.load({
                         id: args.user_id,
-                        scope: args.scope,
+                        scope,
                     })
                 },
                 my_users: (_parent, _args, ctx: Context, _info) => {
