@@ -483,6 +483,14 @@ export const REMOVE_SUBJECTS_FROM_CLASSES = gql`
     }
 `
 
+export const ADD_GRADES_TO_CLASSES = gql`
+    mutation AddGradesToClass($input: [AddGradesToClassInput!]!) {
+        addGradesToClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export async function updateClass(
     testClient: ApolloServerTestClient,
     classId: string,
