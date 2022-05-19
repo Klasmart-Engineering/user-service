@@ -2737,7 +2737,7 @@ describe('category', () => {
             const subcategoriesKept = new Map()
 
             for (const i of input) {
-                const category = await Category.findOne(i.categoryId)
+                const category = await Category.findOneBy({ id: i.categoryId })
                 const subcategories = (await category?.subcategories) as Subcategory[]
 
                 for (const id of i.subcategoryIds) {

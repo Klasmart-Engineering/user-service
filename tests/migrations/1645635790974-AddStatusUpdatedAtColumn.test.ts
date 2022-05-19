@@ -56,9 +56,15 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
 
     context('when database is populated', () => {
         beforeEach(async () => {
+            migrationsConnection = await createTestConnection({
+                synchronize: false,
+                drop: false,
+                name: 'migrations',
+            })
+
             user = await createUser().save()
             organization = await createOrganization().save()
-            school = await createSchool(organization).save()
+            school = await createSchool().save()
         })
 
         it('adds a status_updated_at column and copies over deleted_at data in the school and organization membership tables', async () => {
@@ -94,18 +100,13 @@ describe('AddStatusUpdatedAtColumn1645635790974 migration', () => {
                 }');`
             )
 
-            migrationsConnection = await createTestConnection({
-                synchronize: false,
-                drop: false,
-                name: 'migrations',
-            })
             await runMigration()
 
-            const updatedOrgMemb = await OrganizationMembership.findOne({
-                status_updated_at: deletedAtDate.toISOString(),
+            const updatedOrgMemb = await OrganizationMembership.findOneBy({
+                status_updated_at: deletedAtDate,
             })
-            const updatedSchoolMemb = await SchoolMembership.findOne({
-                status_updated_at: deletedAtDate.toISOString(),
+            const updatedSchoolMemb = await SchoolMembership.findOneBy({
+                status_updated_at: deletedAtDate,
             })
 
             expect(updatedOrgMemb).to.exist

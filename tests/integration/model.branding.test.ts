@@ -230,7 +230,9 @@ describe('model.branding', () => {
 
                     const organizationBranding = await Branding.findOne({
                         where: {
-                            organization: { organization_id: organizationId },
+                            organization: {
+                                organization_id: organization.organization_id,
+                            },
                         },
                     })
                     expect(organizationBranding).to.be.undefined
@@ -275,14 +277,16 @@ describe('model.branding', () => {
 
                     const brandings = await Branding.find({
                         where: {
-                            organization: { organization_id: organizationId },
+                            organization: {
+                                organization_id: organization.organization_id,
+                            },
                         },
                     })
                     expect(brandings.length).to.equal(1)
 
                     const images = await BrandingImage.find({
                         where: {
-                            branding: brandings[0],
+                            branding: { id: brandings[0].id },
                             status: Status.ACTIVE,
                         },
                     })
@@ -330,7 +334,8 @@ describe('model.branding', () => {
                         const brandings = await Branding.find({
                             where: {
                                 organization: {
-                                    organization_id: organizationId,
+                                    organization_id:
+                                        organization.organization_id,
                                 },
                             },
                         })
@@ -338,7 +343,7 @@ describe('model.branding', () => {
 
                         const images = await BrandingImage.find({
                             where: {
-                                branding: brandings[0],
+                                branding: { id: brandings[0].id },
                                 status: Status.ACTIVE,
                             },
                         })
@@ -379,7 +384,8 @@ describe('model.branding', () => {
                         const brandings = await Branding.find({
                             where: {
                                 organization: {
-                                    organization_id: organizationId,
+                                    organization_id:
+                                        organization.organization_id,
                                 },
                             },
                         })
@@ -387,7 +393,7 @@ describe('model.branding', () => {
 
                         const images = await BrandingImage.find({
                             where: {
-                                branding: brandings[0],
+                                branding: { id: brandings[0].id },
                                 status: Status.ACTIVE,
                             },
                         })
@@ -473,13 +479,15 @@ describe('model.branding', () => {
 
                 const branding = await Branding.findOne({
                     where: {
-                        organization: { organization_id: organizationId },
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                         status: Status.ACTIVE,
                     },
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: { id: branding?.id }, tag: type },
                 })
 
                 await expect(
@@ -520,13 +528,15 @@ describe('model.branding', () => {
 
                 const branding = await Branding.findOne({
                     where: {
-                        organization: { organization_id: organizationId },
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                         status: Status.ACTIVE,
                     },
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: { id: branding?.id }, tag: type },
                 })
 
                 await expect(
@@ -574,13 +584,15 @@ describe('model.branding', () => {
 
                 const branding = await Branding.findOne({
                     where: {
-                        organization: { organization_id: organizationId },
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                         status: Status.ACTIVE,
                     },
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: { id: branding?.id }, tag: type },
                 })
 
                 await expect(func()).to.be.eventually.rejected
@@ -623,13 +635,15 @@ describe('model.branding', () => {
 
                     const branding = await Branding.findOne({
                         where: {
-                            organization: { organization_id: organizationId },
+                            organization: {
+                                organization_id: organization.organization_id,
+                            },
                             status: Status.ACTIVE,
                         },
                     })
 
                     const brandingImage = await BrandingImage.findOne({
-                        where: { branding, tag: type },
+                        where: { branding: { id: branding?.id }, tag: type },
                     })
 
                     await expect(func()).to.be.eventually.rejected
@@ -653,7 +667,9 @@ describe('model.branding', () => {
 
                 const branding = await Branding.findOne({
                     where: {
-                        organization: { organization_id: organizationId },
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                         status: Status.ACTIVE,
                     },
                 })
@@ -683,13 +699,15 @@ describe('model.branding', () => {
 
                 const branding = await Branding.findOne({
                     where: {
-                        organization: { organization_id: organizationId },
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                         status: Status.ACTIVE,
                     },
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: { id: branding?.id }, tag: type },
                 })
 
                 await expect(func()).to.be.eventually.rejected
@@ -727,13 +745,15 @@ describe('model.branding', () => {
 
                 const branding = await Branding.findOne({
                     where: {
-                        organization: { organization_id: organizationId },
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                         status: Status.ACTIVE,
                     },
                 })
 
                 const brandingImage = await BrandingImage.findOne({
-                    where: { branding, tag: type },
+                    where: { branding: { id: branding?.id }, tag: type },
                 })
 
                 expect(result).eq(true)
@@ -745,7 +765,7 @@ describe('model.branding', () => {
     })
 
     describe('deleteBrandingColor', () => {
-        let branding: Branding | undefined
+        let branding: Branding | null
         const primaryColor = '#cd657b'
         const iconImage = fs.createReadStream(
             resolve(`tests/fixtures/${filename}`)
@@ -812,7 +832,9 @@ describe('model.branding', () => {
             branding = await Branding.findOne({
                 relations: ['images'],
                 where: {
-                    organization: { organization_id: organizationId },
+                    organization: {
+                        organization_id: organization.organization_id,
+                    },
                 },
             })
             expect(branding).to.exist
@@ -828,7 +850,9 @@ describe('model.branding', () => {
             branding = await Branding.findOne({
                 relations: ['images'],
                 where: {
-                    organization: { organization_id: organizationId },
+                    organization: {
+                        organization_id: organization.organization_id,
+                    },
                 },
             })
 

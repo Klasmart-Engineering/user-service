@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { Brackets, EntityManager, IsNull } from 'typeorm'
 import { AgeRange } from '../../entities/ageRange'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
@@ -10,6 +10,7 @@ import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { validateAgeRanges } from './validations/ageRange'
+import { Status } from '../../entities/status'
 import { PermissionName } from '../../permissions/permissionNames'
 import { customErrors } from '../../types/errors/customError'
 
@@ -21,10 +22,10 @@ export const processProgramFromCSVRow = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let ageRange: AgeRange | undefined
-    let grade: Grade | undefined
-    let subject: Subject | undefined
-    let program: Program | undefined
+    let ageRange: AgeRange | null
+    let grade: Grade | null
+    let subject: Subject | null
+    let program: Program | null
     let programAgeRanges: AgeRange[] = []
     let programGrades: Grade[] = []
     let programSubjects: Subject[] = []
@@ -126,35 +127,48 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                status: 'active',
-                organization: null,
+                status: Status.ACTIVE,
+                organization: IsNull(),
             },
         })
     } else {
-        ageRange = await manager.findOne(AgeRange, {
-            where: [
-                {
-                    name: ageRangeName,
-                    low_value: age_range_low_value,
-                    high_value: age_range_high_value,
-                    high_value_unit: age_range_unit,
-                    low_value_unit: age_range_unit,
-                    system: false,
-                    status: 'active',
-                    organization,
-                },
-                {
-                    name: ageRangeName,
-                    low_value: age_range_low_value,
-                    high_value: age_range_high_value,
-                    high_value_unit: age_range_unit,
-                    low_value_unit: age_range_unit,
-                    system: true,
-                    status: 'active',
-                    organization: null,
-                },
-            ],
-        })
+        ageRange = await AgeRange.createQueryBuilder('AgeRange')
+            .leftJoin('AgeRange.organization', 'Organization')
+            .where('name = :ageRangeName', { ageRangeName })
+            .andWhere('low_value = :lowValue', {
+                lowValue: Number(age_range_low_value),
+            })
+            .andWhere('high_value = :highValue', {
+                highValue: Number(age_range_high_value),
+            })
+            .andWhere('low_value_unit = :lowValueUnit', {
+                lowValueUnit: age_range_unit,
+            })
+            .andWhere('AgeRange.status = :active', {
+                active: Status.ACTIVE,
+            })
+            .andWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        new Brackets((qb2) => {
+                            qb2.where(
+                                'Organization.organization_id = :organizationId',
+                                {
+                                    organizationId:
+                                        organization.organization_id,
+                                }
+                            ).andWhere('system = false')
+                        })
+                    ).orWhere(
+                        new Brackets((qb2) => {
+                            qb2.where(
+                                'Organization.organization_id IS NULL'
+                            ).andWhere('system = true')
+                        })
+                    )
+                })
+            )
+            .getOne()
     }
 
     if (!ageRange) {
@@ -178,8 +192,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                status: 'active',
-                organization: null,
+                status: Status.ACTIVE,
+                organization: IsNull(),
             },
         })
     } else {
@@ -187,8 +201,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: grade_name,
                 system: false,
-                status: 'active',
-                organization,
+                status: Status.ACTIVE,
+                organization: { organization_id: organization.organization_id },
             },
         })
     }
@@ -214,8 +228,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                status: 'active',
-                organization: null,
+                status: Status.ACTIVE,
+                organization: IsNull(),
             },
         })
     } else {
@@ -223,8 +237,8 @@ export const processProgramFromCSVRow = async (
             where: {
                 name: subject_name,
                 system: false,
-                status: 'active',
-                organization,
+                status: Status.ACTIVE,
+                organization: { organization_id: organization.organization_id },
             },
         })
     }
@@ -253,8 +267,8 @@ export const processProgramFromCSVRow = async (
         where: {
             name: program_name,
             system: false,
-            status: 'active',
-            organization,
+            status: Status.ACTIVE,
+            organization: { organization_id: organization.organization_id },
         },
     })
 

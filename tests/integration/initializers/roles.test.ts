@@ -75,9 +75,9 @@ describe('RolesInitializer', () => {
 
                 await RoleInitializer.run()
 
-                organization = await Organization.findOneOrFail(
-                    organization.organization_id
-                )
+                organization = await Organization.findOneByOrFail({
+                    organization_id: organization.organization_id,
+                })
                 const dbNewRoles = await organization.roles()
                 expect(dbNewRoles).not.to.be.empty
 
@@ -153,12 +153,12 @@ describe('RolesInitializer', () => {
                         await RoleInitializer.run()
                     })
                     it('the permission has been set to allow = false and is removed from a custom role', async () => {
-                        const dbperm = await Permission.findOne({
+                        const dbperm = await Permission.findOneBy({
                             permission_id: permission?.permission_id,
                         })
                         expect(dbperm).to.exist
                         expect(dbperm?.allow).to.equal(false)
-                        const dbRole = await Role.findOne({
+                        const dbRole = await Role.findOneBy({
                             role_id: role.role_id,
                         })
                         const perms = await dbRole?.permissions
@@ -175,7 +175,7 @@ describe('RolesInitializer', () => {
             'when an existing permission is not in the permissionInfo.csv file but is in an existing system role',
             () => {
                 let organization: Organization
-                let role: Role | undefined
+                let role: Role | null
                 let permission: Permission
                 const roleName = 'Teacher'
                 let permsLength = 0
@@ -188,7 +188,7 @@ describe('RolesInitializer', () => {
                     )
                     permission = await createPermission().save()
 
-                    role = await Role.findOne({
+                    role = await Role.findOneBy({
                         role_name: roleName,
                         system_role: true,
                     })
@@ -208,12 +208,12 @@ describe('RolesInitializer', () => {
                         await RoleInitializer.run()
                     })
                     it('the permission has been set to allow = false and is removed from a system role', async () => {
-                        const dbperm = await Permission.findOne({
+                        const dbperm = await Permission.findOneBy({
                             permission_id: permission?.permission_id,
                         })
                         expect(dbperm).to.exist
                         expect(dbperm?.allow).to.equal(false)
-                        const dbRole = await Role.findOne({
+                        const dbRole = await Role.findOneBy({
                             role_id: role?.role_id,
                         })
                         const perms = await dbRole?.permissions

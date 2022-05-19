@@ -233,8 +233,7 @@ describe('getWhereClauseFromFilter', () => {
         }
         const scope = createQueryBuilder('user')
         scope.andWhere(getWhereClauseFromFilter(filter))
-
-        expect(scope.getSql().indexOf('WHERE')).to.equal(-1)
+        expect(scope.getSql()).to.includes('WHERE (1=1)')
     })
 
     it('applies an AND operation if a single item is passed to the logical operators array', () => {

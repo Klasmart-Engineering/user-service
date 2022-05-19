@@ -124,8 +124,8 @@ describe('Subcategory', () => {
                                     })
 
                                     it('deletes the expected subcategory', async () => {
-                                        let dbSubcategory = await Subcategory.findOneOrFail(
-                                            subcategory.id
+                                        let dbSubcategory = await Subcategory.findOneByOrFail(
+                                            { id: subcategory.id }
                                         )
 
                                         expect(dbSubcategory.status).to.eq(
@@ -143,8 +143,8 @@ describe('Subcategory', () => {
                                         )
 
                                         expect(gqlBool).to.be.true
-                                        dbSubcategory = await Subcategory.findOneOrFail(
-                                            subcategory.id
+                                        dbSubcategory = await Subcategory.findOneByOrFail(
+                                            { id: subcategory.id }
                                         )
                                         expect(dbSubcategory.status).to.eq(
                                             Status.INACTIVE
@@ -176,8 +176,8 @@ describe('Subcategory', () => {
                                                 )
 
                                                 expect(gqlBool).to.be.false
-                                                const dbSubcategory = await Subcategory.findOneOrFail(
-                                                    subcategory.id
+                                                const dbSubcategory = await Subcategory.findOneByOrFail(
+                                                    { id: subcategory.id }
                                                 )
                                                 expect(
                                                     dbSubcategory.status
@@ -203,8 +203,8 @@ describe('Subcategory', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbSubcategory = await Subcategory.findOneOrFail(
-                                            subcategory.id
+                                        const dbSubcategory = await Subcategory.findOneByOrFail(
+                                            { id: subcategory.id }
                                         )
                                         expect(dbSubcategory.status).to.eq(
                                             Status.ACTIVE
@@ -246,8 +246,8 @@ describe('Subcategory', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbSubcategory = await Subcategory.findOneOrFail(
-                                            subcategory.id
+                                        const dbSubcategory = await Subcategory.findOneByOrFail(
+                                            { id: subcategory.id }
                                         )
                                         expect(dbSubcategory.status).to.eq(
                                             Status.ACTIVE
@@ -271,8 +271,8 @@ describe('Subcategory', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbSubcategory = await Subcategory.findOneOrFail(
-                                            subcategory.id
+                                        const dbSubcategory = await Subcategory.findOneByOrFail(
+                                            { id: subcategory.id }
                                         )
                                         expect(dbSubcategory.status).to.eq(
                                             Status.ACTIVE
@@ -292,8 +292,8 @@ describe('Subcategory', () => {
                     'and does not belong to the organization from the subcategory',
                     () => {
                         it('deletes the expected subcategory', async () => {
-                            let dbSubcategory = await Subcategory.findOneOrFail(
-                                subcategory.id
+                            let dbSubcategory = await Subcategory.findOneByOrFail(
+                                { id: subcategory.id }
                             )
 
                             expect(dbSubcategory.status).to.eq(Status.ACTIVE)
@@ -306,9 +306,9 @@ describe('Subcategory', () => {
                             )
 
                             expect(gqlBool).to.be.true
-                            dbSubcategory = await Subcategory.findOneOrFail(
-                                subcategory.id
-                            )
+                            dbSubcategory = await Subcategory.findOneByOrFail({
+                                id: subcategory.id,
+                            })
                             expect(dbSubcategory.status).to.eq(Status.INACTIVE)
                             expect(dbSubcategory.deleted_at).not.to.be.null
                         })
@@ -329,8 +329,8 @@ describe('Subcategory', () => {
 
                         context('with a non system subcategory', () => {
                             it('deletes the expected subcategory', async () => {
-                                let dbSubcategory = await Subcategory.findOneOrFail(
-                                    subcategory.id
+                                let dbSubcategory = await Subcategory.findOneByOrFail(
+                                    { id: subcategory.id }
                                 )
 
                                 expect(dbSubcategory.status).to.eq(
@@ -345,8 +345,8 @@ describe('Subcategory', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbSubcategory = await Subcategory.findOneOrFail(
-                                    subcategory.id
+                                dbSubcategory = await Subcategory.findOneByOrFail(
+                                    { id: subcategory.id }
                                 )
                                 expect(dbSubcategory.status).to.eq(
                                     Status.INACTIVE
@@ -377,8 +377,8 @@ describe('Subcategory', () => {
                                         )
 
                                         expect(gqlBool).to.be.false
-                                        const dbSubcategory = await Subcategory.findOneOrFail(
-                                            subcategory.id
+                                        const dbSubcategory = await Subcategory.findOneByOrFail(
+                                            { id: subcategory.id }
                                         )
                                         expect(dbSubcategory.status).to.eq(
                                             Status.INACTIVE
@@ -397,8 +397,8 @@ describe('Subcategory', () => {
                             })
 
                             it('deletes the expected subcategory', async () => {
-                                let dbSubcategory = await Subcategory.findOneOrFail(
-                                    subcategory.id
+                                let dbSubcategory = await Subcategory.findOneByOrFail(
+                                    { id: subcategory.id }
                                 )
 
                                 expect(dbSubcategory.status).to.eq(
@@ -413,8 +413,8 @@ describe('Subcategory', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbSubcategory = await Subcategory.findOneOrFail(
-                                    subcategory.id
+                                dbSubcategory = await Subcategory.findOneByOrFail(
+                                    { id: subcategory.id }
                                 )
                                 expect(dbSubcategory.status).to.eq(
                                     Status.INACTIVE
@@ -445,8 +445,8 @@ describe('Subcategory', () => {
                                         )
 
                                         expect(gqlBool).to.be.false
-                                        const dbSubcategory = await Subcategory.findOneOrFail(
-                                            subcategory.id
+                                        const dbSubcategory = await Subcategory.findOneByOrFail(
+                                            { id: subcategory.id }
                                         )
                                         expect(dbSubcategory.status).to.eq(
                                             Status.INACTIVE

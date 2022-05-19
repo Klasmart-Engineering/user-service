@@ -1,9 +1,9 @@
 // TypeORM config for use with the CLI, NOT the runtime application
 
-import { ConnectionOptions } from 'typeorm'
+import { DataSourceOptions } from 'typeorm'
 import { getEnvVar } from './src/config/config'
 
-const config: ConnectionOptions = {
+const config: DataSourceOptions = {
     name: 'default',
     type: 'postgres',
     host: getEnvVar('POSTGRES_HOST', 'localhost'),
@@ -15,9 +15,6 @@ const config: ConnectionOptions = {
     ),
     entities: ['src/entities/*{.ts,.js}'],
     migrations: ['migrations/*{.ts,.js}'],
-    cli: {
-        migrationsDir: 'migrations',
-    },
 }
 
 export = config

@@ -226,9 +226,10 @@ export class ProgramsInitializer {
                     where: { id: In(systemProgram.grades) },
                 })) || []
 
-            const program = await Program.findOneOrFail({
+            const program = await Program.findOneByOrFail({
                 id: systemProgram.id,
             })
+
             program.subjects = Promise.resolve(subjects)
             program.age_ranges = Promise.resolve(ageRanges)
             program.grades = Promise.resolve(grades)

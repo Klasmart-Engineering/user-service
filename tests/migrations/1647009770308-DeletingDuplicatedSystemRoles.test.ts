@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { QueryRunner } from 'typeorm'
+import { In, QueryRunner, TableForeignKey } from 'typeorm'
 import {
     DeletingDuplicatedSystemRoles1647009770308,
     rolesToDeleteIds,
@@ -22,6 +22,10 @@ import { createRole } from '../factories/role.factory'
 import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createUser } from '../factories/user.factory'
+import {
+    findForeignKeyByTableAndName,
+    updateForeignKey,
+} from '../utils/database'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 
 use(deepEqualInAnyOrder)
@@ -95,6 +99,35 @@ describe('DeletingDuplicatedSystemRoles', () => {
             drop: true,
             synchronize: true,
         })
+
+        // As part of TypeORM update, now migrations is ran first and after synchronize
+        // making that the foreign keys are created at the end based on entities files,
+        // setting the most of them in ON DELETE NO ACTION,
+        // and ignoring the migration made on migrations\1628677180503-InitialState.ts
+        // For this reason, we need to update our foreign keys where is needed
+        const tableName = 'permission_roles_role'
+        const foreignKeyName = 'FK_ead8ac61d0fb420cde0ff36c82e'
+
+        const foreignKey = await findForeignKeyByTableAndName(
+            migrationsConnection,
+            tableName,
+            foreignKeyName
+        )
+
+        if (foreignKey?.onDelete === 'NO ACTION') {
+            const newForeignKey = new TableForeignKey({
+                ...foreignKey,
+                onDelete: 'CASCADE',
+            })
+
+            await updateForeignKey(
+                migrationsConnection,
+                tableName,
+                foreignKey,
+                newForeignKey
+            )
+        }
+
         await createDuplicateRoles()
         const pendingMigrations = await migrationsConnection.showMigrations()
         expect(pendingMigrations).to.eq(true)
@@ -109,9 +142,9 @@ describe('DeletingDuplicatedSystemRoles', () => {
     })
 
     it('should hard delete all the duplications', async () => {
-        const removedRoles = await Role.findByIds(
-            duplicatedSystemRoles.map((r) => r.role_id)
-        )
+        const removedRoles = await Role.findBy({
+            role_id: In(duplicatedSystemRoles.map((r) => r.role_id)),
+        })
 
         expect(removedRoles).to.have.lengthOf(0)
     })

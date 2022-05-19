@@ -8,6 +8,7 @@ import { RelationIdLoader } from 'typeorm/query-builder/relation-id/RelationIdLo
 import { RelationCountLoader } from 'typeorm/query-builder/relation-count/RelationCountLoader'
 import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer'
 import { Alias } from 'typeorm/query-builder/Alias'
+import { v4 as uuidv4 } from 'uuid'
 
 export function scopeHasJoin<E extends BaseEntity>(
     scope: SelectQueryBuilder<E>,
@@ -76,4 +77,13 @@ function convertRawToEntity<Entity = unknown>(
         return undefined
     }
     return entities[0]
+}
+
+/**
+ * Returns a uuid, but without dashes.
+ * This is useful for generating keys for QueryBuilder, to avoid the following error:
+ * TypeORMError: QueryBuilder parameter keys may only contain numbers, letters, underscores, or periods.
+ */
+export function getQueryBuilderKey() {
+    return uuidv4().replace(/-/g, '')
 }

@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { Brackets, EntityManager } from 'typeorm'
 import { Organization } from '../../entities/organization'
 import { Program } from '../../entities/program'
 import { School } from '../../entities/school'
@@ -176,7 +176,7 @@ export const processSchoolFromCSVRow = async (
     const schools = await manager.find(School, {
         where: {
             school_name: row.school_name,
-            organization: organization,
+            organization: { organization_id: organization.organization_id },
         },
     })
 
@@ -215,16 +215,23 @@ export const processSchoolFromCSVRow = async (
         row.program_name = 'None Specified'
     }
     // does the program belong to organisation or a system program
-    const programToAdd = await manager.findOne(Program, {
-        where: [
-            { name: row.program_name, organization: organization },
-            {
-                name: row.program_name,
-                organization: null,
-                system: true,
-            },
-        ],
-    })
+    const programToAdd = await Program.createQueryBuilder('Program')
+        .leftJoin('Program.organization', 'Organization')
+        .where('name = :programName', { programName: row.program_name })
+        .andWhere(
+            new Brackets((qb) => {
+                qb.where('Organization.organization_id = :organizationId', {
+                    organizationId: organization.organization_id,
+                }).orWhere(
+                    new Brackets((qb) => {
+                        qb.where('system = true').andWhere(
+                            'Organization.organization_id IS NULL'
+                        )
+                    })
+                )
+            })
+        )
+        .getOne()
 
     if (!programToAdd) {
         addCsvError(

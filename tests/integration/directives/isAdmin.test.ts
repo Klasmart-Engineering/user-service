@@ -307,7 +307,12 @@ describe('isAdmin', () => {
                 permissions = new UserPermissions(token)
 
                 scope = createQueryBuilder(Organization)
-                await nonAdminOrganizationScope(scope, permissions)
+                await nonAdminOrganizationScope(
+                    scope as SelectQueryBuilder<
+                        Organization | OrganizationMembership
+                    >,
+                    permissions
+                )
             })
 
             it('limits scope to a users organizations', async () => {
@@ -1686,7 +1691,7 @@ describe('isAdmin', () => {
                 user: User
                 organization: Organization
             }) => {
-                const membership = await OrganizationMembership.findOne({
+                const membership = await OrganizationMembership.findOneBy({
                     user_id: user.user_id,
                     organization_id: organization.organization_id,
                 })

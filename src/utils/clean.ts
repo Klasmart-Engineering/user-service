@@ -32,6 +32,7 @@ export function unswapEmailAndPhone(
         email = phone
         phone = undefined
     }
+
     return { email, phone }
 }
 
@@ -71,6 +72,7 @@ function cleanPhone(
 function contactInfo(value: string | null | undefined) {
     if (value === null || value === '') return null
     if (typeof value === 'undefined') return undefined
+
     return normalizedLowercaseTrimmed(value)
 }
 

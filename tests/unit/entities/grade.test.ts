@@ -51,7 +51,7 @@ describe('Grade', () => {
             })
 
             it('creates the grade as not a system age grade', async () => {
-                const dbGrade = await Grade.findOneOrFail(grade.id)
+                const dbGrade = await Grade.findOneByOrFail({ id: grade.id })
 
                 expect(dbGrade.id).to.eq(dbGrade.id)
                 expect(dbGrade.name).to.eq(dbGrade.name)
@@ -81,7 +81,7 @@ describe('Grade', () => {
             })
 
             it('creates the grade', async () => {
-                const dbGrade = await Grade.findOneOrFail(grade.id)
+                const dbGrade = await Grade.findOneByOrFail({ id: grade.id })
 
                 expect(dbGrade.id).to.eq(dbGrade.id)
                 expect(dbGrade.name).to.eq(dbGrade.name)

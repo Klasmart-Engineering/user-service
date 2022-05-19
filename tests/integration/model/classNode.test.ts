@@ -44,6 +44,7 @@ import { userToPayload } from '../../utils/operations/userOps'
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { TestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
+import { WhereClauseCondition } from 'typeorm/query-builder/WhereClause'
 
 use(deepEqualInAnyOrder)
 
@@ -391,7 +392,7 @@ describe('classNode', () => {
 
     context('permissions', () => {
         let aliases: string[]
-        let conditions: string[]
+        let conditions: WhereClauseCondition[]
 
         beforeEach(async () => {
             const orgOwner = await createUser().save()
@@ -483,8 +484,20 @@ describe('classNode', () => {
         })
 
         it('org admin should get a class just from its organization', async () => {
-            await buildScopeAndContext(orgOwnerPermissions)
+            // Nested SQL wheres like "WHERE x = a AND (y = b OR z = c)"
+            // are represented as a condition with conditions inside
+            // instead of the string that this query would be in the SQL query
+            const expectedCondition: WhereClauseCondition = {
+                operator: 'brackets',
+                condition: [
+                    {
+                        type: 'simple',
+                        condition: 'Class.organization IN (:...classOrgs)',
+                    },
+                ],
+            }
 
+            await buildScopeAndContext(orgOwnerPermissions)
             aliases = scope.expressionMap.aliases.map((a) => a.name)
             conditions = scope.expressionMap.wheres.map((w) => w.condition)
 
@@ -492,14 +505,35 @@ describe('classNode', () => {
             expect(aliases).to.deep.equalInAnyOrder(['Class'])
 
             expect(conditions.length).to.eq(1)
-            expect(conditions).to.deep.equalInAnyOrder([
-                '(Class.organization IN (:...classOrgs))',
-            ])
+            expect(conditions).to.deep.equalInAnyOrder([expectedCondition])
         })
 
         it('school admin should get a class just from its school', async () => {
-            await buildScopeAndContext(schoolAdminPermissions)
+            const expectedCondition: WhereClauseCondition = {
+                condition: [
+                    {
+                        condition: {
+                            condition: [
+                                {
+                                    condition:
+                                        '"Class"."class_id" IN (SELECT "schoolClasses"."classClassId" AS "schoolClasses_classClassId" FROM "school_classes_class" "schoolClasses" WHERE "schoolClasses"."schoolSchoolId" IN (:...schoolIds))',
+                                    type: 'and',
+                                },
+                                {
+                                    condition:
+                                        'Class.organization IN (:...schoolOrgs)',
+                                    type: 'simple',
+                                },
+                            ],
+                            operator: 'brackets',
+                        },
+                        type: 'or',
+                    },
+                ],
+                operator: 'brackets',
+            }
 
+            await buildScopeAndContext(schoolAdminPermissions)
             aliases = scope.expressionMap.aliases.map((a) => a.name)
             conditions = scope.expressionMap.wheres.map((w) => w.condition)
 
@@ -507,14 +541,39 @@ describe('classNode', () => {
             expect(aliases).to.deep.equalInAnyOrder(['Class'])
 
             expect(conditions.length).to.eq(1)
-            expect(conditions).to.deep.equalInAnyOrder([
-                '((Class.organization IN (:...schoolOrgs) AND "Class"."class_id" IN (SELECT "schoolClasses"."classClassId" AS "schoolClasses_classClassId" FROM "school_classes_class" "schoolClasses" WHERE "schoolClasses"."schoolSchoolId" IN (:...schoolIds))))',
-            ])
+            expect(conditions).to.deep.equalInAnyOrder([expectedCondition])
         })
 
         it('owner and school admin should get a class just from its school or its organisation', async () => {
-            await buildScopeAndContext(ownerAndSchoolAdminPermissions)
+            const expectedCondition: WhereClauseCondition = {
+                condition: [
+                    {
+                        condition: 'Class.organization IN (:...classOrgs)',
+                        type: 'simple',
+                    },
+                    {
+                        condition: {
+                            condition: [
+                                {
+                                    condition:
+                                        '"Class"."class_id" IN (SELECT "schoolClasses"."classClassId" AS "schoolClasses_classClassId" FROM "school_classes_class" "schoolClasses" WHERE "schoolClasses"."schoolSchoolId" IN (:...schoolIds))',
+                                    type: 'and',
+                                },
+                                {
+                                    condition:
+                                        'Class.organization IN (:...schoolOrgs)',
+                                    type: 'simple',
+                                },
+                            ],
+                            operator: 'brackets',
+                        },
+                        type: 'or',
+                    },
+                ],
+                operator: 'brackets',
+            }
 
+            await buildScopeAndContext(ownerAndSchoolAdminPermissions)
             aliases = scope.expressionMap.aliases.map((a) => a.name)
             conditions = scope.expressionMap.wheres.map((w) => w.condition)
 
@@ -522,9 +581,7 @@ describe('classNode', () => {
             expect(aliases).to.deep.equalInAnyOrder(['Class'])
 
             expect(conditions.length).to.eq(1)
-            expect(conditions).to.deep.equalInAnyOrder([
-                '(Class.organization IN (:...classOrgs) OR (Class.organization IN (:...schoolOrgs) AND "Class"."class_id" IN (SELECT "schoolClasses"."classClassId" AS "schoolClasses_classClassId" FROM "school_classes_class" "schoolClasses" WHERE "schoolClasses"."schoolSchoolId" IN (:...schoolIds))))',
-            ])
+            expect(conditions).to.deep.equalInAnyOrder([expectedCondition])
         })
 
         context('permissons error handling', () => {

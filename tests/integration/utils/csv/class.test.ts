@@ -133,8 +133,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class1', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class1',
+            organization: { organization_id: expectedOrg.organization_id },
         })
         const schools = (await dbClass.schools) || []
         const programs = (await dbClass.programs) || []
@@ -159,8 +160,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class2', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class2',
+            organization: { organization_id: expectedOrg.organization_id },
         })
 
         const schools = (await dbClass.schools) || []
@@ -182,8 +184,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class3', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class3',
+            organization: { organization_id: expectedOrg.organization_id },
         })
         const schools = (await dbClass.schools) || []
         const programs = (await dbClass.programs) || []
@@ -209,8 +212,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class4', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class4',
+            organization: { organization_id: expectedOrg.organization_id },
         })
         const schools = (await dbClass.schools) || []
         const programs = (await dbClass.programs) || []
@@ -233,8 +237,9 @@ describe('processClassFromCSVRow', () => {
             adminPermissions
         )
 
-        const dbClass = await Class.findOneOrFail({
-            where: { class_name: 'class40', organization: expectedOrg },
+        const dbClass = await Class.findOneByOrFail({
+            class_name: 'class40',
+            organization: { organization_id: expectedOrg.organization_id },
         })
         const organizationInClass = await dbClass.organization
 
