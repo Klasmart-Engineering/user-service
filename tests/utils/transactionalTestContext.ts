@@ -1,50 +1,10 @@
 import { DataSource, QueryRunner } from 'typeorm'
-import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel'
 
 /**
  * Wraps the original TypeORM query runner to intercept some calls
  * and manipulate the transactional context.
  */
-interface QueryRunnerWrapper extends QueryRunner {
-    startParentTransaction(): Promise<void>
-    rollbackParentTransaction(): Promise<void>
-    releaseQueryRunner(): Promise<void>
-}
-
-const wrap = (originalQueryRunner: QueryRunner): QueryRunnerWrapper => {
-    const wrapper = originalQueryRunner as QueryRunnerWrapper
-
-    // Move some methods to new namespace
-    wrapper.startParentTransaction = originalQueryRunner.startTransaction
-    wrapper.rollbackParentTransaction = originalQueryRunner.rollbackTransaction
-    wrapper.releaseQueryRunner = originalQueryRunner.release
-
-    // Modify methods to work for child transactions
-    wrapper.startTransaction = async (
-        isolationLevel?: IsolationLevel
-    ): Promise<void> => {
-        await originalQueryRunner.query(`SAVEPOINT nested_transaction`)
-        if (isolationLevel) {
-            await originalQueryRunner.query(
-                'SET TRANSACTION ISOLATION LEVEL ' + isolationLevel
-            )
-        }
-    }
-
-    wrapper.commitTransaction = async (): Promise<void> => {
-        await originalQueryRunner.query(`RELEASE SAVEPOINT nested_transaction`)
-    }
-
-    wrapper.rollbackTransaction = async (): Promise<void> => {
-        await originalQueryRunner.query(
-            `ROLLBACK TO SAVEPOINT nested_transaction`
-        )
-    }
-
-    wrapper.release = () => Promise.resolve()
-
-    return wrapper
-}
+type QueryRunnerWrapper = QueryRunner & { releaseQueryRunner(): Promise<void> }
 
 /**
  * Makes all db operations run within a transaction.
@@ -57,14 +17,13 @@ export default class TransactionalTestContext {
     constructor(private readonly dataSource: DataSource) {}
 
     async start(): Promise<void> {
-        if (this.queryRunner) {
-            throw new Error('Context already started')
-        }
+        if (this.queryRunner) throw new Error('Context already started')
+
         try {
             this.queryRunner = this.buildWrappedQueryRunner()
             this.disableQueryRunnerCreation()
             await this.queryRunner.connect()
-            await this.queryRunner.startParentTransaction()
+            await this.queryRunner.startTransaction()
         } catch (error) {
             await this.cleanUpResources()
             throw error
@@ -78,15 +37,17 @@ export default class TransactionalTestContext {
             )
         }
         try {
-            await this.queryRunner.rollbackParentTransaction()
+            await this.queryRunner.rollbackTransaction()
         } finally {
             await this.cleanUpResources()
         }
     }
 
     private buildWrappedQueryRunner(): QueryRunnerWrapper {
-        const queryRunner = this.dataSource.createQueryRunner()
-        return wrap(queryRunner)
+        const queryRunner = this.dataSource.createQueryRunner() as QueryRunnerWrapper
+        queryRunner.releaseQueryRunner = queryRunner.release
+        queryRunner.release = () => Promise.resolve()
+        return queryRunner
     }
 
     // only call this externally if you've previously called restoreCreateQueryRunner
@@ -98,13 +59,12 @@ export default class TransactionalTestContext {
             )
         } else {
             DataSource.prototype.createQueryRunner = () => {
-                DataSource.prototype
-                return this.queryRunner as QueryRunnerWrapper
+                return this.queryRunner!
             }
         }
     }
 
-    // this should only be used for tests that require commited data in the database.
+    // this should only be used for tests that require committed data in the database.
     // For example: in code that uses 2 connections, one using a transaction
     // and depends on the second connection not seeing uncommitted data from the transaction.
     public restoreCreateQueryRunner() {
