@@ -93,7 +93,7 @@ context('loaders.generic', () => {
                     ])
                 ).to.deep.equal({
                     code: 'ERR_NON_EXISTENT_ENTITY',
-                    message: `User ${key} doesn't exist.`,
+                    message: `User ${key} doesn't exist or you don't have permissions to view it.`,
                     entity: 'User',
                     variables: ['user_id'],
                     entityName: key,

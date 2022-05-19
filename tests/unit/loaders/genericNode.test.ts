@@ -121,7 +121,7 @@ context('loaders.genericNode', () => {
                     ])
                 ).to.deep.equal({
                     code: 'ERR_NON_EXISTENT_ENTITY',
-                    message: `UserConnectionNode ${key} doesn't exist.`,
+                    message: `UserConnectionNode ${key} doesn't exist or you don't have permissions to view it.`,
                     entity: 'UserConnectionNode',
                     variables: ['id'],
                     entityName: key,

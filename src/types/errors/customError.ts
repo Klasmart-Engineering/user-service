@@ -123,7 +123,8 @@ export const customErrors = {
     }, // TODO: is made redundant by duplicate_input_value & duplicate_input_attribute_value
     nonexistent_entity: {
         code: 'ERR_NON_EXISTENT_ENTITY',
-        message: "{entity} {entityName} doesn't exist.",
+        message:
+            "{entity} {entityName} doesn't exist or you don't have permissions to view it.",
     },
     nonexistent_child: {
         code: 'ERR_NON_EXISTENT_CHILD_ENTITY',
