@@ -9,6 +9,7 @@ import {
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 import { SchoolMembershipConnectionNode } from '../types/graphQL/schoolMembership'
+import { School } from '../entities/school'
 
 export const schoolMembershipsConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'user_id',
@@ -26,12 +27,18 @@ export async function schoolMembershipConnectionQuery(
         if (filterHasProperty('roleId', filter) && !scopeHasJoin(scope, Role)) {
             scope.leftJoin('SchoolMembership.roles', 'Role')
         }
+        if (filterHasProperty('organizationId', filter)) {
+            if (!scopeHasJoin(scope, School))
+                scope.innerJoin('SchoolMembership.school', 'School')
+            scope.innerJoin('School.organization', 'Organization')
+        }
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 userId: 'SchoolMembership.user_id',
                 schoolId: 'SchoolMembership.school_id',
                 roleId: 'Role.role_id',
                 status: 'SchoolMembership.status',
+                organizationId: 'Organization.organization_id',
             })
         )
     }
