@@ -9280,7 +9280,7 @@ describe('class', () => {
                 const errs = error.errors
                 expect(errs[0].code).to.equal('ERR_NON_EXISTENT_ENTITY')
                 expect(errs[0].message).to.equal(
-                    `On index 1, Class ${nonAdminUser.user_id} doesn't exist.`
+                    `On index 1, Class ${nonAdminUser.user_id} doesn't exist or you don't have permissions to view it.`
                 )
             })
         })
