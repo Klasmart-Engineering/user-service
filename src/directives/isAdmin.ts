@@ -398,8 +398,13 @@ export const nonAdminUserScope: NonAdminScope<
             if (!scopeHasJoin(scope, OrganizationMembership)) {
                 scope.leftJoin('User.memberships', 'OrganizationMembership')
             }
-            scope.leftJoin('OrganizationMembership.roles', 'Role')
-            scope.leftJoin('Role.permissions', 'Permission')
+            if (!scopeHasJoin(scope, Role)) {
+                scope.leftJoin('OrganizationMembership.roles', 'Role')
+            }
+            if (!scopeHasJoin(scope, Permission)) {
+                scope.leftJoin('Role.permissions', 'Permission')
+            }
+
             userFiltersAnd.push(
                 {
                     where: 'Permission.permission_name = :permissionName',
