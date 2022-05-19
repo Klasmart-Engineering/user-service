@@ -819,7 +819,9 @@ describe('role', () => {
                             { authorization: undefined }
                         )
                     ).to.be.rejected
-                    const dbRole = await Role.findOneOrFail(roleId)
+                    const dbRole = await Role.findOneByOrFail({
+                        role_id: roleId,
+                    })
                     const dbPermissions = (await dbRole.permissions) || []
                     expect(dbPermissions).to.be.empty
                 })
@@ -855,7 +857,9 @@ describe('role', () => {
                                     { authorization: getAdminAuthToken() }
                                 )
                             ).to.be.fulfilled
-                            const dbRole = await Role.findOneOrFail(roleId)
+                            const dbRole = await Role.findOneByOrFail({
+                                role_id: roleId,
+                            })
                             const dbPermissions =
                                 (await dbRole.permissions) || []
                             expect(dbPermissions).to.not.be.empty
@@ -906,7 +910,9 @@ describe('role', () => {
                             editRolePermission,
                             nameOfPermission,
                         ])
-                        let dbRole = await Role.findOneOrFail(roleId)
+                        let dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
+                        })
                         let dbPermissions = (await dbRole.permissions) || []
                         expect(
                             dbPermissions.map(permissionInfo)
@@ -922,7 +928,9 @@ describe('role', () => {
                             { authorization: getAdminAuthToken() }
                         )
                         expect(gqlPermissions).to.be.empty
-                        dbRole = await Role.findOneOrFail(roleId)
+                        dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
+                        })
                         dbPermissions = (await dbRole.permissions) || []
                         expect(dbPermissions).to.be.empty
                     })
@@ -951,7 +959,9 @@ describe('role', () => {
                             { authorization: undefined }
                         )
                     ).to.be.rejected
-                    const dbRole = await Role.findOneOrFail(roleId)
+                    const dbRole = await Role.findOneByOrFail({
+                        role_id: roleId,
+                    })
                     const dbPermissions = (await dbRole.permissions) || []
                     expect(dbPermissions).to.be.empty
                 })
@@ -987,7 +997,9 @@ describe('role', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
                             ).to.be.rejected
-                            const dbRole = await Role.findOneOrFail(roleId)
+                            const dbRole = await Role.findOneByOrFail({
+                                role_id: roleId,
+                            })
                             const dbPermissions =
                                 (await dbRole.permissions) || []
                             expect(dbPermissions).to.be.empty
@@ -1038,7 +1050,9 @@ describe('role', () => {
                             editRolePermission,
                             nameOfPermission,
                         ])
-                        let dbRole = await Role.findOneOrFail(roleId)
+                        let dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
+                        })
                         let dbPermissions = (await dbRole.permissions) || []
                         expect(
                             dbPermissions.map(permissionInfo)
@@ -1054,7 +1068,9 @@ describe('role', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlPermissions).to.be.empty
-                        dbRole = await Role.findOneOrFail(roleId)
+                        dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
+                        })
                         dbPermissions = (await dbRole.permissions) || []
                         expect(dbPermissions).to.be.empty
                     })
@@ -1268,7 +1284,9 @@ describe('role', () => {
         }
 
         async function checkRoleRemoved(isRemoved: boolean) {
-            const dbRole = await Role.findOneOrFail(roleToDeleteId)
+            const dbRole = await Role.findOneByOrFail({
+                role_id: roleToDeleteId,
+            })
             if (isRemoved) {
                 expect(dbRole.status).to.eq(Status.INACTIVE)
                 expect(dbRole.deleted_at).to.not.be.null
@@ -2426,8 +2444,11 @@ describe('role', () => {
                             let inactivePermission: Permission
 
                             beforeEach(async () => {
-                                inactivePermission = await Permission.findOneOrFail(
-                                    PermissionName.academic_profile_20100
+                                inactivePermission = await Permission.findOneByOrFail(
+                                    {
+                                        permission_name:
+                                            PermissionName.academic_profile_20100,
+                                    }
                                 )
 
                                 await inactivePermission.inactivate()

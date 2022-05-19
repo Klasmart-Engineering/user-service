@@ -151,7 +151,9 @@ export const createEntityScope = async ({
         switch (entity) {
             case 'organization':
                 await nonAdminOrganizationScope(
-                    scope as SelectQueryBuilder<Organization>,
+                    scope as SelectQueryBuilder<
+                        Organization | OrganizationMembership
+                    >,
                     permissions
                 )
                 break
@@ -465,7 +467,12 @@ export const nonAdminOrganizationMembershipScope: NonAdminScope<OrganizationMemb
     scope.leftJoin('OrganizationMembership.user', 'User')
 
     await nonAdminOrganizationScope(scope, permissions)
-    await nonAdminUserScope(scope, permissions)
+    await nonAdminUserScope(
+        scope as SelectQueryBuilder<
+            User | OrganizationMembership | SchoolMembership
+        >,
+        permissions
+    )
 }
 
 export const nonAdminAgeRangeScope: NonAdminScope<AgeRange> = (

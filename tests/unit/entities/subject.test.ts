@@ -44,7 +44,9 @@ describe('Subject', () => {
             })
 
             it('creates the subject as not a system subject', async () => {
-                const dbSubject = await Subject.findOneOrFail(subject.id)
+                const dbSubject = await Subject.findOneByOrFail({
+                    id: subject.id,
+                })
 
                 expect(dbSubject.id).to.eq(subject.id)
                 expect(dbSubject.name).to.eq(subject.name)
@@ -70,7 +72,9 @@ describe('Subject', () => {
             })
 
             it('creates the subject', async () => {
-                const dbSubject = await Subject.findOneOrFail(subject.id)
+                const dbSubject = await Subject.findOneByOrFail({
+                    id: subject.id,
+                })
 
                 expect(dbSubject.id).to.eq(subject.id)
                 expect(dbSubject.name).to.eq(subject.name)

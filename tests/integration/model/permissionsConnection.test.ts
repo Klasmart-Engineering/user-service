@@ -273,7 +273,7 @@ describe('model', () => {
         ]
 
         beforeEach(async () => {
-            const notAllowedPermission = await Permission.findOneOrFail()
+            const notAllowedPermission = await Permission.findOneByOrFail({})
             notAllowedPermission.allow = false
 
             await connection.manager.save(notAllowedPermission)

@@ -1,6 +1,14 @@
-import { Connection, EntityMetadata, EntityTarget, Table } from 'typeorm'
-import { BaseConnectionOptions } from 'typeorm/connection/BaseConnectionOptions'
+import {
+    DataSource,
+    EntityMetadata,
+    EntityTarget,
+    Table,
+    TableForeignKey,
+} from 'typeorm'
+import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions'
+
 import { View } from 'typeorm/schema-builder/view/View'
+import { TestConnection } from './testConnection'
 
 export const NIL_UUID = '00000000-0000-0000-0000-000000000000'
 
@@ -37,7 +45,7 @@ function escapePath(
  * - https://github.com/django/django/blob/3f2170f720fe1e2b1030887684c18dc2fc20116b/django/db/backends/postgresql/operations.py#L122
  */
 export async function truncateTables(
-    connection: Connection,
+    dataSource: DataSource,
     entities?: EntityTarget<any>[]
 ): Promise<void> {
     if (entities && entities.length === 0) {
@@ -47,16 +55,16 @@ export async function truncateTables(
     let entityMetadatas: EntityMetadata[]
     if (entities === undefined) {
         // Default to all Entities
-        entityMetadatas = connection.entityMetadatas
+        entityMetadatas = dataSource.entityMetadatas
     } else {
         entityMetadatas = entities.map((entity) =>
-            connection.getMetadata(entity)
+            dataSource.getMetadata(entity)
         )
     }
 
     // TypeORM stores the driver as an abstract base type, but PostgresConnectionOptions (and some
     // other drivers) include a `schema` option. This cast is safer than to `any`
-    const schema = (connection.driver.options as BaseConnectionOptions & {
+    const schema = (dataSource.driver.options as BaseDataSourceOptions & {
         schema?: string
     })?.schema
 
@@ -65,7 +73,7 @@ export async function truncateTables(
         escapePath(schema, metadata.tableName)
     )
 
-    const queryRunner = connection.createQueryRunner()
+    const queryRunner = dataSource.createQueryRunner()
     try {
         // Can't use `queryRunner.clearTable()` as this doesn't include CASCADE, and only supports
         // one table at a time (which is incredibly slow)
@@ -73,4 +81,41 @@ export async function truncateTables(
     } finally {
         await queryRunner.release()
     }
+}
+
+/**
+ * Finds a foreign key in the given table with the given name
+ * @param testConnection - The connection where the table is located
+ * @param tableName - The name of the table to search
+ * @param foreignKeyName - The name of the foreign key to find
+ */
+export async function findForeignKeyByTableAndName(
+    testConnection: TestConnection,
+    tableName: string,
+    foreignKeyName: string
+) {
+    const queryRunner = testConnection.createQueryRunner()
+    const table = await queryRunner.getTable(tableName)
+    const foreignKeys = table?.foreignKeys
+    return foreignKeys?.find((fk) => fk.name === foreignKeyName)
+}
+
+/**
+ * Replaces a given foreign key with a new one
+ * @param testConnection - The connection where the table is located
+ * @param tableName - The name of the tables that has the foreign key
+ * @param currentForeignKey - The current foreign key to replace
+ * @param newForeignKey - The new foreign key to replace with
+ */
+export async function updateForeignKey(
+    testConnection: TestConnection,
+    tableName: string,
+    currentForeignKey: TableForeignKey,
+    newForeignKey: TableForeignKey
+) {
+    const queryRunner = testConnection.createQueryRunner()
+    // dropping original foreign key
+    await queryRunner.dropForeignKey(tableName, currentForeignKey)
+    // to be replaced by the new one
+    await queryRunner.createForeignKey(tableName, newForeignKey)
 }

@@ -19,6 +19,7 @@ import { CSVError } from '../../../../src/types/csv/csvError'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -73,15 +74,13 @@ describe('processGradeFromCSVRow', () => {
                 'On row number 1, organization name is required.'
             )
 
-            const grade = await Grade.findOne({
-                where: {
-                    system: false,
-                    status: 'active',
-                    name: row.grade_name,
-                },
+            const grade = await Grade.findOneBy({
+                system: false,
+                status: Status.ACTIVE,
+                name: row.grade_name,
             })
 
-            expect(grade).to.be.undefined
+            expect(grade).to.be.null
         })
     })
 
@@ -106,15 +105,13 @@ describe('processGradeFromCSVRow', () => {
                 'On row number 1, grade name is required.'
             )
 
-            const grade = await Grade.findOne({
-                where: {
-                    system: false,
-                    status: 'active',
-                    name: row.grade_name,
-                },
+            const grade = await Grade.findOneBy({
+                system: false,
+                status: Status.ACTIVE,
+                name: row.grade_name,
             })
 
-            expect(grade).to.be.undefined
+            expect(grade).to.be.null
         })
     })
 
@@ -139,15 +136,13 @@ describe('processGradeFromCSVRow', () => {
                 `On row number 1, "${row.organization_name}" organization doesn't exist.`
             )
 
-            const grade = await Grade.findOne({
-                where: {
-                    system: false,
-                    status: 'active',
-                    name: row.grade_name,
-                },
+            const grade = await Grade.findOneBy({
+                system: false,
+                status: Status.ACTIVE,
+                name: row.grade_name,
             })
 
-            expect(grade).to.be.undefined
+            expect(grade).to.be.null
         })
     })
 
@@ -189,13 +184,11 @@ describe('processGradeFromCSVRow', () => {
                 `On row number 1, "${row.grade_name}" grade already exists for "${row.organization_name}" organization.`
             )
 
-            const grade = await Grade.findOne({
-                where: {
-                    organization,
-                    system: false,
-                    status: 'active',
-                    name: row.grade_name,
-                },
+            const grade = await Grade.findOneBy({
+                organization: { organization_id: organization.organization_id },
+                system: false,
+                status: Status.ACTIVE,
+                name: row.grade_name,
             })
 
             expect(grade).to.exist
@@ -227,13 +220,11 @@ describe('processGradeFromCSVRow', () => {
                 adminPermissions
             )
 
-            const grade = await Grade.findOneOrFail({
-                where: {
-                    organization,
-                    system: false,
-                    status: 'active',
-                    name: row.grade_name,
-                },
+            const grade = await Grade.findOneByOrFail({
+                organization: { organization_id: organization.organization_id },
+                system: false,
+                status: Status.ACTIVE,
+                name: row.grade_name,
             })
 
             const organizationInGrade = await grade.organization

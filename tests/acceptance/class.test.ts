@@ -227,7 +227,9 @@ describe('acceptance.class', () => {
 
         org1Id = createOrg1Data.organization_id
 
-        user2 = await connection.manager.findOneOrFail(User, user2_id)
+        user2 = await connection.manager.findOneByOrFail(User, {
+            user_id: user2_id,
+        })
 
         const createOrg2Response = await createOrg(
             user2_id,
@@ -271,10 +273,9 @@ describe('acceptance.class', () => {
             createSchoolAdminResponse.body.data.organization.inviteUser
 
         schoolAdminId = createSchoolAdminData.user.user_id
-        schoolAdmin = await connection.manager.findOneOrFail(
-            User,
-            schoolAdminId
-        )
+        schoolAdmin = await connection.manager.findOneByOrFail(User, {
+            user_id: schoolAdminId,
+        })
 
         const createOrgMemberResponse = await inviteUserToOrganization(
             'organization',
@@ -290,7 +291,9 @@ describe('acceptance.class', () => {
             createOrgMemberResponse.body.data.organization.inviteUser
 
         orgMemberId = createOrgMemberData.user.user_id
-        orgMember = await connection.manager.findOneOrFail(User, orgMemberId)
+        orgMember = await connection.manager.findOneByOrFail(User, {
+            user_id: orgMemberId,
+        })
 
         // Creating Age Range to Filter
         const createAgeRangeResponse = await createAgeRanges(
@@ -334,7 +337,6 @@ describe('acceptance.class', () => {
         subjectId =
             createSubjectResponse.body.data.organization
                 .createOrUpdateSubjects[0].id
-
         // Creating Program to Filter
         const createProgramResponse = await createPrograms(
             org1Id,
@@ -931,8 +933,8 @@ describe('acceptance.class', () => {
         })
 
         it('queries paginated classes filtering by academic term', async () => {
-            const school = await School.findOneOrFail(schoolId)
-            const cls = await Class.findOneOrFail(class1Ids[2])
+            const school = await School.findOneByOrFail({ school_id: schoolId })
+            const cls = await Class.findOneByOrFail({ class_id: class1Ids[2] })
             const term = await createAcademicTerm(school, {}, [cls]).save()
 
             const response = await request
@@ -1139,7 +1141,7 @@ describe('acceptance.class', () => {
         })
 
         it('has programsConnection as a child', async () => {
-            const user1 = await User.findOneOrFail(user_id)
+            const user1 = await User.findOneByOrFail({ user_id })
             const response = await makeRequest(
                 request,
                 print(CLASSES_CONNECTION),
@@ -1217,9 +1219,9 @@ describe('acceptance.class', () => {
         })
 
         it("can access the class's academic term", async () => {
-            const org1 = await connection.manager.findOneOrFail(
+            const org1 = await connection.manager.findOneByOrFail(
                 Organization,
-                org1Id
+                { organization_id: org1Id }
             )
             const school = await createSchoolFactory(org1).save()
             const class_ = createClassFactory([], org1)

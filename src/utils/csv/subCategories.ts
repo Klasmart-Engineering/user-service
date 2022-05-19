@@ -50,7 +50,7 @@ export const processSubCategoriesFromCSVRow = async (
         return rowErrors
     }
 
-    const org = await Organization.findOne({ organization_name })
+    const org = await Organization.findOneBy({ organization_name })
 
     if (!org) {
         addCsvError(
@@ -91,7 +91,10 @@ export const processSubCategoriesFromCSVRow = async (
     }
 
     const subCategoryExists = await manager.findOne(Subcategory, {
-        where: { name: subcategory_name, organization: org },
+        where: {
+            name: subcategory_name,
+            organization: { organization_id: org.organization_id },
+        },
     })
 
     if (subCategoryExists) {

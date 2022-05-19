@@ -7,6 +7,7 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { Status } from '../../entities/status'
 import { PermissionName } from '../../permissions/permissionNames'
 import { customErrors } from '../../types/errors/customError'
 
@@ -134,9 +135,9 @@ export const processRoleFromCSVRow = async (
     role = await manager.findOne(Role, {
         where: {
             role_name,
-            status: 'active',
+            status: Status.ACTIVE,
             system_role: false,
-            organization,
+            organization: { organization_id: organization.organization_id },
         },
     })
 

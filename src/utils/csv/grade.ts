@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, IsNull } from 'typeorm'
 import { GradeRow } from '../../types/csv/gradeRow'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
@@ -6,6 +6,7 @@ import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { Status } from '../../entities/status'
 import { PermissionName } from '../../permissions/permissionNames'
 import { customErrors } from '../../types/errors/customError'
 
@@ -18,8 +19,8 @@ function findGradeInDatabaseOrTransaction(
         where: {
             name: grade_name,
             system: false,
-            status: 'active',
-            organization: organization,
+            status: Status.ACTIVE,
+            organization: { organization_id: organization.organization_id },
         },
     })
 }
@@ -39,8 +40,8 @@ async function findOrFailGradeInDatabaseOrTransaction(
         where: {
             name: grade_name,
             system: false,
-            status: 'active',
-            organization,
+            status: Status.ACTIVE,
+            organization: { organization_id: organization.organization_id },
         },
     })
 
@@ -246,8 +247,8 @@ export const setGradeFromToFields = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let toGrade: Grade | undefined
-    let fromGrade: Grade | undefined
+    let toGrade: Grade | null
+    let fromGrade: Grade | null
 
     const {
         organization_name,
@@ -318,7 +319,7 @@ export const setGradeFromToFields = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                organization: null,
+                organization: IsNull(),
             },
         })
     }
@@ -345,7 +346,7 @@ export const setGradeFromToFields = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                organization: null,
+                organization: IsNull(),
             },
         })
     }
@@ -364,8 +365,8 @@ export const setGradeFromToFields = async (
         where: {
             name: grade_name,
             system: false,
-            status: 'active',
-            organization: organization,
+            status: Status.ACTIVE,
+            organization: { organization_id: organization.organization_id },
         },
     })
 

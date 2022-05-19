@@ -60,8 +60,9 @@ describe('processSubCategoriesFromCSVRow', () => {
             adminPermissions
         )
 
-        await Subcategory.findOneOrFail({
-            where: { name: 'sc1', organization: expectedOrg },
+        await Subcategory.findOneByOrFail({
+            name: 'sc1',
+            organization: { organization_id: expectedOrg.organization_id },
         })
     })
 

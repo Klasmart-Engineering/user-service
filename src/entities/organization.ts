@@ -10,12 +10,10 @@ import {
     OneToOne,
     ManyToOne,
     EntityManager,
-    EntityTarget,
-    FindConditions,
     Not,
-    Brackets,
-    FindOneOptions,
     BaseEntity,
+    FindOptionsWhere,
+    Brackets,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -111,15 +109,20 @@ export class Organization extends CustomBaseEntity {
     public primary_contact?: Promise<User>
 
     public async roles(): Promise<Role[]> {
-        return Role.find({
-            where: [
-                { system_role: true, organization: { organization_id: null } },
-                {
-                    system_role: false,
-                    organization: { organization_id: this.organization_id },
-                },
-            ],
-        })
+        return Role.createQueryBuilder('Role')
+            .leftJoin('Role.organization', 'Organization')
+            .where('system_role = true')
+            .orWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        'system_role = false'
+                    ).andWhere(
+                        'Organization.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                })
+            )
+            .getMany()
     }
 
     @OneToMany(() => School, (school) => school.organization)
@@ -152,12 +155,14 @@ export class Organization extends CustomBaseEntity {
             PermissionName.view_school_classes_20117
         )
 
-        let membership: OrganizationMembership | undefined
+        let membership: OrganizationMembership | null
 
         if (!context.permissions.isAdmin) {
             membership = await OrganizationMembership.findOne({
-                organization_id: this.organization_id,
-                user_id: userId,
+                where: {
+                    user_id: userId,
+                    organization_id: this.organization_id,
+                },
             })
 
             if (!membership) {
@@ -194,15 +199,20 @@ export class Organization extends CustomBaseEntity {
             PermissionName.view_age_range_20112
         )
 
-        return AgeRange.find({
-            where: [
-                { system: true, organization: { organization_id: null } },
-                {
-                    system: false,
-                    organization: { organization_id: this.organization_id },
-                },
-            ],
-        })
+        return AgeRange.createQueryBuilder('AgeRange')
+            .leftJoin('AgeRange.organization', 'Organization')
+            .where('system = true')
+            .orWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        'system = false'
+                    ).andWhere(
+                        'Organization.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                })
+            )
+            .getMany()
     }
 
     public async grades(
@@ -216,15 +226,20 @@ export class Organization extends CustomBaseEntity {
             PermissionName.view_grades_20113
         )
 
-        return Grade.find({
-            where: [
-                { system: true, organization: { organization_id: null } },
-                {
-                    system: false,
-                    organization: { organization_id: this.organization_id },
-                },
-            ],
-        })
+        return Grade.createQueryBuilder('Grade')
+            .leftJoin('Grade.organization', 'Organization')
+            .where('system = true')
+            .orWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        'system = false'
+                    ).andWhere(
+                        'Organization.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                })
+            )
+            .getMany()
     }
 
     public async categories(
@@ -238,15 +253,20 @@ export class Organization extends CustomBaseEntity {
             PermissionName.view_subjects_20115
         )
 
-        return Category.find({
-            where: [
-                { system: true, organization: { organization_id: null } },
-                {
-                    system: false,
-                    organization: { organization_id: this.organization_id },
-                },
-            ],
-        })
+        return Category.createQueryBuilder('Category')
+            .leftJoin('Category.organization', 'Organization')
+            .where('system = true')
+            .orWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        'system = false'
+                    ).andWhere(
+                        'Organization.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                })
+            )
+            .getMany()
     }
 
     public async subcategories(
@@ -260,15 +280,20 @@ export class Organization extends CustomBaseEntity {
             PermissionName.view_subjects_20115
         )
 
-        return Subcategory.find({
-            where: [
-                { system: true, organization: { organization_id: null } },
-                {
-                    system: false,
-                    organization: { organization_id: this.organization_id },
-                },
-            ],
-        })
+        return Subcategory.createQueryBuilder('Subcategory')
+            .leftJoin('Subcategory.organization', 'Organization')
+            .where('system = true')
+            .orWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        'system = false'
+                    ).andWhere(
+                        'Organization.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                })
+            )
+            .getMany()
     }
 
     public async subjects(
@@ -282,15 +307,20 @@ export class Organization extends CustomBaseEntity {
             PermissionName.view_subjects_20115
         )
 
-        return Subject.find({
-            where: [
-                { system: true, organization: { organization_id: null } },
-                {
-                    system: false,
-                    organization: { organization_id: this.organization_id },
-                },
-            ],
-        })
+        return Subject.createQueryBuilder('Subject')
+            .leftJoin('Subject.organization', 'Organization')
+            .where('system = true')
+            .orWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        'system = false'
+                    ).andWhere(
+                        'Organization.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                })
+            )
+            .getMany()
     }
 
     public async programs(
@@ -304,15 +334,20 @@ export class Organization extends CustomBaseEntity {
             PermissionName.view_program_20111
         )
 
-        return Program.find({
-            where: [
-                { system: true, organization: { organization_id: null } },
-                {
-                    system: false,
-                    organization: { organization_id: this.organization_id },
-                },
-            ],
-        })
+        return Program.createQueryBuilder('Program')
+            .leftJoin('Program.organization', 'Organization')
+            .where('system = true')
+            .orWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        'system = false'
+                    ).andWhere(
+                        'Organization.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                })
+            )
+            .getMany()
     }
 
     public async set(
@@ -476,7 +511,7 @@ export class Organization extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail({ user_id })
+            const user = await getRepository(User).findOneByOrFail({ user_id })
             this.primary_contact = Promise.resolve(user)
             await getManager().save(this)
 
@@ -505,7 +540,7 @@ export class Organization extends CustomBaseEntity {
         )
 
         try {
-            const user = await getRepository(User).findOneOrFail(user_id)
+            const user = await getRepository(User).findOneByOrFail({ user_id })
             if (typeof shortcode === 'string') {
                 shortcode = shortcode.toUpperCase()
                 shortcode = validateShortCode(
@@ -623,27 +658,30 @@ export class Organization extends CustomBaseEntity {
             }
         }
 
-        let existingUser: User | undefined
+        let existingUser: User | null = null
         if (validData?.given_name && validData?.family_name) {
             const personalInfo = {
                 given_name: given_name,
                 family_name: family_name,
             }
 
-            existingUser = await getRepository(User).findOne({
-                where: [
-                    { email: email, ...personalInfo },
-                    { phone: phone, ...personalInfo },
-                ],
-            })
+            const conditions = []
+            if (email) conditions.push({ email, ...personalInfo })
+            if (phone) conditions.push({ phone, ...personalInfo })
+
+            if (conditions.length) {
+                existingUser = await User.findOne({
+                    where: conditions,
+                })
+            }
 
             if (existingUser) {
-                const existingMembership = await getRepository(
-                    OrganizationMembership
-                ).findOne({
-                    user_id: existingUser.user_id,
-                    organization_id: this.organization_id,
-                })
+                const existingMembership = await OrganizationMembership.findOneBy(
+                    {
+                        user_id: existingUser.user_id,
+                        organization_id: this.organization_id,
+                    }
+                )
 
                 if (existingMembership) {
                     errors.push(
@@ -794,9 +832,7 @@ export class Organization extends CustomBaseEntity {
                 where: {
                     shortcode,
                     user_id: Not(user_id),
-                    organization: {
-                        organization_id: this.organization_id,
-                    },
+                    organization: { organization_id: this.organization_id },
                 },
             })
 
@@ -815,9 +851,9 @@ export class Organization extends CustomBaseEntity {
             }
         }
 
-        let user: User | undefined
+        let user: User | null = null
         if (validData?.user_id) {
-            user = await User.findOne(user_id)
+            user = await User.findOneBy({ user_id })
             if (!user) {
                 errors.push(
                     new APIError({
@@ -831,9 +867,9 @@ export class Organization extends CustomBaseEntity {
             }
         }
 
-        let membership: OrganizationMembership | undefined
+        let membership: OrganizationMembership | null
         if (user) {
-            membership = await OrganizationMembership.findOne({
+            membership = await OrganizationMembership.findOneBy({
                 user_id,
                 organization_id: this.organization_id,
                 status: Status.ACTIVE,
@@ -862,7 +898,7 @@ export class Organization extends CustomBaseEntity {
                 user_id: Not(user_id),
             }
 
-            const findConditions: FindConditions<User>[] = []
+            const findConditions: FindOptionsWhere<User>[] = []
             if (user.email) {
                 findConditions.push({ ...baseCondition, email: user.email })
             }
@@ -959,17 +995,25 @@ export class Organization extends CustomBaseEntity {
     }
 
     private async findChildEntitiesById<EntityClass extends BaseEntity>(
-        entity: EntityTarget<EntityClass>,
+        entity: (new () => EntityClass) & typeof BaseEntity,
         ids: string[],
         variables: IAPIError['variables'],
-        customCondition?: FindOneOptions<EntityClass>['where']
+        customCondition?: Brackets
     ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
         const uniqueIds = [...new Set(ids)]
-        const repository = getRepository(entity)
-        const defaultCondition = { organization: this.organization_id }
-        const records = await repository.findByIds(ids, {
-            where: customCondition ?? defaultCondition,
+        const repository = entity.getRepository()
+        const defaultCondition = new Brackets((qb) => {
+            qb.where('Entity.organizationOrganizationId = :organization_id', {
+                organization_id: this.organization_id,
+            })
         })
+
+        const records = (await repository
+            .createQueryBuilder('Entity')
+            .whereInIds(uniqueIds)
+            .andWhere(customCondition ?? defaultCondition)
+            .getMany()) as EntityClass[]
+
         const found = new Set(records.map((record) => repository.getId(record)))
         const errors = uniqueIds
             .filter((id) => !found.has(id))
@@ -985,6 +1029,7 @@ export class Organization extends CustomBaseEntity {
                         parentName: this.organization_name,
                     })
             )
+
         return { data: records, errors }
     }
 
@@ -997,13 +1042,14 @@ export class Organization extends CustomBaseEntity {
             roleIds,
             variables,
             // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
-            new Brackets((qb) =>
-                qb
-                    .where('Role.organization = :organization_id', {
+            new Brackets((qb) => {
+                qb.where('Entity.system_role = true').orWhere(
+                    'Entity.organizationOrganizationId = :organization_id',
+                    {
                         organization_id: this.organization_id,
-                    })
-                    .orWhere('Role.system_role IS TRUE')
-            )
+                    }
+                )
+            })
         )
     }
 
@@ -1026,11 +1072,11 @@ export class Organization extends CustomBaseEntity {
         alternate_email?: string | null
         alternate_phone?: string | null
     }): Promise<User> {
-        let user: User | undefined
+        let user: User | null
         // eslint-disable-next-line prefer-const
         let { user_id, ...rest } = partialUser
         if (user_id) {
-            user = await User.findOne(user_id)
+            user = await User.findOneBy({ user_id })
             if (!user) {
                 user_id = uuid_v4()
                 user = new User() as User
@@ -1056,10 +1102,11 @@ export class Organization extends CustomBaseEntity {
         const user_id = user.user_id
         const organization_id = this.organization_id
         const membership =
-            (await getRepository(OrganizationMembership).findOne({
+            (await getRepository(OrganizationMembership).findOneBy({
                 organization_id,
                 user_id,
             })) || new OrganizationMembership()
+
         membership.organization_id = this.organization_id
         membership.user_id = user.user_id
         membership.user = Promise.resolve(user)
@@ -1069,6 +1116,7 @@ export class Organization extends CustomBaseEntity {
             shortcode ||
             membership.shortcode ||
             generateShortCode(user_id, config.limits.SHORTCODE_MAX_LENGTH)
+
         return membership
     }
 
@@ -1083,14 +1131,16 @@ export class Organization extends CustomBaseEntity {
             this.organization_id,
             user.user_id
         )
+
         const schoolMemberships = await Promise.all(
             schools.map(async (school) => {
                 const school_id = school.school_id
                 const schoolMembership =
-                    (await schoolMembershipRepo.findOne({
+                    (await schoolMembershipRepo.findOneBy({
                         school_id,
                         user_id,
                     })) || new SchoolMembership()
+
                 schoolMembership.user_id = user_id
                 schoolMembership.user = Promise.resolve(user)
                 schoolMembership.school_id = school_id
@@ -1100,6 +1150,7 @@ export class Organization extends CustomBaseEntity {
                 return schoolMembership
             })
         )
+
         return [schoolMemberships, oldSchoolMemberships]
     }
 
@@ -1241,14 +1292,18 @@ export class Organization extends CustomBaseEntity {
 
         const ageRanges = []
 
-        for (const ageRangeDetail of age_ranges) {
-            checkUpdatePermission =
-                checkUpdatePermission || !!ageRangeDetail?.id
-            checkCreatePermission = checkCreatePermission || !ageRangeDetail?.id
+        for await (const ageRangeDetail of age_ranges) {
+            checkUpdatePermission = checkUpdatePermission || !!ageRangeDetail.id
+            checkCreatePermission = checkCreatePermission || !ageRangeDetail.id
 
-            const ageRange =
-                (await AgeRange.findOne({ id: ageRangeDetail?.id })) ||
-                new AgeRange()
+            let ageRange: AgeRange
+            if (ageRangeDetail.id) {
+                ageRange =
+                    (await AgeRange.findOneBy({ id: ageRangeDetail.id })) ||
+                    new AgeRange()
+            } else {
+                ageRange = new AgeRange()
+            }
 
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1319,12 +1374,18 @@ export class Organization extends CustomBaseEntity {
 
         const dbGrades = []
 
-        for (const gradeDetail of grades) {
-            checkUpdatePermission = checkUpdatePermission || !!gradeDetail?.id
-            checkCreatePermission = checkCreatePermission || !gradeDetail?.id
+        for await (const gradeDetail of grades) {
+            checkUpdatePermission = checkUpdatePermission || !!gradeDetail.id
+            checkCreatePermission = checkCreatePermission || !gradeDetail.id
 
-            const grade =
-                (await Grade.findOne({ id: gradeDetail?.id })) || new Grade()
+            let grade: Grade
+            if (gradeDetail.id) {
+                grade =
+                    (await Grade.findOneBy({ id: gradeDetail.id })) ||
+                    new Grade()
+            } else {
+                grade = new Grade()
+            }
 
             checkAdminPermission =
                 checkAdminPermission || grade.system || !!gradeDetail?.system
@@ -1332,14 +1393,14 @@ export class Organization extends CustomBaseEntity {
             grade.name = gradeDetail?.name || grade.name
 
             if (gradeDetail?.progress_from_grade_id) {
-                const progressFromGrade = await Grade.findOneOrFail({
+                const progressFromGrade = await Grade.findOneByOrFail({
                     id: gradeDetail?.progress_from_grade_id,
                 })
                 grade.progress_from_grade = Promise.resolve(progressFromGrade)
             }
 
             if (gradeDetail?.progress_to_grade_id) {
-                const progressToGrade = await Grade.findOneOrFail({
+                const progressToGrade = await Grade.findOneByOrFail({
                     id: gradeDetail?.progress_to_grade_id,
                 })
                 grade.progress_to_grade = Promise.resolve(progressToGrade)
@@ -1398,13 +1459,19 @@ export class Organization extends CustomBaseEntity {
 
         for (const subcategoryDetail of subcategories) {
             checkUpdatePermission =
-                checkUpdatePermission || !!subcategoryDetail?.id
+                checkUpdatePermission || !!subcategoryDetail.id
             checkCreatePermission =
-                checkCreatePermission || !subcategoryDetail?.id
+                checkCreatePermission || !subcategoryDetail.id
 
-            const subcategory =
-                (await Subcategory.findOne({ id: subcategoryDetail?.id })) ||
-                new Subcategory()
+            let subcategory: Subcategory
+            if (subcategoryDetail.id) {
+                subcategory =
+                    (await Subcategory.findOneBy({
+                        id: subcategoryDetail.id,
+                    })) || new Subcategory()
+            } else {
+                subcategory = new Subcategory()
+            }
 
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1465,14 +1532,18 @@ export class Organization extends CustomBaseEntity {
 
         const dbCategories = []
 
-        for (const categoryDetail of categories) {
-            checkUpdatePermission =
-                checkUpdatePermission || !!categoryDetail?.id
-            checkCreatePermission = checkCreatePermission || !categoryDetail?.id
+        for await (const categoryDetail of categories) {
+            checkUpdatePermission = checkUpdatePermission || !!categoryDetail.id
+            checkCreatePermission = checkCreatePermission || !categoryDetail.id
 
-            const category =
-                (await Category.findOne({ id: categoryDetail?.id })) ||
-                new Category()
+            let category: Category
+            if (categoryDetail.id) {
+                category =
+                    (await Category.findOneBy({ id: categoryDetail.id })) ||
+                    new Category()
+            } else {
+                category = new Category()
+            }
 
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1541,12 +1612,17 @@ export class Organization extends CustomBaseEntity {
         const dbSubjects = []
 
         for (const subjectDetail of subjects) {
-            checkUpdatePermission = checkUpdatePermission || !!subjectDetail?.id
-            checkCreatePermission = checkCreatePermission || !subjectDetail?.id
+            checkUpdatePermission = checkUpdatePermission || !!subjectDetail.id
+            checkCreatePermission = checkCreatePermission || !subjectDetail.id
 
-            const subject =
-                (await Subject.findOne({ id: subjectDetail?.id })) ||
-                new Subject()
+            let subject: Subject
+            if (subjectDetail.id) {
+                subject =
+                    (await Subject.findOneBy({ id: subjectDetail.id })) ||
+                    new Subject()
+            } else {
+                subject = new Subject()
+            }
 
             checkAdminPermission =
                 checkAdminPermission ||
@@ -1664,12 +1740,19 @@ export class Organization extends CustomBaseEntity {
         const dbPrograms = []
 
         for (const programDetail of programs) {
-            checkUpdatePermission = checkUpdatePermission || !!programDetail?.id
-            checkCreatePermission = checkCreatePermission || !programDetail?.id
+            checkUpdatePermission = checkUpdatePermission || !!programDetail.id
+            checkCreatePermission = checkCreatePermission || !programDetail.id
 
-            const program =
-                (await Program.findOne({ id: programDetail?.id })) ||
-                new Program()
+            let program: Program
+
+            if (programDetail.id) {
+                program =
+                    (await Program.findOneBy({ id: programDetail.id })) ||
+                    new Program()
+            } else {
+                program = new Program()
+            }
+
             checkAdminPermission =
                 checkAdminPermission ||
                 program.system ||
@@ -1776,7 +1859,7 @@ export class Organization extends CustomBaseEntity {
     }
 
     private async inactivateOwnership(manager: EntityManager) {
-        const ownership = await OrganizationOwnership.findOne({
+        const ownership = await OrganizationOwnership.findOneBy({
             organization_id: this.organization_id,
         })
 

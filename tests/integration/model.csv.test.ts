@@ -1518,7 +1518,10 @@ describe('model.csv', () => {
                     arbitraryUserToken
                 )
                 const dbClass = await Class.findOneOrFail({
-                    where: { class_name: 'class1', organization: org },
+                    where: {
+                        class_name: 'class1',
+                        organization: { organization_id: org.organization_id },
+                    },
                     relations: ['programs', 'grades', 'subjects', 'age_ranges'],
                 })
                 const schools = (await dbClass.schools) || []
@@ -1557,7 +1560,9 @@ describe('model.csv', () => {
                         const dbClass = await Class.findOneOrFail({
                             where: {
                                 class_name: 'class1',
-                                organization: org,
+                                organization: {
+                                    organization_id: org.organization_id,
+                                },
                             },
                             relations: [
                                 'programs',
@@ -1871,7 +1876,10 @@ describe('model.csv', () => {
                 )
 
                 const dbSubcategory = await Subcategory.findOneOrFail({
-                    where: { name: 'sc1', organization: org },
+                    where: {
+                        name: 'sc1',
+                        organization: { organization_id: org.organization_id },
+                    },
                 })
 
                 expect(result.filename).eq(filename)

@@ -1,5 +1,5 @@
 import { createQueryBuilder } from 'typeorm'
-import { v4 as uuid_v4 } from 'uuid'
+import { getQueryBuilderKey } from '../utils/typeorm'
 
 // warning: if this query returns a lot of rows it will be very inefficient if used
 // in a COUNT(*) FROM ... WHERE IN (<subquery>) clause
@@ -10,7 +10,7 @@ export function distinctMembers(
     ids: string[]
 ) {
     if (ids.length > 0) {
-        const uniqueId = uuid_v4()
+        const uniqueId = getQueryBuilderKey()
         return createQueryBuilder()
             .select('membership_table.userUserId', 'user_id')
             .from(membershipTable, 'membership_table')

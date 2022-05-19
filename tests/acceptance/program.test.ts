@@ -364,7 +364,10 @@ describe('acceptance.program', () => {
         })
 
         it('has gradesConnection as a child', async () => {
-            const org = await Organization.findOne(orgId)
+            const org =
+                (await Organization.findOneBy({ organization_id: orgId })) ||
+                undefined
+
             const program = await createProgram(org).save()
             const programGrade = await createGrade(org).save()
             await createGrade(org).save()

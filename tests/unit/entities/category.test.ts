@@ -43,7 +43,9 @@ describe('Category', () => {
             })
 
             it('creates the category as not a system category', async () => {
-                const dbCategory = await Category.findOneOrFail(category.id)
+                const dbCategory = await Category.findOneByOrFail({
+                    id: category.id,
+                })
 
                 expect(dbCategory.id).to.eq(category.id)
                 expect(dbCategory.name).to.eq(category.name)
@@ -58,7 +60,9 @@ describe('Category', () => {
             })
 
             it('creates the category', async () => {
-                const dbCategory = await Category.findOneOrFail(category.id)
+                const dbCategory = await Category.findOneByOrFail({
+                    id: category.id,
+                })
 
                 expect(dbCategory.id).to.eq(category.id)
                 expect(dbCategory.name).to.eq(category.name)

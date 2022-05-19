@@ -127,7 +127,9 @@ describe('acceptance.category', () => {
             })
         }
 
-        const org = await Organization.findOneOrFail(orgId)
+        const org = await Organization.findOneByOrFail({
+            organization_id: orgId,
+        })
 
         const subcategories = await Subcategory.save(
             Array.from(new Array(subcategoriesCount), () =>
@@ -501,7 +503,10 @@ describe('acceptance.category', () => {
                 for (const [i, c] of categories.entries()) {
                     expect(c.id).to.eq(input[i].categoryId)
 
-                    const category = await Category.findOneOrFail(c.id)
+                    const category = await Category.findOneByOrFail({
+                        id: c.id,
+                    })
+
                     const categorySubcategories = await category.subcategories
 
                     expect(subcategoryIds.slice(2)).to.deep.equalInAnyOrder(

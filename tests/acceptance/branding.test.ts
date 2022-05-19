@@ -195,7 +195,7 @@ describe('acceptance.branding', () => {
 
         const user2 = await connection
             .getRepository(User)
-            .findOneOrFail({ user_id: user2_id })
+            .findOneByOrFail({ user_id: user2_id })
         const token = generateToken(userToPayload(user2))
         // create organization
         const createOrgResponse = await createOrg(user2_id, token)
@@ -273,7 +273,7 @@ describe('acceptance.branding', () => {
 
         const user2 = await connection
             .getRepository(User)
-            .findOneOrFail({ user_id: user2_id })
+            .findOneByOrFail({ user_id: user2_id })
         const token = generateToken(userToPayload(user2))
         // create organization
         const createOrgResponse = await createOrg(user2_id, token)

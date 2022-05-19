@@ -1,4 +1,4 @@
-import { EntityManager, getManager, In } from 'typeorm'
+import { EntityManager, getManager, In, IsNull } from 'typeorm'
 
 import { Permission } from '../entities/permission'
 import { organizationAdminRole } from '../permissions/organizationAdmin'
@@ -95,7 +95,7 @@ export class RolesInitializer {
                 where: {
                     role_name: In(roleNames),
                     system_role: true,
-                    organization: { organization_id: null },
+                    organization: IsNull(),
                 },
             })
             .then((dbRoles) => {

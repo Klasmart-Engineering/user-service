@@ -1,4 +1,4 @@
-import { Connection, QueryRunner } from 'typeorm'
+import { DataSource, QueryRunner } from 'typeorm'
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel'
 
 /**
@@ -52,9 +52,9 @@ const wrap = (originalQueryRunner: QueryRunner): QueryRunnerWrapper => {
  */
 export default class TransactionalTestContext {
     private queryRunner: QueryRunnerWrapper | null = null
-    private createQueryRunner = Connection.prototype.createQueryRunner
+    private createQueryRunner = DataSource.prototype.createQueryRunner
 
-    constructor(private readonly connection: Connection) {}
+    constructor(private readonly dataSource: DataSource) {}
 
     async start(): Promise<void> {
         if (this.queryRunner) {
@@ -85,7 +85,7 @@ export default class TransactionalTestContext {
     }
 
     private buildWrappedQueryRunner(): QueryRunnerWrapper {
-        const queryRunner = this.connection.createQueryRunner()
+        const queryRunner = this.dataSource.createQueryRunner()
         return wrap(queryRunner)
     }
 
@@ -97,8 +97,8 @@ export default class TransactionalTestContext {
                 'this.queryRunner is undefined so cannot replace createQueryRunner'
             )
         } else {
-            Connection.prototype.createQueryRunner = () => {
-                Connection.prototype
+            DataSource.prototype.createQueryRunner = () => {
+                DataSource.prototype
                 return this.queryRunner as QueryRunnerWrapper
             }
         }
@@ -108,7 +108,7 @@ export default class TransactionalTestContext {
     // For example: in code that uses 2 connections, one using a transaction
     // and depends on the second connection not seeing uncommitted data from the transaction.
     public restoreCreateQueryRunner() {
-        Connection.prototype.createQueryRunner = this.createQueryRunner
+        DataSource.prototype.createQueryRunner = this.createQueryRunner
     }
 
     private async cleanUpResources(): Promise<void> {

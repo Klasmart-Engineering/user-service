@@ -1,4 +1,4 @@
-import { EntityManager, Not } from 'typeorm'
+import { Brackets, EntityManager, Not } from 'typeorm'
 import { Organization } from '../../entities/organization'
 import { Class } from '../../entities/class'
 import { School } from '../../entities/school'
@@ -20,6 +20,7 @@ import { customErrors } from '../../types/errors/customError'
 import { Subject } from '../../entities/subject'
 import { validateAgeRanges } from './validations/ageRange'
 import { AgeRange } from '../../entities/ageRange'
+import { Status } from '../../entities/status'
 import { PermissionName } from '../../permissions/permissionNames'
 import { AcademicTerm } from '../../entities/academicTerm'
 
@@ -134,7 +135,7 @@ export const processClassFromCSVRow = async (
         return rowErrors
     }
 
-    const org = await Organization.findOne({ organization_name })
+    const org = await Organization.findOneBy({ organization_name })
 
     if (!org) {
         addCsvError(
@@ -173,11 +174,12 @@ export const processClassFromCSVRow = async (
         return rowErrors
     }
 
-    const classInDatabase = await Class.findOne({
-        where: { organization: org, class_name },
+    const classInDatabase = await Class.findBy({
+        organization: { organization_id: org.organization_id },
+        class_name,
     })
 
-    if (classInDatabase) {
+    if (classInDatabase.length) {
         addCsvError(
             rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
@@ -196,7 +198,7 @@ export const processClassFromCSVRow = async (
     const classExist = await manager.findOne(Class, {
         where: {
             shortcode: class_shortcode,
-            organization: org,
+            organization: { organization_id: org.organization_id },
             class_name: Not(class_name),
         },
     })
@@ -221,7 +223,10 @@ export const processClassFromCSVRow = async (
 
     // check if class exists in manager
     const classInManager = await manager.findOne(Class, {
-        where: { class_name, organization: org },
+        where: {
+            class_name,
+            organization: { organization_id: org.organization_id },
+        },
     })
 
     let c
@@ -237,7 +242,10 @@ export const processClassFromCSVRow = async (
     const existingSchools = (await c.schools) || []
     if (school_name) {
         const school = await School.findOne({
-            where: { school_name, organization: org },
+            where: {
+                school_name,
+                organization: { organization_id: org.organization_id },
+            },
         })
 
         if (!school) {
@@ -282,7 +290,7 @@ export const processClassFromCSVRow = async (
     }
 
     if (academic_term_name) {
-        const academicTerm = await AcademicTerm.findOne({
+        const academicTerm = await AcademicTerm.findOneBy({
             name: academic_term_name,
         })
         if (!academicTerm) {
@@ -341,12 +349,23 @@ export const processClassFromCSVRow = async (
     let programToAdd
     if (program_name) {
         // does the program belong to organisation or a system program
-        programToAdd = await Program.findOne({
-            where: [
-                { name: program_name, organization: org },
-                { name: program_name, organization: null, system: true },
-            ],
-        })
+        programToAdd = await Program.createQueryBuilder('Program')
+            .leftJoin('Program.organization', 'Organization')
+            .where('name = :programName', { programName: program_name })
+            .andWhere(
+                new Brackets((qb) => {
+                    qb.where('Organization.organization_id = :organizationId', {
+                        organizationId: org.organization_id,
+                    }).orWhere(
+                        new Brackets((qb) => {
+                            qb.where('system = true').andWhere(
+                                'Organization.organization_id IS NULL'
+                            )
+                        })
+                    )
+                })
+            )
+            .getOne()
 
         if (!programToAdd) {
             addCsvError(
@@ -403,12 +422,23 @@ export const processClassFromCSVRow = async (
     const existingGrades = (await c.grades) || []
     if (grade_name) {
         // does the grade belong to organisation or a system grade
-        const gradeToAdd = await Grade.findOne({
-            where: [
-                { name: grade_name, organization: org },
-                { name: grade_name, organization: null, system: true },
-            ],
-        })
+        const gradeToAdd = await Grade.createQueryBuilder('Grade')
+            .leftJoin('Grade.organization', 'Organization')
+            .where('name = :gradeName', { gradeName: grade_name })
+            .andWhere(
+                new Brackets((qb) => {
+                    qb.where('Organization.organization_id = :organizationId', {
+                        organizationId: org.organization_id,
+                    }).orWhere(
+                        new Brackets((qb) => {
+                            qb.where('system = true').andWhere(
+                                'Organization.organization_id IS NULL'
+                            )
+                        })
+                    )
+                })
+            )
+            .getOne()
 
         if (!gradeToAdd) {
             addCsvError(
@@ -454,12 +484,23 @@ export const processClassFromCSVRow = async (
     const existingSubjects = (await c.subjects) || []
     if (subject_name) {
         // does the subject belong to organisation or a system subject
-        const subjectToAdd = await Subject.findOne({
-            where: [
-                { name: subject_name, organization: org },
-                { name: subject_name, organization: null, system: true },
-            ],
-        })
+        const subjectToAdd = await Subject.createQueryBuilder('Subject')
+            .leftJoin('Subject.organization', 'Organization')
+            .where('name = :subjectName', { subjectName: subject_name })
+            .andWhere(
+                new Brackets((qb) => {
+                    qb.where('Organization.organization_id = :organizationId', {
+                        organizationId: org.organization_id,
+                    }).orWhere(
+                        new Brackets((qb) => {
+                            qb.where('system = true').andWhere(
+                                'Organization.organization_id IS NULL'
+                            )
+                        })
+                    )
+                })
+            )
+            .getOne()
 
         if (!subjectToAdd) {
             addCsvError(
@@ -507,30 +548,42 @@ export const processClassFromCSVRow = async (
         const ageRangeName = `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`
 
         // does the age range belong to organisation or a system age range
-        const ageRangeToAdd = await AgeRange.findOne({
-            where: [
-                {
-                    name: ageRangeName,
-                    low_value: age_range_low_value,
-                    high_value: age_range_high_value,
-                    high_value_unit: age_range_unit,
-                    low_value_unit: age_range_unit,
-                    system: false,
-                    status: 'active',
-                    organization: org,
-                },
-                {
-                    name: ageRangeName,
-                    low_value: age_range_low_value,
-                    high_value: age_range_high_value,
-                    high_value_unit: age_range_unit,
-                    low_value_unit: age_range_unit,
-                    system: true,
-                    status: 'active',
-                    organization: null,
-                },
-            ],
-        })
+        const ageRangeToAdd = await AgeRange.createQueryBuilder('AgeRange')
+            .leftJoin('AgeRange.organization', 'Organization')
+            .where('name = :ageRangeName', { ageRangeName })
+            .andWhere('low_value = :lowValue', {
+                lowValue: Number(age_range_low_value),
+            })
+            .andWhere('high_value = :highValue', {
+                highValue: Number(age_range_high_value),
+            })
+            .andWhere('low_value_unit = :lowValueUnit', {
+                lowValueUnit: age_range_unit,
+            })
+            .andWhere('AgeRange.status = :active', {
+                active: Status.ACTIVE,
+            })
+            .andWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        new Brackets((qb2) => {
+                            qb2.where(
+                                'Organization.organization_id = :organizationId',
+                                {
+                                    organizationId: org.organization_id,
+                                }
+                            ).andWhere('system = false')
+                        })
+                    ).orWhere(
+                        new Brackets((qb2) => {
+                            qb2.where(
+                                'Organization.organization_id IS NULL'
+                            ).andWhere('system = true')
+                        })
+                    )
+                })
+            )
+            .getOne()
 
         if (!ageRangeToAdd) {
             addCsvError(

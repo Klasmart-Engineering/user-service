@@ -28,6 +28,7 @@ import { SchoolMembership } from '../../../../src/entities/schoolMembership'
 import { createSchoolMembershipsInManySchools } from '../../../factories/schoolMembership.factory'
 import { getConnection } from 'typeorm'
 import { Status } from '../../../../src/entities/status'
+import { OrganizationMembershipKey } from '../../../../src/utils/resolvers/user'
 
 use(chaiAsPromised)
 
@@ -65,15 +66,16 @@ describe('entityMaps', () => {
             beforeEach(async () => {
                 userInOrg = users[0]
                 organization = await createOrganization().save()
-                const membershipId = OrganizationMembership.getId(
+                const membershipId: OrganizationMembershipKey = OrganizationMembership.getId(
                     await createOrganizationMembership({
                         user: userInOrg,
                         organization,
                     }).save()
                 )
-                membership = await OrganizationMembership.findOneOrFail(
-                    membershipId
-                )
+                membership = await OrganizationMembership.findOneByOrFail({
+                    user_id: membershipId.userId,
+                    organization_id: membershipId.organizationId,
+                })
                 map = await getMap.user(
                     users.map((u) => u.user_id),
                     ['memberships']

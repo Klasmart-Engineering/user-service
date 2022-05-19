@@ -44,7 +44,9 @@ describe('AgeRange', () => {
             })
 
             it('creates the age range as not a system age range', async () => {
-                const dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
+                const dbAgeRange = await AgeRange.findOneByOrFail({
+                    id: ageRange.id,
+                })
 
                 expect(dbAgeRange.id).to.eq(ageRange.id)
                 expect(dbAgeRange.name).to.eq(ageRange.name)
@@ -114,7 +116,9 @@ describe('AgeRange', () => {
             })
 
             it('creates the age range', async () => {
-                const dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
+                const dbAgeRange = await AgeRange.findOneByOrFail({
+                    id: ageRange.id,
+                })
 
                 expect(dbAgeRange.id).to.eq(ageRange.id)
                 expect(dbAgeRange.name).to.eq(ageRange.name)

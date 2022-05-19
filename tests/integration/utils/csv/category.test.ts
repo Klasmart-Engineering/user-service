@@ -19,6 +19,7 @@ import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -86,13 +87,15 @@ describe('processCategoryFromCSVRow', () => {
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
-                    status: 'active',
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: {
+                        organization_id: organization.organization_id,
+                    },
                 },
             })
 
-            expect(category).to.be.undefined
+            expect(category).to.be.null
         })
     })
 
@@ -120,13 +123,15 @@ describe('processCategoryFromCSVRow', () => {
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
-                    status: 'active',
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: {
+                        organization_id: organization.organization_id,
+                    },
                 },
             })
 
-            expect(category).to.be.undefined
+            expect(category).to.be.null
         })
     })
 
@@ -154,13 +159,15 @@ describe('processCategoryFromCSVRow', () => {
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
-                    status: 'active',
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: {
+                        organization_id: organization.organization_id,
+                    },
                 },
             })
 
-            expect(category).to.be.undefined
+            expect(category).to.be.null
         })
     })
 
@@ -188,13 +195,15 @@ describe('processCategoryFromCSVRow', () => {
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
-                    status: 'active',
+                    status: Status.ACTIVE,
                     system: false,
-                    organization,
+                    organization: {
+                        organization_id: organization.organization_id,
+                    },
                 },
             })
 
-            expect(category).to.be.undefined
+            expect(category).to.be.null
         })
     })
 
@@ -233,9 +242,11 @@ describe('processCategoryFromCSVRow', () => {
                 const category = await Category.findOne({
                     where: {
                         name: row.category_name,
-                        status: 'active',
+                        status: Status.ACTIVE,
                         system: false,
-                        organization,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
@@ -258,9 +269,11 @@ describe('processCategoryFromCSVRow', () => {
                 const category = await Category.findOneOrFail({
                     where: {
                         name: row.category_name,
-                        status: 'active',
+                        status: Status.ACTIVE,
                         system: false,
-                        organization,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
@@ -305,9 +318,11 @@ describe('processCategoryFromCSVRow', () => {
                 const category = await Category.findOneOrFail({
                     where: {
                         name: row.category_name,
-                        status: 'active',
+                        status: Status.ACTIVE,
                         system: false,
-                        organization,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
                     },
                 })
 
