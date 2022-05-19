@@ -1,6 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { SelectQueryBuilder } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { Role } from '../entities/role'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import { logger } from '../logging'
@@ -115,6 +116,9 @@ export async function usersConnectionQuery(
         ) {
             scope.innerJoin('User.memberships', 'OrganizationMembership')
         }
+        if (filterHasProperty('roleId', filter) && !scopeHasJoin(scope, Role)) {
+            scope.innerJoin('OrganizationMembership.roles', 'Role')
+        }
         if (filterHasProperty('roleId', filter)) {
             scope.innerJoin(
                 'OrganizationMembership.roles',
@@ -171,6 +175,7 @@ export async function usersConnectionQuery(
                 },
                 classStudyingId: 'ClassStudying.class_id',
                 classTeachingId: 'ClassTeaching.class_id',
+                roleId: 'Role.role_id',
             })
         )
     }
