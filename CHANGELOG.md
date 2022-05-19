@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.4.0](https://github.com/KL-Engineering/user-service/compare/v4.3.0...v4.4.0) (2022-05-06)
+
+
+### Features
+
+* **AD-2493:** renumbering permissions ([780644f](https://github.com/KL-Engineering/user-service/commit/780644f6ef49ef9f98046e241b3b50cf5705743b))
+
+
+### Reversions
+
+* **AD-2472:** reverting removal of unused permission ad-2144 ([bcc160d](https://github.com/KL-Engineering/user-service/commit/bcc160de9fd97b084242a0aba85d8305ecc4344a))
+* **AD-2479:** revert protect users access via class ad-2305 ([dca8042](https://github.com/KL-Engineering/user-service/commit/dca8042b86c970f0117ee3c45b1b26dd72428829))
+* **AD-2496:** revert fix for enabling Teachers to view School Admins ad-2081 ([29c4508](https://github.com/KL-Engineering/user-service/commit/29c45089075fcc385dcae48632bb04a17cabe113))
+
 ## [4.3.0](https://github.com/KL-Engineering/user-service/compare/v4.2.1...v4.3.0) (2022-04-21)
 
 
