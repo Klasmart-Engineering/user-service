@@ -24,7 +24,7 @@ import { objectToKey, ObjMap } from '../stringUtils'
 export interface EntityMap<EntityType extends CustomBaseEntity> {
     mainEntity?: Map<string, EntityType>
     [key: string]:
-        | Map<string, CustomBaseEntity | CustomBaseEntity[]>
+        | Map<string, CustomBaseEntity | CustomBaseEntity[] | string | string[]>
         | ObjMap<{ [key: string]: string }, unknown>
         | CustomBaseEntity
         | CustomBaseEntity[]

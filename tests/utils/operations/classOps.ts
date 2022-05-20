@@ -451,6 +451,14 @@ export const SET_ACADEMIC_TERMS_OF_CLASSES = gql`mutation($input: [SetAcademicTe
     }
 }`
 
+export const ADD_AGE_RANGES_TO_CLASSES = gql`
+    mutation AddAgeRangesToClasses($input: [AddAgeRangesToClassInput!]!) {
+        addAgeRangesToClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export async function updateClass(
     testClient: ApolloServerTestClient,
     classId: string,

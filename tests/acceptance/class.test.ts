@@ -19,6 +19,7 @@ import {
     RemoveStudentsFromClassInput,
     RemoveTeachersFromClassInput,
     UpdateClassInput,
+    AddAgeRangesToClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
@@ -55,6 +56,7 @@ import {
     CLASSES,
     CLASSES_STUDENTS,
     CLASSES_TEACHERS,
+    ADD_AGE_RANGES_TO_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASS_NODE,
@@ -101,6 +103,8 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createSchools } from '../factories/school.factory'
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { compareMultipleEntityFields } from '../utils/assertions'
+import { AgeRange } from '../../src/entities/ageRange'
+import { createAgeRange } from '../factories/ageRange.factory'
 
 use(deepEqualInAnyOrder)
 
@@ -2059,6 +2063,66 @@ describe('acceptance.class', () => {
             const studentsToIds = studentsTo.map((u) => u.user_id)
             expect(studentsFrom.length).to.equal(0)
             expect(studentsToIds).to.deep.equalInAnyOrder(checkIds)
+        })
+    })
+
+    context('addAgeRangesToClasses', () => {
+        let input: AddAgeRangesToClassInput[]
+        let activeClass: Class
+        let activeClassAgeRange: AgeRange
+        let orgAgeRange: AgeRange
+
+        beforeEach(async () => {
+            activeClass = (
+                await connection.manager.find(Class, {
+                    where: { class_id: In(class1Ids), status: Status.ACTIVE },
+                })
+            )[0]
+            activeClassAgeRange = createAgeRange(await activeClass.organization)
+            activeClass.age_ranges = Promise.resolve([activeClassAgeRange])
+            await activeClassAgeRange.save()
+            await activeClass.save()
+            orgAgeRange = createAgeRange(await activeClass.organization)
+            await orgAgeRange.save()
+
+            input = [
+                {
+                    classId: activeClass.class_id,
+                    ageRangeIds: [orgAgeRange.id],
+                },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_AGE_RANGES_TO_CLASSES),
+                { input },
+                getAdminAuthToken()
+            )
+
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.be.undefined
+            expect(
+                response.body.data.addAgeRangesToClasses.classes
+            ).to.have.lengthOf(input.length)
+        })
+
+        it('has mandatory className input field', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_AGE_RANGES_TO_CLASSES),
+                { input: [{}] },
+                getAdminAuthToken()
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "ageRangeIds" of required type "[ID!]!" was not provided.'
+            )
         })
     })
 })
