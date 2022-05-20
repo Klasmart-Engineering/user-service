@@ -7,6 +7,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    RelationId,
     Unique,
 } from 'typeorm'
 import { AgeRangeUnit } from './ageRangeUnit'
@@ -54,6 +55,9 @@ export class AgeRange extends CustomBaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @RelationId((ageRange: AgeRange) => ageRange.organization)
+    public readonly organization_id?: string
 
     @ManyToMany(() => Class, (cl) => cl.age_ranges)
     public classes?: Promise<Class[]>
