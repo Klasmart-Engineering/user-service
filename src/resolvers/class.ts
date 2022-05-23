@@ -15,6 +15,7 @@ import {
     MoveUsersToClassInput,
     MoveUsersToClassMutationResult,
     AddAgeRangesToClassInput,
+    RemoveSubjectsFromClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { Class } from '../entities/class'
@@ -68,6 +69,7 @@ import { AcademicTerm } from '../entities/academicTerm'
 import { School } from '../entities/school'
 import { customErrors } from '../types/errors/customError'
 import { AgeRange } from '../entities/ageRange'
+import { Subject } from '../entities/subject'
 
 export class DeleteClasses extends DeleteMutation<
     Class,
@@ -2359,5 +2361,177 @@ export class AddAgeRangesToClasses extends AddMutation<
 
     protected buildOutput = async (currentClass: Class): Promise<void> => {
         this.output.classes.push(mapClassToClassConnectionNode(currentClass))
+    }
+}
+
+export interface RemoveSubjectsClassesEntityMap extends EntityMap<Class> {
+    mainEntity: Map<string, Class>
+    subjects: Map<string, Subject>
+    classesSubjects: Map<string, Subject[]>
+    organizationIds: string[]
+    schoolIds: string[]
+}
+
+export class RemoveSubjectsFromClasses extends RemoveMutation<
+    Class,
+    RemoveSubjectsFromClassInput,
+    ClassesMutationResult,
+    RemoveSubjectsClassesEntityMap
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'RemoveSubjectsFromClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: RemoveSubjectsFromClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    generateEntityMaps = async (
+        input: RemoveSubjectsFromClassInput[]
+    ): Promise<RemoveSubjectsClassesEntityMap> => {
+        const classIds = input.map((i) => i.classId)
+        const classMap = await getMap.class(classIds, [
+            'organization',
+            'subjects',
+            'schools',
+        ])
+        const organizationIds = await Promise.all(
+            Array.from(classMap.values()).map(
+                async (c) => (await c.organization!).organization_id
+            )
+        )
+        const subjectIds = input.flatMap((i) => i.subjectIds)
+        const subjectMap = getMap.subject(subjectIds)
+        const classesSubjects = new Map<string, Subject[]>()
+        const schoolIds: Set<string> = new Set()
+        for (const class_ of classMap.values()) {
+            // eslint-disable-next-line no-await-in-loop
+            const schools = (await class_.schools) ?? []
+            for (const school of schools) {
+                schoolIds.add(school.school_id)
+            }
+            // eslint-disable-next-line no-await-in-loop
+            const subjects = (await class_.subjects) || []
+            classesSubjects.set(class_.class_id, subjects)
+        }
+
+        return {
+            mainEntity: classMap,
+            subjects: await subjectMap,
+            classesSubjects,
+            organizationIds,
+            schoolIds: Array.from(schoolIds),
+        }
+    }
+
+    async authorize(
+        input: RemoveSubjectsFromClassInput[],
+        maps: RemoveSubjectsClassesEntityMap
+    ): Promise<void> {
+        const permissionContext = {
+            organization_ids: maps.organizationIds,
+            school_ids: maps.schoolIds,
+        }
+        return this.permissions.rejectIfNotAllowed(
+            permissionContext,
+            PermissionName.edit_class_20334
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: RemoveSubjectsFromClassInput[]
+    ): {
+        validInputs: { index: number; input: RemoveSubjectsFromClassInput }[]
+        apiErrors: APIError[]
+    } {
+        const classIdErrorMap = validateNoDuplicate(
+            inputs.map((cls) => cls.classId),
+            this.inputTypeName,
+            ['classId']
+        )
+
+        const subjectIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'subjectIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            classIdErrorMap,
+            ...subjectIdsErrorMap,
+        ])
+    }
+
+    validate = (
+        index: number,
+        currentEntity: Class,
+        currentInput: RemoveSubjectsFromClassInput,
+        maps: RemoveSubjectsClassesEntityMap
+    ): APIError[] => {
+        const errors: APIError[] = []
+        const { classId, subjectIds } = currentInput
+
+        const classes = flagNonExistent(
+            Class,
+            index,
+            [classId],
+            maps.mainEntity
+        )
+        errors.push(...classes.errors)
+
+        const subjects = flagNonExistent(
+            Subject,
+            index,
+            subjectIds,
+            maps.subjects
+        )
+        errors.push(...subjects.errors)
+
+        const currentClassSubjects = new Map(
+            maps.classesSubjects.get(classId)?.map((s) => [s.id, s])
+        )
+
+        const subjectInClassErrors = flagNonExistentChild(
+            Class,
+            Subject,
+            index,
+            classId,
+            subjectIds,
+            new Set(
+                Array.from(currentClassSubjects.values()).map(
+                    (subject) => subject.id
+                )
+            )
+        )
+
+        errors.push(...subjectInClassErrors)
+
+        return errors
+    }
+
+    process(
+        currentInput: RemoveSubjectsFromClassInput,
+        maps: RemoveSubjectsClassesEntityMap,
+        index: number
+    ) {
+        const { classId, subjectIds } = currentInput
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+        const subjectIdsToRemove = new Set(subjectIds)
+        const preExistentSubjects = maps.classesSubjects.get(classId)!
+
+        const keptSubjects = preExistentSubjects.filter(
+            (subject) => !subjectIdsToRemove.has(subject.id)
+        )
+        currentEntity.subjects = Promise.resolve(keptSubjects)
+        return { outputEntity: currentEntity }
+    }
+
+    protected buildOutput = async (currentEntity: Class): Promise<void> => {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
     }
 }

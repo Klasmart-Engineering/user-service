@@ -459,6 +459,14 @@ export const ADD_AGE_RANGES_TO_CLASSES = gql`
     }
 `
 
+export const REMOVE_SUBJECTS_FROM_CLASSES = gql`
+    mutation myMutation($input: [RemoveSubjectsFromClassInput!]!) {
+        removeSubjectsFromClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export async function updateClass(
     testClient: ApolloServerTestClient,
     classId: string,

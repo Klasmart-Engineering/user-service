@@ -25,6 +25,7 @@ import {
     moveUsersToClass,
     moveUsersTypeToClass,
     AddAgeRangesToClasses,
+    RemoveSubjectsFromClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -91,6 +92,9 @@ const typeDefs = gql`
         moveTeachersToClass(
             input: MoveUsersToClassInput
         ): MoveUsersToClassMutationResult
+        removeSubjectsFromClasses(
+            input: [RemoveSubjectsFromClassInput!]!
+        ): ClassesMutationResult
     }
 
     type ClassConnectionNode {
@@ -364,6 +368,11 @@ const typeDefs = gql`
     input AddAgeRangesToClassInput {
         classId: ID!
         ageRangeIds: [ID!]!
+    }
+
+    input RemoveSubjectsFromClassInput {
+        classId: ID!
+        subjectIds: [ID!]!
     }
 `
 
@@ -643,6 +652,8 @@ export default function getDefault(
                     ),
                 addAgeRangesToClasses: (_parent, args, ctx, _info) =>
                     mutate(AddAgeRangesToClasses, args, ctx.permissions),
+                removeSubjectsFromClasses: (_parent, args, ctx) =>
+                    mutate(RemoveSubjectsFromClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args, ctx): Promise<Class | undefined> =>

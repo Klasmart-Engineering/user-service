@@ -95,3 +95,8 @@ export interface MoveUsersToClassMutationResult {
     fromClass: ClassConnectionNode
     toClass: ClassConnectionNode
 }
+
+export interface RemoveSubjectsFromClassInput {
+    classId: string
+    subjectIds: string[]
+}
