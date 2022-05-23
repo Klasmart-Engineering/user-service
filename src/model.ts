@@ -396,17 +396,44 @@ export class Model {
         return users
     }
 
-    public async setOrganization({
-        organization_id,
-        organization_name,
-        address1,
-        address2,
-        phone,
-        shortCode,
-    }: Organization) {
-        const organization = await this.organizationRepository.findOneByOrFail({
+    public async setOrganization(
+        {
             organization_id,
+            organization_name,
+            address1,
+            address2,
+            phone,
+            shortCode,
+            scope,
+        }: Pick<
+            Organization,
+            | 'organization_id'
+            | 'organization_name'
+            | 'address1'
+            | 'address2'
+            | 'phone'
+            | 'shortCode'
+        > & { scope: SelectQueryBuilder<Organization> },
+        ctx: Context
+    ) {
+        const organization = await this.getOrganization({
+            organization_id,
+            scope,
         })
+
+        const willEditOrg =
+            organization_name || address1 || address2 || phone || shortCode
+
+        if (!willEditOrg || !organization) return organization
+
+        await ctx.permissions.rejectIfNotAllowedMany(
+            organization_id,
+            [
+                PermissionName.edit_this_organization_10330,
+                PermissionName.edit_my_organization_10331,
+            ],
+            'OR'
+        )
 
         if (organization_name !== undefined) {
             organization.organization_name = organization_name
@@ -427,10 +454,19 @@ export class Model {
         await this.manager.save(organization)
         return organization
     }
-    public async getOrganization(organization_id: string) {
-        const organization = await this.organizationRepository.findOneBy({
-            organization_id,
-        })
+    public async getOrganization({
+        organization_id,
+        scope,
+    }: {
+        organization_id: string
+        scope: SelectQueryBuilder<Organization>
+    }) {
+        const organization = await scope
+            .andWhere('Organization.organization_id = :organization_id', {
+                organization_id,
+            })
+            .getOne()
+
         return organization
     }
 

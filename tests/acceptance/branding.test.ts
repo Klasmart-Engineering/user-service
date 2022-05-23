@@ -36,8 +36,8 @@ const GET_ORGANIZATION = `
 `
 
 const CREATE_ORGANIZATION = `
-    mutation {
-        user(user_id: "${user_id}") {
+    mutation myMutation($user_id: ID!) {
+        user(user_id: $user_id) {
             createOrganization(organization_name: "${org_name}") {
                 organization_id
                 organization_name
@@ -220,7 +220,7 @@ describe('acceptance.branding', () => {
             orgId,
             primaryColor,
             imagePath,
-            getAdminAuthToken()
+            token
         )
 
         expect(setBrandingResponse.status).to.eq(200)
@@ -241,7 +241,7 @@ describe('acceptance.branding', () => {
             .post('/graphql')
             .set({
                 ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
+                Authorization: token,
             })
             .send({
                 query: DELETE_BRANDING_IMAGE,
@@ -297,7 +297,7 @@ describe('acceptance.branding', () => {
             orgId,
             primaryColor,
             imagePath,
-            getAdminAuthToken()
+            token
         )
 
         expect(setBrandingResponse.status).to.eq(200)
@@ -319,7 +319,7 @@ describe('acceptance.branding', () => {
             .post('/graphql')
             .set({
                 ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
+                Authorization: token,
             })
             .send({
                 query: DELETE_BRANDING_COLOR,

@@ -82,3 +82,17 @@ export function compareMultipleEntityFields<T extends ComparableTypes>(
         compareEntityFields(objects[i], expectedObjects[i], fields)
     }
 }
+
+/**
+ * Does a field-by-field comparison of two objects,
+ * where one is a partial version of the other.
+ * Only compares the fields that are present in the partial object.
+ */
+export function compareEntityToPartial<T extends ComparableTypes>(
+    fullObject: T,
+    partialObject: Partial<T>
+) {
+    for (const field in partialObject) {
+        expect(fullObject[field]).to.equal(partialObject[field])
+    }
+}

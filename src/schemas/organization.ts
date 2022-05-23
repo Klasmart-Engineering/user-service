@@ -33,6 +33,7 @@ const typeDefs = gql`
 
     extend type Query {
         organization(organization_id: ID!): Organization
+            @isAdmin(entity: "organization")
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
@@ -89,7 +90,7 @@ const typeDefs = gql`
             address2: String
             phone: String
             shortCode: String
-        ): Organization
+        ): Organization @isAdmin(entity: "organization")
         uploadOrganizationsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateOrganizations: Boolean @isAdmin
@@ -606,8 +607,8 @@ export default function getDefault(
                     ),
                 deleteUsersFromOrganizations: (_parent, args, ctx) =>
                     mutate(DeleteUsersFromOrganizations, args, ctx.permissions),
-                organization: (_parent, args, _context, _info) =>
-                    model.setOrganization(args),
+                organization: (_parent, args, ctx, _info) =>
+                    model.setOrganization(args, ctx),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>
                     Model.uploadOrganizationsFromCSV(args, ctx),
                 renameDuplicateOrganizations: (_parent, args, ctx, info) =>
@@ -622,8 +623,8 @@ export default function getDefault(
             Query: {
                 organizations: (_parent, args, _context, _info) =>
                     model.getOrganizations(args),
-                organization: (_parent, { organization_id }, _context, _info) =>
-                    model.getOrganization(organization_id),
+                organization: (_parent, args, _context, _info) =>
+                    model.getOrganization(args),
                 organizationsConnection: (
                     _parent,
                     args,
