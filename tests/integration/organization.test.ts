@@ -204,14 +204,17 @@ describe('organization', () => {
             })
 
             it('returns null and database entry is not modified', async () => {
-                const gqlOrg = await updateOrganization(
+                const gqlOrg = updateOrganization(
                     testClient,
                     organizationId,
                     mods,
                     { authorization: arbitraryUserToken }
                 )
 
-                expect(gqlOrg).to.be.null
+                await expect(gqlOrg).to.be.rejectedWith(
+                    "Cannot read properties of null (reading 'set')"
+                )
+
                 const dbOrg = await Organization.findOneByOrFail({
                     organization_id: organizationId,
                 })
@@ -7048,20 +7051,6 @@ describe('organization', () => {
                 organization.organization_id,
                 { authorization: getAdminAuthToken() }
             )
-        })
-
-        context('when not authenticated', () => {
-            it('returns an empty array', async () => {
-                const gqlClasses = await listClasses(
-                    testClient,
-                    organization.organization_id,
-                    {
-                        authorization: arbitraryUserToken,
-                    }
-                )
-
-                expect(gqlClasses).to.deep.equal([])
-            })
         })
 
         context('when authenticated', () => {

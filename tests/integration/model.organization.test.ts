@@ -1,25 +1,38 @@
 import { stub, restore } from 'sinon'
 
-import { expect } from 'chai'
-import { getConnection } from 'typeorm'
+import { expect, use } from 'chai'
+import { getConnection, SelectQueryBuilder } from 'typeorm'
 import { Model } from '../../src/model'
 import { TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Organization } from '../../src/entities/organization'
-import { createOrganizationAndValidate } from '../utils/operations/userOps'
+import {
+    createOrganizationAndValidate,
+    userToPayload,
+} from '../utils/operations/userOps'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 import { CloudStorageUploader } from '../../src/services/cloudStorageUploader'
-import { accountUUID } from '../../src/entities/user'
+import { accountUUID, User } from '../../src/entities/user'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { setBranding } from '../utils/operations/brandingOps'
 import fs from 'fs'
 import { resolve } from 'path'
 import { createOrganization } from '../factories/organization.factory'
 import { BrandingResult } from '../../src/types/graphQL/branding'
+import faker from 'faker'
+import {
+    createAdminUser as adminFactory,
+    createUser,
+} from '../factories/user.factory'
+import { createEntityScope } from '../../src/directives/isAdmin'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import chaiAsPromised from 'chai-as-promised'
+import { Context } from '../../src/main'
+import { compareEntityToPartial } from '../utils/assertions'
 
 const GET_ORGANIZATIONS = `
     query getOrganizations {
@@ -47,20 +60,7 @@ const GET_ORGANIZATION = `
     }
 `
 
-const RESET_ORGANIZATION_ROLES_PERMISSIONS = `
-    mutation resetOrganizationRolesPermissions($organization_id: ID!) {
-        organization(organization_id: $organization_id) {
-            resetDefaultRolesPermissions {
-                role_id
-                role_name
-                permissions {
-                    permission_name
-                    role_id
-                }
-            }
-        }
-    }
-`
+use(chaiAsPromised)
 
 describe('model.organization', () => {
     let connection: TestConnection
@@ -181,6 +181,15 @@ describe('model.organization', () => {
     })
 
     describe('getOrganization', () => {
+        let organization: Organization
+        let adminToken: string
+
+        beforeEach(async () => {
+            const adminUser = await adminFactory().save()
+            organization = await createOrganization(adminUser).save()
+            adminToken = generateToken(userToPayload(adminUser))
+        })
+
         context('when none', () => {
             it('should return null', async () => {
                 const { query } = testClient
@@ -188,7 +197,7 @@ describe('model.organization', () => {
                 const res = await query({
                     query: GET_ORGANIZATION,
                     variables: { organization_id: accountUUID() },
-                    headers: { authorization: getAdminAuthToken() },
+                    headers: { authorization: adminToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
@@ -197,16 +206,6 @@ describe('model.organization', () => {
         })
 
         context('when one', () => {
-            let organization: Organization
-
-            beforeEach(async () => {
-                const user = await createAdminUser(testClient)
-                organization = await createOrganizationAndValidate(
-                    testClient,
-                    user.user_id
-                )
-            })
-
             it('should return an array containing one organization', async () => {
                 const { query } = testClient
 
@@ -215,7 +214,7 @@ describe('model.organization', () => {
                     variables: {
                         organization_id: organization.organization_id,
                     },
-                    headers: { authorization: getAdminAuthToken() },
+                    headers: { authorization: adminToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
@@ -227,13 +226,9 @@ describe('model.organization', () => {
             })
 
             context('branding', () => {
-                let arbitraryUserToken: string
-
                 beforeEach(async () => {
                     restore()
-
                     await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                 })
 
                 const primaryColor = '#cd657b'
@@ -251,7 +246,7 @@ describe('model.organization', () => {
                         'image/png',
                         '7bit',
                         primaryColor,
-                        { authorization: getAdminAuthToken() }
+                        { authorization: adminToken }
                     )
                     const { query } = testClient
 
@@ -260,7 +255,7 @@ describe('model.organization', () => {
                         variables: {
                             organization_id: organization.organization_id,
                         },
-                        headers: { authorization: getAdminAuthToken() },
+                        headers: { authorization: adminToken },
                     })
 
                     const data = res.data?.organization
@@ -283,7 +278,7 @@ describe('model.organization', () => {
                         'image/png',
                         '7bit',
                         primaryColor,
-                        { authorization: getAdminAuthToken() }
+                        { authorization: adminToken }
                     )
 
                     let res = await query({
@@ -291,7 +286,7 @@ describe('model.organization', () => {
                         variables: {
                             organization_id: organization.organization_id,
                         },
-                        headers: { authorization: getAdminAuthToken() },
+                        headers: { authorization: adminToken },
                     })
 
                     let data = res.data?.organization
@@ -312,7 +307,7 @@ describe('model.organization', () => {
                         'image/jpeg',
                         '7bit',
                         primaryColor,
-                        { authorization: getAdminAuthToken() }
+                        { authorization: adminToken }
                     )
 
                     res = await query({
@@ -320,13 +315,129 @@ describe('model.organization', () => {
                         variables: {
                             organization_id: organization.organization_id,
                         },
-                        headers: { authorization: getAdminAuthToken() },
+                        headers: { authorization: adminToken },
                     })
 
                     data = res.data?.organization
                     expect(data.branding.primaryColor).to.eq(primaryColor)
                     expect(branding.iconImageURL).to.match(/.*\.jpg$/)
                 })
+            })
+        })
+
+        context('when not authorized', () => {
+            let model: Model
+            let scope: SelectQueryBuilder<Organization>
+
+            beforeEach(async () => {
+                const nonAdmin = await createUser().save()
+                const permissions = new UserPermissions(userToPayload(nonAdmin))
+                model = new Model(connection)
+                scope = (await createEntityScope({
+                    permissions,
+                    entity: 'organization',
+                })) as SelectQueryBuilder<Organization>
+            })
+
+            it('should return null', async () => {
+                const orgResult = await model.getOrganization({
+                    organization_id: organization.organization_id,
+                    scope,
+                })
+
+                expect(orgResult).to.be.null
+            })
+        })
+    })
+
+    describe('setOrganization', () => {
+        type SetOrganizationArgs = Pick<
+            Organization,
+            | 'organization_id'
+            | 'organization_name'
+            | 'address1'
+            | 'address2'
+            | 'phone'
+            | 'shortCode'
+        > & { scope: SelectQueryBuilder<Organization> }
+
+        let organization: Organization
+        let model: Model
+        let ctx: Context
+        let mutationArgs: SetOrganizationArgs
+
+        beforeEach(async () => {
+            const adminUser = await adminFactory().save()
+            organization = await createOrganization(adminUser).save()
+            model = new Model(connection)
+
+            const permissions = new UserPermissions(userToPayload(adminUser))
+            ctx = { permissions } as Context
+            const scope = (await createEntityScope({
+                permissions,
+                entity: 'organization',
+            })) as SelectQueryBuilder<Organization>
+
+            mutationArgs = {
+                organization_id: organization.organization_id,
+                organization_name: faker.name.findName(),
+                address1: faker.address.streetAddress(),
+                address2: faker.address.streetAddress(),
+                phone: faker.phone.phoneNumber('+44#######'),
+                shortCode: 'N3W5H0R7',
+                scope,
+            }
+        })
+
+        context('when none', () => {
+            it('should return null', async () => {
+                const nonExistentOrgId = accountUUID()
+                mutationArgs.organization_id = nonExistentOrgId
+
+                const orgResult = await model.setOrganization(mutationArgs, ctx)
+                expect(orgResult).to.be.null
+            })
+        })
+
+        context('when one', () => {
+            it('should return an array containing the organization with its new data', async () => {
+                const orgResult = await model.setOrganization(mutationArgs, ctx)
+
+                // Getting out scope prop, beacuse it doesn't exist for Organization
+                const { scope, ...args } = mutationArgs
+                expect(orgResult).to.exist
+                compareEntityToPartial(orgResult!, args)
+
+                const orgDB = await Organization.findOneByOrFail({
+                    organization_id: mutationArgs.organization_id,
+                })
+                expect(orgDB).to.exist
+                compareEntityToPartial(orgDB, args)
+            })
+        })
+
+        context('when not authorized', () => {
+            let nonAuthorizedUser: User
+            let nonAuthorizedCtx: Context
+
+            beforeEach(async () => {
+                nonAuthorizedUser = await createUser().save()
+                const permissions = new UserPermissions(
+                    userToPayload(nonAuthorizedUser)
+                )
+
+                nonAuthorizedCtx = { permissions } as Context
+            })
+
+            it('should return error', async () => {
+                const orgResult = model.setOrganization(
+                    mutationArgs,
+                    nonAuthorizedCtx
+                )
+
+                await expect(orgResult).to.be.rejectedWith(
+                    `User(${nonAuthorizedUser.user_id}) does not have Permission(edit_this_organization_10330 OR edit_my_organization_10331) in Organization(${mutationArgs.organization_id})`
+                )
             })
         })
     })
