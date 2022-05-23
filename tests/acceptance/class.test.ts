@@ -20,6 +20,7 @@ import {
     RemoveTeachersFromClassInput,
     UpdateClassInput,
     AddAgeRangesToClassInput,
+    RemoveSubjectsFromClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
@@ -57,6 +58,7 @@ import {
     CLASSES_STUDENTS,
     CLASSES_TEACHERS,
     ADD_AGE_RANGES_TO_CLASSES,
+    REMOVE_SUBJECTS_FROM_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASS_NODE,
@@ -105,6 +107,7 @@ import { createRole as createRoleFactory } from '../factories/role.factory'
 import { compareMultipleEntityFields } from '../utils/assertions'
 import { AgeRange } from '../../src/entities/ageRange'
 import { createAgeRange } from '../factories/ageRange.factory'
+import { createSubjects as createSubjectsFactory } from '../factories/subject.factory'
 
 use(deepEqualInAnyOrder)
 
@@ -2122,6 +2125,62 @@ describe('acceptance.class', () => {
             )
             expect(response.body.errors[1].message).to.contain(
                 'Field "ageRangeIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('removeSubjectsFromClasses', () => {
+        let adminUser: User
+        let input: RemoveSubjectsFromClassInput[]
+        let classes: Class[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const subjects = createSubjectsFactory(2)
+            await connection.manager.save(subjects)
+            classes = createClasses(2, org)
+            await connection.manager.save(classes)
+            classes[0].subjects = Promise.resolve([subjects[0], subjects[1]])
+            classes[1].subjects = Promise.resolve([subjects[0], subjects[1]])
+            await connection.manager.save(classes)
+            input = []
+            for (const class_ of classes) {
+                input.push({
+                    classId: class_.class_id,
+                    subjectIds: subjects.map((s) => s.id),
+                })
+            }
+        })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_SUBJECTS_FROM_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.removeSubjectsFromClasses.classes
+            expect(resClasses).to.have.length(classes.length)
+            expect(response.body.errors).to.be.undefined
+        })
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_SUBJECTS_FROM_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "subjectIds" of required type "[ID!]!" was not provided.'
             )
         })
     })
