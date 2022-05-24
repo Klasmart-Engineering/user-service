@@ -17,6 +17,7 @@ import {
     AddAgeRangesToClassInput,
     RemoveSubjectsFromClassInput,
     RemoveAgeRangesFromClassInput,
+    AddSubjectsToClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { Class } from '../entities/class'
@@ -2669,6 +2670,198 @@ export class RemoveSubjectsFromClasses extends RemoveMutation<
             (subject) => !subjectIdsToRemove.has(subject.id)
         )
         currentEntity.subjects = Promise.resolve(keptSubjects)
+        return { outputEntity: currentEntity }
+    }
+
+    protected buildOutput = async (currentEntity: Class): Promise<void> => {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
+    }
+}
+
+export interface AddSubjectsClassesEntityMap extends EntityMap<Class> {
+    mainEntity: Map<string, Class>
+    subjects: Map<string, Subject>
+    classesSubjects: Map<string, Subject[]>
+    organizationIds: string[]
+    subjectsOrgs: Map<string, string>
+}
+
+export class AddSubjectsToClasses extends AddMutation<
+    Class,
+    AddSubjectsToClassInput,
+    ClassesMutationResult,
+    AddSubjectsClassesEntityMap
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'AddSubjectsToClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: AddSubjectsToClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    generateEntityMaps = async (
+        input: AddSubjectsToClassInput[]
+    ): Promise<AddSubjectsClassesEntityMap> => {
+        const classMap = await getMap.class(this.mainEntityIds, [
+            'organization',
+            'subjects',
+        ])
+        const subjectIds = input.flatMap((i) => i.subjectIds)
+        const subjectsMap = await getMap.subject(subjectIds, ['organization'])
+        const subjectsOrgs = new Map<string, string>()
+        for (const subject of subjectsMap.values()) {
+            // eslint-disable-next-line no-await-in-loop
+            const subjectOrgId = (await subject.organization)?.organization_id
+            if (subjectOrgId) {
+                subjectsOrgs.set(subject.id, subjectOrgId)
+            }
+        }
+
+        const organizationIds: string[] = []
+        const classesSubjects = new Map<string, Subject[]>()
+        for (const class_ of classMap.values()) {
+            // eslint-disable-next-line no-await-in-loop
+            const subjects = (await class_.subjects) || []
+            classesSubjects.set(class_.class_id, subjects)
+            if (class_.organization_id) {
+                organizationIds.push(class_.organization_id)
+            }
+        }
+
+        return {
+            mainEntity: classMap,
+            subjects: subjectsMap,
+            classesSubjects,
+            organizationIds,
+            subjectsOrgs,
+        }
+    }
+
+    async authorize(
+        input: AddSubjectsToClassInput[],
+        maps: AddSubjectsClassesEntityMap
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.organizationIds },
+            PermissionName.edit_class_20334
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: AddSubjectsToClassInput[],
+        entityMaps: AddSubjectsClassesEntityMap
+    ): {
+        validInputs: { index: number; input: AddSubjectsToClassInput }[]
+        apiErrors: APIError[]
+    } {
+        const classIdErrorMap = validateActiveAndNoDuplicates(
+            inputs,
+            entityMaps,
+            inputs.map((cls) => cls.classId),
+            this.EntityType.name,
+            this.inputTypeName,
+            'classId'
+        )
+
+        const subjectIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'subjectIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            ...classIdErrorMap,
+            ...subjectIdsErrorMap,
+        ])
+    }
+
+    validate = (
+        index: number,
+        currentEntity: Class,
+        currentInput: AddSubjectsToClassInput,
+        maps: AddSubjectsClassesEntityMap
+    ): APIError[] => {
+        const errors: APIError[] = []
+        const { classId, subjectIds } = currentInput
+
+        const classes = flagNonExistent(
+            Class,
+            index,
+            [classId],
+            maps.mainEntity
+        )
+        errors.push(...classes.errors)
+
+        const subjects = flagNonExistent(
+            Subject,
+            index,
+            subjectIds,
+            maps.subjects
+        )
+        errors.push(...subjects.errors)
+
+        const currentClassSubjects = new Set(
+            maps.classesSubjects.get(classId)?.map((s) => s.id)
+        )
+
+        const alreadyAddedErrors = flagExistentChild(
+            Class,
+            Subject,
+            index,
+            classId,
+            subjectIds,
+            currentClassSubjects
+        )
+
+        errors.push(...alreadyAddedErrors)
+
+        const classOrgId = maps.mainEntity.get(classId)?.organization_id
+        if (classOrgId) {
+            for (const inputSubjectId of subjectIds) {
+                const subjectOrgId = maps.subjectsOrgs.get(inputSubjectId)
+                if (subjectOrgId && subjectOrgId !== classOrgId) {
+                    errors.push(
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            index,
+                            Subject.name,
+                            inputSubjectId,
+                            Organization.name,
+                            classOrgId
+                        )
+                    )
+                }
+            }
+        }
+
+        return errors
+    }
+
+    process(
+        currentInput: AddSubjectsToClassInput,
+        maps: AddSubjectsClassesEntityMap,
+        index: number
+    ) {
+        const { classId, subjectIds } = currentInput
+
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+
+        const subjectsToAdd: Subject[] = []
+        for (const subjectId of subjectIds) {
+            const subjectToAdd = maps.subjects.get(subjectId)!
+            subjectsToAdd.push(subjectToAdd)
+        }
+        const preExistentSubjects = maps.classesSubjects.get(classId)!
+        currentEntity.subjects = Promise.resolve([
+            ...preExistentSubjects,
+            ...subjectsToAdd,
+        ])
         return { outputEntity: currentEntity }
     }
 

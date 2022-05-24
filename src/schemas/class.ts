@@ -27,6 +27,7 @@ import {
     AddAgeRangesToClasses,
     RemoveAgeRangesFromClasses,
     RemoveSubjectsFromClasses,
+    AddSubjectsToClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -98,6 +99,9 @@ const typeDefs = gql`
         ): MoveUsersToClassMutationResult
         removeSubjectsFromClasses(
             input: [RemoveSubjectsFromClassInput!]!
+        ): ClassesMutationResult
+        addSubjectsToClasses(
+            input: [AddSubjectsToClassInput!]!
         ): ClassesMutationResult
     }
 
@@ -383,6 +387,11 @@ const typeDefs = gql`
         classId: ID!
         subjectIds: [ID!]!
     }
+
+    input AddSubjectsToClassInput {
+        classId: ID!
+        subjectIds: [ID!]!
+    }
 `
 
 export async function subjectsChildConnectionResolver(
@@ -665,6 +674,8 @@ export default function getDefault(
                     mutate(RemoveAgeRangesFromClasses, args, ctx.permissions),
                 removeSubjectsFromClasses: (_parent, args, ctx) =>
                     mutate(RemoveSubjectsFromClasses, args, ctx.permissions),
+                addSubjectsToClasses: (_parent, args, ctx) =>
+                    mutate(AddSubjectsToClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args, ctx): Promise<Class | undefined> =>

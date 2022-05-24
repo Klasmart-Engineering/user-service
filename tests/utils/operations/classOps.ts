@@ -437,6 +437,14 @@ export const UPDATE_CLASSES = `mutation($input: [UpdateClassInput!]!) {
     }
 }`
 
+export const ADD_SUBJECTS_TO_CLASSES = gql`
+    mutation myMutation($input: [AddSubjectsToClassInput!]!) {
+        addSubjectsToClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export const REMOVE_PROGRAMS_FROM_CLASSES = gql`
     mutation RemovePrograms($input: [RemoveProgramsFromClassInput!]!) {
         removeProgramsFromClasses(input: $input) {
