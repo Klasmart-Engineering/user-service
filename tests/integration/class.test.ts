@@ -95,6 +95,7 @@ import {
     createUser,
     createAdminUser as adminUserFactory,
     createUsers,
+    makeUserWithPermission,
 } from '../factories/user.factory'
 import {
     createClass as createClassFactory,
@@ -514,25 +515,6 @@ describe('class', () => {
         })
 
         context('authorize', () => {
-            const makeUserWithPermission = async (
-                permission: PermissionName
-            ) => {
-                const clientUser = await createUser().save()
-                const permittedOrg = await createOrganization().save()
-                const role = await createRoleFactory(undefined, permittedOrg, {
-                    permissions: [permission],
-                }).save()
-                await createOrganizationMembership({
-                    user: clientUser,
-                    organization: permittedOrg,
-                    roles: [role],
-                }).save()
-                const permissions = new UserPermissions(
-                    userToPayload(clientUser)
-                )
-                return { permittedOrg, userCtx: { permissions } }
-            }
-
             const callAuthorize = (
                 userCtx: {
                     permissions: UserPermissions

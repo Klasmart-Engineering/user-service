@@ -26,6 +26,9 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createProgram } from '../factories/program.factory'
 import { makeRequest } from './utils'
+import { DELETE_AGE_RANGES } from '../utils/operations/ageRangeOps'
+import { userToPayload } from '../utils/operations/userOps'
+import { UserPermissions } from '../../src/permissions/userPermissions'
 
 interface IAgeRangeEdge {
     node: AgeRangeConnectionNode
@@ -343,6 +346,57 @@ describe('acceptance.ageRange', () => {
                 response.body.data.organizationsConnection.edges[0].node
                     .ageRangesConnection.totalCount
             ).to.eq(1 + systemAgeRangesCount)
+        })
+    })
+
+    context('deleteAgeRanges', () => {
+        let adminUser: User
+        let ageRangeToDelete: AgeRange
+
+        const makeDeleteAgeRangesMutation = async (
+            input: any,
+            caller: User
+        ) => {
+            return await makeRequest(
+                request,
+                print(DELETE_AGE_RANGES),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            const org = await createOrganization().save()
+            ageRangeToDelete = await createAgeRange(org).save()
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [{ id: ageRangeToDelete.id }]
+                const response = await makeDeleteAgeRangesMutation(
+                    input,
+                    adminUser
+                )
+
+                const { ageRanges } = response.body.data.deleteAgeRanges
+                expect(response.status).to.eq(200)
+                expect(ageRanges).to.have.lengthOf(input.length)
+                expect(response.body.errors).to.be.undefined
+            })
+        })
+
+        it('has mandatory id field', async () => {
+            const response = await makeDeleteAgeRangesMutation([{}], adminUser)
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
+            )
         })
     })
 })
