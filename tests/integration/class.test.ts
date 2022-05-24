@@ -60,6 +60,9 @@ import {
     moveUsersToClassProcessAndWrite,
     AddAgeRangesToClasses,
     RemoveSubjectsFromClasses,
+    RemoveAgeRangesFromClasses,
+    generateMapsForAddingRemovingAgeRanges,
+    EntityMapAddRemoveAgeRanges,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -121,6 +124,7 @@ import {
     MoveUsersToClassInput,
     AddAgeRangesToClassInput,
     RemoveSubjectsFromClassInput,
+    RemoveAgeRangesFromClassInput,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
@@ -9821,57 +9825,6 @@ describe('class', () => {
             })
         })
 
-        context('generateEntityMaps', () => {
-            it('creates maps from input ageRange IDs to their organization IDs if they have them', async () => {
-                // Example of age range with no organization - should not show up in inputAgeRangeOrgs entity map
-                const systemAgeRange = new AgeRangesInitializer()
-                    .SYSTEM_AGE_RANGES[0] as AgeRange
-                await AgeRange.save(systemAgeRange)
-                inputs[0].ageRangeIds.push(systemAgeRange.id)
-
-                const actualEntityMap = await addAgeRangesToClasses(
-                    inputs
-                ).generateEntityMaps(inputs)
-
-                expect(
-                    Array.from(actualEntityMap.inputAgeRangeOrgs.keys())
-                ).to.have.same.members(
-                    inputs
-                        .flatMap((input) => input.ageRangeIds)
-                        .filter((id) => id !== systemAgeRange.id)
-                )
-                for (const entry of actualEntityMap.inputAgeRangeOrgs) {
-                    // eslint-disable-next-line no-await-in-loop
-                    const actualOrgId = await noClassAgeRanges
-                        .find((ar) => ar.id == entry[0])!
-                        .organization!.then((org) => {
-                            return org.organization_id
-                        })
-                    expect(entry[1]).to.eq(actualOrgId)
-                }
-            })
-
-            it('creates maps from main entity class ID to its existing age ranges', async () => {
-                const actualEntityMap = await addAgeRangesToClasses(
-                    inputs
-                ).generateEntityMaps(inputs)
-
-                expect(
-                    Array.from(actualEntityMap.existingClassAgeRanges.keys())
-                ).to.have.same.members(classes.map((cls) => cls.class_id))
-                for (const entry of actualEntityMap.existingClassAgeRanges) {
-                    // eslint-disable-next-line no-await-in-loop
-                    const actualAgeRanges = await classes.find(
-                        (cls) => cls.class_id == entry[0]
-                    )!.age_ranges!
-                    expect(entry[1].length).to.deep.eq(actualAgeRanges.length)
-                    expect(entry[1].map((e) => e.id)).to.have.same.members(
-                        actualAgeRanges.map((ar) => ar.id)
-                    )
-                }
-            })
-        })
-
         context('authorize', () => {
             let nonAdminUser: User
             let memberships: OrganizationMembership[]
@@ -10177,6 +10130,427 @@ describe('class', () => {
                     inputs.slice(1)
                 )
                 expect(countForMultipleClasses).to.be.equal(countForOneClass)
+            })
+        })
+    })
+
+    describe('RemoveAgeRangesFromClasses', () => {
+        let adminUser: User
+        let orgs: Organization[]
+        let classes: Class[]
+        let classAgeRanges: AgeRange[]
+        let noClassAgeRanges: AgeRange[]
+        let inputs: RemoveAgeRangesFromClassInput[]
+        const numberOfOrgs = 3
+
+        const removeAgeRangesFromClasses = (
+            input: RemoveAgeRangesFromClassInput[] = [],
+            authUser = adminUser
+        ) =>
+            new RemoveAgeRangesFromClasses(
+                input,
+                new UserPermissions(userToPayload(authUser))
+            )
+
+        beforeEach(async () => {
+            adminUser = await adminUserFactory().save()
+            orgs = await Organization.save(createOrganizations(numberOfOrgs))
+
+            // SETUP: N orgs -> for each org, create a class and its age range (i.e. class's existing age range)
+            // SETUP #2: Also, for each org, create an age range not in any class, to add to classes in input
+            classes = []
+            classAgeRanges = []
+            noClassAgeRanges = []
+
+            for (let i = 0; i < orgs.length; i++) {
+                const ageRange = createAgeRange(orgs[i])
+                const class_ = createClassFactory(undefined, orgs[i])
+                class_.class_name = `Class ${i}`
+                class_.age_ranges = Promise.resolve([ageRange])
+                classAgeRanges.push(ageRange)
+                classes.push(class_)
+
+                const ageRangeNoClass = createAgeRange(orgs[i])
+                noClassAgeRanges.push(ageRangeNoClass)
+            }
+            await connection.manager.save(classAgeRanges)
+            await connection.manager.save(classes)
+            await connection.manager.save(noClassAgeRanges)
+
+            inputs = classes.map((cls, idx) => {
+                return {
+                    classId: cls.class_id,
+                    ageRangeIds: [classAgeRanges[idx].id], // Remove these existing age ranges from their respective classes
+                }
+            })
+        })
+
+        context('authorize', () => {
+            let nonAdminUser: User
+            let memberships: OrganizationMembership[]
+
+            const authorize = async (input: AddAgeRangesToClassInput[]) => {
+                const mutationClass = removeAgeRangesFromClasses(
+                    inputs,
+                    nonAdminUser
+                )
+                const maps = await mutationClass.generateEntityMaps(input)
+                return mutationClass.authorize(input, maps)
+            }
+
+            beforeEach(async () => {
+                nonAdminUser = await createUser().save()
+
+                const roles = await Role.save(
+                    orgs.map((o) =>
+                        createRoleFactory(undefined, o, {
+                            permissions: [PermissionName.edit_class_20334],
+                        })
+                    )
+                )
+
+                memberships = await OrganizationMembership.save(
+                    orgs.map((o, idx) =>
+                        createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: o,
+                            roles: [roles[idx]],
+                        })
+                    )
+                )
+            })
+
+            context(
+                'when user has correct permission for all orgs of inputted classes',
+                () => {
+                    it('fulfills its promise', async () => {
+                        await expect(authorize(inputs)).to.be.eventually
+                            .fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user has insufficient permissions for some orgs of inputted classes',
+                () => {
+                    beforeEach(async () => {
+                        memberships[1].roles = Promise.resolve([])
+                        await memberships[1].save()
+                    })
+
+                    it('rejects its promise with the correct message', async () => {
+                        await expect(
+                            authorize(inputs)
+                        ).to.be.eventually.rejectedWith(
+                            /User\(.*\) does not have Permission\(edit_class_20334\) in Organizations\(.*\)/
+                        )
+                    })
+                }
+            )
+        })
+
+        context('validationOverAllInputs', () => {
+            const validateAllInputs = async (
+                input: RemoveAgeRangesFromClassInput[]
+            ) => {
+                const mutationClass = removeAgeRangesFromClasses(
+                    inputs,
+                    adminUser
+                )
+                const maps = await mutationClass.generateEntityMaps(input)
+                return mutationClass.validationOverAllInputs(input, maps)
+            }
+
+            it('generates duplicate-code APIErrors if there are duplicate class IDs in input', async () => {
+                inputs[1] = inputs[0]
+
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(2)
+
+                const expectedError = createDuplicateAttributeAPIError(
+                    1,
+                    ['classId'],
+                    'RemoveAgeRangesFromClassInput'
+                )
+                expect(apiErrors.length).to.eq(1)
+                compareErrors(apiErrors[0], expectedError)
+            })
+
+            it('generates duplicate-code APIErrors if there are duplicate age range IDs in input', async () => {
+                inputs[1].ageRangeIds.push(inputs[1].ageRangeIds[0])
+
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(2)
+
+                const expectedError = createDuplicateAttributeAPIError(
+                    1,
+                    ['ageRangeIds'],
+                    'RemoveAgeRangesFromClassInput'
+                )
+                expect(apiErrors.length).to.eq(1)
+                compareErrors(apiErrors[0], expectedError)
+            })
+        })
+
+        context('validate', () => {
+            const validate = async (input: RemoveAgeRangesFromClassInput[]) => {
+                const mutationClass = removeAgeRangesFromClasses(
+                    input,
+                    adminUser
+                )
+                const maps = await mutationClass.generateEntityMaps(input)
+                return input.flatMap((i, idx) =>
+                    mutationClass.validate(idx, undefined, i, maps)
+                )
+            }
+
+            context(
+                'input contains a class ID which does not exist in the database',
+                () => {
+                    beforeEach(async () => {
+                        await classes[1].inactivate(getManager())
+                    })
+
+                    it('records a non-existent-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'Class',
+                            inputs[1].classId
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context(
+                'input contains an age range ID which does not exist or is inactive in the database',
+                () => {
+                    beforeEach(async () => {
+                        await classAgeRanges[1].inactivate(getManager())
+                    })
+
+                    it('records a non-existent-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'AgeRange',
+                            inputs[1].ageRangeIds[0]
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context(
+                'input is trying to remove an age range which does not exist in the class',
+                () => {
+                    beforeEach(async () => {
+                        classes[1].age_ranges = Promise.resolve([])
+                        await connection.manager.save(classes)
+                    })
+
+                    it('records a existentChild-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistentChild',
+                            1,
+                            AgeRange.name,
+                            classAgeRanges[1].id,
+                            Class.name,
+                            classes[1].class_id
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context('input contains a valid system age range', () => {
+                beforeEach(async () => {
+                    const systemAgeRange = new AgeRangesInitializer()
+                        .SYSTEM_AGE_RANGES[0] as AgeRange
+                    await AgeRange.save(systemAgeRange)
+                    inputs[1].ageRangeIds = [systemAgeRange.id]
+                    classes[1].age_ranges = Promise.resolve([systemAgeRange])
+                    await Class.save(classes[1])
+                })
+
+                it('should not raise any validation errors', async () => {
+                    const actualErrors = await validate(inputs)
+                    expect(actualErrors).to.be.empty
+                })
+            })
+        })
+
+        context('process', () => {
+            it('updates the entity with the correct attributes', async () => {
+                const mutationClass = removeAgeRangesFromClasses(inputs)
+                const maps = await mutationClass.generateEntityMaps(inputs)
+                const actualOutput = mutationClass.process(inputs[0], maps, 0)
+
+                expect(actualOutput.outputEntity.class_id).to.eq(
+                    inputs[0].classId
+                )
+                expect((await actualOutput.outputEntity.age_ranges)!).to.be
+                    .empty
+            })
+
+            it('processes system age ranges correctly', async () => {
+                const systemAgeRange = new AgeRangesInitializer()
+                    .SYSTEM_AGE_RANGES[0] as AgeRange
+                await AgeRange.save(systemAgeRange)
+                inputs[1].ageRangeIds = [systemAgeRange.id]
+                classes[1].age_ranges = Promise.resolve([
+                    classAgeRanges[1],
+                    systemAgeRange,
+                ])
+                await Class.save(classes[1])
+
+                const mutationClass = removeAgeRangesFromClasses(inputs)
+                const maps = await mutationClass.generateEntityMaps(inputs)
+                const actualOutput = mutationClass.process(inputs[1], maps, 1)
+
+                expect(actualOutput.outputEntity.class_id).to.eq(
+                    inputs[1].classId
+                )
+                expect(
+                    (await actualOutput.outputEntity.age_ranges)!.map(
+                        (ar) => ar.id
+                    )
+                ).to.have.same.members([classAgeRanges[1].id])
+            })
+        })
+
+        context('complete mutation calls given valid input', () => {
+            it('provides the correct MutationResult and updates the database', async () => {
+                const result = await removeAgeRangesFromClasses(inputs).run()
+                const dbClasses = await Class.findByIds(
+                    inputs.map((i) => i.classId)
+                ).then((dbc) => sortObjectArray(dbc, 'class_name'))
+
+                expect(result.classes.length).to.eq(inputs.length)
+                expect(dbClasses.length).to.eq(inputs.length)
+
+                for (const [idx, i] of inputs.entries()) {
+                    expect(result.classes[idx].id).to.eq(i.classId)
+                    expect(dbClasses[idx].class_id).to.eq(i.classId)
+                    expect(
+                        // eslint-disable-next-line no-await-in-loop
+                        (await dbClasses[idx].age_ranges)!.map((ar) => ar.id)
+                    ).to.be.empty
+                }
+            })
+
+            const getDbCallCount = async (
+                input: RemoveAgeRangesFromClassInput[]
+            ) => {
+                connection.logger.reset()
+                await removeAgeRangesFromClasses(input).run()
+                return connection.logger.count
+            }
+
+            it('makes the same number of db calls regardless of input length', async () => {
+                const countForOneClass = await getDbCallCount([inputs[0]])
+                expect(countForOneClass).to.be.equal(6)
+
+                const countForMultipleClasses = await getDbCallCount(
+                    inputs.slice(1)
+                )
+                expect(countForMultipleClasses).to.be.equal(countForOneClass)
+            })
+        })
+    })
+
+    describe('generateMapsForAddingRemovingAgeRanges', () => {
+        let adminUser: User
+        let orgs: Organization[]
+        let classes: Class[]
+        let classAgeRanges: AgeRange[]
+        let noClassAgeRanges: AgeRange[]
+        let inputs: AddAgeRangesToClassInput[]
+        let resultMaps: EntityMapAddRemoveAgeRanges
+        const numberOfOrgs = 3
+
+        context('ageRanges to/from classes mutations', () => {
+            beforeEach(async () => {
+                adminUser = await adminUserFactory().save()
+                orgs = await Organization.save(
+                    createOrganizations(numberOfOrgs)
+                )
+
+                // SETUP: N orgs -> for each org, create a class and its age range (i.e. class's existing age range)
+                // SETUP #2: Also, for each org, create an age range not in any class, to add to classes in input
+                classes = []
+                classAgeRanges = []
+                noClassAgeRanges = []
+
+                for (let i = 0; i < orgs.length; i++) {
+                    const ageRange = createAgeRange(orgs[i])
+                    const class_ = createClassFactory(undefined, orgs[i])
+                    class_.class_name = `Class ${i}`
+                    class_.age_ranges = Promise.resolve([ageRange])
+                    classAgeRanges.push(ageRange)
+                    classes.push(class_)
+
+                    const ageRangeNoClass = createAgeRange(orgs[i])
+                    noClassAgeRanges.push(ageRangeNoClass)
+                }
+                await connection.manager.save(classAgeRanges)
+                await connection.manager.save(classes)
+                await connection.manager.save(noClassAgeRanges)
+
+                inputs = classes.map((cls, idx) => {
+                    return {
+                        classId: cls.class_id,
+                        ageRangeIds: [noClassAgeRanges[idx].id],
+                    }
+                })
+
+                resultMaps = await generateMapsForAddingRemovingAgeRanges(
+                    inputs.map((val) => val.classId),
+                    inputs
+                )
+            })
+
+            it('generates inputAgeRangeOrgs correctly', async () => {
+                // Example of age range with no organization - should not show up in inputAgeRangeOrgs entity map
+                const systemAgeRange = new AgeRangesInitializer()
+                    .SYSTEM_AGE_RANGES[0] as AgeRange
+                await AgeRange.save(systemAgeRange)
+                inputs[0].ageRangeIds.push(systemAgeRange.id)
+
+                for (const [
+                    ageRangeId,
+                    orgId,
+                ] of resultMaps.inputAgeRangeOrgs) {
+                    const ageRange = noClassAgeRanges.filter(
+                        (ar) => ar.id == ageRangeId
+                    )[0]
+                    const org = orgs.filter(
+                        (o) => o.organization_id == orgId
+                    )[0]
+                    // eslint-disable-next-line no-await-in-loop
+                    expect(ageRange.organization_id!).to.eq(org.organization_id)
+                }
+            })
+
+            it('generates existingClassAgeRanges correctly', async () => {
+                for (const [
+                    classId,
+                    clsAgeRanges,
+                ] of resultMaps.existingClassAgeRanges) {
+                    const cls = classes.filter((c) => c.class_id == classId)[0]
+                    expect(
+                        // eslint-disable-next-line no-await-in-loop
+                        (await cls.age_ranges!).map((ar) => ar.id)
+                    ).to.have.same.members(clsAgeRanges.map((ar) => ar.id))
+                }
             })
         })
     })

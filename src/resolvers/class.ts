@@ -16,6 +16,7 @@ import {
     MoveUsersToClassMutationResult,
     AddAgeRangesToClassInput,
     RemoveSubjectsFromClassInput,
+    RemoveAgeRangesFromClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { Class } from '../entities/class'
@@ -2190,35 +2191,7 @@ export class AddAgeRangesToClasses extends AddMutation<
     async generateEntityMaps(
         input: AddAgeRangesToClassInput[]
     ): Promise<EntityMapAddRemoveAgeRanges> {
-        const classes = await getMap.class(this.mainEntityIds, ['age_ranges'])
-
-        const ageRanges = await getMap.ageRange(
-            input.flatMap((i) => i.ageRangeIds)
-        )
-
-        const inputAgeRangeOrgsMap = new Map<string, string>()
-        for (const ageRange of ageRanges.values()) {
-            const ageRangeOrgId = ageRange.organization_id
-            if (ageRangeOrgId) {
-                inputAgeRangeOrgsMap.set(ageRange.id, ageRangeOrgId)
-            }
-        }
-
-        const existingClassAgeRangesMap = new Map<string, AgeRange[]>()
-        for (const class_ of classes.values()) {
-            existingClassAgeRangesMap.set(
-                class_.class_id,
-                // eslint-disable-next-line no-await-in-loop
-                (await class_.age_ranges) || []
-            )
-        }
-
-        return {
-            mainEntity: classes,
-            inputAgeRanges: ageRanges,
-            inputAgeRangeOrgs: inputAgeRangeOrgsMap,
-            existingClassAgeRanges: existingClassAgeRangesMap,
-        }
+        return generateMapsForAddingRemovingAgeRanges(this.mainEntityIds, input)
     }
 
     async authorize(
@@ -2361,6 +2334,174 @@ export class AddAgeRangesToClasses extends AddMutation<
 
     protected buildOutput = async (currentClass: Class): Promise<void> => {
         this.output.classes.push(mapClassToClassConnectionNode(currentClass))
+    }
+}
+
+export class RemoveAgeRangesFromClasses extends RemoveMutation<
+    Class,
+    RemoveAgeRangesFromClassInput,
+    ClassesMutationResult,
+    EntityMapAddRemoveAgeRanges
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'RemoveAgeRangesFromClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: RemoveAgeRangesFromClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    async generateEntityMaps(
+        input: RemoveAgeRangesFromClassInput[]
+    ): Promise<EntityMapAddRemoveAgeRanges> {
+        return generateMapsForAddingRemovingAgeRanges(this.mainEntityIds, input)
+    }
+
+    async authorize(
+        _input: RemoveAgeRangesFromClassInput[],
+        maps: EntityMapAddRemoveAgeRanges
+    ): Promise<void> {
+        const classOrgIds: string[] = []
+        for (const class_ of Array.from(maps.mainEntity.values())) {
+            if (class_.organization_id) {
+                classOrgIds.push(class_.organization_id)
+            }
+        }
+
+        return this.permissions.rejectIfNotAllowed(
+            {
+                organization_ids: classOrgIds,
+            },
+            PermissionName.edit_class_20334
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: RemoveAgeRangesFromClassInput[],
+        entityMaps: EntityMapAddRemoveAgeRanges
+    ): {
+        validInputs: { index: number; input: RemoveAgeRangesFromClassInput }[]
+        apiErrors: APIError[]
+    } {
+        return filterInvalidInputs(inputs, [
+            ...validateSubItemsLengthAndNoDuplicates(
+                inputs,
+                this.inputTypeName,
+                'ageRangeIds'
+            ),
+            ...validateActiveAndNoDuplicates(
+                inputs,
+                entityMaps,
+                inputs.map((val) => val.classId),
+                this.EntityType.name,
+                this.inputTypeName,
+                'classId'
+            ),
+        ])
+    }
+
+    validate(
+        index: number,
+        _currentClass: undefined,
+        currentInput: RemoveAgeRangesFromClassInput,
+        maps: EntityMapAddRemoveAgeRanges
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { classId, ageRangeIds } = currentInput
+
+        // Does the current input contain a class ID which doesn't exist?
+        const { errors: classErrors } = flagNonExistent(
+            Class,
+            index,
+            [currentInput.classId],
+            maps.mainEntity
+        )
+        errors.push(...classErrors)
+
+        // Does the current input contain an age range ID which doesn't exist/is inactive?
+        const { errors: ageRangeErrors } = flagNonExistent(
+            AgeRange,
+            index,
+            currentInput.ageRangeIds,
+            maps.inputAgeRanges
+        )
+        errors.push(...ageRangeErrors)
+
+        // Do any of the inputted age range IDs not exist in the class, thus making it nonsensical to delete them from the class?
+        const classAgeRanges = maps.existingClassAgeRanges.get(classId)
+        if (classAgeRanges) {
+            const ageRangeChildErrors = flagNonExistentChild(
+                Class,
+                AgeRange,
+                index,
+                classId,
+                ageRangeIds,
+                new Set(classAgeRanges.map((ageRange) => ageRange.id))
+            )
+            if (ageRangeChildErrors.length) errors.push(...ageRangeChildErrors)
+        }
+
+        return errors
+    }
+
+    process(
+        currentInput: RemoveAgeRangesFromClassInput,
+        maps: EntityMapAddRemoveAgeRanges,
+        index: number
+    ) {
+        const { classId, ageRangeIds } = currentInput
+        const ageRangeIdsSet = new Set(ageRangeIds)
+        const preExistentAgeRanges = maps.existingClassAgeRanges.get(classId)!
+        const keptAgeRanges = preExistentAgeRanges.filter(
+            (ageRange) => !ageRangeIdsSet.has(ageRange.id)
+        )
+
+        const currentClass = maps.mainEntity.get(this.mainEntityIds[index])!
+        currentClass.age_ranges = Promise.resolve(keptAgeRanges)
+
+        return { outputEntity: currentClass }
+    }
+
+    protected async buildOutput(currentClass: Class): Promise<void> {
+        this.output.classes.push(mapClassToClassConnectionNode(currentClass))
+    }
+}
+
+export async function generateMapsForAddingRemovingAgeRanges(
+    mainEntityIds: string[],
+    input: RemoveAgeRangesFromClassInput[]
+): Promise<EntityMapAddRemoveAgeRanges> {
+    const classes = await getMap.class(mainEntityIds, ['age_ranges'])
+
+    const ageRanges = await getMap.ageRange(input.flatMap((i) => i.ageRangeIds))
+
+    const inputAgeRangeOrgsMap = new Map<string, string>()
+    for (const ageRange of ageRanges.values()) {
+        const ageRangeOrgId = ageRange.organization_id
+        if (ageRangeOrgId) {
+            inputAgeRangeOrgsMap.set(ageRange.id, ageRangeOrgId)
+        }
+    }
+
+    const existingClassAgeRangesMap = new Map<string, AgeRange[]>()
+    for (const class_ of classes.values()) {
+        existingClassAgeRangesMap.set(
+            class_.class_id,
+            // eslint-disable-next-line no-await-in-loop
+            (await class_.age_ranges) || []
+        )
+    }
+
+    return {
+        mainEntity: classes,
+        inputAgeRanges: ageRanges,
+        inputAgeRangeOrgs: inputAgeRangeOrgsMap,
+        existingClassAgeRanges: existingClassAgeRangesMap,
     }
 }
 

@@ -459,6 +459,14 @@ export const ADD_AGE_RANGES_TO_CLASSES = gql`
     }
 `
 
+export const REMOVE_AGE_RANGES_FROM_CLASSES = gql`
+    mutation RemoveAgeRangesFromClasses($input: [RemoveAgeRangesFromClassInput!]!) {
+        removeAgeRangesFromClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export const REMOVE_SUBJECTS_FROM_CLASSES = gql`
     mutation myMutation($input: [RemoveSubjectsFromClassInput!]!) {
         removeSubjectsFromClasses(input: $input) {

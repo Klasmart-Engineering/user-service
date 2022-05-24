@@ -61,6 +61,11 @@ export interface AddAgeRangesToClassInput {
     ageRangeIds: string[]
 }
 
+export interface RemoveAgeRangesFromClassInput {
+    classId: string
+    ageRangeIds: string[]
+}
+
 export interface AddStudentsToClassInput {
     classId: string
     studentIds: string[]

@@ -25,6 +25,7 @@ import {
     moveUsersToClass,
     moveUsersTypeToClass,
     AddAgeRangesToClasses,
+    RemoveAgeRangesFromClasses,
     RemoveSubjectsFromClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
@@ -79,6 +80,9 @@ const typeDefs = gql`
         ): ClassesMutationResult
         addAgeRangesToClasses(
             input: [AddAgeRangesToClassInput!]!
+        ): ClassesMutationResult
+        removeAgeRangesFromClasses(
+            input: [RemoveAgeRangesFromClassInput!]!
         ): ClassesMutationResult
         """
         Note: A null or undefined academicTermId will remove the AcademicTerm from the class
@@ -370,6 +374,11 @@ const typeDefs = gql`
         ageRangeIds: [ID!]!
     }
 
+    input RemoveAgeRangesFromClassInput {
+        classId: ID!
+        ageRangeIds: [ID!]!
+    }
+
     input RemoveSubjectsFromClassInput {
         classId: ID!
         subjectIds: [ID!]!
@@ -652,6 +661,8 @@ export default function getDefault(
                     ),
                 addAgeRangesToClasses: (_parent, args, ctx, _info) =>
                     mutate(AddAgeRangesToClasses, args, ctx.permissions),
+                removeAgeRangesFromClasses: (_parent, args, ctx, _info) =>
+                    mutate(RemoveAgeRangesFromClasses, args, ctx.permissions),
                 removeSubjectsFromClasses: (_parent, args, ctx) =>
                     mutate(RemoveSubjectsFromClasses, args, ctx.permissions),
             },
