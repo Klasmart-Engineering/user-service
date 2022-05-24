@@ -29,8 +29,8 @@ export interface PermissionInfo {
 export const latestPermissions = async () => {
     const permissions: Map<string, PermissionInfo> = new Map()
 
-    const readStream = await fs.createReadStream(PERMISSION_FILE)
-    const csvPermissions = await new Promise((resolve) =>
+    const readStream = fs.createReadStream(PERMISSION_FILE)
+    await new Promise((resolve) =>
         readStream
             .pipe(csvParser())
             .on('data', (row: any) => {

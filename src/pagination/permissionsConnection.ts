@@ -3,7 +3,6 @@ import { SelectQueryBuilder } from 'typeorm'
 import { Permission } from '../entities/permission'
 import { Role } from '../entities/role'
 import { NodeDataLoader } from '../loaders/genericNode'
-import { UserPermissions } from '../permissions/userPermissions'
 import { PermissionConnectionNode } from '../types/graphQL/permission'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { Lazy } from '../utils/lazyLoading'
@@ -47,7 +46,6 @@ export const permissionSummaryNodeFields: string[] = ([
 
 export async function permissionsConnectionResolver(
     info: GraphQLResolveInfo,
-    permissions: UserPermissions,
     {
         direction,
         directionArgs,
@@ -102,7 +100,6 @@ export async function permissionConnectionQuery(
     }
 
     scope.select(permissionSummaryNodeFields)
-
     return scope
 }
 

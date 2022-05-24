@@ -27,6 +27,7 @@ import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
 import { scopeHasJoin } from '../utils/typeorm'
 import { AcademicTerm } from '../entities/academicTerm'
+import { superAdminRole } from '../permissions/superAdmin'
 
 //
 // changing permission rules? update the docs: permissions.md
@@ -785,11 +786,12 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
     const orgIds = await permissions.orgMembershipsWithPermissions([])
     if (orgIds.length) {
         scope.innerJoin('Permission.roles', 'Role')
-        return
-    }
-
-    scope.where('false')
+        scope.where('"Permission"."permission_level" != :superAdmin', {
+            superAdmin: superAdminRole.role_name,
+        })
+    } else scope.where('false')
 }
+
 export const nonAdminRoleScope: NonAdminScope<Role> = async (
     scope,
     permissions

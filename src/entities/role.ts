@@ -8,6 +8,8 @@ import {
     ManyToOne,
     getRepository,
     Brackets,
+    Not,
+    In,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -22,6 +24,7 @@ import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 import logger from '../logging'
 import { reportError } from '../utils/resolvers/errors'
+import { superAdminRole } from '../permissions/superAdmin'
 
 @Entity()
 export class Role extends CustomBaseEntity {
@@ -140,10 +143,8 @@ export class Role extends CustomBaseEntity {
         )
 
         try {
-            const permission = await getRepository(Permission).findOneOrFail({
-                where: {
-                    permission_name: permission_name,
-                },
+            const permission = await getRepository(Permission).findOneByOrFail({
+                permission_name: permission_name,
             })
 
             let roles = (await permission.roles) || []
@@ -181,10 +182,8 @@ export class Role extends CustomBaseEntity {
         )
 
         try {
-            const permission = await getRepository(Permission).findOneOrFail({
-                where: {
-                    permission_name: permission_name,
-                },
+            const permission = await getRepository(Permission).findOneByOrFail({
+                permission_name: permission_name,
             })
 
             let roles = (await permission.roles) || []
@@ -218,10 +217,8 @@ export class Role extends CustomBaseEntity {
         )
 
         try {
-            const permission = await getRepository(Permission).findOneOrFail({
-                where: {
-                    permission_name: permission_name,
-                },
+            const permission = await getRepository(Permission).findOneByOrFail({
+                permission_name: permission_name,
             })
 
             permission.allow = false
@@ -253,14 +250,18 @@ export class Role extends CustomBaseEntity {
             PermissionName.edit_role_and_permissions_30332
         )
 
-        const permissionEntities = [] as Permission[]
-
-        for (const permission_name of permission_names) {
-            const permission = await getRepository(Permission).findOneOrFail({
-                where: {
-                    permission_name: permission_name,
-                },
+        const permissions = await getRepository(Permission)
+            .findBy({
+                permission_name: In(permission_names),
+                permission_level: Not(superAdminRole.role_name),
             })
+            .then((val) => new Map(val.map((p) => [p.permission_name, p])))
+        const permissionEntities = [] as Permission[]
+        for (const permission_name of permission_names) {
+            const permission = permissions.get(permission_name)
+            if (!permission) {
+                throw new Error(`Permission ${permission_name} not found`)
+            }
             permissionEntities.push(permission)
         }
 
