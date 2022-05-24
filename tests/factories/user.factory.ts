@@ -1,6 +1,12 @@
 import faker from 'faker'
 import { User } from '../../src/entities/user'
 import clean from '../../src/utils/clean'
+import { createOrganization } from './organization.factory'
+import { createRole } from './role.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { createOrganizationMembership } from './organizationMembership.factory'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { userToPayload } from '../utils/operations/userOps'
 
 const DEFAULT_GENDERS = ['Male', 'Female', 'Unspecified']
 
@@ -52,3 +58,21 @@ export function createAdminUser() {
 
 export const createUsers = (length: number, partialUser?: PartialUser) =>
     Array(length).fill(partialUser).map(createUser)
+
+export const makeUserWithPermission = async (permission: PermissionName) => {
+    const clientUser = await createUser().save()
+    const permittedOrg = await createOrganization().save()
+    const role = await createRole(undefined, permittedOrg, {
+        permissions: [permission],
+    }).save()
+
+    await createOrganizationMembership({
+        user: clientUser,
+        organization: permittedOrg,
+        roles: [role],
+    }).save()
+
+    const permissions = new UserPermissions(userToPayload(clientUser))
+
+    return { permittedOrg, userCtx: { permissions }, clientUser }
+}

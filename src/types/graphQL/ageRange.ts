@@ -11,3 +11,11 @@ export interface AgeRangeConnectionNode {
     lowValueUnit: AgeRangeUnit
     highValueUnit: AgeRangeUnit
 }
+
+export interface DeleteAgeRangeInput {
+    id: string
+}
+
+export interface AgeRangesMutationResult {
+    ageRanges: AgeRangeConnectionNode[]
+}

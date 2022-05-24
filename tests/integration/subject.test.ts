@@ -41,7 +41,7 @@ import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
-import { createUser } from '../factories/user.factory'
+import { createUser, makeUserWithPermission } from '../factories/user.factory'
 import { compareErrors } from '../utils/apiError'
 import { userToPayload } from '../utils/operations/userOps'
 import { TestConnection } from '../utils/testConnection'
@@ -130,24 +130,6 @@ describe('subject', () => {
             inactiveSubject,
             inactiveOrgSubject,
         ]
-    }
-
-    const makeUserWithPermission = async (permission: PermissionName) => {
-        const clientUser = await createUser().save()
-        const permittedOrg = await createOrganization().save()
-        const role = await createRole(undefined, permittedOrg, {
-            permissions: [permission],
-        }).save()
-
-        await createOrganizationMembership({
-            user: clientUser,
-            organization: permittedOrg,
-            roles: [role],
-        }).save()
-
-        const permissions = new UserPermissions(userToPayload(clientUser))
-
-        return { permittedOrg, userCtx: { permissions } }
     }
 
     describe('createSubjects', () => {
