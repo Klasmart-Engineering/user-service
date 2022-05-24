@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised'
 import gql from 'graphql-tag'
 import { print } from 'graphql'
 import { Headers } from 'node-mocks-http'
-import { nonAdminPermissionScope } from '../../../src/directives/isAdmin'
+import { createEntityScope } from '../../../src/directives/isAdmin'
 import { Permission } from '../../../src/entities/permission'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Context } from '../../../src/main'
@@ -21,23 +21,20 @@ import { userToPayload } from '../../utils/operations/userOps'
 import { TestConnection } from '../../utils/testConnection'
 import { gqlTry } from '../../utils/gqlTry'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import { getConnection } from 'typeorm'
+import { getConnection, Not, SelectQueryBuilder } from 'typeorm'
+import { superAdminRole } from '../../../src/permissions/superAdmin'
 
 use(chaiAsPromised)
 
 const buildScopeAndContext = async (permissions: UserPermissions) => {
-    const scope = Permission.createQueryBuilder('Permission')
-
-    if (!permissions.isAdmin) {
-        await nonAdminPermissionScope(scope, permissions)
-    }
+    const scope = createEntityScope({ permissions, entity: 'permission' })
 
     const ctx = ({
         permissions,
         loaders: createContextLazyLoaders(permissions),
     } as unknown) as Context
 
-    return { scope, ctx }
+    return { scope: (await scope) as SelectQueryBuilder<Permission>, ctx }
 }
 
 describe('roleNode', () => {
@@ -63,7 +60,9 @@ describe('roleNode', () => {
     })
 
     beforeEach(async () => {
-        permissions = await Permission.find()
+        permissions = await Permission.findBy({
+            permission_level: Not(superAdminRole.role_name),
+        })
         const admin = await createAdminUser().save()
         adminPermissions = new UserPermissions(userToPayload(admin))
     })

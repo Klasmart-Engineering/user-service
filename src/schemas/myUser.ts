@@ -13,7 +13,6 @@ import { permissionsConnectionResolver } from '../pagination/permissionsConnecti
 import { schoolsConnectionResolver } from '../pagination/schoolsConnection'
 import { mapUserToUserConnectionNode } from '../pagination/usersConnection'
 import { PermissionName } from '../permissions/permissionNames'
-import { UserPermissions } from '../permissions/userPermissions'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 import { PermissionConnectionNode } from '../types/graphQL/permission'
@@ -191,8 +190,7 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                         permissions,
                         args.scope,
                         args,
-                        info,
-                        ctx.permissions
+                        info
                     )
                 },
                 permissionsInSchool: async (
@@ -208,8 +206,7 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                         permissions,
                         args.scope,
                         args,
-                        info,
-                        ctx.permissions
+                        info
                     )
                 },
                 organizationsWithPermissions: async (
@@ -293,8 +290,7 @@ export async function paginatePermissions(
     permissions: string[],
     scope: SelectQueryBuilder<Permission>,
     args: IChildPaginationArgs,
-    info: GraphQLResolveInfo,
-    userPermissions: UserPermissions
+    info: GraphQLResolveInfo
 ) {
     if (permissions.length === 0) {
         return getEmptyPaginatedResponse<PermissionConnectionNode>(0)
@@ -307,7 +303,7 @@ export async function paginatePermissions(
             value: permissions,
         },
     })
-    const result = await permissionsConnectionResolver(info, userPermissions, {
+    const result = await permissionsConnectionResolver(info, {
         direction: args.direction || 'FORWARD',
         directionArgs: {
             count: args.count,
