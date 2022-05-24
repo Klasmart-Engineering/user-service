@@ -22,6 +22,7 @@ import {
     AddAgeRangesToClassInput,
     RemoveSubjectsFromClassInput,
     RemoveAgeRangesFromClassInput,
+    AddSubjectsToClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
@@ -61,6 +62,7 @@ import {
     ADD_AGE_RANGES_TO_CLASSES,
     REMOVE_SUBJECTS_FROM_CLASSES,
     REMOVE_AGE_RANGES_FROM_CLASSES,
+    ADD_SUBJECTS_TO_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASS_NODE,
@@ -2230,6 +2232,59 @@ describe('acceptance.class', () => {
             const response = await makeRequest(
                 request,
                 print(REMOVE_SUBJECTS_FROM_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "subjectIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('addSubjectsToClasses', () => {
+        let adminUser: User
+        let input: AddSubjectsToClassInput[]
+        let classes: Class[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const subjects = createSubjectsFactory(2)
+            await connection.manager.save(subjects)
+            classes = createClasses(2, org)
+            await connection.manager.save(classes)
+            input = []
+            for (const class_ of classes) {
+                input.push({
+                    classId: class_.class_id,
+                    subjectIds: subjects.map((s) => s.id),
+                })
+            }
+        })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_SUBJECTS_TO_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.addSubjectsToClasses.classes
+            expect(resClasses).to.have.length(classes.length)
+            expect(response.body.errors).to.be.undefined
+        })
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_SUBJECTS_TO_CLASSES),
                 { input: [{}] },
                 generateToken(userToPayload(adminUser))
             )

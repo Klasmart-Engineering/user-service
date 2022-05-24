@@ -63,6 +63,8 @@ import {
     RemoveAgeRangesFromClasses,
     generateMapsForAddingRemovingAgeRanges,
     EntityMapAddRemoveAgeRanges,
+    AddSubjectsToClasses,
+    AddSubjectsClassesEntityMap,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -126,6 +128,7 @@ import {
     AddAgeRangesToClassInput,
     RemoveSubjectsFromClassInput,
     RemoveAgeRangesFromClassInput,
+    AddSubjectsToClassInput,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
@@ -10962,6 +10965,389 @@ describe('class', () => {
                 } = await process(input[0])
                 expect(await outputEntity.subjects).to.deep.equalInAnyOrder(
                     await originalClass.subjects
+                )
+            })
+        })
+    })
+
+    describe('AddSubjectsToClasses', () => {
+        let input: AddSubjectsToClassInput[]
+        let orgs: Organization[]
+        let subjects: Subject[]
+        let classes: Class[]
+        let adminUser: User
+        let nonAdminUser: User
+
+        function getAddSubjects(
+            inputs: AddSubjectsToClassInput[] = [],
+            authUser = adminUser
+        ) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new AddSubjectsToClasses(inputs, permissions)
+        }
+
+        function generateMaps(mapInputs: AddSubjectsToClassInput[]) {
+            const permissions = new UserPermissions(userToPayload(adminUser))
+            const mutation = new AddSubjectsToClasses(mapInputs, permissions)
+            return mutation.generateEntityMaps(mapInputs)
+        }
+
+        beforeEach(async () => {
+            nonAdminUser = await createUser().save()
+            adminUser = await adminUserFactory().save()
+            orgs = await Organization.save(createOrganizations(2))
+            subjects = [
+                ...createSubjects(2, orgs[0]),
+                createSubject(orgs[1]),
+                createSubject(undefined, undefined, true),
+            ]
+            classes = [
+                createClassFactory(undefined, orgs[0]),
+                createClassFactory(undefined, orgs[1]),
+                createClassFactory(undefined, orgs[0]),
+            ]
+            await connection.manager.save([...subjects, ...classes])
+
+            input = [
+                //org1
+                {
+                    classId: classes[0].class_id,
+                    subjectIds: [subjects[0].id, subjects[1].id],
+                },
+                //org2
+                {
+                    classId: classes[1].class_id,
+                    subjectIds: [subjects[2].id],
+                },
+                //system subject
+                {
+                    classId: classes[2].class_id,
+                    subjectIds: [subjects[3].id],
+                },
+            ]
+        })
+
+        context('.run', () => {
+            it('makes constant number of queries regardless of input length', async () => {
+                const mutation = getAddSubjects()
+                connection.logger.reset()
+                await mutation.generateEntityMaps([input[0]])
+                const countForOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.generateEntityMaps(input)
+                const countForThree = connection.logger.count
+                expect(countForThree).to.eq(countForOneInput)
+            })
+            it('returns the expected output', async () => {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutationResult = mutate(
+                    AddSubjectsToClasses,
+                    { input },
+                    permissions
+                )
+                const {
+                    classes: classesNodes,
+                }: ClassesMutationResult = await expect(mutationResult).to.be
+                    .fulfilled
+                expect(classesNodes).to.have.length(input.length)
+                for (let x = 0; x < input.length; x++) {
+                    expect(classesNodes[x]).to.deep.eq(
+                        mapClassToClassConnectionNode(classes[x])
+                    )
+                }
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            context('populates the maps correctly', () => {
+                context('when a class has subjects', () => {
+                    let subjectsInClass: Subject[]
+
+                    beforeEach(async () => {
+                        subjectsInClass = subjects.slice(1)
+                        classes[1].subjects = Promise.resolve(subjectsInClass)
+                        await classes[1].save()
+                    })
+
+                    it('populates classesSubjects correctly', async () => {
+                        const maps = await generateMaps(input)
+                        for (const cls of classes) {
+                            const mapSubjects = maps.classesSubjects.get(
+                                cls.class_id
+                            )!
+                            if (cls.class_id == classes[1].class_id) {
+                                expect(mapSubjects.length).to.equal(
+                                    subjectsInClass.length
+                                )
+                                expect(
+                                    mapSubjects.some(
+                                        (s) => s.id === subjects[1].id
+                                    )
+                                ).to.be.true
+                            } else {
+                                expect(mapSubjects).to.be.empty
+                            }
+                        }
+                    })
+                })
+
+                it('populates organizations correctly', async () => {
+                    const maps = await generateMaps(input)
+                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
+                        orgs[0].organization_id,
+                        orgs[1].organization_id,
+                        orgs[0].organization_id,
+                    ])
+                })
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getAddSubjects(input, authUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.edit_class_20334
+            context(
+                'when user has permissions to add subjects to all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            orgs[0],
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: orgs[0],
+                            roles: [nonAdminRole],
+                        }).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: orgs[1],
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to add subjects to all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            orgs[0],
+                            { permissions: [permission] }
+                        ).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(permission, nonAdminUser, [
+                                ...orgs,
+                            ])
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            let maps: AddSubjectsClassesEntityMap
+            context('when there are duplicate class IDs in input', () => {
+                beforeEach(async () => {
+                    input = [input[0], input[0], input[0]]
+                    maps = await generateMaps(input)
+                })
+
+                it('returns duplicate errors for the last two inputs', () => {
+                    const val = getAddSubjects().validationOverAllInputs(
+                        input,
+                        maps
+                    )
+
+                    const expectedErrors = [1, 2].map((inputIndex) =>
+                        createDuplicateAttributeAPIError(
+                            inputIndex,
+                            ['classId'],
+                            'AddSubjectsToClassInput'
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getAddSubjects().validationOverAllInputs(
+                        input,
+                        maps
+                    )
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context(
+                'when there are duplicated subjectIds in a single input elemnet',
+                () => {
+                    beforeEach(async () => {
+                        input[0].subjectIds = [
+                            input[0].subjectIds[0],
+                            input[0].subjectIds[0],
+                        ]
+                        input[2].subjectIds = [
+                            input[2].subjectIds[0],
+                            input[2].subjectIds[0],
+                        ]
+                        maps = await generateMaps(input)
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getAddSubjects().validationOverAllInputs(
+                            input,
+                            maps
+                        )
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['subjectIds'],
+                                'AddSubjectsToClassInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(
+                mutationInput: AddSubjectsToClassInput,
+                index: number
+            ) {
+                const mutation = getAddSubjects([mutationInput])
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return mutation.validate(0, classes[index], mutationInput, maps)
+            }
+
+            it('returns no errors when all inputs are valid', async () => {
+                const apiErrors = await validate(input[0], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            it('returns no errors when all inputs are valid and a subject belongs to the system', async () => {
+                const apiErrors = await validate(input[2], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            context(
+                'when one of the subjects is already part of the class',
+                async () => {
+                    beforeEach(async () => {
+                        classes[0].subjects = Promise.resolve([subjects[0]])
+                        await classes[0].save()
+                    })
+
+                    it('returns existent errors', async () => {
+                        const actualErrors = await validate(input[0], 0)
+                        const expectedError = createEntityAPIError(
+                            'existentChild',
+                            0,
+                            'Subject',
+                            input[0].subjectIds[0],
+                            'Class',
+                            input[0].classId
+                        )
+
+                        expect(actualErrors.length).to.eq(1)
+                        compareErrors(actualErrors[0], expectedError)
+                    })
+                }
+            )
+
+            context('when one of the subjects is inactive', async () => {
+                beforeEach(() => subjects[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity and nonExistentChild errors', async () => {
+                    const errors = await validate(input[0], 0)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Subject',
+                            subjects[1].id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+        })
+
+        context('.process', () => {
+            async function process(mutationInput: AddSubjectsToClassInput) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new AddSubjectsToClasses(
+                    [mutationInput],
+                    permissions
+                )
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return {
+                    mutationResult: mutation.process(mutationInput, maps, 0),
+                    originalClass: maps.mainEntity.get(mutationInput.classId)!,
+                    originalSubjects: maps.classesSubjects.get(
+                        mutationInput.classId
+                    ),
+                }
+            }
+
+            it('includes existing subjects', async () => {
+                classes[0].subjects = Promise.resolve([subjects[0]])
+                await classes[0].save()
+                input[0].subjectIds = []
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalSubjects,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(originalSubjects).to.deep.equalInAnyOrder(
+                    await originalClass.subjects
+                )
+            })
+
+            it('adds new subjects', async () => {
+                classes[0].subjects = Promise.resolve([subjects[0]])
+                await classes[0].save()
+                const newSubjects = [subjects[1], subjects[2]]
+                input[0].subjectIds = newSubjects.map((s) => s.id)
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalSubjects,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(
+                    [...originalSubjects!, ...newSubjects].map((s) => s.id)
+                ).to.deep.equalInAnyOrder(
+                    (await originalClass.subjects!).map((s) => s.id)
                 )
             })
         })

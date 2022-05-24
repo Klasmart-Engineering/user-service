@@ -105,3 +105,8 @@ export interface RemoveSubjectsFromClassInput {
     classId: string
     subjectIds: string[]
 }
+
+export interface AddSubjectsToClassInput {
+    classId: string
+    subjectIds: string[]
+}
