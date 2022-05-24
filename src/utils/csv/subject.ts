@@ -177,7 +177,7 @@ export const processSubjectFromCSVRow = async (
     }
 
     for (const p of existingCategories) {
-        if (p.id === categoryToAdd.id) {
+        if (p.name === categoryToAdd.name) {
             addCsvError(
                 rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
