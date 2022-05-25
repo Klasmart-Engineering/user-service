@@ -143,7 +143,6 @@ describe('classNode', () => {
         if (!permissions.isAdmin) {
             await nonAdminClassScope(scope, permissions)
         }
-
         ctx = ({
             permissions,
             loaders: createContextLazyLoaders(permissions),

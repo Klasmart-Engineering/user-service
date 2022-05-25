@@ -96,7 +96,6 @@ describe('organizationNode', () => {
                 permissions
             )
         }
-
         const ctxObject = ({
             permissions,
             loaders: createContextLazyLoaders(permissions),

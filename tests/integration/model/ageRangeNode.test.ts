@@ -75,7 +75,6 @@ describe('ageRangeNode', () => {
         if (!permissions.isAdmin) {
             await nonAdminAgeRangeScope(scopeObject, permissions)
         }
-
         const ctxObject = ({
             permissions,
             loaders: createContextLazyLoaders(permissions),

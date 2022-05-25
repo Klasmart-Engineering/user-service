@@ -383,7 +383,10 @@ export function createContextLazyLoaders(
                         organizationMembershipConnectionQuery,
                         mapOrganizationMembershipToOrganizationMembershipNode,
                         organizationMembershipsConnectionSortingConfig,
-                        { permissions, entity: 'organizationMembership' }
+                        {
+                            permissions,
+                            entity: 'organizationMembership',
+                        }
                     )
                 })
         ),

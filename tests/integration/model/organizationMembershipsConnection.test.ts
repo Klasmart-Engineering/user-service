@@ -21,6 +21,7 @@ import {
     loadOrganizationMembershipsForUser,
     organizationMembershipsConnectionResolver as resolverForUser,
 } from '../../../src/schemas/user'
+
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createOrganization } from '../../factories/organization.factory'
@@ -200,7 +201,9 @@ describe('organizationMembershipsConnection', () => {
 
             const token = { id: clientUser.user_id }
             const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
             fakeInfo = {
                 fieldNodes: [
                     {
