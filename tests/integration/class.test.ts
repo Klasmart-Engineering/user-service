@@ -181,7 +181,7 @@ interface OrgsData {
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
-describe.only('class', () => {
+describe('class', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
 
