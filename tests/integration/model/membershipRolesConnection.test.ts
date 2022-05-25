@@ -141,7 +141,9 @@ describe('membershipRolesConnection', () => {
 
                 const token = { id: user.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             const resolveForRoles = async (organizations: Organization[]) => {
@@ -255,7 +257,9 @@ describe('membershipRolesConnection', () => {
 
                 const token = { id: user.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             it('returns correct roles per organization-user', async () => {
@@ -346,7 +350,9 @@ describe('membershipRolesConnection', () => {
 
                 const token = { id: user.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             it('returns correct roles per school-user', async () => {

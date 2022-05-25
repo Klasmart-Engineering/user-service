@@ -470,7 +470,10 @@ describe('model', () => {
 
             const token = { id: user.user_id }
             const userPermissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(userPermissions) }
+
+            ctx = {
+                loaders: createContextLazyLoaders(userPermissions),
+            }
             fakeInfo = {
                 fieldNodes: [
                     {

@@ -175,7 +175,7 @@ Replace the docker current container with another that logs output
 
 Then build a container that logs
 
-1. `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres postgres -c log_statement=all`
+1. `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres:11.9 -c log_statement=all`
 2. `docker start postgres`
 3. `docker container exec -it postgres psql -U postgres -c "create database testdb;"`
 4. Open a new terminal window perhaps in a different folder

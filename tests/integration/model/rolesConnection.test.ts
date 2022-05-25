@@ -596,7 +596,9 @@ describe('rolesConnection', () => {
 
                 const token = { id: user.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             const resolveForRoles = async (organizations: Organization[]) => {
@@ -693,7 +695,9 @@ describe('rolesConnection', () => {
 
                 const token = { id: user.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             it('returns roles per organization and system roles', async () => {
@@ -782,7 +786,9 @@ describe('rolesConnection', () => {
 
                 const token = { id: user.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             it('returns correct roles per permission', async () => {

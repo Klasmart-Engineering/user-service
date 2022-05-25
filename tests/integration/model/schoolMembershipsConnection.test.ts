@@ -225,7 +225,9 @@ describe('schoolMembershipsConnection', () => {
 
             const token = { id: clientUser.user_id }
             const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
             fakeInfo = {
                 fieldNodes: [
                     {

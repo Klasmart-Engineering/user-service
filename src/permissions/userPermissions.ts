@@ -1,4 +1,4 @@
-import { getRepository } from 'typeorm'
+import { Brackets, getRepository } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { User } from '../entities/user'
 import { SchoolMembership } from '../entities/schoolMembership'
@@ -25,6 +25,10 @@ type PermissionCheckOutput = {
     isInactive?: boolean
 }
 
+interface RawUser {
+    OrganizationMembership_user_id: string
+}
+
 export class UserPermissions {
     static ADMIN_EMAILS = [
         'sandy@kidsloop.live',
@@ -49,6 +53,7 @@ export class UserPermissions {
     private _userResolver?: Promise<User | null>
     private _schoolsPerOrgResolver?: Promise<Record<string, string>[]>
     private _classesTeachingResolver?: Promise<Class[]>
+    private _getUserSchoolAdminsResolver?: Promise<RawUser[]>
 
     // Used to mark that auth was done by API Key, but checks use isAdmin
     // for consistency
@@ -539,6 +544,36 @@ export class UserPermissions {
         }
 
         return schoolIds
+    }
+
+    public async getUserSchoolAdmins(): Promise<string[]> {
+        if (!this._getUserSchoolAdminsResolver) {
+            const orgsWithAdmins = await this.orgMembershipsWithPermissions([
+                PermissionName.view_my_admin_users_40114,
+            ])
+            this._getUserSchoolAdminsResolver = OrganizationMembership.createQueryBuilder()
+                .select('OrganizationMembership.user_id')
+                .distinct(true)
+                .innerJoin('OrganizationMembership.roles', 'Role')
+                .innerJoin('Role.permissions', 'Permission')
+                .where('Permission.permission_name = :permissionName', {
+                    permissionName: PermissionName.view_my_school_users_40111,
+                })
+                .andWhere(
+                    new Brackets((qb) => {
+                        qb.where(
+                            'OrganizationMembership.organization_id IN (:...orgIds)',
+                            { orgIds: orgsWithAdmins }
+                        )
+                    })
+                )
+                .getRawMany()
+        }
+        const adminMembers = (await this._getUserSchoolAdminsResolver) || []
+        const adminIds = adminMembers.map(
+            (a) => a.OrganizationMembership_user_id
+        )
+        return adminIds
     }
 
     public async permissionsInOrganization(organizationId: string) {

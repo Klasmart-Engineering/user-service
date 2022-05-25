@@ -653,7 +653,9 @@ describe('subjectsConnection', () => {
         beforeEach(async () => {
             const token = { id: admin.user_id }
             const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
 
             org1Classes = await Class.save(
                 Array.from(new Array(classesCount), (_, i) => {

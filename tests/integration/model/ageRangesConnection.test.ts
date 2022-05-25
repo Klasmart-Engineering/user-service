@@ -581,7 +581,9 @@ describe('model', () => {
             }).save()
             const token = { id: organizationMember1.user_id }
             const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
             fakeInfo = {
                 fieldNodes: [
                     {
