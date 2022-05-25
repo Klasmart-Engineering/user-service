@@ -191,6 +191,25 @@ export class ProgramsInitializer {
             age_ranges: ['7965d220-619d-400f-8cab-42bd98c7d23c'], // 3-4
             grades: ['4b9c1e70-0178-4c68-897b-dac052a38a80'], // Preschool
         },
+        {
+            id: '4ba2f36e-a2ab-49b3-a94d-89f46f7dfa1e',
+            name: 'Bada STEAM 2',
+            subjects: ['7eaeb168-2178-4d0e-9ec7-592c1ab8e7fb'], // STEAM
+            age_ranges: [
+                '7965d220-619d-400f-8cab-42bd98c7d23c', // 3-4
+                'bb7982cd-020f-4e1a-93fc-4a6874917f07', // 4-5
+                'fe0b81a4-5b02-4548-8fb0-d49cd4a4604a', // 5-6
+                '145edddc-2019-43d9-97e1-c5830e7ed689', // 6-7
+                '21f1da64-b6c8-4e74-9fef-09d08cfd8e6c', // 7-8
+            ],
+            grades: [
+                'd7e2e258-d4b3-4e95-b929-49ae702de4be', // PreK-1
+                '3e7979f6-7375-450a-9818-ddb09b250bb2', // PreK-2
+                '81dcbcc6-3d70-4bdf-99bc-14833c57c628', // K
+                '100f774a-3d7e-4be5-9c2c-ae70f40f0b50', // Grade 1
+                '9d3e591d-06a6-4fc4-9714-cf155a15b415', // Grade 2
+            ],
+        },
     ]
 
     public async run() {
