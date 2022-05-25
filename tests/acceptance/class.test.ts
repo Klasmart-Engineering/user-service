@@ -36,6 +36,7 @@ import {
     addSubjectsToClass,
     createAgeRanges,
     createGrades,
+    createOrg,
     createPrograms,
     createSchool,
     createSubjects,
@@ -73,7 +74,7 @@ import {
     CREATE_CLASS,
     getSystemRoleIds,
 } from '../utils/operations/organizationOps'
-import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
+import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { print } from 'graphql'
 import { Program } from '../../src/entities/program'
@@ -154,22 +155,6 @@ const ageRangeDetail: IAgeRangeDetail = {
     high_value_unit: AgeRangeUnit.YEAR,
 }
 
-async function createOrg(userId: string, orgName: string, token: string) {
-    return request
-        .post('/user')
-        .set({
-            ContentType: 'application/json',
-            Authorization: token,
-        })
-        .send({
-            query: CREATE_ORGANIZATION,
-            variables: {
-                user_id: userId,
-                org_name: orgName,
-            },
-        })
-}
-
 async function createClass(
     organization_id: string,
     class_name: string,
@@ -227,11 +212,7 @@ describe('acceptance.class', () => {
         schoolIds = []
 
         await loadFixtures('users', connection)
-        const createOrg1Response = await createOrg(
-            user_id,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrg1Response = await createOrg(user_id, org_name)
 
         const createOrg1Data =
             createOrg1Response.body.data.user.createOrganization
@@ -242,11 +223,7 @@ describe('acceptance.class', () => {
             user_id: user2_id,
         })
 
-        const createOrg2Response = await createOrg(
-            user2_id,
-            org2_name,
-            generateToken(userToPayload(user2))
-        )
+        const createOrg2Response = await createOrg(user2_id, org2_name)
 
         const createOrg2Data =
             createOrg2Response.body.data.user.createOrganization

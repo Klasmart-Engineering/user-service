@@ -390,6 +390,8 @@ export class User extends CustomBaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        context.permissions.rejectIfNotAdmin()
+
         const active_organizations = await OrganizationOwnership.find({
             where: { user_id: this.user_id, status: Status.ACTIVE },
         })
