@@ -720,24 +720,17 @@ export class Model {
         scope,
     }: {
         class_id: string
-        scope: SelectQueryBuilder<Class> | undefined
+        scope: SelectQueryBuilder<Class>
     }) {
-        if (!scope) {
-            scope = this.classRepository.createQueryBuilder('Class')
-        }
         const _class = await scope
-            .andWhere('Class.class_id = :class_id', {
+            ?.andWhere('Class.class_id = :class_id', {
                 class_id,
             })
             .getOne()
-        return _class ?? null
+        return _class
     }
 
-    public async getClasses({
-        scope,
-    }: {
-        scope: SelectQueryBuilder<Class> | undefined
-    }) {
+    public async getClasses({ scope }: { scope: SelectQueryBuilder<Class> }) {
         return scope?.getMany()
     }
 

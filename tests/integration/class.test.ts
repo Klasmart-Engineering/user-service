@@ -181,7 +181,7 @@ interface OrgsData {
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
-describe('class', () => {
+describe.only('class', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
 
@@ -1239,7 +1239,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: getAdminAuthToken() }
+                            { authorization: arbitraryUserToken }
                         )
 
                         const userIds = gqlTeachers
