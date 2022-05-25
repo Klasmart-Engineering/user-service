@@ -129,11 +129,7 @@ describe('acceptance.school', () => {
         // find the NON admin user created above...
         // TODO this whole thing better...
         clientUser = (await User.findOneBy({ user_id })) as User
-        const createOrgResponse = await createOrg(
-            user_id,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrgResponse = await createOrg(user_id, org_name)
         organizationId =
             createOrgResponse.body.data.user.createOrganization.organization_id
         const org = await Organization.findOneByOrFail({

@@ -108,11 +108,7 @@ describe('acceptance.subject', () => {
         await loadFixtures('users', connection)
 
         // Creating Org1
-        const createOrg1Response = await createOrg(
-            user_id,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrg1Response = await createOrg(user_id, org_name)
 
         const createOrg1Data =
             createOrg1Response.body.data.user.createOrganization

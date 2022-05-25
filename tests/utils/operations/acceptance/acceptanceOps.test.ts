@@ -1,5 +1,6 @@
 import supertest from 'supertest'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
+import { getAPIKeyAuth } from '../../testConfig'
 import {
     ADD_SCHOOL_TO_CLASS,
     EDIT_AGE_RANGE_CLASS,
@@ -69,22 +70,18 @@ export interface ISubcategoryDetail {
 const url = 'http://localhost:8080'
 const request = supertest(url)
 
-export async function createOrg(
-    user_id: string,
-    org_name: string,
-    token: string
-) {
+export async function createOrg(user_id: string, organization_name: string) {
     return await request
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: token,
+            Authorization: getAPIKeyAuth(),
         })
         .send({
             query: CREATE_ORGANIZATION,
             variables: {
                 user_id,
-                org_name,
+                organization_name,
             },
         })
 }

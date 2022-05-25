@@ -445,7 +445,9 @@ describe('model', () => {
             const userPermissions = new UserPermissions(
                 userToPayload(clientUser)
             )
-            ctx = { loaders: createContextLazyLoaders(userPermissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(userPermissions),
+            }
         })
         context('as a child of programs', () => {
             let program: Program

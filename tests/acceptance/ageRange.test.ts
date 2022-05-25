@@ -83,11 +83,7 @@ describe('acceptance.ageRange', () => {
         await loadFixtures('users', connection)
 
         const ageRangeDetails: IAgeRangeDetail[] = []
-        const createOrgResponse = await createOrg(
-            user_id,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrgResponse = await createOrg(user_id, org_name)
 
         const createOrgData =
             createOrgResponse.body.data.user.createOrganization

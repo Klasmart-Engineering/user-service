@@ -188,11 +188,7 @@ describe('acceptance.subcategory', () => {
         beforeEach(async () => {
             await SubcategoriesInitializer.run()
             await loadFixtures('users', connection)
-            const createOrgResponse = await createOrg(
-                user_id,
-                org_name,
-                getAdminAuthToken()
-            )
+            const createOrgResponse = await createOrg(user_id, org_name)
 
             const createOrgData =
                 createOrgResponse.body.data.user.createOrganization
@@ -327,11 +323,7 @@ describe('acceptance.subcategory', () => {
         beforeEach(async () => {
             await SubcategoriesInitializer.run()
             await loadFixtures('users', connection)
-            const createOrgResponse = await createOrg(
-                user_id,
-                org_name,
-                getAdminAuthToken()
-            )
+            const createOrgResponse = await createOrg(user_id, org_name)
 
             const createOrgData =
                 createOrgResponse.body.data.user.createOrganization

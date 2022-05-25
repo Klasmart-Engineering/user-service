@@ -102,11 +102,7 @@ describe('acceptance.category', () => {
         await loadFixtures('users', connection)
 
         const categoriesDetails: ICategoryDetail[] = []
-        const createOrgResponse = await createOrg(
-            user_id,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrgResponse = await createOrg(user_id, org_name)
 
         const createOrgData =
             createOrgResponse.body.data.user.createOrganization

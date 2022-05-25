@@ -96,9 +96,18 @@ docker exec -it postgres psql -U postgres
 INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>');
 ```
 
-#### 2 - Your user has been assigned to a organisation
+#### 2 - Your user has been assigned to an organization
 
-Start the user-service and create an organization on your local DB for your user
+Start the user-service and create an organization on your local DB for your user. 
+Organization creation requires admin permissions, so use an API key by setting the `Authorization` **request headers** in the GraphiQL UI:
+
+```
+{
+  "Authorization": "Bearer user_service_api_key"
+}
+```
+
+where `user_service_api_key` is the `USER_SERVICE_API_KEY` envvar defined in `.env`.
 
 ```graphql
 mutation {
@@ -108,6 +117,8 @@ mutation {
     }
   }
 }
+
+# use an API key for this request
 ```
 
 #### 3 - You've updated .env in both repositories
