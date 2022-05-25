@@ -339,6 +339,67 @@ export class SubcategoriesInitializer {
             id: 'e754e22c-fd2a-43f3-a4ec-1904848f9bd6',
             name: 'Personal Development',
         },
+        {
+            id: 'cc15da82-113e-4652-be7d-2db162f55329',
+            name: 'Solids & Liquids',
+        },
+        {
+            id: 'a98ffafa-974d-46e2-a30b-dcb721eb216b',
+            name: 'Properties',
+        },
+        {
+            id: '3b17c514-bd5a-4ed4-83d2-bc5691104035',
+            name: 'Temperature & Chemical Reactions',
+        },
+        {
+            id: '8cb19539-2a2d-4aca-a96c-73d21a7fc2f1',
+            name: 'Objects',
+        },
+        {
+            id: '4df4d746-3a03-49a6-a200-a4b7c1be0269',
+            name: 'Forces & Motion',
+        },
+        {
+            id: 'dcafdd89-a94c-4ac4-af30-cd00a4f2f91b',
+            name: 'Types of Interactions',
+        },
+        {
+            id: 'cfc086db-5f37-46a1-9739-6155e000da77',
+            name: 'Relationship Between Energy & Forces',
+        },
+        {
+            id: '3030e2d2-94fa-45ac-a913-ea35db665bb1',
+            name: 'Energy & Forces',
+        },
+        {
+            id: '23d55670-589a-4009-be2a-45405fa324e4',
+            name: 'Light',
+        },
+        {
+            id: 'c08b9068-a67f-4de2-b1cb-f9caa9538000',
+            name: 'Sounds',
+        },
+        {
+            id: 'f1d88809-3947-43ff-821a-c0451ce12906',
+            name: 'Sight',
+        },
+        {
+            id: 'fb024485-c625-484b-9b6d-9425d41c07b9',
+            name: 'Information Technologies & Infrastructure',
+        },
+        { id: '2f43fe7b-a5ec-446d-b197-45c99f88ee62', name: 'Changing Sets' },
+        { id: '4f84b23f-0210-4644-a5b5-8b13fb01614c', name: 'Comparing Sets' },
+        {
+            id: 'f681ea40-4b4f-4198-a52c-b7d5854dfe38',
+            name: 'Number Composition',
+        },
+        {
+            id: '317a73cf-931e-49f2-adf9-62b4de0ed375',
+            name: 'Pattern Regularity',
+        },
+        { id: '51f09b4e-2b74-4ace-a056-cf97f85664cf', name: 'Attributes' },
+        { id: '7ce95d05-ad4d-4bfc-b6be-901739a4bac0', name: 'Comparison' },
+        { id: 'b41ef932-8a75-4aee-b845-1a587f77dad9', name: 'Precision' },
     ]
 
     public async run() {

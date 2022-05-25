@@ -153,6 +153,17 @@ export class SubjectsInitializer {
             ],
         },
         {
+            id: '7eaeb168-2178-4d0e-9ec7-592c1ab8e7fb',
+            name: 'STEAM',
+            categories: [
+                '196cbb34-5a44-4f26-9d91-64f321332ce9', // Science
+                '313305c7-bda4-4ca6-a787-e456dfc8ce81', // Mathematics
+                '51ae3bca-0e55-465c-8302-6fdf132fa316', // Cognitive
+                '1d3b076f-0968-4a06-bbaa-18cff13f3db8', // Oral Language
+                'dafb0af8-877f-4af4-99b1-79d1a67de059', // Whole-Child
+            ],
+        },
+        {
             id: '51189ac9-f206-469c-941c-3cda28af8788',
             name: 'ESL/EFL',
             categories: [
