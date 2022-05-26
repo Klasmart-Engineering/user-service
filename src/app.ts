@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser'
 import cors, { CorsOptions } from 'cors'
 import escapeStringRegexp from 'escape-string-regexp'
 import express from 'express'
+import helmet from 'helmet'
 import expressPlayground from 'graphql-playground-middleware-express'
 import { graphqlUploadExpress } from 'graphql-upload'
 import {
@@ -59,6 +60,24 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(express.json())
     app.use(correlationMiddleware())
     app.use(cors(corsOptions))
+
+    // helmet middlewares
+    app.use(
+        helmet.contentSecurityPolicy({
+            directives: { 'frame-ancestors': 'none' },
+        })
+    )
+    app.use(helmet.crossOriginEmbedderPolicy())
+    app.use(helmet.crossOriginOpenerPolicy())
+    app.use(helmet.crossOriginResourcePolicy())
+    app.use(helmet.referrerPolicy())
+    app.use(helmet.hsts())
+    app.use(helmet.noSniff())
+    app.use(helmet.originAgentCluster())
+    app.use(helmet.ieNoOpen())
+    app.use(helmet.frameguard({ action: 'DENY' }))
+    app.use(helmet.permittedCrossDomainPolicies())
+    app.use(helmet.xssFilter())
 
     const viewsPath = path.join(__dirname, '..', 'views')
     app.use(express.static(viewsPath))
