@@ -48,6 +48,9 @@ const typeDefs = gql`
 
     extend type Mutation {
         school(school_id: ID!): School
+            @deprecated(
+                reason: "Sunset Date: 26/08/2022 Details: https://calmisland.atlassian.net/l/c/f00eVp51"
+            )
         uploadSchoolsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         createSchools(input: [CreateSchoolInput!]!): SchoolsMutationResult
@@ -149,7 +152,13 @@ const typeDefs = gql`
 
         #mutations
         set(school_name: String, shortcode: String): School
+            @deprecated(
+                reason: "Sunset Date: 26/08/2022 Details: https://calmisland.atlassian.net/l/c/f00eVp51"
+            )
         addUser(user_id: ID!): SchoolMembership
+            @deprecated(
+                reason: "Sunset Date: 26/08/2022 Details: https://calmisland.atlassian.net/l/c/f00eVp51"
+            )
         editPrograms(program_ids: [ID!]): [Program]
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
@@ -176,7 +185,13 @@ const typeDefs = gql`
 
         #mutations
         addRole(role_id: ID!): Role
+            @deprecated(
+                reason: "Sunset Date: 26/08/2022 Details: https://calmisland.atlassian.net/l/c/f00eVp51"
+            )
         addRoles(role_ids: [ID!]!): [Role]
+            @deprecated(
+                reason: "Sunset Date: 26/08/2022 Details: https://calmisland.atlassian.net/l/c/f00eVp51"
+            )
         removeRole(role_id: ID!): SchoolMembership
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/ezmgXfSg"
