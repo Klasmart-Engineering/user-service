@@ -156,8 +156,7 @@ describe('model', () => {
                     direction: 'FORWARD',
                     directionArgs: { count: pageSize },
                     scope,
-                    }
-                )
+                })
 
                 checkPageInfo(result, permissionsCount)
             })
@@ -175,8 +174,7 @@ describe('model', () => {
                     direction: 'FORWARD',
                     directionArgs: { count: pageSize },
                     scope,
-                    }
-                )
+                })
 
                 checkPageInfo(result, roleInvolvedPermissionsCount)
             })
