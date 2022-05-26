@@ -682,8 +682,7 @@ export default function getDefault(
                     mutate(AddSubjectsToClasses, args, ctx.permissions),
             },
             Query: {
-                class: (_parent, args) =>
-                    model.getClass(args),
+                class: (_parent, args) => model.getClass(args),
                 classes: (_parent, args) => model.getClasses(args),
                 classesConnection: (_parent, args, _ctx: Context, info) => {
                     return model.classesConnection(info, args)

@@ -726,12 +726,18 @@ export class Model {
         ctx?: Context,
         info?: GraphQLResolveInfo
     ) {
-        // Some permissions, such as those that allow roster editing, 
+        // Some permissions, such as those that allow roster editing,
         // do not require the user to have class editing permissions.
         const fieldNodes = info?.fieldNodes
         const fields = fieldNodes
-            ?.filter((fn) => fn.selectionSet?.selections.map((s) => s.kind === 'Field'))
-            ?.map((fn) => fn.selectionSet?.selections.map((s) => ((s as FieldNode).name.value)))
+            ?.filter((fn) =>
+                fn.selectionSet?.selections.map((s) => s.kind === 'Field')
+            )
+            ?.map((fn) =>
+                fn.selectionSet?.selections.map(
+                    (s) => (s as FieldNode).name.value
+                )
+            )
             .flat()
 
         const hasClassFields = fields?.find(
