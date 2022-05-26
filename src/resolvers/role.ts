@@ -243,9 +243,12 @@ export class UpdateRoles extends UpdateMutation<
     ) {
         const organizationIds: string[] = []
 
-        for (const c of entityMaps.mainEntity.values()) {
+        for (const role of entityMaps.mainEntity.values()) {
+            if (role.system_role) {
+                throw new Error('System roles cannot be modified')
+            }
             // eslint-disable-next-line no-await-in-loop
-            const organizationId = (await c.organization)?.organization_id
+            const organizationId = (await role.organization)?.organization_id
             if (organizationId) organizationIds.push(organizationId)
         }
 
