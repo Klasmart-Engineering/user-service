@@ -623,6 +623,9 @@ export const nonAdminSchoolScope: NonAdminScope<
             scope.andWhere(
                 // NB: Must be included in brackets to avoid incorrect AND/OR boolean logic with downstream WHERE
                 new Brackets((qb) => {
+                    // these cases also shouldn't check schoolMembership.user
+                    // because that filters on wether the school has any members
+                    // NOT wether the user doing the query is in them
                     qb.where(
                         // Schools which the user is not a member of but is allowed to see through orgs
                         '(School.organization IN (:...schoolOrgs) AND SchoolMembership.user IS NULL)',
@@ -630,6 +633,10 @@ export const nonAdminSchoolScope: NonAdminScope<
                             schoolOrgs,
                         }
                     ).orWhere(
+                        // this should be ANDed with
+                        // .andWhere('School.organization IN (:...mySchoolOrgs)', {
+                        //     mySchoolOrgs,
+                        // })
                         // Schools which the user is a member of and is allowed to see
                         '(School.school_id IN (:...schoolIds) AND SchoolMembership.user IS NOT NULL)',
                         {
@@ -643,11 +650,13 @@ export const nonAdminSchoolScope: NonAdminScope<
                 new Brackets((qb) => {
                     qb.where(
                         // Schools which the user is not a member of but is allowed to see through orgs
+                        // remove `AND SchoolMembership.user IS NULL` to fix the test case
                         '(School.organization IN (:...schoolOrgs) AND SchoolMembership.user IS NULL)',
                         {
                             schoolOrgs,
                         }
                     ).orWhere(
+                        // this condition is a tautology - `(B AND FALSE)` is always FALSE
                         // FALSE is a workaround for `School.organization IN ()` which is invalid PostgresQL
                         'SchoolMembership.user IS NOT NULL AND FALSE'
                     )

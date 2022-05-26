@@ -3280,6 +3280,16 @@ describe('isAdmin', () => {
                 roles: [viewAllSchoolsRoleOrg3],
             }).save()
 
+            const fakeTeacherRole = await createRole('View my Schools', org2, {
+                permissions: [PermissionName.view_my_school_20119],
+            }).save()
+
+            await createOrganizationMembership({
+                user: orgOwner,
+                organization: org2,
+                roles: [fakeTeacherRole],
+            }).save()
+
             // adding ownerAndSchoolAdmin to org2 with orgAdminRole
             await createOrganizationMembership({
                 user: ownerAndSchoolAdmin,
@@ -3334,8 +3344,9 @@ describe('isAdmin', () => {
             })
         })
 
+        // problem is an org admin who is 1) member of > 1 org and 2) has view_school in one and view_my_school in the other
         context('org admin', () => {
-            it('org admin should see schools from his org', async () => {
+            it.only('org admin should see schools from his org', async () => {
                 const token = generateToken(userToPayload(orgOwner))
                 const visibleSchools = await querySchools(token)
                 expect(visibleSchools.totalCount).to.eql(org3Schools.length)

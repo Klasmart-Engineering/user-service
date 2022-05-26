@@ -33,7 +33,7 @@ export async function schoolsConnectionResolver(
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<School>
 ): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
+    console.log(scope.getQueryAndParameters())
     const newScope = await schoolConnectionQuery(scope, filter)
 
     const data = await paginateData<School>({
