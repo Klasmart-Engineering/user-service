@@ -31,7 +31,7 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { createProgram, createPrograms } from '../factories/program.factory'
 import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
-import { createUser } from '../factories/user.factory'
+import { createUser, makeUserWithPermission } from '../factories/user.factory'
 import { userToPayload } from '../utils/operations/userOps'
 import { TestConnection } from '../utils/testConnection'
 import { PermissionName } from './../../src/permissions/permissionNames'
@@ -144,23 +144,6 @@ describe('program', () => {
             inactiveProgram,
             inactiveOrgProgram,
         ]
-    }
-
-    const makeUserWithPermission = async (permission: PermissionName) => {
-        const clientUser = await createUser().save()
-        const permittedOrg = await createOrganization().save()
-        const role = await createRole(undefined, permittedOrg, {
-            permissions: [permission],
-        }).save()
-
-        await createOrganizationMembership({
-            user: clientUser,
-            organization: permittedOrg,
-            roles: [role],
-        }).save()
-
-        const permissions = new UserPermissions(userToPayload(clientUser))
-        return { permittedOrg, userCtx: { permissions } }
     }
 
     describe('CreatePrograms', () => {

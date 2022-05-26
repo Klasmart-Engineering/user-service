@@ -714,7 +714,9 @@ describe('model', () => {
             beforeEach(async () => {
                 const token = { id: admin.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             const resolveForPrograms = async (classes: Class[]) => {
@@ -807,7 +809,9 @@ describe('model', () => {
             beforeEach(async () => {
                 const token = { id: admin.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             it('returns correct programs per class', async () => {
@@ -866,7 +870,9 @@ describe('model', () => {
             beforeEach(async () => {
                 const token = { id: admin.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             it('returns correct programs per school', async () => {

@@ -12,6 +12,7 @@ import {
     OneToOne,
     SelectQueryBuilder,
     EntityManager,
+    IsNull,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
@@ -389,6 +390,8 @@ export class User extends CustomBaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        context.permissions.rejectIfNotAdmin()
+
         const active_organizations = await OrganizationOwnership.find({
             where: { user_id: this.user_id, status: Status.ACTIVE },
         })
@@ -430,7 +433,7 @@ export class User extends CustomBaseEntity {
                     where: {
                         role_name: 'Organization Admin',
                         system_role: true,
-                        organization: { organization_id: null },
+                        organization: IsNull(),
                     },
                 }),
             ]
@@ -467,7 +470,7 @@ export class User extends CustomBaseEntity {
 
             const organization = await getRepository(
                 Organization
-            ).findOneOrFail(organization_id)
+            ).findOneByOrFail({ organization_id })
             const membership = new OrganizationMembership()
             membership.organization_id = organization_id
             membership.organization = Promise.resolve(organization)
@@ -490,7 +493,10 @@ export class User extends CustomBaseEntity {
                 return null
             }
 
-            const school = await getRepository(School).findOneOrFail(school_id)
+            const school = await getRepository(School).findOneByOrFail({
+                school_id,
+            })
+
             const membership = new SchoolMembership()
             membership.school_id = school_id
             membership.school = Promise.resolve(school)
@@ -611,10 +617,12 @@ export class User extends CustomBaseEntity {
         if (info.operation.operation !== 'mutation' || other_id === undefined) {
             return null
         }
-        const otherUser = await getRepository(User).findOne({
+
+        const otherUser = await getRepository(User).findOneBy({
             user_id: other_id,
         })
-        if (otherUser !== undefined) {
+
+        if (otherUser !== null) {
             return this.retryMerge(otherUser, context)
         }
         return null

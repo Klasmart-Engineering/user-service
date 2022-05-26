@@ -8,6 +8,7 @@ import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { config } from '../../config/config'
+import { Status } from '../../entities/status'
 import { PermissionName } from '../../permissions/permissionNames'
 import { customErrors } from '../../types/errors/customError'
 
@@ -19,7 +20,7 @@ export const processAgeRangeFromCSVRow = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let ageRange: AgeRange | undefined
+    let ageRange: AgeRange | undefined | null
 
     const {
         organization_name,
@@ -213,13 +214,13 @@ export const processAgeRangeFromCSVRow = async (
     ageRange = await manager.findOne(AgeRange, {
         where: {
             name: age_range_name,
-            low_value: age_range_low_value,
-            high_value: age_range_high_value,
+            low_value: Number(age_range_low_value),
+            high_value: Number(age_range_high_value),
             high_value_unit: age_range_unit,
             low_value_unit: age_range_unit,
             system: false,
-            status: 'active',
-            organization,
+            status: Status.ACTIVE,
+            organization: { organization_id: organization?.organization_id },
         },
     })
 

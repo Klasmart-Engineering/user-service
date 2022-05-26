@@ -1045,7 +1045,7 @@ describe('user', () => {
                 await User.findOne({
                     where: { user_id: newUser.user_id },
                 })
-            ).to.be.undefined
+            ).to.be.null
 
         it('should merge one user into another deleting the source user', async () => {
             const gqlUser = await mergeUser(
@@ -1279,13 +1279,13 @@ describe('user', () => {
                             { authorization: getAdminAuthToken() }
                         )
                     })
-                    it('should return undefined', async () => {
+                    it('should return an empty', async () => {
                         const gqlSubjects = await getSubjectsTeaching(
                             testClient,
                             adminUser.user_id,
                             { authorization: getNonAdminAuthToken() }
                         )
-                        expect(gqlSubjects).to.be.an('undefined')
+                        expect(gqlSubjects).to.be.empty
                     })
                 })
             })
@@ -1439,7 +1439,7 @@ describe('user', () => {
                         { authorization: arbitraryUserToken }
                     )
                     expect(membership).to.exist
-                    await SchoolMembership.findOneOrFail({
+                    await SchoolMembership.findOneByOrFail({
                         user_id: idOfUserJoiningSchool,
                         school_id: schoolId,
                     })
@@ -1457,7 +1457,7 @@ describe('user', () => {
                             { authorization: arbitraryUserToken }
                         )
                         expect(membership).to.exist
-                        await SchoolMembership.findOneOrFail({
+                        await SchoolMembership.findOneByOrFail({
                             user_id: idOfUserJoiningSchool,
                             school_id: schoolId,
                         })
@@ -3350,7 +3350,7 @@ describe('user', () => {
                     { modifiedEntity: [memberships[0]] },
                 ])
                 const dbMembership = (
-                    await SchoolMembership.find({
+                    await SchoolMembership.findBy({
                         user_id: memberships[0].user_id,
                         school_id: memberships[0].school_id,
                     })

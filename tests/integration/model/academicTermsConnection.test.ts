@@ -16,6 +16,7 @@ import {
     academicTermsChildConnectionResolver,
     loadAcademicTermsForSchool,
 } from '../../../src/schemas/school'
+
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
 import { createSuccessiveAcademicTerms } from '../../factories/academicTerm.factory'
@@ -84,7 +85,9 @@ describe('AcademicTermsConnection', () => {
 
             beforeEach(async () => {
                 const permissions = new UserPermissions(userToPayload(admin))
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             it('returns correct academic terms per school', async () => {
@@ -175,7 +178,9 @@ describe('AcademicTermsConnection', () => {
         let inactiveCount = 0
         beforeEach(async () => {
             const permissions = new UserPermissions(userToPayload(admin))
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
         })
         context('status', () => {
             beforeEach(async () => {

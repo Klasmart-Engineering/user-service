@@ -64,10 +64,11 @@ export class AgeRangesInitializer {
                 high_value: systemAgeRange.high_value,
                 high_value_unit: systemAgeRange.high_value_unit,
                 system: true,
-                organization_id: null,
+                organization_id: undefined,
                 status: Status.ACTIVE,
             }
 
+            // eslint-disable-next-line no-await-in-loop
             await AgeRange.createQueryBuilder()
                 .insert()
                 .into(AgeRange)

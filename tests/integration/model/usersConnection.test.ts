@@ -448,7 +448,7 @@ describe('usersConnection', () => {
                         permission: PermissionName.view_my_admin_users_40114,
                     })
                     schoolAdmin = await User.save(createUser())
-                    const schAdminRole = await Role.findOne({
+                    const schAdminRole = await Role.findOneBy({
                         role_name: schoolAdminRole.role_name,
                     })
                     await OrganizationMembership.save(

@@ -1,4 +1,4 @@
-import { In } from 'typeorm'
+import { In, Not } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { Permission } from '../entities/permission'
 import { Role } from '../entities/role'
@@ -9,6 +9,7 @@ import {
     roleConnectionNodeFields,
 } from '../pagination/rolesConnection'
 import { PermissionName } from '../permissions/permissionNames'
+import { superAdminRole } from '../permissions/superAdmin'
 import { APIError } from '../types/errors/apiError'
 import {
     CreateRoleInput,
@@ -195,11 +196,10 @@ export class UpdateRoles extends UpdateMutation<
             relations: ['organization'],
         })
 
-        const preloadedPermissionArray = Permission.find({
-            where: {
-                permission_name: In(ids),
-                status: Status.ACTIVE,
-            },
+        const preloadedPermissionArray = Permission.findBy({
+            permission_name: In(ids),
+            permission_level: Not(superAdminRole.role_name),
+            status: Status.ACTIVE,
         })
 
         const mainEntity = new Map(
@@ -462,11 +462,9 @@ async function generateMapsForCreate(
     organizationIds: string[]
 ): Promise<CreateRoleEntityMap> {
     const matchingOrgsAndNames = await getOrgsAndNames(organizationIds, input)
-    const preloadedOrgArray = Organization.find({
-        where: {
-            status: Status.ACTIVE,
-            organization_id: In(organizationIds),
-        },
+    const preloadedOrgArray = Organization.findBy({
+        status: Status.ACTIVE,
+        organization_id: In(organizationIds),
     })
 
     return {

@@ -376,8 +376,7 @@ export async function createOrganizationAndValidate(
         testClient,
         userId,
         organizationName,
-        shortCode,
-        token
+        shortCode
     )
 
     expect(gqlOrganization).to.exist
@@ -393,10 +392,8 @@ export async function createOrganization(
     testClient: ApolloServerTestClient,
     userId: string,
     organizationName: string,
-    shortCode?: string,
-    token?: string
+    shortCode?: string
 ): Promise<Organization> {
-    token = token ?? getAdminAuthToken()
     const variables = {
         user_id: userId,
         organization_name: organizationName,
@@ -411,7 +408,7 @@ export async function createOrganization(
         mutate({
             mutation: CREATE_ORGANIZATION,
             variables: variables,
-            headers: { authorization: token },
+            headers: { authorization: getAdminAuthToken() },
         })
 
     const res = await gqlTry(operation)

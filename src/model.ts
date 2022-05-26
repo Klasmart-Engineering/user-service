@@ -311,7 +311,7 @@ export class Model {
             }
         }
 
-        const user = await this.userRepository.findOneOrFail(user_id)
+        const user = await this.userRepository.findOneByOrFail({ user_id })
 
         if (given_name !== undefined) {
             user.given_name = given_name
@@ -347,7 +347,7 @@ export class Model {
         return user
     }
     public async getUser(user_id: string) {
-        const user = await this.userRepository.findOneOrFail(user_id)
+        const user = await this.userRepository.findOneByOrFail({ user_id })
         return user
     }
 
@@ -396,16 +396,43 @@ export class Model {
         return users
     }
 
-    public async setOrganization({
-        organization_id,
-        organization_name,
-        address1,
-        address2,
-        phone,
-        shortCode,
-    }: Organization) {
-        const organization = await this.organizationRepository.findOneOrFail(
-            organization_id
+    public async setOrganization(
+        {
+            organization_id,
+            organization_name,
+            address1,
+            address2,
+            phone,
+            shortCode,
+            scope,
+        }: Pick<
+            Organization,
+            | 'organization_id'
+            | 'organization_name'
+            | 'address1'
+            | 'address2'
+            | 'phone'
+            | 'shortCode'
+        > & { scope: SelectQueryBuilder<Organization> },
+        ctx: Context
+    ) {
+        const organization = await this.getOrganization({
+            organization_id,
+            scope,
+        })
+
+        const willEditOrg =
+            organization_name || address1 || address2 || phone || shortCode
+
+        if (!willEditOrg || !organization) return organization
+
+        await ctx.permissions.rejectIfNotAllowedMany(
+            organization_id,
+            [
+                PermissionName.edit_this_organization_10330,
+                PermissionName.edit_my_organization_10331,
+            ],
+            'OR'
         )
 
         if (organization_name !== undefined) {
@@ -427,10 +454,19 @@ export class Model {
         await this.manager.save(organization)
         return organization
     }
-    public async getOrganization(organization_id: string) {
-        const organization = await this.organizationRepository.findOne(
-            organization_id
-        )
+    public async getOrganization({
+        organization_id,
+        scope,
+    }: {
+        organization_id: string
+        scope: SelectQueryBuilder<Organization>
+    }) {
+        const organization = await scope
+            .andWhere('Organization.organization_id = :organization_id', {
+                organization_id,
+            })
+            .getOne()
+
         return organization
     }
 
@@ -570,10 +606,14 @@ export class Model {
         )
 
         const errors: APIError[] = []
-        const organization = await getRepository(Organization).findOneOrFail(
-            organization_id
-        )
-        const newRole = await getRepository(Role).findOneOrFail(new_role_id)
+        const organization = await getRepository(Organization).findOneByOrFail({
+            organization_id,
+        })
+
+        const newRole = await getRepository(Role).findOneByOrFail({
+            role_id: new_role_id,
+        })
+
         const newRoleOrganization = await newRole.organization
         if (info.operation.operation !== 'mutation')
             errors.push(
@@ -677,9 +717,10 @@ export class Model {
 
     public async getClass({ class_id }: Class, context: Context) {
         try {
-            const _class = await this.classRepository.findOneOrFail({
+            const _class = await this.classRepository.findOneByOrFail({
                 class_id,
             })
+
             return _class
         } catch (e) {
             logger.warn(e)
@@ -1310,7 +1351,7 @@ export class Model {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        let orgBranding: Branding | undefined
+        let orgBranding: Branding | null = null
         const primaryColor = args.primaryColor
         const iconImage = await args.iconImage
         const organizationId = args.organizationId
@@ -1445,7 +1486,7 @@ export class Model {
 
         const imageToRemove = await BrandingImage.findOne({
             where: {
-                branding: organizationBranding,
+                branding: { id: organizationBranding.id },
                 tag: type,
                 status: Status.ACTIVE,
             },

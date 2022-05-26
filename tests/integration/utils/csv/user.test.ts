@@ -164,7 +164,7 @@ describe('processUserFromCSVRow', async () => {
             where: { email: normalizedLowercaseTrimmed(row.user_email) },
         })
 
-        expect(dbUser).to.be.undefined
+        expect(dbUser).to.be.null
     })
 
     context('org permissions', () => {
@@ -1625,8 +1625,8 @@ describe('processUserFromCSVRow', async () => {
                 queryResultCache
             )
 
-            const dbUser = await User.findOneOrFail({
-                where: { email: normalizedLowercaseTrimmed(row.user_email) },
+            const dbUser = await User.findOneByOrFail({
+                email: normalizedLowercaseTrimmed(row.user_email),
             })
 
             expect(dbUser.user_id).to.not.be.empty
@@ -1637,16 +1637,21 @@ describe('processUserFromCSVRow', async () => {
             expect(dbUser.date_of_birth).to.eq(row.user_date_of_birth)
             expect(dbUser.gender).to.eq(row.user_gender)
 
-            const orgMembership = await OrganizationMembership.findOneOrFail({
-                where: { user: dbUser, organization: organization },
+            const orgMembership = await OrganizationMembership.findOneByOrFail({
+                user: { user_id: dbUser.user_id },
+                organization: { organization_id: organization.organization_id },
             })
+
             expect(orgMembership.shortcode).to.eq(row.user_shortcode)
+
             const orgRoles = (await orgMembership.roles) || []
             expect(orgRoles.map(roleInfo)).to.deep.eq([role].map(roleInfo))
 
-            const schoolMembership = await SchoolMembership.findOneOrFail({
-                where: { user: dbUser, school: school },
+            const schoolMembership = await SchoolMembership.findOneByOrFail({
+                user: { user_id: dbUser.user_id },
+                school: { school_id: school.school_id },
             })
+
             const schoolRoles = (await schoolMembership.roles) || []
             expect(schoolRoles).to.deep.eq([])
         })
@@ -1666,9 +1671,12 @@ describe('processUserFromCSVRow', async () => {
                 where: { email: normalizedLowercaseTrimmed(row.user_email) },
             })
 
-            const schoolMembership = await SchoolMembership.findOneOrFail({
+            const [schoolMembership] = await SchoolMembership.find({
                 relations: [`roles`],
-                where: { user: dbUser, school: school },
+                where: {
+                    user: { user_id: dbUser.user_id },
+                    school: { school_id: school.school_id },
+                },
             })
             expect(await schoolMembership.roles).to.deep.eq([])
         })
@@ -1714,9 +1722,12 @@ describe('processUserFromCSVRow', async () => {
                 where: { email: normalizedLowercaseTrimmed(row.user_email) },
             })
 
-            const schoolMembership = await SchoolMembership.findOneOrFail({
+            const [schoolMembership] = await SchoolMembership.find({
                 relations: [`roles`],
-                where: { user: dbUser, school: school },
+                where: {
+                    user: { user_id: dbUser.user_id },
+                    school: { school_id: school.school_id },
+                },
             })
             expect(await schoolMembership.roles).to.deep.eq([])
         })
@@ -1869,7 +1880,6 @@ describe('processUserFromCSVRow', async () => {
             })
 
             it('creates the user', async () => {
-                //const { user: dbUser } =
                 await processUserFromCSVRows(
                     connection.manager,
                     [row],
@@ -2240,7 +2250,7 @@ describe('processUserFromCSVRow', async () => {
                         queryResultCache
                     )
                     const distinctQueriesMade = connection.logger.queryCounts
-                    expect(distinctQueriesMade.size).to.eq(25)
+                    expect(distinctQueriesMade.size).to.eq(27)
 
                     const expectedNonOptimizedQueries = Array.from(
                         distinctQueriesMade.entries()

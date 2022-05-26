@@ -52,9 +52,9 @@ describe('AcademicTerm', () => {
             })
 
             it('creates the academic term', async () => {
-                const academicTermDB = await AcademicTerm.findOneOrFail(
-                    academicTerm.id
-                )
+                const academicTermDB = await AcademicTerm.findOneByOrFail({
+                    id: academicTerm.id,
+                })
 
                 expect(academicTermDB.id).to.eq(academicTerm.id)
                 expect(academicTermDB.name).to.eq(academicTerm.name)
@@ -77,9 +77,9 @@ describe('AcademicTerm', () => {
                 await school.reload()
                 await Promise.all(classes.map((c) => c.reload()))
 
-                const academicTermDB = await AcademicTerm.findOneOrFail(
-                    academicTerm.id
-                )
+                const academicTermDB = await AcademicTerm.findOneByOrFail({
+                    id: academicTerm.id,
+                })
                 const schoolDB = await academicTermDB.school
                 const classesDB = await academicTermDB.classes
 

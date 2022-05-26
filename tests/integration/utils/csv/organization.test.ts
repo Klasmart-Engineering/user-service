@@ -87,7 +87,7 @@ describe('processOrganizationFromCSVRow', () => {
                 where: { organization_name: row.organization_name },
             })
 
-            expect(organization).to.be.undefined
+            expect(organization).to.be.null
         })
     })
 
@@ -122,7 +122,7 @@ describe('processOrganizationFromCSVRow', () => {
                 where: { organization_name: row.organization_name },
             })
 
-            expect(organization).to.be.undefined
+            expect(organization).to.be.null
         })
     })
 
@@ -156,7 +156,7 @@ describe('processOrganizationFromCSVRow', () => {
                 where: { organization_name: row.organization_name },
             })
 
-            expect(organization).to.be.undefined
+            expect(organization).to.be.null
         })
     })
 
@@ -259,26 +259,27 @@ describe('processOrganizationFromCSVRow', () => {
 
             expect(errors).to.deep.equal([])
 
-            const organization = await Organization.findOneOrFail({
-                where: { organization_name: row.organization_name },
+            const organization = await Organization.findOneByOrFail({
+                organization_name: row.organization_name,
             })
-            const user = await User.findOneOrFail({
-                where: { my_organization: organization.organization_id },
+
+            const user = await User.findOneByOrFail({
+                my_organization: {
+                    organization_id: organization.organization_id,
+                },
             })
-            const organizationOwnership = await OrganizationOwnership.findOneOrFail(
+
+            const organizationOwnership = await OrganizationOwnership.findOneByOrFail(
                 {
-                    where: {
-                        organization_id: organization.organization_id,
-                        user_id: user.user_id,
-                    },
+                    organization_id: organization.organization_id,
+                    user_id: user.user_id,
                 }
             )
-            const organizationMembership = await OrganizationMembership.findOneOrFail(
+
+            const organizationMembership = await OrganizationMembership.findOneByOrFail(
                 {
-                    where: {
-                        organization_id: organization.organization_id,
-                        user_id: user.user_id,
-                    },
+                    organization_id: organization.organization_id,
+                    user_id: user.user_id,
                 }
             )
 

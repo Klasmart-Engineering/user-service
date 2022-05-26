@@ -22,11 +22,11 @@ export class RolesMissingDeactivateUser1645439842684
             role.status = 'active'
             AND role.system_role IS NOT TRUE
             AND deactivate_perm."permissionPermissionId" IS NULL;`)
-        const permission = await queryRunner.manager.findOne(
-            Permission,
-            'deactivate_user_40883'
-        )
-        if (permission === undefined) {
+        const permission = await queryRunner.manager.findOneBy(Permission, {
+            permission_name: 'deactivate_user_40883',
+        })
+
+        if (!permission) {
             logger.warn(
                 `Couldn't find permission deactivate_user_40883, skipping migration ${this.name}`
             )

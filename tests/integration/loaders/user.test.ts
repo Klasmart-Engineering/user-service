@@ -365,7 +365,8 @@ context('User loaders', () => {
                 )
                 expect(await response[0].user).to.be.a('null')
             })
-            it('can not view the nested targeted user through the user resolver', async () => {
+            // todo: unskip when AD-2514 is resolved
+            it.skip('can not view the nested targeted user through the user resolver', async () => {
                 const response = await viewUser(
                     testClient,
                     targetedUser.user_id,

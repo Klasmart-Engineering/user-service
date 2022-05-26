@@ -31,7 +31,7 @@ export class Subject extends CustomBaseEntity {
     @Column({ nullable: false, default: false })
     public system?: boolean
 
-    @ManyToOne(() => Organization, (organization) => organization.ageRanges)
+    @ManyToOne(() => Organization, (organization) => organization.subjects)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
 

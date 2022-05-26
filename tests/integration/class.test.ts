@@ -58,6 +58,13 @@ import {
     moveUsersToClassAuthorization,
     moveUsersToClassValidation,
     moveUsersToClassProcessAndWrite,
+    AddAgeRangesToClasses,
+    RemoveSubjectsFromClasses,
+    RemoveAgeRangesFromClasses,
+    generateMapsForAddingRemovingAgeRanges,
+    EntityMapAddRemoveAgeRanges,
+    AddSubjectsToClasses,
+    AddSubjectsClassesEntityMap,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -90,6 +97,7 @@ import {
     createUser,
     createAdminUser as adminUserFactory,
     createUsers,
+    makeUserWithPermission,
 } from '../factories/user.factory'
 import {
     createClass as createClassFactory,
@@ -100,7 +108,7 @@ import { createSchool as createSchoolFactory } from '../factories/school.factory
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
-import { createSubject } from '../factories/subject.factory'
+import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createProgram, createPrograms } from '../factories/program.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { Role } from '../../src/entities/role'
@@ -117,6 +125,10 @@ import {
     RemoveTeachersFromClassInput,
     SetAcademicTermOfClassInput,
     MoveUsersToClassInput,
+    AddAgeRangesToClassInput,
+    RemoveSubjectsFromClassInput,
+    RemoveAgeRangesFromClassInput,
+    AddSubjectsToClassInput,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
@@ -153,6 +165,7 @@ import { getMap } from '../../src/utils/resolvers/entityMaps'
 import { createSchools } from '../factories/school.factory'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { AgeRangesInitializer } from '../../src/initializers/ageRanges'
 
 type ClassSpecs = {
     class: Class
@@ -505,25 +518,6 @@ describe('class', () => {
         })
 
         context('authorize', () => {
-            const makeUserWithPermission = async (
-                permission: PermissionName
-            ) => {
-                const clientUser = await createUser().save()
-                const permittedOrg = await createOrganization().save()
-                const role = await createRoleFactory(undefined, permittedOrg, {
-                    permissions: [permission],
-                }).save()
-                await createOrganizationMembership({
-                    user: clientUser,
-                    organization: permittedOrg,
-                    roles: [role],
-                }).save()
-                const permissions = new UserPermissions(
-                    userToPayload(clientUser)
-                )
-                return { permittedOrg, userCtx: { permissions } }
-            }
-
             const callAuthorize = (
                 userCtx: {
                     permissions: UserPermissions
@@ -994,7 +988,9 @@ describe('class', () => {
                         authorization: undefined,
                     })
                 ).to.be.rejected
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 expect(dbClass.class_name).to.equal(originalClassName)
             })
         })
@@ -1043,7 +1039,9 @@ describe('class', () => {
                         authorization: getNonAdminAuthToken(),
                     })
                 ).to.be.rejected
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 expect(dbClass.class_name).to.equal(originalClassName)
             })
         })
@@ -1100,7 +1098,9 @@ describe('class', () => {
                 )
                 expect(gqlClass).to.exist
                 expect(gqlClass.class_name).to.equal(newClassName)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 expect(dbClass.class_name).to.equal(newClassName)
             })
 
@@ -1122,7 +1122,9 @@ describe('class', () => {
                     )
 
                     expect(gqlClass).to.be.null
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     expect(dbClass.class_name).to.equal(originalClassName)
                 })
             })
@@ -1941,8 +1943,12 @@ describe('class', () => {
                         { authorization: undefined }
                     )
                 ).to.be.rejected
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = await dbClass.teachers
                 const classesTeaching = await dbTeacher.classesTeaching
                 expect(classesTeaching).to.be.empty
@@ -1982,8 +1988,13 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbTeacher = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbTeacher = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const teachers = await dbClass.teachers
                         const classesTeaching = await dbTeacher.classesTeaching
                         expect(classesTeaching).to.be.empty
@@ -2023,8 +2034,12 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbTeacher = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbTeacher = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const teachers = await dbClass.teachers
                         const classesTeaching = await dbTeacher.classesTeaching
                         expect(classesTeaching).to.be.empty
@@ -2074,8 +2089,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlTeacher.map(userInfo)).to.deep.eq([user.user_id])
-                    let dbTeacher = await User.findOneOrFail(user.user_id)
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let teachers = (await dbClass.teachers) || []
                     let classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2091,8 +2110,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlTeacher).to.be.empty
-                    dbTeacher = await User.findOneOrFail(user.user_id)
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     teachers = (await dbClass.teachers) || []
                     classesTeaching = (await dbTeacher.classesTeaching) || []
                     expect(teachers).to.be.empty
@@ -2115,8 +2138,12 @@ describe('class', () => {
                         )
 
                         expect(gqlTeacher).to.be.null
-                        const dbTeacher = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbTeacher = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const teachers = await dbClass.teachers
                         const classesTeaching = await dbTeacher.classesTeaching
                         expect(classesTeaching).to.be.empty
@@ -2173,8 +2200,12 @@ describe('class', () => {
                         authorization: undefined,
                     })
                 ).to.be.rejected
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = await dbClass.teachers
                 const classesTeaching = await dbTeacher.classesTeaching
                 expect(classesTeaching).to.be.empty
@@ -2221,8 +2252,12 @@ describe('class', () => {
                         authorization: getNonAdminAuthToken(),
                     })
                 ).to.be.rejected
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = await dbClass.teachers
                 const classesTeaching = await dbTeacher.classesTeaching
                 expect(classesTeaching).to.be.empty
@@ -2278,8 +2313,12 @@ describe('class', () => {
                 )
                 expect(gqlTeacher).to.exist
                 expect(user).to.include(gqlTeacher)
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = await dbClass.teachers
                 const classesTeaching = await dbTeacher.classesTeaching
                 expect(classesTeaching).to.have.lengthOf(1)
@@ -2304,8 +2343,12 @@ describe('class', () => {
                     )
 
                     expect(gqlTeacher).to.be.null
-                    const dbTeacher = await User.findOneOrFail(user.user_id)
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const teachers = await dbClass.teachers
                     const classesTeaching = await dbTeacher.classesTeaching
                     expect(classesTeaching).to.be.empty
@@ -2373,8 +2416,12 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                     ).to.be.rejected
-                    const dbTeacher = await User.findOneOrFail(user.user_id)
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const teachers = (await dbClass.teachers) || []
                     const classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2439,8 +2486,12 @@ describe('class', () => {
                     { authorization: getNonAdminAuthToken() }
                 )
                 expect(gqlTeacher).to.be.true
-                const dbTeacher = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const teachers = (await dbClass.teachers) || []
                 const classesTeaching = (await dbTeacher.classesTeaching) || []
                 expect(teachers).to.be.empty
@@ -2462,8 +2513,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlTeacher).to.be.null
-                    const dbTeacher = await User.findOneOrFail(user.user_id)
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const teachers = (await dbClass.teachers) || []
                     const classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2540,8 +2595,12 @@ describe('class', () => {
                 )
 
                 expect(gqlTeacher).to.be.true
-                const dbTeacher = await User.findOneOrFail(userId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbTeacher = await User.findOneByOrFail({
+                    user_id: userId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const teachers = (await dbClass.teachers) || []
                 const classesTeaching = (await dbTeacher.classesTeaching) || []
                 expect(teachers).to.be.empty
@@ -2564,8 +2623,12 @@ describe('class', () => {
                     )
 
                     expect(gqlTeacher).to.be.null
-                    const dbTeacher = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const teachers = (await dbClass.teachers) || []
                     const classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2604,8 +2667,12 @@ describe('class', () => {
                     )
 
                     expect(gqlTeacher).to.be.true
-                    const dbTeacher = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbTeacher = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const teachers = (await dbClass.teachers) || []
                     const classesTeaching =
                         (await dbTeacher.classesTeaching) || []
@@ -2652,8 +2719,12 @@ describe('class', () => {
                         { authorization: undefined }
                     )
                 ).to.be.rejected
-                const dbStudent = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const students = await dbClass.students
                 const classesStudying = await dbStudent.classesStudying
                 expect(classesStudying).to.be.empty
@@ -2693,8 +2764,12 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbStudent = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbStudent = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const students = await dbClass.students
                         const classesStudying = await dbStudent.classesStudying
                         expect(classesStudying).to.be.empty
@@ -2734,8 +2809,12 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbStudent = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbStudent = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const students = await dbClass.students
                         const classesStudying = await dbStudent.classesStudying
                         expect(classesStudying).to.be.empty
@@ -2785,8 +2864,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent.map(userInfo)).to.deep.eq([user.user_id])
-                    let dbStudent = await User.findOneOrFail(user.user_id)
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbStudent = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let students = (await dbClass.students) || []
                     let classesStudying =
                         (await dbStudent.classesStudying) || []
@@ -2802,8 +2885,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent).to.be.empty
-                    dbStudent = await User.findOneOrFail(user.user_id)
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbStudent = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     students = (await dbClass.students) || []
                     classesStudying = (await dbStudent.classesStudying) || []
                     expect(students).to.be.empty
@@ -2825,8 +2912,12 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlStudent).to.be.null
-                        const dbStudent = await User.findOneOrFail(user.user_id)
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbStudent = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const students = await dbClass.students
                         const classesStudying = await dbStudent.classesStudying
                         expect(classesStudying).to.be.empty
@@ -2883,8 +2974,12 @@ describe('class', () => {
                         authorization: undefined,
                     })
                 ).to.be.rejected
-                const dbStudent = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const students = await dbClass.students
                 const classesStudying = await dbStudent.classesStudying
                 expect(classesStudying).to.be.empty
@@ -2931,8 +3026,12 @@ describe('class', () => {
                         authorization: getNonAdminAuthToken(),
                     })
                 ).to.be.rejected
-                const dbStudent = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const students = await dbClass.students
                 const classesStudying = await dbStudent.classesStudying
                 expect(classesStudying).to.be.empty
@@ -2988,8 +3087,12 @@ describe('class', () => {
                 )
                 expect(gqlStudent).to.exist
                 expect(user).to.include(gqlStudent)
-                const dbStudent = await User.findOneOrFail(user.user_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: user.user_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const students = await dbClass.students
                 const classesStudying = await dbStudent.classesStudying
                 expect(classesStudying).to.have.lengthOf(1)
@@ -3013,8 +3116,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent).to.be.null
-                    const dbStudent = await User.findOneOrFail(user.user_id)
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbStudent = await User.findOneByOrFail({
+                        user_id: user.user_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const students = await dbClass.students
                     const classesStudying = await dbStudent.classesStudying
                     expect(classesStudying).to.be.empty
@@ -3076,8 +3183,12 @@ describe('class', () => {
                             authorization: getNonAdminAuthToken(),
                         })
                     ).to.be.rejected
-                    const dbStudent = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbStudent = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const students = (await dbClass.students) || []
                     const classesStudying =
                         (await dbStudent.classesStudying) || []
@@ -3136,8 +3247,12 @@ describe('class', () => {
                     { authorization: getNonAdminAuthToken() }
                 )
                 expect(gqlStudent).to.be.true
-                const dbStudent = await User.findOneOrFail(userId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: userId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const students = (await dbClass.students) || []
                 const classesStudying = (await dbStudent.classesStudying) || []
                 expect(students).to.be.empty
@@ -3159,8 +3274,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent).to.be.null
-                    const dbStudents = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbStudents = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const students = (await dbClass.students) || []
                     const classesStudying =
                         (await dbStudents.classesStudying) || []
@@ -3192,10 +3311,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlStudent).to.be.true
-                    const dbStudent = await User.findOneOrFail(userId, {
+                    const dbStudent = await User.findOneOrFail({
+                        where: { user_id: userId },
                         relations: ['classesStudying'],
                     })
-                    const dbClass = await Class.findOneOrFail(classId, {
+                    const dbClass = await Class.findOneOrFail({
+                        where: { class_id: classId },
                         relations: ['students'],
                     })
                     const students = (await dbClass.students) || []
@@ -3273,8 +3394,12 @@ describe('class', () => {
                 )
 
                 expect(gqlStudent).to.be.true
-                const dbStudent = await User.findOneOrFail(userId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbStudent = await User.findOneByOrFail({
+                    user_id: userId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const students = (await dbClass.students) || []
                 const classesStudying = (await dbStudent.classesStudying) || []
                 expect(students).to.be.empty
@@ -3297,8 +3422,12 @@ describe('class', () => {
                     )
 
                     expect(gqlStudent).to.be.null
-                    const dbStudent = await User.findOneOrFail(userId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbStudent = await User.findOneByOrFail({
+                        user_id: userId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const students = (await dbClass.students) || []
                     const classesStudying =
                         (await dbStudent.classesStudying) || []
@@ -3348,8 +3477,12 @@ describe('class', () => {
                         { authorization: undefined }
                     )
                 ).to.be.rejected
-                const dbSchool = await School.findOneOrFail(school.school_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const schools = await dbClass.schools
                 const classes = await dbSchool.classes
                 expect(classes).to.be.empty
@@ -3389,10 +3522,12 @@ describe('class', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
                         ).to.be.rejected
-                        const dbSchool = await School.findOneOrFail(
-                            school.school_id
-                        )
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbSchool = await School.findOneByOrFail({
+                            school_id: school.school_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const schools = await dbClass.schools
                         const classes = await dbSchool.classes
                         expect(classes).to.be.empty
@@ -3430,10 +3565,12 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                     ).to.be.rejected
-                    const dbSchool = await School.findOneOrFail(
-                        school.school_id
-                    )
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const schools = await dbClass.schools
                     const classes = await dbSchool.classes
                     expect(classes).to.be.empty
@@ -3484,8 +3621,12 @@ describe('class', () => {
                     expect(gqlSchool.map(schoolInfo)).to.deep.eq([
                         school.school_id,
                     ])
-                    let dbSchool = await School.findOneOrFail(school.school_id)
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let schools = (await dbClass.schools) || []
                     let classes = (await dbSchool.classes) || []
                     expect(schools.map(schoolInfo)).to.deep.eq([
@@ -3500,8 +3641,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlSchool).to.be.empty
-                    dbSchool = await School.findOneOrFail(school.school_id)
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     schools = (await dbClass.schools) || []
                     classes = (await dbSchool.classes) || []
                     expect(schools).to.be.empty
@@ -3523,10 +3668,12 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlSchool).to.be.null
-                        const dbSchool = await School.findOneOrFail(
-                            school.school_id
-                        )
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbSchool = await School.findOneByOrFail({
+                            school_id: school.school_id,
+                        })
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         const schools = await dbClass.schools
                         const classes = await dbSchool.classes
                         expect(classes).to.be.empty
@@ -3593,8 +3740,12 @@ describe('class', () => {
                         { authorization: undefined }
                     )
                 ).to.be.rejected
-                const dbSchool = await School.findOneOrFail(school.school_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const schools = await dbClass.schools
                 const classes = await dbSchool.classes
                 expect(classes).to.be.empty
@@ -3651,8 +3802,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                 ).to.be.rejected
-                const dbSchool = await School.findOneOrFail(school.school_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const schools = await dbClass.schools
                 const classes = await dbSchool.classes
                 expect(classes).to.be.empty
@@ -3715,8 +3870,12 @@ describe('class', () => {
                 )
                 expect(gqlSchool).to.exist
                 expect(school).to.include(gqlSchool)
-                const dbSchool = await School.findOneOrFail(school.school_id)
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: school.school_id,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 const schools = await dbClass.schools
                 const classes = await dbSchool.classes
                 expect(classes).to.have.lengthOf(1)
@@ -3740,10 +3899,12 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlSchool).to.be.null
-                    const dbSchool = await School.findOneOrFail(
-                        school.school_id
-                    )
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: school.school_id,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     const schools = await dbClass.schools
                     const classes = await dbSchool.classes
                     expect(classes).to.be.empty
@@ -3821,8 +3982,12 @@ describe('class', () => {
                             authorization: getNonAdminAuthToken(),
                         })
                     ).to.be.rejected
-                    const dbSchool = await School.findOneOrFail(schoolId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: schoolId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const classSchools = (await dbClass.schools) || []
                     const schoolClasses = (await dbSchool.classes) || []
                     expect(classSchools.map(schoolInfo)).to.deep.eq([schoolId])
@@ -3891,8 +4056,12 @@ describe('class', () => {
                 )
 
                 expect(gqlSchool).to.be.true
-                const dbSchool = await School.findOneOrFail(schoolId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: schoolId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const classSchools = (await dbClass.schools) || []
                 const schoolClasses = (await dbSchool.classes) || []
                 expect(classSchools).to.be.empty
@@ -3915,8 +4084,12 @@ describe('class', () => {
                     )
 
                     expect(gqlSchool).to.be.null
-                    const dbSchool = await School.findOneOrFail(schoolId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: schoolId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const classSchools = (await dbClass.schools) || []
                     const schoolClasses = (await dbSchool.classes) || []
                     expect(classSchools.map(schoolInfo)).to.deep.eq([schoolId])
@@ -3946,10 +4119,12 @@ describe('class', () => {
                     )
 
                     expect(gqlSchool).to.be.true
-                    const dbSchool = await School.findOneOrFail(schoolId, {
+                    const dbSchool = await School.findOneOrFail({
+                        where: { school_id: schoolId },
                         relations: ['classes'],
                     })
-                    const dbClass = await Class.findOneOrFail(classId, {
+                    const dbClass = await Class.findOneOrFail({
+                        where: { class_id: classId },
                         relations: ['schools'],
                     })
                     const classSchools = (await dbClass.schools) || []
@@ -4025,8 +4200,12 @@ describe('class', () => {
                 )
 
                 expect(gqlSchool).to.be.true
-                const dbSchool = await School.findOneOrFail(schoolId)
-                const dbClass = await Class.findOneOrFail(classId)
+                const dbSchool = await School.findOneByOrFail({
+                    school_id: schoolId,
+                })
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: classId,
+                })
                 const classSchools = (await dbClass.schools) || []
                 const schoolClasses = (await dbSchool.classes) || []
                 expect(classSchools).to.be.empty
@@ -4049,8 +4228,12 @@ describe('class', () => {
                     )
 
                     expect(gqlTeacher).to.be.null
-                    const dbSchool = await School.findOneOrFail(schoolId)
-                    const dbClass = await Class.findOneOrFail(classId)
+                    const dbSchool = await School.findOneByOrFail({
+                        school_id: schoolId,
+                    })
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: classId,
+                    })
                     const classSchools = (await dbClass.schools) || []
                     const schoolClasses = (await dbSchool.classes) || []
                     expect(classSchools.map(schoolInfo)).to.deep.eq([schoolId])
@@ -4088,7 +4271,9 @@ describe('class', () => {
                         authorization: getNonAdminAuthToken(),
                     })
                 ).to.be.rejected
-                const dbClass = await Class.findOneOrFail(cls.class_id)
+                const dbClass = await Class.findOneByOrFail({
+                    class_id: cls.class_id,
+                })
                 expect(dbClass.status).to.eq(Status.ACTIVE)
                 expect(dbClass.deleted_at).to.be.null
             })
@@ -4117,7 +4302,9 @@ describe('class', () => {
                                 authorization: getNonAdminAuthToken(),
                             })
                         ).to.be.rejected
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         expect(dbClass.status).to.eq(Status.ACTIVE)
                         expect(dbClass.deleted_at).to.be.null
                     })
@@ -4151,7 +4338,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(successful).to.be.true
-                    const dbClass = await Class.findOneOrFail(cls.class_id)
+                    const dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     expect(dbClass.status).to.eq(Status.INACTIVE)
                     expect(dbClass.deleted_at).not.to.be.null
                 })
@@ -4170,7 +4359,9 @@ describe('class', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(successful).to.be.null
-                        const dbClass = await Class.findOneOrFail(cls.class_id)
+                        const dbClass = await Class.findOneByOrFail({
+                            class_id: cls.class_id,
+                        })
                         expect(dbClass.status).to.eq(Status.INACTIVE)
                         expect(dbClass.deleted_at).not.to.be.null
                     })
@@ -4229,7 +4420,9 @@ describe('class', () => {
                 authorization: getNonAdminAuthToken(),
             })
 
-            const dbClass = await Class.findOneOrFail(cls.class_id)
+            const dbClass = await Class.findOneByOrFail({
+                class_id: cls.class_id,
+            })
             const dbPrograms = (await dbClass.programs) || []
 
             const gqlProgramDetails = await Promise.all(
@@ -4329,7 +4522,9 @@ describe('class', () => {
                 })
 
                 it('edits the class programs', async () => {
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).to.be.empty
 
@@ -4340,7 +4535,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).not.to.be.empty
                     expect(dbPrograms.map(programInfo)).to.deep.equalInAnyOrder(
@@ -4350,7 +4547,9 @@ describe('class', () => {
                     await editPrograms(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbPrograms = (await dbClass.programs) || []
                     expect(dbPrograms).to.be.empty
                 })
@@ -4731,7 +4930,9 @@ describe('class', () => {
                 })
 
                 it('edits the class age ranges', async () => {
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
 
@@ -4742,7 +4943,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).not.to.be.empty
                     expect(
@@ -4752,7 +4955,9 @@ describe('class', () => {
                     await editAgeRanges(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbAgeRanges = (await dbClass.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
                 })
@@ -4863,7 +5068,9 @@ describe('class', () => {
                 })
 
                 it('edits the class grades', async () => {
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).to.be.empty
 
@@ -4874,7 +5081,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).not.to.be.empty
                     expect(dbGrades.map(gradeInfo)).to.deep.equalInAnyOrder(
@@ -4884,7 +5093,9 @@ describe('class', () => {
                     await editGrades(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbGrades = (await dbClass.grades) || []
                     expect(dbGrades).to.be.empty
                 })
@@ -4995,7 +5206,9 @@ describe('class', () => {
                 })
 
                 it('edits the class subjects', async () => {
-                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     let dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).to.be.empty
 
@@ -5006,7 +5219,9 @@ describe('class', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
 
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).not.to.be.empty
                     expect(dbSubjects.map(subjectInfo)).to.deep.equalInAnyOrder(
@@ -5016,7 +5231,9 @@ describe('class', () => {
                     await editSubjects(testClient, cls.class_id, [], {
                         authorization: getNonAdminAuthToken(),
                     })
-                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbClass = await Class.findOneByOrFail({
+                        class_id: cls.class_id,
+                    })
                     dbSubjects = (await dbClass.subjects) || []
                     expect(dbSubjects).to.be.empty
                 })
@@ -5754,7 +5971,7 @@ describe('class', () => {
             for (const classInputs of input) {
                 const { classId, programIds } = classInputs
 
-                const cls = await Class.findOne(classId)
+                const cls = await Class.findOneBy({ class_id: classId })
                 const dbPrograms = await cls?.programs
 
                 const dbProgramIds = new Set(dbPrograms?.map((val) => val.id))
@@ -9280,7 +9497,7 @@ describe('class', () => {
                 const errs = error.errors
                 expect(errs[0].code).to.equal('ERR_NON_EXISTENT_ENTITY')
                 expect(errs[0].message).to.equal(
-                    `On index 1, Class ${nonAdminUser.user_id} doesn't exist.`
+                    `On index 1, Class ${nonAdminUser.user_id} doesn't exist or you don't have permissions to view it.`
                 )
             })
         })
@@ -9540,5 +9757,1599 @@ describe('class', () => {
                 })
             }
         )
+    })
+
+    describe('AddAgeRangesToClasses', () => {
+        let adminUser: User
+        let orgs: Organization[]
+        let classes: Class[]
+        let classAgeRanges: AgeRange[]
+        let noClassAgeRanges: AgeRange[]
+        let inputs: AddAgeRangesToClassInput[]
+        const numberOfOrgs = 3
+
+        const addAgeRangesToClasses = (
+            input: AddAgeRangesToClassInput[] = [],
+            authUser = adminUser
+        ) =>
+            new AddAgeRangesToClasses(
+                input,
+                new UserPermissions(userToPayload(authUser))
+            )
+
+        beforeEach(async () => {
+            adminUser = await adminUserFactory().save()
+            orgs = await Organization.save(createOrganizations(numberOfOrgs))
+
+            // SETUP: N orgs -> for each org, create a class and its age range (i.e. class's existing age range)
+            // SETUP #2: Also, for each org, create an age range not in any class, to add to classes in input
+            classes = []
+            classAgeRanges = []
+            noClassAgeRanges = []
+
+            for (let i = 0; i < orgs.length; i++) {
+                const ageRange = createAgeRange(orgs[i])
+                const class_ = createClassFactory(undefined, orgs[i])
+                class_.class_name = `Class ${i}`
+                class_.age_ranges = Promise.resolve([ageRange])
+                classAgeRanges.push(ageRange)
+                classes.push(class_)
+
+                const ageRangeNoClass = createAgeRange(orgs[i])
+                noClassAgeRanges.push(ageRangeNoClass)
+            }
+            await connection.manager.save(classAgeRanges)
+            await connection.manager.save(classes)
+            await connection.manager.save(noClassAgeRanges)
+
+            inputs = classes.map((cls, idx) => {
+                return {
+                    classId: cls.class_id,
+                    ageRangeIds: [noClassAgeRanges[idx].id],
+                }
+            })
+        })
+
+        context('authorize', () => {
+            let nonAdminUser: User
+            let memberships: OrganizationMembership[]
+
+            const authorize = async (input: AddAgeRangesToClassInput[]) => {
+                const mutationClass = addAgeRangesToClasses(
+                    inputs,
+                    nonAdminUser
+                )
+                const maps = await mutationClass.generateEntityMaps(input)
+                return mutationClass.authorize(input, maps)
+            }
+
+            beforeEach(async () => {
+                nonAdminUser = await createUser().save()
+
+                const roles = await Role.save(
+                    orgs.map((o) =>
+                        createRoleFactory(undefined, o, {
+                            permissions: [PermissionName.edit_class_20334],
+                        })
+                    )
+                )
+
+                memberships = await OrganizationMembership.save(
+                    orgs.map((o, idx) =>
+                        createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: o,
+                            roles: [roles[idx]],
+                        })
+                    )
+                )
+            })
+
+            context(
+                'when user has correct permission for all orgs of inputted classes',
+                () => {
+                    it('fulfills its promise', async () => {
+                        await expect(authorize(inputs)).to.be.eventually
+                            .fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user has insufficient permissions for some orgs of inputted classes',
+                () => {
+                    beforeEach(async () => {
+                        memberships[1].roles = Promise.resolve([])
+                        await memberships[1].save()
+                    })
+
+                    it('rejects its promise with the correct message', async () => {
+                        await expect(
+                            authorize(inputs)
+                        ).to.be.eventually.rejectedWith(
+                            /User\(.*\) does not have Permission\(edit_class_20334\) in Organizations\(.*\)/
+                        )
+                    })
+                }
+            )
+        })
+
+        context('validationOverAllInputs', () => {
+            const validateAllInputs = async (
+                input: AddAgeRangesToClassInput[]
+            ) => {
+                const mutationClass = addAgeRangesToClasses(inputs, adminUser)
+                const maps = await mutationClass.generateEntityMaps(input)
+                return mutationClass.validationOverAllInputs(input, maps)
+            }
+
+            it('generates duplicate-code APIErrors if there are duplicate class IDs in input', async () => {
+                inputs[1] = inputs[0]
+
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(2)
+
+                const expectedError = createDuplicateAttributeAPIError(
+                    1,
+                    ['classId'],
+                    'AddAgeRangesToClassInput'
+                )
+                expect(apiErrors.length).to.eq(1)
+                compareErrors(apiErrors[0], expectedError)
+            })
+
+            it('generates duplicate-code APIErrors if there are duplicate age range IDs in input', async () => {
+                inputs[1].ageRangeIds.push(inputs[1].ageRangeIds[0])
+
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(2)
+
+                const expectedError = createDuplicateAttributeAPIError(
+                    1,
+                    ['ageRangeIds'],
+                    'AddAgeRangesToClassInput'
+                )
+                expect(apiErrors.length).to.eq(1)
+                compareErrors(apiErrors[0], expectedError)
+            })
+        })
+
+        context('validate', () => {
+            const validate = async (input: AddAgeRangesToClassInput[]) => {
+                const mutationClass = addAgeRangesToClasses(input, adminUser)
+                const maps = await mutationClass.generateEntityMaps(input)
+                return input.flatMap((i, idx) =>
+                    mutationClass.validate(idx, undefined, i, maps)
+                )
+            }
+
+            context(
+                'input contains a class ID which does not exist in the database',
+                () => {
+                    beforeEach(async () => {
+                        await classes[1].inactivate(getManager())
+                    })
+
+                    it('records a non-existent-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'Class',
+                            inputs[1].classId
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context(
+                'input contains an age range ID which does not exist or is inactive in the database',
+                () => {
+                    beforeEach(async () => {
+                        await noClassAgeRanges[1].inactivate(getManager())
+                    })
+
+                    it('records a non-existent-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'AgeRange',
+                            inputs[1].ageRangeIds[0]
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context(
+                'input is trying to add an age range which does not belong to the same organization as the class',
+                () => {
+                    beforeEach(async () => {
+                        noClassAgeRanges[1].organization = Promise.resolve(
+                            orgs[0]
+                        )
+                        await connection.manager.save(noClassAgeRanges)
+                    })
+
+                    it('records a nonExistentChild-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistentChild',
+                            1,
+                            AgeRange.name,
+                            noClassAgeRanges[1].id,
+                            Organization.name,
+                            orgs[1].organization_id
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context(
+                'input is trying to add an age range which already exists in the class',
+                () => {
+                    beforeEach(async () => {
+                        classes[1].age_ranges = Promise.resolve([
+                            noClassAgeRanges[1],
+                        ])
+                        await connection.manager.save(classes)
+                    })
+
+                    it('records a existentChild-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'existentChild',
+                            1,
+                            AgeRange.name,
+                            noClassAgeRanges[1].id,
+                            Class.name,
+                            classes[1].class_id
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context('input contains a valid system age range', () => {
+                beforeEach(async () => {
+                    const systemAgeRange = new AgeRangesInitializer()
+                        .SYSTEM_AGE_RANGES[0] as AgeRange
+                    await AgeRange.save(systemAgeRange)
+                    inputs[1].ageRangeIds = [systemAgeRange.id]
+                })
+
+                it('should not raise any validation errors', async () => {
+                    const actualErrors = await validate(inputs)
+                    expect(actualErrors).to.be.empty
+                })
+            })
+        })
+
+        context('process', () => {
+            it('updates the entity with the correct attributes', async () => {
+                const mutationClass = addAgeRangesToClasses(inputs)
+                const maps = await mutationClass.generateEntityMaps(inputs)
+                const actualOutput = mutationClass.process(inputs[0], maps, 0)
+
+                expect(actualOutput.outputEntity.class_id).to.eq(
+                    inputs[0].classId
+                )
+                expect(
+                    (await actualOutput.outputEntity.age_ranges)!.map(
+                        (ar) => ar.id
+                    )
+                ).to.have.same.members([
+                    classAgeRanges[0].id,
+                    noClassAgeRanges[0].id,
+                ])
+            })
+
+            it('processes system age ranges correctly', async () => {
+                const systemAgeRange = new AgeRangesInitializer()
+                    .SYSTEM_AGE_RANGES[0] as AgeRange
+                await AgeRange.save(systemAgeRange)
+                inputs[1].ageRangeIds = [systemAgeRange.id]
+
+                const mutationClass = addAgeRangesToClasses(inputs)
+                const maps = await mutationClass.generateEntityMaps(inputs)
+                const actualOutput = mutationClass.process(inputs[1], maps, 1)
+
+                expect(actualOutput.outputEntity.class_id).to.eq(
+                    inputs[1].classId
+                )
+                expect(
+                    (await actualOutput.outputEntity.age_ranges)!.map(
+                        (ar) => ar.id
+                    )
+                ).to.have.same.members([
+                    classAgeRanges[1].id,
+                    systemAgeRange.id,
+                ])
+            })
+        })
+
+        context('complete mutation calls given valid input', () => {
+            it('provides the correct MutationResult and updates the database', async () => {
+                const result = await addAgeRangesToClasses(inputs).run()
+                const dbClasses = await Class.findByIds(
+                    inputs.map((i) => i.classId)
+                ).then((dbc) => sortObjectArray(dbc, 'class_name'))
+
+                expect(result.classes.length).to.eq(inputs.length)
+                expect(dbClasses.length).to.eq(inputs.length)
+
+                for (const [idx, i] of inputs.entries()) {
+                    expect(result.classes[idx].id).to.eq(i.classId)
+                    expect(dbClasses[idx].class_id).to.eq(i.classId)
+                    expect(
+                        // eslint-disable-next-line no-await-in-loop
+                        (await dbClasses[idx].age_ranges)!.map((ar) => ar.id)
+                    ).to.have.same.members([
+                        ...i.ageRangeIds,
+                        // eslint-disable-next-line no-await-in-loop
+                        ...(await classes[idx].age_ranges)!.map((ar) => ar.id),
+                    ])
+                }
+            })
+
+            const getDbCallCount = async (
+                input: AddAgeRangesToClassInput[]
+            ) => {
+                connection.logger.reset()
+                await addAgeRangesToClasses(input).run()
+                return connection.logger.count
+            }
+
+            it('makes the same number of db calls regardless of input length', async () => {
+                const countForOneClass = await getDbCallCount([inputs[0]])
+                expect(countForOneClass).to.be.equal(6)
+
+                const countForMultipleClasses = await getDbCallCount(
+                    inputs.slice(1)
+                )
+                expect(countForMultipleClasses).to.be.equal(countForOneClass)
+            })
+        })
+    })
+
+    describe('RemoveAgeRangesFromClasses', () => {
+        let adminUser: User
+        let orgs: Organization[]
+        let classes: Class[]
+        let classAgeRanges: AgeRange[]
+        let noClassAgeRanges: AgeRange[]
+        let inputs: RemoveAgeRangesFromClassInput[]
+        const numberOfOrgs = 3
+
+        const removeAgeRangesFromClasses = (
+            input: RemoveAgeRangesFromClassInput[] = [],
+            authUser = adminUser
+        ) =>
+            new RemoveAgeRangesFromClasses(
+                input,
+                new UserPermissions(userToPayload(authUser))
+            )
+
+        beforeEach(async () => {
+            adminUser = await adminUserFactory().save()
+            orgs = await Organization.save(createOrganizations(numberOfOrgs))
+
+            // SETUP: N orgs -> for each org, create a class and its age range (i.e. class's existing age range)
+            // SETUP #2: Also, for each org, create an age range not in any class, to add to classes in input
+            classes = []
+            classAgeRanges = []
+            noClassAgeRanges = []
+
+            for (let i = 0; i < orgs.length; i++) {
+                const ageRange = createAgeRange(orgs[i])
+                const class_ = createClassFactory(undefined, orgs[i])
+                class_.class_name = `Class ${i}`
+                class_.age_ranges = Promise.resolve([ageRange])
+                classAgeRanges.push(ageRange)
+                classes.push(class_)
+
+                const ageRangeNoClass = createAgeRange(orgs[i])
+                noClassAgeRanges.push(ageRangeNoClass)
+            }
+            await connection.manager.save(classAgeRanges)
+            await connection.manager.save(classes)
+            await connection.manager.save(noClassAgeRanges)
+
+            inputs = classes.map((cls, idx) => {
+                return {
+                    classId: cls.class_id,
+                    ageRangeIds: [classAgeRanges[idx].id], // Remove these existing age ranges from their respective classes
+                }
+            })
+        })
+
+        context('authorize', () => {
+            let nonAdminUser: User
+            let memberships: OrganizationMembership[]
+
+            const authorize = async (input: AddAgeRangesToClassInput[]) => {
+                const mutationClass = removeAgeRangesFromClasses(
+                    inputs,
+                    nonAdminUser
+                )
+                const maps = await mutationClass.generateEntityMaps(input)
+                return mutationClass.authorize(input, maps)
+            }
+
+            beforeEach(async () => {
+                nonAdminUser = await createUser().save()
+
+                const roles = await Role.save(
+                    orgs.map((o) =>
+                        createRoleFactory(undefined, o, {
+                            permissions: [PermissionName.edit_class_20334],
+                        })
+                    )
+                )
+
+                memberships = await OrganizationMembership.save(
+                    orgs.map((o, idx) =>
+                        createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: o,
+                            roles: [roles[idx]],
+                        })
+                    )
+                )
+            })
+
+            context(
+                'when user has correct permission for all orgs of inputted classes',
+                () => {
+                    it('fulfills its promise', async () => {
+                        await expect(authorize(inputs)).to.be.eventually
+                            .fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user has insufficient permissions for some orgs of inputted classes',
+                () => {
+                    beforeEach(async () => {
+                        memberships[1].roles = Promise.resolve([])
+                        await memberships[1].save()
+                    })
+
+                    it('rejects its promise with the correct message', async () => {
+                        await expect(
+                            authorize(inputs)
+                        ).to.be.eventually.rejectedWith(
+                            /User\(.*\) does not have Permission\(edit_class_20334\) in Organizations\(.*\)/
+                        )
+                    })
+                }
+            )
+        })
+
+        context('validationOverAllInputs', () => {
+            const validateAllInputs = async (
+                input: RemoveAgeRangesFromClassInput[]
+            ) => {
+                const mutationClass = removeAgeRangesFromClasses(
+                    inputs,
+                    adminUser
+                )
+                const maps = await mutationClass.generateEntityMaps(input)
+                return mutationClass.validationOverAllInputs(input, maps)
+            }
+
+            it('generates duplicate-code APIErrors if there are duplicate class IDs in input', async () => {
+                inputs[1] = inputs[0]
+
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(2)
+
+                const expectedError = createDuplicateAttributeAPIError(
+                    1,
+                    ['classId'],
+                    'RemoveAgeRangesFromClassInput'
+                )
+                expect(apiErrors.length).to.eq(1)
+                compareErrors(apiErrors[0], expectedError)
+            })
+
+            it('generates duplicate-code APIErrors if there are duplicate age range IDs in input', async () => {
+                inputs[1].ageRangeIds.push(inputs[1].ageRangeIds[0])
+
+                const { validInputs, apiErrors } = await validateAllInputs(
+                    inputs
+                )
+                expect(validInputs.length).to.equal(2)
+
+                const expectedError = createDuplicateAttributeAPIError(
+                    1,
+                    ['ageRangeIds'],
+                    'RemoveAgeRangesFromClassInput'
+                )
+                expect(apiErrors.length).to.eq(1)
+                compareErrors(apiErrors[0], expectedError)
+            })
+        })
+
+        context('validate', () => {
+            const validate = async (input: RemoveAgeRangesFromClassInput[]) => {
+                const mutationClass = removeAgeRangesFromClasses(
+                    input,
+                    adminUser
+                )
+                const maps = await mutationClass.generateEntityMaps(input)
+                return input.flatMap((i, idx) =>
+                    mutationClass.validate(idx, undefined, i, maps)
+                )
+            }
+
+            context(
+                'input contains a class ID which does not exist in the database',
+                () => {
+                    beforeEach(async () => {
+                        await classes[1].inactivate(getManager())
+                    })
+
+                    it('records a non-existent-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'Class',
+                            inputs[1].classId
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context(
+                'input contains an age range ID which does not exist or is inactive in the database',
+                () => {
+                    beforeEach(async () => {
+                        await classAgeRanges[1].inactivate(getManager())
+                    })
+
+                    it('records a non-existent-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'AgeRange',
+                            inputs[1].ageRangeIds[0]
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context(
+                'input is trying to remove an age range which does not exist in the class',
+                () => {
+                    beforeEach(async () => {
+                        classes[1].age_ranges = Promise.resolve([])
+                        await connection.manager.save(classes)
+                    })
+
+                    it('records a existentChild-code error', async () => {
+                        const actualErrors = await validate(inputs)
+                        const expectedError = createEntityAPIError(
+                            'nonExistentChild',
+                            1,
+                            AgeRange.name,
+                            classAgeRanges[1].id,
+                            Class.name,
+                            classes[1].class_id
+                        )
+                        compareMultipleErrors(actualErrors, [expectedError])
+                    })
+                }
+            )
+
+            context('input contains a valid system age range', () => {
+                beforeEach(async () => {
+                    const systemAgeRange = new AgeRangesInitializer()
+                        .SYSTEM_AGE_RANGES[0] as AgeRange
+                    await AgeRange.save(systemAgeRange)
+                    inputs[1].ageRangeIds = [systemAgeRange.id]
+                    classes[1].age_ranges = Promise.resolve([systemAgeRange])
+                    await Class.save(classes[1])
+                })
+
+                it('should not raise any validation errors', async () => {
+                    const actualErrors = await validate(inputs)
+                    expect(actualErrors).to.be.empty
+                })
+            })
+        })
+
+        context('process', () => {
+            it('updates the entity with the correct attributes', async () => {
+                const mutationClass = removeAgeRangesFromClasses(inputs)
+                const maps = await mutationClass.generateEntityMaps(inputs)
+                const actualOutput = mutationClass.process(inputs[0], maps, 0)
+
+                expect(actualOutput.outputEntity.class_id).to.eq(
+                    inputs[0].classId
+                )
+                expect((await actualOutput.outputEntity.age_ranges)!).to.be
+                    .empty
+            })
+
+            it('processes system age ranges correctly', async () => {
+                const systemAgeRange = new AgeRangesInitializer()
+                    .SYSTEM_AGE_RANGES[0] as AgeRange
+                await AgeRange.save(systemAgeRange)
+                inputs[1].ageRangeIds = [systemAgeRange.id]
+                classes[1].age_ranges = Promise.resolve([
+                    classAgeRanges[1],
+                    systemAgeRange,
+                ])
+                await Class.save(classes[1])
+
+                const mutationClass = removeAgeRangesFromClasses(inputs)
+                const maps = await mutationClass.generateEntityMaps(inputs)
+                const actualOutput = mutationClass.process(inputs[1], maps, 1)
+
+                expect(actualOutput.outputEntity.class_id).to.eq(
+                    inputs[1].classId
+                )
+                expect(
+                    (await actualOutput.outputEntity.age_ranges)!.map(
+                        (ar) => ar.id
+                    )
+                ).to.have.same.members([classAgeRanges[1].id])
+            })
+        })
+
+        context('complete mutation calls given valid input', () => {
+            it('provides the correct MutationResult and updates the database', async () => {
+                const result = await removeAgeRangesFromClasses(inputs).run()
+                const dbClasses = await Class.findByIds(
+                    inputs.map((i) => i.classId)
+                ).then((dbc) => sortObjectArray(dbc, 'class_name'))
+
+                expect(result.classes.length).to.eq(inputs.length)
+                expect(dbClasses.length).to.eq(inputs.length)
+
+                for (const [idx, i] of inputs.entries()) {
+                    expect(result.classes[idx].id).to.eq(i.classId)
+                    expect(dbClasses[idx].class_id).to.eq(i.classId)
+                    expect(
+                        // eslint-disable-next-line no-await-in-loop
+                        (await dbClasses[idx].age_ranges)!.map((ar) => ar.id)
+                    ).to.be.empty
+                }
+            })
+
+            const getDbCallCount = async (
+                input: RemoveAgeRangesFromClassInput[]
+            ) => {
+                connection.logger.reset()
+                await removeAgeRangesFromClasses(input).run()
+                return connection.logger.count
+            }
+
+            it('makes the same number of db calls regardless of input length', async () => {
+                const countForOneClass = await getDbCallCount([inputs[0]])
+                expect(countForOneClass).to.be.equal(6)
+
+                const countForMultipleClasses = await getDbCallCount(
+                    inputs.slice(1)
+                )
+                expect(countForMultipleClasses).to.be.equal(countForOneClass)
+            })
+        })
+    })
+
+    describe('generateMapsForAddingRemovingAgeRanges', () => {
+        let adminUser: User
+        let orgs: Organization[]
+        let classes: Class[]
+        let classAgeRanges: AgeRange[]
+        let noClassAgeRanges: AgeRange[]
+        let inputs: AddAgeRangesToClassInput[]
+        let resultMaps: EntityMapAddRemoveAgeRanges
+        const numberOfOrgs = 3
+
+        context('ageRanges to/from classes mutations', () => {
+            beforeEach(async () => {
+                adminUser = await adminUserFactory().save()
+                orgs = await Organization.save(
+                    createOrganizations(numberOfOrgs)
+                )
+
+                // SETUP: N orgs -> for each org, create a class and its age range (i.e. class's existing age range)
+                // SETUP #2: Also, for each org, create an age range not in any class, to add to classes in input
+                classes = []
+                classAgeRanges = []
+                noClassAgeRanges = []
+
+                for (let i = 0; i < orgs.length; i++) {
+                    const ageRange = createAgeRange(orgs[i])
+                    const class_ = createClassFactory(undefined, orgs[i])
+                    class_.class_name = `Class ${i}`
+                    class_.age_ranges = Promise.resolve([ageRange])
+                    classAgeRanges.push(ageRange)
+                    classes.push(class_)
+
+                    const ageRangeNoClass = createAgeRange(orgs[i])
+                    noClassAgeRanges.push(ageRangeNoClass)
+                }
+                await connection.manager.save(classAgeRanges)
+                await connection.manager.save(classes)
+                await connection.manager.save(noClassAgeRanges)
+
+                inputs = classes.map((cls, idx) => {
+                    return {
+                        classId: cls.class_id,
+                        ageRangeIds: [noClassAgeRanges[idx].id],
+                    }
+                })
+
+                resultMaps = await generateMapsForAddingRemovingAgeRanges(
+                    inputs.map((val) => val.classId),
+                    inputs
+                )
+            })
+
+            it('generates inputAgeRangeOrgs correctly', async () => {
+                // Example of age range with no organization - should not show up in inputAgeRangeOrgs entity map
+                const systemAgeRange = new AgeRangesInitializer()
+                    .SYSTEM_AGE_RANGES[0] as AgeRange
+                await AgeRange.save(systemAgeRange)
+                inputs[0].ageRangeIds.push(systemAgeRange.id)
+
+                for (const [
+                    ageRangeId,
+                    orgId,
+                ] of resultMaps.inputAgeRangeOrgs) {
+                    const ageRange = noClassAgeRanges.filter(
+                        (ar) => ar.id == ageRangeId
+                    )[0]
+                    const org = orgs.filter(
+                        (o) => o.organization_id == orgId
+                    )[0]
+                    // eslint-disable-next-line no-await-in-loop
+                    expect(ageRange.organization_id!).to.eq(org.organization_id)
+                }
+            })
+
+            it('generates existingClassAgeRanges correctly', async () => {
+                for (const [
+                    classId,
+                    clsAgeRanges,
+                ] of resultMaps.existingClassAgeRanges) {
+                    const cls = classes.filter((c) => c.class_id == classId)[0]
+                    expect(
+                        // eslint-disable-next-line no-await-in-loop
+                        (await cls.age_ranges!).map((ar) => ar.id)
+                    ).to.have.same.members(clsAgeRanges.map((ar) => ar.id))
+                }
+            })
+        })
+    })
+
+    describe('RemoveSubjectsFromClasses', () => {
+        let input: RemoveSubjectsFromClassInput[]
+        let org: Organization
+        let subjects: Subject[]
+        let classes: Class[]
+        let adminUser: User
+        let nonAdminUser: User
+        let schools: School[]
+
+        function getRemoveSubjects(
+            subjectsFromClassinput: RemoveSubjectsFromClassInput[] = [],
+            authUser = adminUser
+        ) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new RemoveSubjectsFromClasses(
+                subjectsFromClassinput,
+                permissions
+            )
+        }
+
+        beforeEach(async () => {
+            nonAdminUser = await createUser().save()
+            adminUser = await adminUserFactory().save()
+            org = await createOrganization().save()
+            subjects = createSubjects(3)
+            schools = createSchools(2, org)
+            classes = createClassesFactory(3, org)
+            await connection.manager.save([...schools, ...subjects, ...classes])
+            classes[0].schools = Promise.resolve(schools)
+            classes[1].schools = Promise.resolve([schools[0]])
+            classes[0].subjects = Promise.resolve([subjects[0], subjects[1]])
+            classes[1].subjects = Promise.resolve([subjects[1], subjects[2]])
+            classes[2].subjects = Promise.resolve([
+                subjects[0],
+                subjects[1],
+                subjects[2],
+            ])
+            await connection.manager.save(classes)
+
+            input = []
+            const inputSubjectIndices = [
+                [0, 1],
+                [1, 2],
+                [0, 1, 2],
+            ]
+            for (let i = 0; i < 3; i++) {
+                input.push({
+                    classId: classes[i].class_id,
+                    subjectIds: inputSubjectIndices[i].map(
+                        (subjectIndex) => subjects[subjectIndex].id
+                    ),
+                })
+            }
+        })
+
+        context('.run', () => {
+            it('makes constant number of queries regardless of input length', async () => {
+                const mutation = getRemoveSubjects()
+                connection.logger.reset()
+                await mutation.generateEntityMaps([input[0]])
+                const countForOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.generateEntityMaps(input.slice(0))
+                const countForThree = connection.logger.count
+                expect(countForThree).to.eq(countForOneInput)
+            })
+            it('returns the expected output', async () => {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutationResult = mutate(
+                    RemoveSubjectsFromClasses,
+                    { input },
+                    permissions
+                )
+                const {
+                    classes: classesNodes,
+                }: ClassesMutationResult = await expect(mutationResult).to.be
+                    .fulfilled
+                expect(classesNodes).to.have.length(3)
+                expect(classesNodes[0]).to.deep.eq(
+                    mapClassToClassConnectionNode(classes[0])
+                )
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            function generateMaps(mapInputs: RemoveSubjectsFromClassInput[]) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new RemoveSubjectsFromClasses([], permissions)
+                return mutation.generateEntityMaps(mapInputs)
+            }
+
+            context('populates the maps correctly', async () => {
+                const maps = await generateMaps(input)
+                it('populates classesSubjects correctly', () => {
+                    for (const { classId, subjectIds } of input) {
+                        const mapSubjectIds = maps.classesSubjects
+                            .get(classId)!
+                            .map((s) => s.id)
+                        expect(mapSubjectIds).to.deep.equalInAnyOrder(
+                            subjectIds
+                        )
+                    }
+                })
+
+                it('populates organizations correctly', () => {
+                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
+                        org.organization_id,
+                        org.organization_id,
+                        org.organization_id,
+                    ])
+                })
+
+                it('populates schoolIds correctly', () => {
+                    expect(maps.schoolIds).to.deep.equalInAnyOrder([
+                        schools[0].school_id,
+                        schools[1].school_id,
+                    ])
+                })
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getRemoveSubjects(input, authUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.edit_class_20334
+            context(
+                'when user has permissions to remove subjects from all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: org,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to remove subjects from all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(permission, nonAdminUser, [
+                                org,
+                            ])
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            context('when the same input is used three times', () => {
+                beforeEach(() => {
+                    input = [input[0], input[0], input[0]]
+                })
+
+                it('returns duplicate errors for the last two inputs', () => {
+                    const val = getRemoveSubjects().validationOverAllInputs(
+                        input
+                    )
+
+                    const expectedErrors = [1, 2].map((inputIndex) =>
+                        createDuplicateAttributeAPIError(
+                            inputIndex,
+                            ['classId'],
+                            'RemoveSubjectsFromClassInput'
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getRemoveSubjects().validationOverAllInputs(
+                        input
+                    )
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context('when there are too many subjectIds', () => {
+                beforeEach(async () => {
+                    const tooManySubjects = createUsers(
+                        config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                    )
+                    await User.save(tooManySubjects)
+                    input[0].subjectIds = tooManySubjects.map(
+                        (subject) => subject.user_id
+                    )
+                    input[2].subjectIds = tooManySubjects.map(
+                        (subject) => subject.user_id
+                    )
+                })
+
+                it('returns an error', async () => {
+                    const val = getRemoveSubjects().validationOverAllInputs(
+                        input
+                    )
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(1)
+                    expect(val.validInputs[0].input).to.deep.equal(input[1])
+                    const xErrors = [0, 2].map((i) =>
+                        createInputLengthAPIError(
+                            'RemoveSubjectsFromClassInput',
+                            'max',
+                            'subjectIds',
+                            i
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, xErrors)
+                })
+            })
+
+            context(
+                'when there are duplicated subjectIds in a single input elemnet',
+                () => {
+                    beforeEach(async () => {
+                        input[0].subjectIds = [
+                            input[0].subjectIds[0],
+                            input[0].subjectIds[0],
+                        ]
+                        input[2].subjectIds = [
+                            input[2].subjectIds[0],
+                            input[2].subjectIds[0],
+                        ]
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getRemoveSubjects().validationOverAllInputs(
+                            input
+                        )
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['subjectIds'],
+                                'RemoveSubjectsFromClassInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(
+                mutationInput: RemoveSubjectsFromClassInput,
+                index: number
+            ) {
+                const mutation = getRemoveSubjects()
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return mutation.validate(0, classes[index], mutationInput, maps)
+            }
+
+            it('returns no errors when all inputs are valid', async () => {
+                const apiErrors = await validate(input[0], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            context(
+                'when one of the subjects is not part of the class',
+                async () => {
+                    beforeEach(async () => {
+                        input[0].subjectIds.push(subjects[2].id)
+                    })
+
+                    it('returns existent errors', async () => {
+                        const actualErrors = await validate(input[0], 0)
+                        const expectedError = createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'Subject',
+                            subjects[2].id,
+                            'Class',
+                            classes[0].class_id
+                        )
+
+                        expect(actualErrors.length).to.eq(1)
+                        compareErrors(actualErrors[0], expectedError)
+                    })
+                }
+            )
+
+            context('when one of the subjects is inactive', async () => {
+                beforeEach(() => subjects[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity and nonExistentChild errors', async () => {
+                    const errors = await validate(input[0], 0)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Subject',
+                            subjects[1].id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        classes[1].inactivate(getManager()),
+                        subjects[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate(input[1], 1)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Subject',
+                            subjects[1].id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'Subject',
+                            subjects[1].id,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'Subject',
+                            subjects[2].id,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+        })
+
+        context('.process', () => {
+            async function process(
+                mutationInput: RemoveSubjectsFromClassInput
+            ) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new RemoveSubjectsFromClasses(
+                    [mutationInput],
+                    permissions
+                )
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return {
+                    mutationResult: mutation.process(mutationInput, maps, 0),
+                    originalClass: maps.mainEntity.get(mutationInput.classId)!,
+                    originalSubjects: maps.classesSubjects.get(
+                        mutationInput.classId
+                    ),
+                }
+            }
+
+            it('keeps the not removed subjects', async () => {
+                classes[0].subjects = Promise.resolve([subjects[0]])
+                await classes[0].save()
+                input[0].subjectIds = []
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalSubjects,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(originalSubjects).to.deep.equalInAnyOrder(
+                    await originalClass.subjects
+                )
+            })
+
+            it('removes the subjects', async () => {
+                const subjectsToRemove = [subjects[1]]
+                input[0].subjectIds = subjectsToRemove.map((s) => s.id)
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                } = await process(input[0])
+                expect(await outputEntity.subjects).to.deep.equalInAnyOrder(
+                    await originalClass.subjects
+                )
+            })
+        })
+    })
+
+    describe('AddSubjectsToClasses', () => {
+        let input: AddSubjectsToClassInput[]
+        let orgs: Organization[]
+        let subjects: Subject[]
+        let classes: Class[]
+        let adminUser: User
+        let nonAdminUser: User
+
+        function getAddSubjects(
+            inputs: AddSubjectsToClassInput[] = [],
+            authUser = adminUser
+        ) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new AddSubjectsToClasses(inputs, permissions)
+        }
+
+        function generateMaps(mapInputs: AddSubjectsToClassInput[]) {
+            const permissions = new UserPermissions(userToPayload(adminUser))
+            const mutation = new AddSubjectsToClasses(mapInputs, permissions)
+            return mutation.generateEntityMaps(mapInputs)
+        }
+
+        beforeEach(async () => {
+            nonAdminUser = await createUser().save()
+            adminUser = await adminUserFactory().save()
+            orgs = await Organization.save(createOrganizations(2))
+            subjects = [
+                ...createSubjects(2, orgs[0]),
+                createSubject(orgs[1]),
+                createSubject(undefined, undefined, true),
+            ]
+            classes = [
+                createClassFactory(undefined, orgs[0]),
+                createClassFactory(undefined, orgs[1]),
+                createClassFactory(undefined, orgs[0]),
+            ]
+            await connection.manager.save([...subjects, ...classes])
+
+            input = [
+                //org1
+                {
+                    classId: classes[0].class_id,
+                    subjectIds: [subjects[0].id, subjects[1].id],
+                },
+                //org2
+                {
+                    classId: classes[1].class_id,
+                    subjectIds: [subjects[2].id],
+                },
+                //system subject
+                {
+                    classId: classes[2].class_id,
+                    subjectIds: [subjects[3].id],
+                },
+            ]
+        })
+
+        context('.run', () => {
+            it('makes constant number of queries regardless of input length', async () => {
+                const mutation = getAddSubjects()
+                connection.logger.reset()
+                await mutation.generateEntityMaps([input[0]])
+                const countForOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.generateEntityMaps(input)
+                const countForThree = connection.logger.count
+                expect(countForThree).to.eq(countForOneInput)
+            })
+            it('returns the expected output', async () => {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutationResult = mutate(
+                    AddSubjectsToClasses,
+                    { input },
+                    permissions
+                )
+                const {
+                    classes: classesNodes,
+                }: ClassesMutationResult = await expect(mutationResult).to.be
+                    .fulfilled
+                expect(classesNodes).to.have.length(input.length)
+                for (let x = 0; x < input.length; x++) {
+                    expect(classesNodes[x]).to.deep.eq(
+                        mapClassToClassConnectionNode(classes[x])
+                    )
+                }
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            context('populates the maps correctly', () => {
+                context('when a class has subjects', () => {
+                    let subjectsInClass: Subject[]
+
+                    beforeEach(async () => {
+                        subjectsInClass = subjects.slice(1)
+                        classes[1].subjects = Promise.resolve(subjectsInClass)
+                        await classes[1].save()
+                    })
+
+                    it('populates classesSubjects correctly', async () => {
+                        const maps = await generateMaps(input)
+                        for (const cls of classes) {
+                            const mapSubjects = maps.classesSubjects.get(
+                                cls.class_id
+                            )!
+                            if (cls.class_id == classes[1].class_id) {
+                                expect(mapSubjects.length).to.equal(
+                                    subjectsInClass.length
+                                )
+                                expect(
+                                    mapSubjects.some(
+                                        (s) => s.id === subjects[1].id
+                                    )
+                                ).to.be.true
+                            } else {
+                                expect(mapSubjects).to.be.empty
+                            }
+                        }
+                    })
+                })
+
+                it('populates organizations correctly', async () => {
+                    const maps = await generateMaps(input)
+                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
+                        orgs[0].organization_id,
+                        orgs[1].organization_id,
+                        orgs[0].organization_id,
+                    ])
+                })
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getAddSubjects(input, authUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.edit_class_20334
+            context(
+                'when user has permissions to add subjects to all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            orgs[0],
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: orgs[0],
+                            roles: [nonAdminRole],
+                        }).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: orgs[1],
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to add subjects to all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            orgs[0],
+                            { permissions: [permission] }
+                        ).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(permission, nonAdminUser, [
+                                ...orgs,
+                            ])
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            let maps: AddSubjectsClassesEntityMap
+            context('when there are duplicate class IDs in input', () => {
+                beforeEach(async () => {
+                    input = [input[0], input[0], input[0]]
+                    maps = await generateMaps(input)
+                })
+
+                it('returns duplicate errors for the last two inputs', () => {
+                    const val = getAddSubjects().validationOverAllInputs(
+                        input,
+                        maps
+                    )
+
+                    const expectedErrors = [1, 2].map((inputIndex) =>
+                        createDuplicateAttributeAPIError(
+                            inputIndex,
+                            ['classId'],
+                            'AddSubjectsToClassInput'
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getAddSubjects().validationOverAllInputs(
+                        input,
+                        maps
+                    )
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context(
+                'when there are duplicated subjectIds in a single input elemnet',
+                () => {
+                    beforeEach(async () => {
+                        input[0].subjectIds = [
+                            input[0].subjectIds[0],
+                            input[0].subjectIds[0],
+                        ]
+                        input[2].subjectIds = [
+                            input[2].subjectIds[0],
+                            input[2].subjectIds[0],
+                        ]
+                        maps = await generateMaps(input)
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getAddSubjects().validationOverAllInputs(
+                            input,
+                            maps
+                        )
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['subjectIds'],
+                                'AddSubjectsToClassInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(
+                mutationInput: AddSubjectsToClassInput,
+                index: number
+            ) {
+                const mutation = getAddSubjects([mutationInput])
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return mutation.validate(0, classes[index], mutationInput, maps)
+            }
+
+            it('returns no errors when all inputs are valid', async () => {
+                const apiErrors = await validate(input[0], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            it('returns no errors when all inputs are valid and a subject belongs to the system', async () => {
+                const apiErrors = await validate(input[2], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            context(
+                'when one of the subjects is already part of the class',
+                async () => {
+                    beforeEach(async () => {
+                        classes[0].subjects = Promise.resolve([subjects[0]])
+                        await classes[0].save()
+                    })
+
+                    it('returns existent errors', async () => {
+                        const actualErrors = await validate(input[0], 0)
+                        const expectedError = createEntityAPIError(
+                            'existentChild',
+                            0,
+                            'Subject',
+                            input[0].subjectIds[0],
+                            'Class',
+                            input[0].classId
+                        )
+
+                        expect(actualErrors.length).to.eq(1)
+                        compareErrors(actualErrors[0], expectedError)
+                    })
+                }
+            )
+
+            context('when one of the subjects is inactive', async () => {
+                beforeEach(() => subjects[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity and nonExistentChild errors', async () => {
+                    const errors = await validate(input[0], 0)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Subject',
+                            subjects[1].id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+        })
+
+        context('.process', () => {
+            async function process(mutationInput: AddSubjectsToClassInput) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new AddSubjectsToClasses(
+                    [mutationInput],
+                    permissions
+                )
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return {
+                    mutationResult: mutation.process(mutationInput, maps, 0),
+                    originalClass: maps.mainEntity.get(mutationInput.classId)!,
+                    originalSubjects: maps.classesSubjects.get(
+                        mutationInput.classId
+                    ),
+                }
+            }
+
+            it('includes existing subjects', async () => {
+                classes[0].subjects = Promise.resolve([subjects[0]])
+                await classes[0].save()
+                input[0].subjectIds = []
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalSubjects,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(originalSubjects).to.deep.equalInAnyOrder(
+                    await originalClass.subjects
+                )
+            })
+
+            it('adds new subjects', async () => {
+                classes[0].subjects = Promise.resolve([subjects[0]])
+                await classes[0].save()
+                const newSubjects = [subjects[1], subjects[2]]
+                input[0].subjectIds = newSubjects.map((s) => s.id)
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalSubjects,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(
+                    [...originalSubjects!, ...newSubjects].map((s) => s.id)
+                ).to.deep.equalInAnyOrder(
+                    (await originalClass.subjects!).map((s) => s.id)
+                )
+            })
+        })
     })
 })

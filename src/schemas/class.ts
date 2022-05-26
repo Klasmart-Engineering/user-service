@@ -24,6 +24,10 @@ import {
     SetAcademicTermsOfClasses,
     moveUsersToClass,
     moveUsersTypeToClass,
+    AddAgeRangesToClasses,
+    RemoveAgeRangesFromClasses,
+    RemoveSubjectsFromClasses,
+    AddSubjectsToClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -75,6 +79,12 @@ const typeDefs = gql`
         removeTeachersFromClasses(
             input: [RemoveTeachersFromClassInput!]!
         ): ClassesMutationResult
+        addAgeRangesToClasses(
+            input: [AddAgeRangesToClassInput!]!
+        ): ClassesMutationResult
+        removeAgeRangesFromClasses(
+            input: [RemoveAgeRangesFromClassInput!]!
+        ): ClassesMutationResult
         """
         Note: A null or undefined academicTermId will remove the AcademicTerm from the class
         """
@@ -87,6 +97,12 @@ const typeDefs = gql`
         moveTeachersToClass(
             input: MoveUsersToClassInput
         ): MoveUsersToClassMutationResult
+        removeSubjectsFromClasses(
+            input: [RemoveSubjectsFromClassInput!]!
+        ): ClassesMutationResult
+        addSubjectsToClasses(
+            input: [AddSubjectsToClassInput!]!
+        ): ClassesMutationResult
     }
 
     type ClassConnectionNode {
@@ -355,6 +371,26 @@ const typeDefs = gql`
     input SetAcademicTermOfClassInput {
         classId: ID!
         academicTermId: ID
+    }
+
+    input AddAgeRangesToClassInput {
+        classId: ID!
+        ageRangeIds: [ID!]!
+    }
+
+    input RemoveAgeRangesFromClassInput {
+        classId: ID!
+        ageRangeIds: [ID!]!
+    }
+
+    input RemoveSubjectsFromClassInput {
+        classId: ID!
+        subjectIds: [ID!]!
+    }
+
+    input AddSubjectsToClassInput {
+        classId: ID!
+        subjectIds: [ID!]!
     }
 `
 
@@ -632,6 +668,14 @@ export default function getDefault(
                         args.input,
                         moveUsersTypeToClass.teachers
                     ),
+                addAgeRangesToClasses: (_parent, args, ctx, _info) =>
+                    mutate(AddAgeRangesToClasses, args, ctx.permissions),
+                removeAgeRangesFromClasses: (_parent, args, ctx, _info) =>
+                    mutate(RemoveAgeRangesFromClasses, args, ctx.permissions),
+                removeSubjectsFromClasses: (_parent, args, ctx) =>
+                    mutate(RemoveSubjectsFromClasses, args, ctx.permissions),
+                addSubjectsToClasses: (_parent, args, ctx) =>
+                    mutate(AddSubjectsToClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args, ctx): Promise<Class | undefined> =>

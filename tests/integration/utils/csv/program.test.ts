@@ -24,6 +24,7 @@ import { TestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -128,16 +129,14 @@ describe('processProgramFromCSVRow', () => {
                 'On row number 1, organization name is required.'
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -162,22 +161,20 @@ describe('processProgramFromCSVRow', () => {
                 'On row number 1, program name is required.'
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
     context('when not all the age range values are provided', () => {
         beforeEach(() => {
-            row = { ...row, age_range_unit: '' }
+            row = { ...row, age_range_unit: '' as AgeRangeUnit }
         })
 
         it('records an appropriate error and message', async () => {
@@ -198,16 +195,14 @@ describe('processProgramFromCSVRow', () => {
                 'On row number 1, program must exist age_range_high_value, age_range_low_value, age_range_unit or none of them.'
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -232,16 +227,14 @@ describe('processProgramFromCSVRow', () => {
                 'On row number 1, ageRange age_range_high_value must be between 1 and 99.'
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -266,16 +259,14 @@ describe('processProgramFromCSVRow', () => {
                 'On row number 1, ageRange age_range_low_value must be between 0 and 99.'
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -309,23 +300,23 @@ describe('processProgramFromCSVRow', () => {
                     'On row number 1, ageRange age_range_high_value must be greater than age_range_low_value.'
                 )
 
-                const program = await Program.findOne({
-                    where: {
-                        name: row.program_name,
-                        status: 'active',
-                        system: false,
-                        organization,
+                const program = await Program.findOneBy({
+                    name: row.program_name,
+                    status: Status.ACTIVE,
+                    system: false,
+                    organization: {
+                        organization_id: organization.organization_id,
                     },
                 })
 
-                expect(program).to.be.undefined
+                expect(program).to.be.null
             })
         }
     )
 
     context('when age range unit value is invalid', () => {
         beforeEach(() => {
-            row = { ...row, age_range_unit: 'week' }
+            row = { ...row, age_range_unit: 'week' as AgeRangeUnit }
         })
 
         it('records an appropriate error and message', async () => {
@@ -344,16 +335,14 @@ describe('processProgramFromCSVRow', () => {
                 'On row number 1, ageRange age_range_unit must be one of these: month, year.'
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -378,22 +367,20 @@ describe('processProgramFromCSVRow', () => {
                 `On row number 1, "${row.organization_name}" organization doesn't exist.`
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
     context("when provided age range doesn't exist", () => {
         beforeEach(() => {
-            row = { ...row, age_range_unit: 'month' }
+            row = { ...row, age_range_unit: AgeRangeUnit.MONTH }
         })
 
         it('records an appropriate error and message', async () => {
@@ -414,16 +401,14 @@ describe('processProgramFromCSVRow', () => {
                 `On row number 1, "6 - 7 month(s)" ageRange doesn't exist for "${rowModel.organization_name}" organization.`
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -450,16 +435,14 @@ describe('processProgramFromCSVRow', () => {
                 `On row number 1, "${row.grade_name}" grade doesn't exist for "${rowModel.organization_name}" organization.`
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -486,16 +469,14 @@ describe('processProgramFromCSVRow', () => {
                 `On row number 1, "${row.subject_name}" subject doesn't exist for "${rowModel.organization_name}" organization.`
             )
 
-            const program = await Program.findOne({
-                where: {
-                    name: row.program_name,
-                    status: 'active',
-                    system: false,
-                    organization,
-                },
+            const program = await Program.findOneBy({
+                name: row.program_name,
+                status: Status.ACTIVE,
+                system: false,
+                organization: { organization_id: organization.organization_id },
             })
 
-            expect(program).to.be.undefined
+            expect(program).to.be.null
         })
     })
 
@@ -531,12 +512,12 @@ describe('processProgramFromCSVRow', () => {
                     `On row number 1, "6 - 7 year(s)" ageRange already exists for "${rowModel.program_name}" program.`
                 )
 
-                const program = await Program.findOne({
-                    where: {
-                        name: row.program_name,
-                        status: 'active',
-                        system: false,
-                        organization,
+                const program = await Program.findOneBy({
+                    name: row.program_name,
+                    status: Status.ACTIVE,
+                    system: false,
+                    organization: {
+                        organization_id: organization.organization_id,
                     },
                 })
 
@@ -577,12 +558,12 @@ describe('processProgramFromCSVRow', () => {
                     `On row number 1, "${rowModel.grade_name}" grade already exists for "${rowModel.program_name}" program.`
                 )
 
-                const program = await Program.findOne({
-                    where: {
-                        name: row.program_name,
-                        status: 'active',
-                        system: false,
-                        organization,
+                const program = await Program.findOneBy({
+                    name: row.program_name,
+                    status: Status.ACTIVE,
+                    system: false,
+                    organization: {
+                        organization_id: organization.organization_id,
                     },
                 })
 
@@ -623,12 +604,12 @@ describe('processProgramFromCSVRow', () => {
                     `On row number 1, "${rowModel.subject_name}" subject already exists for "${rowModel.program_name}" program.`
                 )
 
-                const program = await Program.findOne({
-                    where: {
-                        name: row.program_name,
-                        status: 'active',
-                        system: false,
-                        organization,
+                const program = await Program.findOneBy({
+                    name: row.program_name,
+                    status: Status.ACTIVE,
+                    system: false,
+                    organization: {
+                        organization_id: organization.organization_id,
                     },
                 })
 
@@ -648,26 +629,26 @@ describe('processProgramFromCSVRow', () => {
                     adminPermissions
                 )
 
-                const program = await Program.findOneOrFail({
-                    where: {
-                        name: row.program_name,
-                        status: 'active',
-                        system: false,
-                        organization,
+                const program = await Program.findOneByOrFail({
+                    name: row.program_name,
+                    status: Status.ACTIVE,
+                    system: false,
+                    organization: {
+                        organization_id: organization.organization_id,
                     },
                 })
 
-                const ageRangeDB = await connection.manager.findOneOrFail(
+                const ageRangeDB = await connection.manager.findOneByOrFail(
                     AgeRange,
-                    ageRange.id
+                    { id: ageRange.id }
                 )
-                const gradeDB = await connection.manager.findOneOrFail(
+                const gradeDB = await connection.manager.findOneByOrFail(
                     Grade,
-                    grade.id
+                    { id: grade.id }
                 )
-                const subjectDB = await connection.manager.findOneOrFail(
+                const subjectDB = await connection.manager.findOneByOrFail(
                     Subject,
-                    subject.id
+                    { id: subject.id }
                 )
 
                 const organizationInProgram = await program.organization
@@ -705,7 +686,7 @@ describe('processProgramFromCSVRow', () => {
                     program_name: 'Program 2',
                     age_range_low_value: '',
                     age_range_high_value: '',
-                    age_range_unit: '',
+                    age_range_unit: '' as AgeRangeUnit,
                 }
             })
 
@@ -718,26 +699,26 @@ describe('processProgramFromCSVRow', () => {
                     adminPermissions
                 )
 
-                const program = await Program.findOneOrFail({
-                    where: {
-                        name: row.program_name,
-                        status: 'active',
-                        system: false,
-                        organization,
+                const program = await Program.findOneByOrFail({
+                    name: row.program_name,
+                    status: Status.ACTIVE,
+                    system: false,
+                    organization: {
+                        organization_id: organization.organization_id,
                     },
                 })
 
-                const ageRangeDB = await connection.manager.findOneOrFail(
+                const ageRangeDB = await connection.manager.findOneByOrFail(
                     AgeRange,
-                    noneSpecifiedAgeRange.id
+                    { id: noneSpecifiedAgeRange.id }
                 )
-                const gradeDB = await connection.manager.findOneOrFail(
+                const gradeDB = await connection.manager.findOneByOrFail(
                     Grade,
-                    grade.id
+                    { id: grade.id }
                 )
-                const subjectDB = await connection.manager.findOneOrFail(
+                const subjectDB = await connection.manager.findOneByOrFail(
                     Subject,
-                    subject.id
+                    { id: subject.id }
                 )
 
                 const organizationInProgram = await program.organization
@@ -782,26 +763,26 @@ describe('processProgramFromCSVRow', () => {
                     adminPermissions
                 )
 
-                const program = await Program.findOneOrFail({
-                    where: {
-                        name: row.program_name,
-                        status: 'active',
-                        system: false,
-                        organization,
+                const program = await Program.findOneByOrFail({
+                    name: row.program_name,
+                    status: Status.ACTIVE,
+                    system: false,
+                    organization: {
+                        organization_id: organization.organization_id,
                     },
                 })
 
-                const ageRangeDB = await connection.manager.findOneOrFail(
+                const ageRangeDB = await connection.manager.findOneByOrFail(
                     AgeRange,
-                    ageRange.id
+                    { id: ageRange.id }
                 )
-                const gradeDB = await connection.manager.findOneOrFail(
+                const gradeDB = await connection.manager.findOneByOrFail(
                     Grade,
-                    noneSpecifiedGrade.id
+                    { id: noneSpecifiedGrade.id }
                 )
-                const subjectDB = await connection.manager.findOneOrFail(
+                const subjectDB = await connection.manager.findOneByOrFail(
                     Subject,
-                    subject.id
+                    { id: subject.id }
                 )
 
                 const organizationInProgram = await program.organization
@@ -846,26 +827,26 @@ describe('processProgramFromCSVRow', () => {
                     adminPermissions
                 )
 
-                const program = await Program.findOneOrFail({
-                    where: {
-                        name: row.program_name,
-                        status: 'active',
-                        system: false,
-                        organization,
+                const program = await Program.findOneByOrFail({
+                    name: row.program_name,
+                    status: Status.ACTIVE,
+                    system: false,
+                    organization: {
+                        organization_id: organization.organization_id,
                     },
                 })
 
-                const ageRangeDB = await connection.manager.findOneOrFail(
+                const ageRangeDB = await connection.manager.findOneByOrFail(
                     AgeRange,
-                    ageRange.id
+                    { id: ageRange.id }
                 )
-                const gradeDB = await connection.manager.findOneOrFail(
+                const gradeDB = await connection.manager.findOneByOrFail(
                     Grade,
-                    grade.id
+                    { id: grade.id }
                 )
-                const subjectDB = await connection.manager.findOneOrFail(
+                const subjectDB = await connection.manager.findOneByOrFail(
                     Subject,
-                    noneSpecifiedSubject.id
+                    { id: noneSpecifiedSubject.id }
                 )
 
                 const organizationInProgram = await program.organization

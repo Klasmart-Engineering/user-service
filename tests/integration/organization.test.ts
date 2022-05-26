@@ -7,6 +7,7 @@ import {
     getRepository,
     In,
     getConnection,
+    TableForeignKey,
 } from 'typeorm'
 import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
 import { Model } from '../../src/model'
@@ -145,6 +146,10 @@ import { APIError } from '../../src/types/errors/apiError'
 import { customErrors } from '../../src/types/errors/customError'
 import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
 import { ObjMap } from '../../src/utils/stringUtils'
+import {
+    findForeignKeyByTableAndName,
+    updateForeignKey,
+} from '../utils/database'
 import { SinonFakeTimers } from 'sinon'
 import sinon from 'sinon'
 
@@ -199,15 +204,20 @@ describe('organization', () => {
             })
 
             it('returns null and database entry is not modified', async () => {
-                const gqlOrg = await updateOrganization(
+                const gqlOrg = updateOrganization(
                     testClient,
                     organizationId,
                     mods,
                     { authorization: arbitraryUserToken }
                 )
 
-                expect(gqlOrg).to.be.null
-                const dbOrg = await Organization.findOneOrFail(organizationId)
+                await expect(gqlOrg).to.be.rejectedWith(
+                    "Cannot read properties of null (reading 'set')"
+                )
+
+                const dbOrg = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 expect(dbOrg).to.not.include(mods)
             })
         })
@@ -250,7 +260,9 @@ describe('organization', () => {
                 )
 
                 expect(gqlOrg).to.include(mods)
-                const dbOrg = await Organization.findOneOrFail(organizationId)
+                const dbOrg = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 expect(dbOrg).to.include(mods)
             })
         })
@@ -277,7 +289,9 @@ describe('organization', () => {
                     })
                 ).to.be.rejected
 
-                const dbOrg = await Organization.findOneOrFail(organizationId)
+                const dbOrg = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 expect(dbOrg).to.not.include(mods)
             })
         })
@@ -469,7 +483,9 @@ describe('organization', () => {
 
                 expect(cls).not.to.be.null
                 expect(cls.shortcode).not.to.be.undefined
-                const dbOrg = await Organization.findOneOrFail(organizationId)
+                const dbOrg = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 const orgClasses = (await dbOrg.classes) || []
                 expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
                 expect(cls.status).to.eq(Status.ACTIVE)
@@ -488,7 +504,9 @@ describe('organization', () => {
 
                 expect(cls).not.to.be.null
                 expect(cls.shortcode).not.to.be.empty
-                const dbOrg = await Organization.findOneOrFail(organizationId)
+                const dbOrg = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 const orgClasses = (await dbOrg.classes) || []
                 expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
                 expect(cls.status).to.eq(Status.ACTIVE)
@@ -509,9 +527,9 @@ describe('organization', () => {
                     expect(cls).not.to.be.null
                     expect(cls.shortcode).to.match(shortcode_re)
                     expect(cls.shortcode).to.equal('BLOB2')
-                    const dbOrg = await Organization.findOneOrFail(
-                        organizationId
-                    )
+                    const dbOrg = await Organization.findOneByOrFail({
+                        organization_id: organizationId,
+                    })
                     const orgClasses = (await dbOrg.classes) || []
                     expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
                     expect(cls.status).to.eq(Status.ACTIVE)
@@ -546,7 +564,9 @@ describe('organization', () => {
                 expect(cls).not.to.be.null
                 expect(cls.shortcode).to.match(shortcode_re)
                 expect(cls.shortcode?.length).to.equal(SHORTCODE_DEFAULT_MAXLEN)
-                const dbOrg = await Organization.findOneOrFail(organizationId)
+                const dbOrg = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 const orgClasses = (await dbOrg.classes) || []
                 expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
                 expect(cls.status).to.eq(Status.ACTIVE)
@@ -614,9 +634,9 @@ describe('organization', () => {
                         )
 
                         expect(cls).not.to.be.null
-                        const dbOrg = await Organization.findOneOrFail(
-                            organizationId
-                        )
+                        const dbOrg = await Organization.findOneByOrFail({
+                            organization_id: organizationId,
+                        })
                         const orgClasses = (await dbOrg.classes) || []
                         expect(orgClasses.map(classInfo)).to.deep.eq([
                             cls.class_id,
@@ -647,8 +667,8 @@ describe('organization', () => {
                                 )
 
                                 expect(cls).to.be.null
-                                const dbOrg = await Organization.findOneOrFail(
-                                    organizationId
+                                const dbOrg = await Organization.findOneByOrFail(
+                                    { organization_id: organizationId }
                                 )
                                 const orgClasses = (await dbOrg.classes) || []
                                 expect(orgClasses).to.be.empty
@@ -700,9 +720,9 @@ describe('organization', () => {
 
                 expect(school).not.to.be.null
                 expect(school.shortcode).not.to.be.undefined
-                const dbSchool = await Organization.findOneOrFail(
-                    organizationId
-                )
+                const dbSchool = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 const orgSchools = (await dbSchool.schools) || []
                 expect(orgSchools.map(schoolInfo)).to.deep.eq([
                     school.school_id,
@@ -722,9 +742,9 @@ describe('organization', () => {
 
                 expect(school).not.to.be.null
                 expect(school.shortcode).not.to.be.empty
-                const dbSchool = await Organization.findOneOrFail(
-                    organizationId
-                )
+                const dbSchool = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 const orgSchools = (await dbSchool.schools) || []
                 expect(orgSchools.map(schoolInfo)).to.deep.eq([
                     school.school_id,
@@ -745,9 +765,9 @@ describe('organization', () => {
 
                     expect(school).not.to.be.null
                     expect(school.shortcode).to.equal('MYSHORT1')
-                    const dbSchool = await Organization.findOneOrFail(
-                        organizationId
-                    )
+                    const dbSchool = await Organization.findOneByOrFail({
+                        organization_id: organizationId,
+                    })
                     const orgSchools = (await dbSchool.schools) || []
                     expect(orgSchools.map(schoolInfo)).to.deep.eq([
                         school.school_id,
@@ -783,9 +803,9 @@ describe('organization', () => {
                 expect(school).not.to.be.null
                 expect(school.shortcode?.length).to.equal(10)
                 expect(school.shortcode).to.match(/[A-Z|0-9]+/)
-                const dbSchool = await Organization.findOneOrFail(
-                    organizationId
-                )
+                const dbSchool = await Organization.findOneByOrFail({
+                    organization_id: organizationId,
+                })
                 const orgSchools = (await dbSchool.schools) || []
                 expect(orgSchools.map(schoolInfo)).to.deep.eq([
                     school.school_id,
@@ -819,9 +839,9 @@ describe('organization', () => {
                         )
 
                         expect(school).to.be.null
-                        const dbSchool = await Organization.findOneOrFail(
-                            organizationId
-                        )
+                        const dbSchool = await Organization.findOneByOrFail({
+                            organization_id: organizationId,
+                        })
                         const orgSchools = (await dbSchool.schools) || []
                         expect(orgSchools.map(schoolInfo)).to.deep.eq([
                             oldSchool.school_id,
@@ -864,9 +884,9 @@ describe('organization', () => {
                         )
 
                         expect(school).not.to.be.null
-                        const dbSchool = await Organization.findOneOrFail(
-                            organizationId
-                        )
+                        const dbSchool = await Organization.findOneByOrFail({
+                            organization_id: organizationId,
+                        })
                         const orgSchools = (await dbSchool.schools) || []
                         expect(orgSchools.map(schoolInfo)).to.deep.eq([
                             school.school_id,
@@ -900,8 +920,8 @@ describe('organization', () => {
                                 )
 
                                 expect(school).to.be.null
-                                const dbSchool = await Organization.findOneOrFail(
-                                    organizationId
+                                const dbSchool = await Organization.findOneByOrFail(
+                                    { organization_id: organizationId }
                                 )
                                 const orgSchools =
                                     (await dbSchool.schools) || []
@@ -945,9 +965,9 @@ describe('organization', () => {
                         )
 
                         expect(school).not.to.be.null
-                        const dbSchool = await Organization.findOneOrFail(
-                            organizationId
-                        )
+                        const dbSchool = await Organization.findOneByOrFail({
+                            organization_id: organizationId,
+                        })
                         const orgSchools = (await dbSchool.schools) || []
                         expect(orgSchools.map(schoolInfo)).to.deep.eq([
                             school.school_id,
@@ -1026,9 +1046,13 @@ describe('organization', () => {
             user_id: string
             school_id: string
         }) => {
-            return connection
-                .getRepository(SchoolMembership)
-                .findOneOrFail(primaryKey, { relations: ['roles'] })
+            return connection.getRepository(SchoolMembership).findOneOrFail({
+                where: {
+                    school_id: primaryKey.school_id,
+                    user_id: primaryKey.user_id,
+                },
+                relations: ['roles'],
+            })
         }
         return context('common membership tests', () => {
             context('given_name', () => {
@@ -1126,13 +1150,13 @@ describe('organization', () => {
                 const findOrganizationMembership = async (user_id: string) => {
                     return connection
                         .getRepository(OrganizationMembership)
-                        .findOneOrFail(
-                            {
+                        .findOneOrFail({
+                            where: {
                                 user_id,
                                 organization_id: organization.organization_id,
                             },
-                            { relations: ['roles'] }
-                        )
+                            relations: ['roles'],
+                        })
                 }
 
                 it('is required by the schema', async () => {
@@ -1179,7 +1203,7 @@ describe('organization', () => {
                 it('accepts system Roles', async () => {
                     const systemRole = await connection
                         .getRepository(Role)
-                        .findOneOrFail({ system_role: true })
+                        .findOneByOrFail({ system_role: true })
 
                     const { user } = await api({
                         organization_role_ids: [systemRole.role_id],
@@ -1297,7 +1321,7 @@ describe('organization', () => {
                 it('accepts system Roles', async () => {
                     const systemRole = await connection
                         .getRepository(Role)
-                        .findOneOrFail({ system_role: true })
+                        .findOneByOrFail({ system_role: true })
                     const { user } = await api({
                         school_role_ids: [systemRole.role_id],
                         school_ids: [school.school_id],
@@ -1802,9 +1826,11 @@ describe('organization', () => {
             })
 
             async function expectTotalUsersWithEmail(expectedCount: number) {
-                const actualCount = await connection.getRepository(User).count({
-                    email: defaultArguments.email as string | undefined,
-                })
+                const actualCount = await connection
+                    .getRepository(User)
+                    .countBy({
+                        email: defaultArguments.email as string | undefined,
+                    })
 
                 expect(actualCount).to.equal(expectedCount)
             }
@@ -1921,9 +1947,9 @@ describe('organization', () => {
                             otherOrg.organization_id
                         )
 
-                        const dbUser = await getRepository(User).findOneOrFail(
-                            user.user_id
-                        )
+                        const dbUser = await getRepository(
+                            User
+                        ).findOneByOrFail({ user_id: user.user_id })
 
                         expect(dbUser.alternate_email).to.equal(
                             existingUser.alternate_email
@@ -1959,9 +1985,9 @@ describe('organization', () => {
                             otherOrg.organization_id
                         )
 
-                        const dbUser = await getRepository(User).findOneOrFail(
-                            user.user_id
-                        )
+                        const dbUser = await getRepository(
+                            User
+                        ).findOneByOrFail({ user_id: user.user_id })
 
                         expect(dbUser.alternate_email).to.equal(
                             updatedUserInfo.alternate_email
@@ -2056,7 +2082,7 @@ describe('organization', () => {
                 .of(existingMembership)
                 .add(role)
 
-            const studentRole = await Role.findOneOrFail({
+            const studentRole = await Role.findOneByOrFail({
                 role_name: 'Student',
                 system_role: true,
             })
@@ -2173,10 +2199,37 @@ describe('organization', () => {
             })
 
             it('if the `user_id` exists, but has no membership for the chosen Organization, throws ERR_NONEXISTENT_CHILD_ENTITY APIError', async () => {
-                // We need to create another user belonging to this Organization, so we can get past the permission checks
-                await OrganizationMembership.delete(
-                    OrganizationMembership.getId(existingMembership)
+                // As part of TypeORM update, now migrations is ran first and after synchronize
+                // making that the foreign keys are created at the end based on entities files,
+                // setting the most of them in ON DELETE NO ACTION,
+                // and ignoring the migration made on migrations\1628677180503-InitialState.ts
+                // For this reason, we need to update our foreign keys where is needed
+                const tableName = 'role_memberships_organization_membership'
+                const foreignKeyName = 'FK_6bb7ea4e331c11a6a821e383b00'
+                const foreignKey = await findForeignKeyByTableAndName(
+                    connection,
+                    tableName,
+                    foreignKeyName
                 )
+
+                if (foreignKey?.onDelete === 'NO ACTION') {
+                    const newForeignKey = new TableForeignKey({
+                        ...foreignKey,
+                        onDelete: 'CASCADE',
+                    })
+
+                    await updateForeignKey(
+                        connection,
+                        tableName,
+                        foreignKey,
+                        newForeignKey
+                    )
+                }
+
+                await OrganizationMembership.delete({
+                    user_id: existingMembership.user_id,
+                    organization_id: existingMembership.organization_id,
+                })
                 const adminUser = await adminUserFactory().save()
 
                 return expect(
@@ -2256,7 +2309,7 @@ describe('organization', () => {
 
                 expect(
                     (
-                        await SchoolMembership.find({
+                        await SchoolMembership.findBy({
                             user_id: existingUser.user_id,
                         })
                     ).map((membership) => membership.school_id)
@@ -2399,9 +2452,9 @@ describe('organization', () => {
                     )
                 ).to.be.rejected
 
-                const dbOrganization = await Organization.findOneOrFail(
-                    organization.organization_id
-                )
+                const dbOrganization = await Organization.findOneByOrFail({
+                    organization_id: organization.organization_id,
+                })
                 expect(dbOrganization.status).to.eq(Status.ACTIVE)
                 expect(dbOrganization.deleted_at).to.be.null
             })
@@ -2433,8 +2486,10 @@ describe('organization', () => {
                             )
                         ).to.be.rejected
 
-                        const dbOrganization = await Organization.findOneOrFail(
-                            organization.organization_id
+                        const dbOrganization = await Organization.findOneByOrFail(
+                            {
+                                organization_id: organization.organization_id,
+                            }
                         )
                         expect(dbOrganization.status).to.eq(Status.ACTIVE)
                         expect(dbOrganization.deleted_at).to.be.null
@@ -2469,9 +2524,9 @@ describe('organization', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlOrganization).to.be.true
-                    const dbOrganization = await Organization.findOneOrFail(
-                        organization.organization_id
-                    )
+                    const dbOrganization = await Organization.findOneByOrFail({
+                        organization_id: organization.organization_id,
+                    })
                     expect(dbOrganization.status).to.eq(Status.INACTIVE)
                     expect(dbOrganization.deleted_at).not.to.be.null
                 })
@@ -2483,9 +2538,6 @@ describe('organization', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlOrganization).to.be.true
-                    const dbOrganization = await Organization.findOneOrFail(
-                        organization.organization_id
-                    )
                     const dbOrganizationMemberships = await OrganizationMembership.find(
                         {
                             where: {
@@ -2510,9 +2562,9 @@ describe('organization', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlOrganization).to.be.true
-                    const dbOrganization = await Organization.findOneOrFail(
-                        organization.organization_id
-                    )
+                    const dbOrganization = await Organization.findOneByOrFail({
+                        organization_id: organization.organization_id,
+                    })
                     const dbSchools = (await dbOrganization.schools) || []
 
                     expect(dbSchools).to.satisfy((schools: School[]) => {
@@ -2529,9 +2581,6 @@ describe('organization', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlOrganization).to.be.true
-                    const dbOrganization = await Organization.findOneOrFail(
-                        organization.organization_id
-                    )
                     const dbOrganizationOwnership = await OrganizationOwnership.findOneOrFail(
                         {
                             where: {
@@ -2560,8 +2609,8 @@ describe('organization', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlOrganization).to.be.null
-                        const dbOrganization = await Organization.findOneOrFail(
-                            organization.organization_id
+                        const dbOrganization = await Organization.findOneByOrFail(
+                            { organization_id: organization.organization_id }
                         )
                         expect(dbOrganization.status).to.eq(Status.INACTIVE)
                         expect(dbOrganization.deleted_at).not.to.be.null
@@ -3220,12 +3269,12 @@ describe('organization', () => {
         let progressFromGradeDetails: any
         let progressToGradeDetails: any
 
-        const gradeInfo = async (grade: Grade) => {
+        const gradeInfo = async (g: Grade) => {
             return {
-                name: grade.name,
-                progress_from_grade_id: (await grade.progress_from_grade)?.id,
-                progress_to_grade_id: (await grade.progress_to_grade)?.id,
-                system: grade.system,
+                name: g.name,
+                progress_from_grade_id: (await g.progress_from_grade)?.id,
+                progress_to_grade_id: (await g.progress_to_grade)?.id,
+                system: g.system,
             }
         }
 
@@ -3239,19 +3288,22 @@ describe('organization', () => {
             progressFromGrade = createGrade(organization)
             await progressFromGrade.save()
             progressFromGradeDetails = await gradeInfo(progressFromGrade)
+
             progressToGrade = createGrade(organization)
             await progressToGrade.save()
             progressToGradeDetails = await gradeInfo(progressToGrade)
+
             grade = createGrade(
                 organization,
                 progressFromGrade,
                 progressToGrade
             )
+
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(
                 testClient,
                 user.user_id,
-                organization.organization_id,
+                organizationId,
                 { authorization: getAdminAuthToken() }
             )
         })
@@ -4048,7 +4100,9 @@ describe('organization', () => {
                 })
                 context('and the user is inactive', () => {
                     beforeEach(async () => {
-                        const dbUser = await User.findOneOrFail(user.user_id)
+                        const dbUser = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
                         if (dbUser) {
                             dbUser.status = Status.INACTIVE
                             await connection.manager.save(dbUser)
@@ -4712,7 +4766,9 @@ describe('organization', () => {
                 })
                 context('and the user is inactive', () => {
                     beforeEach(async () => {
-                        const dbUser = await User.findOneOrFail(user.user_id)
+                        const dbUser = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
                         if (dbUser) {
                             dbUser.status = Status.INACTIVE
                             await connection.manager.save(dbUser)
@@ -6875,7 +6931,9 @@ describe('organization', () => {
                 })
                 context('and the user is inactive', () => {
                     beforeEach(async () => {
-                        const dbUser = await User.findOneOrFail(user.user_id)
+                        const dbUser = await User.findOneByOrFail({
+                            user_id: user.user_id,
+                        })
                         if (dbUser) {
                             dbUser.status = Status.INACTIVE
                             await connection.manager.save(dbUser)
@@ -6993,20 +7051,6 @@ describe('organization', () => {
                 organization.organization_id,
                 { authorization: getAdminAuthToken() }
             )
-        })
-
-        context('when not authenticated', () => {
-            it('returns an empty array', async () => {
-                const gqlClasses = await listClasses(
-                    testClient,
-                    organization.organization_id,
-                    {
-                        authorization: arbitraryUserToken,
-                    }
-                )
-
-                expect(gqlClasses).to.deep.equal([])
-            })
         })
 
         context('when authenticated', () => {

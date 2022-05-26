@@ -701,6 +701,24 @@ export class CategoriesInitializer {
             ],
         },
         {
+            id: '196cbb34-5a44-4f26-9d91-64f321332ce9',
+            name: 'Science',
+            subcategories: [
+                'cc15da82-113e-4652-be7d-2db162f55329', // Solids & Liquids
+                'a98ffafa-974d-46e2-a30b-dcb721eb216b', // Properties
+                '3b17c514-bd5a-4ed4-83d2-bc5691104035', // Temperature & Chemical Reactions
+                '8cb19539-2a2d-4aca-a96c-73d21a7fc2f1', // Objects
+                '4df4d746-3a03-49a6-a200-a4b7c1be0269', // Forces & Motion
+                'dcafdd89-a94c-4ac4-af30-cd00a4f2f91b', // Types of Interactions
+                'cfc086db-5f37-46a1-9739-6155e000da77', // Relationship Between Energy & Forces
+                '3030e2d2-94fa-45ac-a913-ea35db665bb1', // Energy & Forces
+                '23d55670-589a-4009-be2a-45405fa324e4', // Light
+                'c08b9068-a67f-4de2-b1cb-f9caa9538000', // Sounds
+                'f1d88809-3947-43ff-821a-c0451ce12906', // Sight
+                'fb024485-c625-484b-9b6d-9425d41c07b9', // Information Technologies & Infrastructure
+            ],
+        },
+        {
             id: '17e2dc7e-4911-4a73-9ff0-06baba99900f',
             name: 'Mathematics',
             subcategories: [
@@ -709,6 +727,19 @@ export class CategoriesInitializer {
                 'c9dd0e2a-608c-4833-9bf6-b73d51dfd7eb',
                 '4c523f7b-88ca-4e47-b0e3-27b66caf696b',
                 'c5e36c28-2d3d-43e1-b35a-2cd9a60a30c9',
+            ],
+        },
+        {
+            id: '313305c7-bda4-4ca6-a787-e456dfc8ce81',
+            name: 'Mathematics',
+            subcategories: [
+                '2f43fe7b-a5ec-446d-b197-45c99f88ee62', // Changing Sets
+                '4f84b23f-0210-4644-a5b5-8b13fb01614c', // Comparing Sets
+                'f681ea40-4b4f-4198-a52c-b7d5854dfe38', // Number Composition
+                '317a73cf-931e-49f2-adf9-62b4de0ed375', // Pattern Regularity
+                '51f09b4e-2b74-4ace-a056-cf97f85664cf', // Attributes
+                '7ce95d05-ad4d-4bfc-b6be-901739a4bac0', // Comparison
+                'b41ef932-8a75-4aee-b845-1a587f77dad9', // Precision
             ],
         },
         {
@@ -824,9 +855,10 @@ export class CategoriesInitializer {
                     where: { id: In(systemCategory.subcategories) },
                 })) || []
 
-            const category = await Category.findOneOrFail({
+            const category = await Category.findOneByOrFail({
                 id: systemCategory.id,
             })
+
             category.subcategories = Promise.resolve(subcategories)
             await category.save()
         }

@@ -70,6 +70,7 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { runQuery } from '../utils/operations/modelOps'
 import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
+import { superAdminRole } from '../../src/permissions/superAdmin'
 
 chai.use(chaiAsPromised)
 
@@ -154,8 +155,8 @@ describe('role', () => {
                         { authorization: getAdminAuthToken() }
                     )
 
-                    const dbRole = await Role.findOneOrFail({
-                        where: { role_id: roleId },
+                    const dbRole = await Role.findOneByOrFail({
+                        role_id: roleId,
                     })
                     expect(gqlRole).to.exist
                     expect(gqlRole).to.include({
@@ -177,8 +178,8 @@ describe('role', () => {
                         )
                     ).to.be.rejected
 
-                    const dbRole = await Role.findOneOrFail({
-                        where: { role_id: roleId },
+                    const dbRole = await Role.findOneByOrFail({
+                        role_id: roleId,
                     })
                     expect(dbRole.role_name).to.equal(originalRoleName)
                     expect(dbRole.system_role).to.be.true
@@ -223,8 +224,8 @@ describe('role', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
 
-                        const dbRole = await Role.findOneOrFail({
-                            where: { role_id: roleId },
+                        const dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
                         })
                         expect(gqlRole).to.exist
                         expect(gqlRole).to.include({
@@ -249,8 +250,8 @@ describe('role', () => {
                             )
                         ).to.be.rejected
 
-                        const dbRole = await Role.findOneOrFail({
-                            where: { role_id: roleId },
+                        const dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
                         })
                         expect(dbRole.role_name).to.equal(originalRoleName)
                     })
@@ -453,8 +454,8 @@ describe('role', () => {
                         )
                     ).to.be.rejected
 
-                    const dbPermission = await Permission.findOne({
-                        where: { permission_name: nameOfPermissionToGrant },
+                    const dbPermission = await Permission.findOneBy({
+                        permission_name: nameOfPermissionToGrant,
                     })
                     const permRoles = (await dbPermission?.roles) || []
                     expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
@@ -494,11 +495,9 @@ describe('role', () => {
                                         { authorization: getAdminAuthToken() }
                                     )
 
-                                    const dbPermission = await Permission.findOneOrFail(
+                                    const dbPermission = await Permission.findOneByOrFail(
                                         {
-                                            where: {
-                                                permission_name: nameOfPermissionToGrant,
-                                            },
+                                            permission_name: nameOfPermissionToGrant,
                                         }
                                     )
                                     expect(gqlPermission).to.exist
@@ -528,11 +527,9 @@ describe('role', () => {
                                     { authorization: getAdminAuthToken() }
                                 )
 
-                                const dbPermission = await Permission.findOneOrFail(
+                                const dbPermission = await Permission.findOneByOrFail(
                                     {
-                                        where: {
-                                            permission_name: nameOfPermissionToGrant,
-                                        },
+                                        permission_name: nameOfPermissionToGrant,
                                     }
                                 )
                                 expect(gqlPermission).to.exist
@@ -579,11 +576,9 @@ describe('role', () => {
                                         )
                                     ).to.be.fulfilled
 
-                                    const dbPermission = await Permission.findOneOrFail(
+                                    const dbPermission = await Permission.findOneByOrFail(
                                         {
-                                            where: {
-                                                permission_name: nameOfPermissionToGrant,
-                                            },
+                                            permission_name: nameOfPermissionToGrant,
                                         }
                                     )
                                     expect(dbPermission.allow).to.be.true
@@ -602,11 +597,11 @@ describe('role', () => {
                                     )
                                 ).to.be.fulfilled
 
-                                const dbPermission = await Permission.findOne({
-                                    where: {
+                                const dbPermission = await Permission.findOneBy(
+                                    {
                                         permission_name: nameOfPermissionToGrant,
-                                    },
-                                })
+                                    }
+                                )
                                 const permRoles =
                                     (await dbPermission?.roles) || []
                                 expect(permRoles.map(roleInfo)).to.deep.include(
@@ -652,11 +647,9 @@ describe('role', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
 
-                                const dbPermission = await Permission.findOneOrFail(
+                                const dbPermission = await Permission.findOneByOrFail(
                                     {
-                                        where: {
-                                            permission_name: nameOfPermissionToGrant,
-                                        },
+                                        permission_name: nameOfPermissionToGrant,
                                     }
                                 )
                                 expect(gqlPermission).to.exist
@@ -684,11 +677,9 @@ describe('role', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                            const dbPermission = await Permission.findOneOrFail(
+                            const dbPermission = await Permission.findOneByOrFail(
                                 {
-                                    where: {
-                                        permission_name: nameOfPermissionToGrant,
-                                    },
+                                    permission_name: nameOfPermissionToGrant,
                                 }
                             )
                             expect(gqlPermission).to.exist
@@ -734,11 +725,9 @@ describe('role', () => {
                                     )
                                 ).to.be.rejected
 
-                                const dbPermission = await Permission.findOneOrFail(
+                                const dbPermission = await Permission.findOneByOrFail(
                                     {
-                                        where: {
-                                            permission_name: nameOfPermissionToGrant,
-                                        },
+                                        permission_name: nameOfPermissionToGrant,
                                     }
                                 )
                                 expect(dbPermission.allow).to.be.false
@@ -757,10 +746,8 @@ describe('role', () => {
                                 )
                             ).to.be.rejected
 
-                            const dbPermission = await Permission.findOne({
-                                where: {
-                                    permission_name: nameOfPermissionToGrant,
-                                },
+                            const dbPermission = await Permission.findOneBy({
+                                permission_name: nameOfPermissionToGrant,
                             })
                             const permRoles = (await dbPermission?.roles) || []
                             expect(permRoles.map(roleInfo)).to.not.deep.include(
@@ -775,7 +762,6 @@ describe('role', () => {
 
     describe('#editPermissions', () => {
         const nameOfPermission = PermissionName.view_roles_and_permissions_30110
-        let permission: Permission
         let organizationId: string
         let userId: string
         let roleId: string
@@ -819,7 +805,9 @@ describe('role', () => {
                             { authorization: undefined }
                         )
                     ).to.be.rejected
-                    const dbRole = await Role.findOneOrFail(roleId)
+                    const dbRole = await Role.findOneByOrFail({
+                        role_id: roleId,
+                    })
                     const dbPermissions = (await dbRole.permissions) || []
                     expect(dbPermissions).to.be.empty
                 })
@@ -855,7 +843,9 @@ describe('role', () => {
                                     { authorization: getAdminAuthToken() }
                                 )
                             ).to.be.fulfilled
-                            const dbRole = await Role.findOneOrFail(roleId)
+                            const dbRole = await Role.findOneByOrFail({
+                                role_id: roleId,
+                            })
                             const dbPermissions =
                                 (await dbRole.permissions) || []
                             expect(dbPermissions).to.not.be.empty
@@ -906,7 +896,9 @@ describe('role', () => {
                             editRolePermission,
                             nameOfPermission,
                         ])
-                        let dbRole = await Role.findOneOrFail(roleId)
+                        let dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
+                        })
                         let dbPermissions = (await dbRole.permissions) || []
                         expect(
                             dbPermissions.map(permissionInfo)
@@ -922,10 +914,44 @@ describe('role', () => {
                             { authorization: getAdminAuthToken() }
                         )
                         expect(gqlPermissions).to.be.empty
-                        dbRole = await Role.findOneOrFail(roleId)
+                        dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
+                        })
                         dbPermissions = (await dbRole.permissions) || []
                         expect(dbPermissions).to.be.empty
                     })
+
+                    context(
+                        'when attempting to add a superAdmin-only permission',
+                        () => {
+                            let superAdminPermission: Permission
+                            beforeEach(async () => {
+                                superAdminPermission = await Permission.findOneByOrFail(
+                                    {
+                                        permission_level:
+                                            superAdminRole.role_name,
+                                    }
+                                )
+                            })
+
+                            it('fails to add a superAdmin-only permission', async () => {
+                                await expect(
+                                    editPermissions(
+                                        testClient,
+                                        roleId,
+                                        [
+                                            editRolePermission,
+                                            nameOfPermission,
+                                            superAdminPermission.permission_name,
+                                        ],
+                                        { authorization: getAdminAuthToken() }
+                                    )
+                                ).to.be.rejectedWith(
+                                    `Permission ${superAdminPermission.permission_name} not found`
+                                )
+                            })
+                        }
+                    )
                 })
             })
         })
@@ -951,7 +977,9 @@ describe('role', () => {
                             { authorization: undefined }
                         )
                     ).to.be.rejected
-                    const dbRole = await Role.findOneOrFail(roleId)
+                    const dbRole = await Role.findOneByOrFail({
+                        role_id: roleId,
+                    })
                     const dbPermissions = (await dbRole.permissions) || []
                     expect(dbPermissions).to.be.empty
                 })
@@ -987,7 +1015,9 @@ describe('role', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
                             ).to.be.rejected
-                            const dbRole = await Role.findOneOrFail(roleId)
+                            const dbRole = await Role.findOneByOrFail({
+                                role_id: roleId,
+                            })
                             const dbPermissions =
                                 (await dbRole.permissions) || []
                             expect(dbPermissions).to.be.empty
@@ -1038,7 +1068,9 @@ describe('role', () => {
                             editRolePermission,
                             nameOfPermission,
                         ])
-                        let dbRole = await Role.findOneOrFail(roleId)
+                        let dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
+                        })
                         let dbPermissions = (await dbRole.permissions) || []
                         expect(
                             dbPermissions.map(permissionInfo)
@@ -1054,7 +1086,9 @@ describe('role', () => {
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlPermissions).to.be.empty
-                        dbRole = await Role.findOneOrFail(roleId)
+                        dbRole = await Role.findOneByOrFail({
+                            role_id: roleId,
+                        })
                         dbPermissions = (await dbRole.permissions) || []
                         expect(dbPermissions).to.be.empty
                     })
@@ -1126,8 +1160,8 @@ describe('role', () => {
                         )
                     ).to.be.rejected
 
-                    const dbPermission = await Permission.findOneOrFail({
-                        where: { permission_name: nameOfPermissionToRevoke },
+                    const dbPermission = await Permission.findOneByOrFail({
+                        permission_name: nameOfPermissionToRevoke,
                     })
                     expect(dbPermission.allow).to.be.true
                 })
@@ -1156,10 +1190,8 @@ describe('role', () => {
                                 )
                             ).to.be.fulfilled
 
-                            const dbPermission = await Permission.findOne({
-                                where: {
-                                    permission_name: nameOfPermissionToRevoke,
-                                },
+                            const dbPermission = await Permission.findOneBy({
+                                permission_name: nameOfPermissionToRevoke,
                             })
                             const permRoles = (await dbPermission?.roles) || []
                             expect(permRoles.map(roleInfo)).to.not.deep.include(
@@ -1182,11 +1214,9 @@ describe('role', () => {
                                 )
                             ).to.be.fulfilled
 
-                            const dbPermission = await Permission.findOneOrFail(
+                            const dbPermission = await Permission.findOneByOrFail(
                                 {
-                                    where: {
-                                        permission_name: nameOfPermissionToRevoke,
-                                    },
+                                    permission_name: nameOfPermissionToRevoke,
                                 }
                             )
                             expect(dbPermission.allow).to.be.false
@@ -1219,10 +1249,8 @@ describe('role', () => {
                             )
                         ).to.be.fulfilled
 
-                        const dbPermission = await Permission.findOne({
-                            where: {
-                                permission_name: nameOfPermissionToRevoke,
-                            },
+                        const dbPermission = await Permission.findOneBy({
+                            permission_name: nameOfPermissionToRevoke,
                         })
                         const permRoles = (await dbPermission?.roles) || []
                         expect(permRoles.map(roleInfo)).to.not.include(roleId)
@@ -1243,10 +1271,8 @@ describe('role', () => {
                             )
                         ).to.be.rejected
 
-                        const dbPermission = await Permission.findOneOrFail({
-                            where: {
-                                permission_name: nameOfPermissionToRevoke,
-                            },
+                        const dbPermission = await Permission.findOneByOrFail({
+                            permission_name: nameOfPermissionToRevoke,
                         })
                         expect(dbPermission.allow).to.be.true
                     })
@@ -1268,7 +1294,9 @@ describe('role', () => {
         }
 
         async function checkRoleRemoved(isRemoved: boolean) {
-            const dbRole = await Role.findOneOrFail(roleToDeleteId)
+            const dbRole = await Role.findOneByOrFail({
+                role_id: roleToDeleteId,
+            })
             if (isRemoved) {
                 expect(dbRole.status).to.eq(Status.INACTIVE)
                 expect(dbRole.deleted_at).to.not.be.null
@@ -1426,8 +1454,9 @@ describe('role', () => {
         const rolesCount = 5
 
         const expectRoles = async (quantity: number) => {
-            const roleCount = await Role.count({
-                where: { status: Status.ACTIVE, system_role: false },
+            const roleCount = await Role.countBy({
+                status: Status.ACTIVE,
+                system_role: false,
             })
 
             expect(roleCount).to.eq(quantity)
@@ -1496,7 +1525,9 @@ describe('role', () => {
                     expect(r.description).to.equal(input[i].roleDescription)
                 })
 
-                const DBRoles = await Role.findByIds(roles.map((r) => r.id))
+                const DBRoles = await Role.findBy({
+                    role_id: In(roles.map((r) => r.id)),
+                })
 
                 expect(DBRoles).to.have.lengthOf(input.length)
                 DBRoles.forEach(async (dbr) => {
@@ -1608,7 +1639,6 @@ describe('role', () => {
                                             orgs[1],
                                         ])
 
-                                        const roles = await Role.find()
                                         await expectPermissionError(
                                             memberWithPermission,
                                             input
@@ -1667,8 +1697,8 @@ describe('role', () => {
                             let systemRoles: Role[]
 
                             beforeEach(async () => {
-                                systemRoles = await Role.find({
-                                    where: { system_role: true },
+                                systemRoles = await Role.findBy({
+                                    system_role: true,
                                 })
                             })
 
@@ -1970,7 +2000,9 @@ describe('role', () => {
                     )
                 })
 
-                const rolesDB = await Role.findByIds(input.map((i) => i.id))
+                const rolesDB = await Role.findBy({
+                    role_id: In(input.map((i) => i.id)),
+                })
 
                 expect(rolesDB).to.have.lengthOf(input.length)
 
@@ -2016,7 +2048,7 @@ describe('role', () => {
 
             const expectNoChanges = async (expectedRoles: Role[]) => {
                 const ids = expectedRoles.map((c) => c.role_id)
-                const rolesDB = await Role.findByIds(ids)
+                const rolesDB = await Role.findBy({ role_id: In(ids) })
 
                 expect(rolesDB).to.exist
                 expect(rolesDB).to.have.lengthOf(expectedRoles.length)
@@ -2393,14 +2425,12 @@ describe('role', () => {
                                 const rolesToUpdate = orgsData[0].roles
                                 const input = Array.from(
                                     rolesToUpdate,
-                                    (r, i) => {
-                                        return {
-                                            id: r.role_id,
-                                            permissionIds: [
-                                                nonExistingPermissionId,
-                                            ],
-                                        }
-                                    }
+                                    (r) => ({
+                                        id: r.role_id,
+                                        permissionIds: [
+                                            nonExistingPermissionId,
+                                        ],
+                                    })
                                 )
 
                                 const expectedErrors = Array.from(
@@ -2426,8 +2456,11 @@ describe('role', () => {
                             let inactivePermission: Permission
 
                             beforeEach(async () => {
-                                inactivePermission = await Permission.findOneOrFail(
-                                    PermissionName.academic_profile_20100
+                                inactivePermission = await Permission.findOneByOrFail(
+                                    {
+                                        permission_name:
+                                            PermissionName.academic_profile_20100,
+                                    }
                                 )
 
                                 await inactivePermission.inactivate()
@@ -2453,6 +2486,49 @@ describe('role', () => {
                                             i,
                                             'Permission',
                                             inactivePermission.permission_name
+                                        )
+                                )
+
+                                await expectInputErrors(input, expectedErrors)
+                                await expectNoChanges(rolesToUpdate)
+                            })
+                        }
+                    )
+
+                    context(
+                        "when a permission of 'permissionIds' is only for super admins",
+                        () => {
+                            let superAdminPermission: Permission
+
+                            beforeEach(async () => {
+                                superAdminPermission = await Permission.findOneByOrFail(
+                                    {
+                                        permission_level:
+                                            superAdminRole.role_name,
+                                    }
+                                )
+                            })
+
+                            it('should throw an ErrorCollection', async () => {
+                                const rolesToUpdate = orgsData[0].roles
+                                const input = Array.from(
+                                    rolesToUpdate,
+                                    (r) => ({
+                                        id: r.role_id,
+                                        permissionIds: [
+                                            superAdminPermission.permission_name,
+                                        ],
+                                    })
+                                )
+
+                                const expectedErrors = Array.from(
+                                    input,
+                                    (_, i) =>
+                                        createEntityAPIError(
+                                            'nonExistent',
+                                            i,
+                                            'Permission',
+                                            superAdminPermission.permission_id
                                         )
                                 )
 
@@ -2538,7 +2614,9 @@ describe('role', () => {
                     expect(r.status).to.eq(Status.INACTIVE)
                 })
 
-                const rolesDB = await Role.findByIds(input.map((i) => i.id))
+                const rolesDB = await Role.findBy({
+                    role_id: In(input.map((i) => i.id)),
+                })
 
                 expect(rolesDB).to.have.lengthOf(input.length)
                 rolesDB.forEach((rdb) => {
@@ -2605,8 +2683,8 @@ describe('role', () => {
                     roleForDelete
                 )
 
-                rolesTotalCount = await Role.count({
-                    where: { system_role: false },
+                rolesTotalCount = await Role.countBy({
+                    system_role: false,
                 })
             })
 
@@ -2788,11 +2866,9 @@ describe('role', () => {
         beforeEach(async () => {
             organization = await createOrganization().save()
             const user = await createUser().save()
-            systemRole = await Role.findOneOrFail({
-                where: {
-                    system_role: true,
-                    role_name: organizationAdminRole.role_name,
-                },
+            systemRole = await Role.findOneByOrFail({
+                system_role: true,
+                role_name: organizationAdminRole.role_name,
             })
             memberships = [
                 await createOrganizationMembership({

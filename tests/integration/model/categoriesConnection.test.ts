@@ -210,7 +210,7 @@ describe('model', () => {
             const inactiveCategoriesCount = await connection.manager.count(
                 Category,
                 {
-                    where: { status: 'inactive' },
+                    where: { status: Status.ACTIVE },
                 }
             )
             const result = await categoriesConnectionResolver(info, {
@@ -226,7 +226,7 @@ describe('model', () => {
 
         it('supports filtering by category system', async () => {
             const activeSystemCategories = await Category.find({
-                where: { system: true, status: 'active' },
+                where: { system: true, status: Status.ACTIVE },
             })
             const filterSystem = true
             const filter: IEntityFilter = {
@@ -262,7 +262,9 @@ describe('model', () => {
             }).save()
             const token = { id: organizationMember1.user_id }
             const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
             fakeInfo = {
                 fieldNodes: [
                     {

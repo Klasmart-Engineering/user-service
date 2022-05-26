@@ -49,7 +49,21 @@ describe('model', () => {
     let org1Grades: Grade[] = []
     let org2Grades: Grade[] = []
     let grades: Grade[] = []
-    let systemGrades: Grade[] = []
+    let systemGrades: Map<string, Grade>
+    let systemGradesData: (
+        | {
+              id: string
+              name: string
+              progress_from_grade?: undefined
+              progress_to_grade?: undefined
+          }
+        | {
+              id: string
+              name: string
+              progress_from_grade: string
+              progress_to_grade: string
+          }
+    )[] = []
 
     const gradesCount = 12
 
@@ -61,10 +75,13 @@ describe('model', () => {
 
     beforeEach(async () => {
         await GradesInitializer.run()
-
-        systemGrades = await Grade.find({
-            where: { system: true, status: 'active' },
-        })
+        systemGradesData = GradesInitializer.SYSTEM_GRADES
+        systemGrades = new Map(
+            (await Grade.findBy({ status: Status.ACTIVE })).map((grade) => [
+                grade.id,
+                grade,
+            ])
+        )
 
         admin = await createAdminUser(testClient)
         org1 = await createOrganization(admin)
@@ -75,29 +92,26 @@ describe('model', () => {
         grades = []
 
         for (let i = 0; i < gradesCount; i++) {
-            const grade = await createGrade(
+            const grade1 = createGrade(
                 org1,
-                systemGrades[i],
-                systemGrades[i + 1]
+                systemGrades.get(systemGradesData[i].id),
+                systemGrades.get(systemGradesData[i + 1].id)
             )
-            grade.name = `grade ${i}`
-            grade.status = Status.ACTIVE
-            org1Grades.push(grade)
-        }
+            grade1.name = `grade ${i}`
+            grade1.status = Status.ACTIVE
+            org1Grades.push(grade1)
 
-        for (let i = 0; i < gradesCount; i++) {
-            const grade = await createGrade(
+            const grade2 = createGrade(
                 org2,
-                systemGrades[i],
-                systemGrades[i + 1]
+                systemGrades.get(systemGradesData[i].id),
+                systemGrades.get(systemGradesData[i + 1].id)
             )
-            grade.name = `grade ${i}`
-            grade.status = Status.INACTIVE
-            org2Grades.push(grade)
+            grade2.name = `grade ${i}`
+            grade2.status = Status.INACTIVE
+            org2Grades.push(grade2)
         }
 
         grades.push(...org1Grades, ...org2Grades)
-
         await connection.manager.save(grades)
     })
 
@@ -110,7 +124,7 @@ describe('model', () => {
                 { authorization: getAdminAuthToken() }
             )
 
-            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.size)
         })
     })
 
@@ -125,7 +139,7 @@ describe('model', () => {
                 { field: 'id', order: 'ASC' }
             )
 
-            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.size)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedAscending(ids)
@@ -142,7 +156,7 @@ describe('model', () => {
                 undefined,
                 { field: 'id', order: 'DESC' }
             )
-            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.size)
 
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedDescending(ids)
@@ -160,7 +174,7 @@ describe('model', () => {
                 { field: 'name', order: 'ASC' }
             )
 
-            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.size)
 
             const names = result.edges.map((edge) => edge.node.name) as string[]
             const isSorted = isStringArraySortedAscending(names)
@@ -178,7 +192,7 @@ describe('model', () => {
                 { field: 'name', order: 'DESC' }
             )
 
-            checkPageInfo(result, gradesCount * 2 + systemGrades.length)
+            checkPageInfo(result, gradesCount * 2 + systemGrades.size)
 
             const names = result.edges.map((edge) => edge.node.name) as string[]
             const isSorted = isStringArraySortedDescending(names)
@@ -298,14 +312,14 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(systemGrades.length)
+            expect(result.totalCount).to.eq(systemGrades.size)
 
             const systems = result.edges.map((edge) => edge.node.system)
             systems.every((system) => system === filterSystem)
         })
 
         it('supports filtering by from grade ID', async () => {
-            const fromGradeId = GradesInitializer.SYSTEM_GRADES[4].id
+            const fromGradeId = systemGradesData[4].id
             const filter: IEntityFilter = {
                 fromGradeId: {
                     operator: 'eq',
@@ -327,11 +341,11 @@ describe('model', () => {
                 return edge.node.fromGrade.id
             })
 
-            fromGradeIds.every((ids) => ids.includes(fromGradeId))
+            fromGradeIds.forEach((ids) => ids.includes(fromGradeId))
         })
 
         it('supports filtering by to grade ID', async () => {
-            const toGradeId = GradesInitializer.SYSTEM_GRADES[5].id
+            const toGradeId = systemGradesData[5].id
             const filter: IEntityFilter = {
                 toGradeId: {
                     operator: 'eq',
@@ -350,10 +364,10 @@ describe('model', () => {
             expect(result.totalCount).to.eq(2)
 
             const toGradeIds = result.edges.map((edge) => {
-                return edge.node.fromGrade.id
+                return edge.node.toGrade.id
             })
 
-            toGradeIds.every((ids) => ids.includes(toGradeId))
+            toGradeIds.forEach((ids) => expect(ids).to.include(toGradeId))
         })
 
         it('supports filtering by program ID', async () => {
@@ -431,7 +445,9 @@ describe('model', () => {
             const userPermissions = new UserPermissions(
                 userToPayload(clientUser)
             )
-            ctx = { loaders: createContextLazyLoaders(userPermissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(userPermissions),
+            }
         })
         context('as a child of programs', () => {
             let program: Program

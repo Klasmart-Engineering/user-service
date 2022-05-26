@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
 import { before } from 'mocha'
-import { getConnection } from 'typeorm'
+import { getConnection, IsNull } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
 import { Organization } from '../../src/entities/organization'
@@ -203,7 +203,7 @@ describe('model', () => {
 
         context('when user membership is inactive', () => {
             beforeEach(async () => {
-                const dbOtherMembership = await OrganizationMembership.findOneOrFail(
+                const dbOtherMembership = await OrganizationMembership.findOneByOrFail(
                     {
                         user_id: profiles[0].user_id,
                         organization_id: organization.organization_id,
@@ -844,7 +844,7 @@ describe('model', () => {
                     .be.rejected
 
                 const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
+                    where: { organization_name: IsNull() },
                 })
                 const duplicatedOrgs = await Organization.count({
                     where: { organization_name: organizationName },
@@ -860,7 +860,7 @@ describe('model', () => {
                     .to.be.rejected
 
                 const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
+                    where: { organization_name: IsNull() },
                 })
                 const duplicatedOrgs = await Organization.count({
                     where: { organization_name: organizationName },
@@ -879,7 +879,7 @@ describe('model', () => {
                 expect(result).eq(true)
 
                 const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
+                    where: { organization_name: IsNull() },
                 })
                 const duplicatedOrgs = await Organization.count({
                     where: { organization_name: organizationName },
@@ -912,7 +912,12 @@ describe('model', () => {
                     .rejected
 
                 const duplicatedSubjects = await Subject.count({
-                    where: { name: subjectName, organization },
+                    where: {
+                        name: subjectName,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
+                    },
                 })
 
                 expect(duplicatedSubjects).eq(3)
@@ -929,7 +934,12 @@ describe('model', () => {
                 expect(result).eq(true)
 
                 const duplicatedSubjects = await Subject.count({
-                    where: { name: subjectName, organization },
+                    where: {
+                        name: subjectName,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
+                    },
                 })
 
                 expect(duplicatedSubjects).eq(1)
@@ -962,7 +972,12 @@ describe('model', () => {
                     .rejected
 
                 const duplicatedGrades = await Grade.count({
-                    where: { name: gradeName, organization },
+                    where: {
+                        name: gradeName,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
+                    },
                 })
 
                 expect(duplicatedGrades).eq(3)
@@ -975,7 +990,12 @@ describe('model', () => {
                     .rejected
 
                 const duplicatedGrades = await Grade.count({
-                    where: { name: gradeName, organization },
+                    where: {
+                        name: gradeName,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
+                    },
                 })
 
                 expect(duplicatedGrades).eq(3)
@@ -992,7 +1012,12 @@ describe('model', () => {
                 expect(result).eq(true)
 
                 const duplicatedGrades = await Grade.count({
-                    where: { name: gradeName, organization },
+                    where: {
+                        name: gradeName,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
+                    },
                 })
 
                 expect(duplicatedGrades).eq(1)
@@ -1009,7 +1034,12 @@ describe('model', () => {
                 expect(result).eq(true)
 
                 const duplicatedGrades = await Grade.count({
-                    where: { name: gradeName, organization },
+                    where: {
+                        name: gradeName,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
+                    },
                 })
 
                 expect(duplicatedGrades).eq(1)
@@ -1026,7 +1056,12 @@ describe('model', () => {
                 ).to.be.rejected
 
                 const duplicatedGrades = await Grade.count({
-                    where: { name: gradeName, organization },
+                    where: {
+                        name: gradeName,
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
+                    },
                 })
 
                 expect(duplicatedGrades).eq(3)

@@ -78,7 +78,6 @@ describe('gradeNode', () => {
         if (!permissions.isAdmin) {
             await nonAdminGradeScope(scopeObject, permissions)
         }
-
         const ctxObject = ({
             permissions,
             loaders: createContextLazyLoaders(permissions),

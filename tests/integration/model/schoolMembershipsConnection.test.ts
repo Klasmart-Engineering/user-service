@@ -47,11 +47,14 @@ describe('schoolMembershipsConnection', () => {
 
     let school1: School
     let school2: School
+    let school3: School
     let school1Memberships: SchoolMembership[]
     let school2Memberships: SchoolMembership[]
+    let school3Memberships: SchoolMembership[]
     let school1Role: Role
     let school2Role: Role
     let organization: Organization
+    let organization2: Organization
 
     function ids(memberships: SchoolMembership[]) {
         return memberships.map((m) => m.user_id + m.school_id)
@@ -77,9 +80,11 @@ describe('schoolMembershipsConnection', () => {
         })) as SelectQueryBuilder<SchoolMembership>
 
         organization = await createOrganization().save()
+        organization2 = await createOrganization().save()
 
         school1 = await createSchool(organization).save()
         school2 = await createSchool(organization).save()
+        school3 = await createSchool(organization2).save()
         school1Role = await createRole('r1', organization).save()
         school2Role = await createRole('r2', organization).save()
 
@@ -112,6 +117,13 @@ describe('schoolMembershipsConnection', () => {
                 status: Status.INACTIVE,
             }).save(),
         ])
+        school3Memberships = [
+            await createSchoolMembership({
+                school: school3,
+                user: await createUser().save(),
+                status: Status.INACTIVE,
+            }).save(),
+        ]
     })
 
     describe('schoolMembershipConnectionQuery()', () => {
@@ -159,6 +171,15 @@ describe('schoolMembershipsConnection', () => {
                 })
                 expect(members).to.have.lengthOf(school1Memberships.length)
             })
+            it('filters by organizationId', async () => {
+                const members = await runQuery({
+                    organizationId: {
+                        operator: 'eq',
+                        value: organization2.organization_id,
+                    },
+                })
+                expect(members).to.have.lengthOf(school3Memberships.length)
+            })
         })
     })
 
@@ -204,7 +225,9 @@ describe('schoolMembershipsConnection', () => {
 
             const token = { id: clientUser.user_id }
             const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
             fakeInfo = {
                 fieldNodes: [
                     {

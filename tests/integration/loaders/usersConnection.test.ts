@@ -86,7 +86,7 @@ describe('usersConnection loaders', async () => {
                     for (const org of orgs) {
                         const membership = await getRepository(
                             OrganizationMembership
-                        ).findOneOrFail({
+                        ).findOneByOrFail({
                             user_id: userId,
                             organization_id: org1.organization_id,
                         })
@@ -206,7 +206,7 @@ describe('usersConnection loaders', async () => {
                     for (const school of schools) {
                         const membership = await getRepository(
                             SchoolMembership
-                        ).findOneOrFail({
+                        ).findOneByOrFail({
                             user_id: userId,
                             school_id: school1.school_id,
                         })

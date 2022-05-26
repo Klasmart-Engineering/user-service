@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, IsNull } from 'typeorm'
 import { Organization } from '../../entities/organization'
 
 export async function renameDuplicatedOrganizations(manager: EntityManager) {
@@ -39,7 +39,7 @@ export async function renameDuplicatedOrganizations(manager: EntityManager) {
 export async function renameNullOrganizations(manager: EntityManager) {
     const whenStrings: string[] = []
     const nullOrganizations = await Organization.find({
-        where: { organization_name: null },
+        where: { organization_name: IsNull() },
     })
 
     if (!nullOrganizations.length) {

@@ -6,6 +6,7 @@ import {
     Brackets,
     createQueryBuilder,
 } from 'typeorm'
+
 import { Class } from '../entities/class'
 import { AgeRange } from '../entities/ageRange'
 import { Category } from '../entities/category'
@@ -27,6 +28,7 @@ import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
 import { scopeHasJoin } from '../utils/typeorm'
 import { AcademicTerm } from '../entities/academicTerm'
+import { superAdminRole } from '../permissions/superAdmin'
 
 //
 // changing permission rules? update the docs: permissions.md
@@ -151,7 +153,9 @@ export const createEntityScope = async ({
         switch (entity) {
             case 'organization':
                 await nonAdminOrganizationScope(
-                    scope as SelectQueryBuilder<Organization>,
+                    scope as SelectQueryBuilder<
+                        Organization | OrganizationMembership
+                    >,
                     permissions
                 )
                 break
@@ -391,28 +395,27 @@ export const nonAdminUserScope: NonAdminScope<
         // find a schools the user is a member of in these orgs
         const schoolIds = await permissions.schoolsInOrgs(orgsWithAdmins)
         if (schoolIds.length) {
-            // add joins and where conds to find school admins of these schools
-            if (!scopeHasJoin(scope, SchoolMembership)) {
-                scope.leftJoin('User.school_memberships', 'SchoolMembership')
-            }
-            if (!scopeHasJoin(scope, OrganizationMembership)) {
-                scope.leftJoin('User.memberships', 'OrganizationMembership')
-            }
-            scope.leftJoin('OrganizationMembership.roles', 'Role')
-            scope.leftJoin('Role.permissions', 'Permission')
-            userFiltersAnd.push(
-                {
-                    where: 'Permission.permission_name = :permissionName',
-                    params: {
-                        permissionName:
-                            PermissionName.view_my_school_users_40111,
-                    },
-                },
-                {
-                    where: 'SchoolMembership.school_id IN (:...schoolIds)',
-                    params: { schoolIds },
+            const adminIds = await permissions.getUserSchoolAdmins()
+            if (adminIds.length > 0) {
+                // add joins and where conds to find school admins of these schools
+                if (!scopeHasJoin(scope, SchoolMembership)) {
+                    scope.leftJoin(
+                        'User.school_memberships',
+                        'SchoolMembership'
+                    )
                 }
-            )
+                userFiltersAnd.push(
+                    {
+                        where: 'User.user_id IN (:...adminIds)',
+                        params: { adminIds },
+                    },
+
+                    {
+                        where: 'SchoolMembership.school_id IN (:...schoolIds)',
+                        params: { schoolIds },
+                    }
+                )
+            }
         }
     }
 
@@ -460,7 +463,12 @@ export const nonAdminOrganizationMembershipScope: NonAdminScope<OrganizationMemb
     scope.leftJoin('OrganizationMembership.user', 'User')
 
     await nonAdminOrganizationScope(scope, permissions)
-    await nonAdminUserScope(scope, permissions)
+    await nonAdminUserScope(
+        scope as SelectQueryBuilder<
+            User | OrganizationMembership | SchoolMembership
+        >,
+        permissions
+    )
 }
 
 export const nonAdminAgeRangeScope: NonAdminScope<AgeRange> = (
@@ -773,11 +781,12 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
     const orgIds = await permissions.orgMembershipsWithPermissions([])
     if (orgIds.length) {
         scope.innerJoin('Permission.roles', 'Role')
-        return
-    }
-
-    scope.where('false')
+        scope.where('"Permission"."permission_level" != :superAdmin', {
+            superAdmin: superAdminRole.role_name,
+        })
+    } else scope.where('false')
 }
+
 export const nonAdminRoleScope: NonAdminScope<Role> = async (
     scope,
     permissions

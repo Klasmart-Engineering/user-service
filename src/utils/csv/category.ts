@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, IsNull } from 'typeorm'
 import { Category } from '../../entities/category'
 import { Organization } from '../../entities/organization'
 import { Subcategory } from '../../entities/subcategory'
@@ -7,6 +7,7 @@ import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { Status } from '../../entities/status'
 import { PermissionName } from '../../permissions/permissionNames'
 import { customErrors } from '../../types/errors/customError'
 
@@ -18,8 +19,8 @@ export const processCategoryFromCSVRow = async (
     userPermissions: UserPermissions
 ) => {
     const rowErrors: CSVError[] = []
-    let category: Category | undefined
-    let subcategory: Subcategory | undefined
+    let category: Category | null
+    let subcategory: Subcategory | null
     let subcategories: Subcategory[] = []
     const { organization_name, category_name, subcategory_name } = row
 
@@ -106,7 +107,7 @@ export const processCategoryFromCSVRow = async (
             where: {
                 name: 'None Specified',
                 system: true,
-                organization: null,
+                organization: IsNull(),
             },
         })
     }
@@ -132,9 +133,9 @@ export const processCategoryFromCSVRow = async (
     category = await manager.findOne(Category, {
         where: {
             name: category_name,
-            status: 'active',
+            status: Status.ACTIVE,
             system: false,
-            organization,
+            organization: { organization_id: organization.organization_id },
         },
     })
 

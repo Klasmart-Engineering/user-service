@@ -72,11 +72,7 @@ describe('acceptance.program', () => {
         const ageRangeDetails: IAgeRangeDetail[] = []
         const programDetails: IProgramDetail[] = []
 
-        const createOrg1Response = await createOrg(
-            user_id,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrg1Response = await createOrg(user_id, org_name)
 
         const createOrg1Data =
             createOrg1Response.body.data.user.createOrganization
@@ -364,7 +360,10 @@ describe('acceptance.program', () => {
         })
 
         it('has gradesConnection as a child', async () => {
-            const org = await Organization.findOne(orgId)
+            const org =
+                (await Organization.findOneBy({ organization_id: orgId })) ||
+                undefined
+
             const program = await createProgram(org).save()
             const programGrade = await createGrade(org).save()
             await createGrade(org).save()

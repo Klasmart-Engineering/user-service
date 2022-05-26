@@ -25,12 +25,9 @@ import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { paginatePermissions } from '../../src/schemas/myUser'
 import { Permission } from '../../src/entities/permission'
-import { UserPermissions } from '../../src/permissions/userPermissions'
 import { GraphQLResolveInfo } from 'graphql'
 import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
 import { IEntityFilter } from '../../src/utils/pagination/filtering'
-import { createAdminUser } from '../utils/testEntities'
-import { userToPayload } from '../utils/operations/userOps'
 import { getConnection } from 'typeorm'
 
 use(chaiAsPromised)
@@ -318,11 +315,6 @@ describe('myUser', () => {
     describe('#paginatePermissions', () => {
         const paginationCount = 10
 
-        let adminUser: User
-        beforeEach(async () => {
-            adminUser = await createAdminUser(testClient)
-        })
-
         async function getResult(
             permissions: PermissionName[],
             filter?: IEntityFilter
@@ -349,8 +341,7 @@ describe('myUser', () => {
                             },
                         },
                     ],
-                } as unknown) as GraphQLResolveInfo,
-                new UserPermissions(userToPayload(adminUser))
+                } as unknown) as GraphQLResolveInfo
             )
         }
 

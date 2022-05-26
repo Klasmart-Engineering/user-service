@@ -2,6 +2,8 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { mutate } from '../utils/mutations/commonStructure'
+import { DeleteAgeRanges } from '../resolvers/ageRange'
 
 const typeDefs = gql`
     extend type Query {
@@ -24,6 +26,7 @@ const typeDefs = gql`
         age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
         uploadAgeRangesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        deleteAgeRanges(input: [DeleteAgeRangeInput!]!): AgeRangesMutationResult
     }
 
     type AgeRangeConnectionNode {
@@ -103,6 +106,14 @@ const typeDefs = gql`
         high_value_unit: AgeRangeUnit
         system: Boolean
     }
+
+    input DeleteAgeRangeInput {
+        id: ID!
+    }
+
+    type AgeRangesMutationResult {
+        ageRanges: [AgeRangeConnectionNode!]!
+    }
 `
 
 export default function getDefault(
@@ -117,6 +128,8 @@ export default function getDefault(
                     model.getAgeRange(args, ctx),
                 uploadAgeRangesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadAgeRangesFromCSV(args, ctx, info),
+                deleteAgeRanges: (_parent, args, ctx) =>
+                    mutate(DeleteAgeRanges, args, ctx.permissions),
             },
             Query: {
                 age_range: (_parent, args, ctx, _info) =>

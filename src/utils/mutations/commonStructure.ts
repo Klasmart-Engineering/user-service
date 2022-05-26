@@ -1,4 +1,4 @@
-import { getManager } from 'typeorm'
+import { BaseEntity, getManager } from 'typeorm'
 import { config } from '../../config/config'
 import { CustomBaseEntity } from '../../entities/customBaseEntity'
 import { Status } from '../../entities/status'
@@ -24,7 +24,7 @@ import { objectToKey, ObjMap } from '../stringUtils'
 export interface EntityMap<EntityType extends CustomBaseEntity> {
     mainEntity?: Map<string, EntityType>
     [key: string]:
-        | Map<string, CustomBaseEntity | CustomBaseEntity[]>
+        | Map<string, CustomBaseEntity | CustomBaseEntity[] | string | string[]>
         | ObjMap<{ [key: string]: string }, unknown>
         | CustomBaseEntity
         | CustomBaseEntity[]
@@ -771,11 +771,16 @@ export abstract class RemoveMembershipMutation<
             )
             return
         }
+
+        const MembershipAsEntity = this
+            .MembershipType as (new () => CustomBaseEntity) & typeof BaseEntity
+        const ids = entitiesToUpdate.map((e) => MembershipAsEntity.getId(e))
+
         await getManager()
             .createQueryBuilder()
             .update(this.MembershipType)
             .set(this.partialEntity)
-            .whereInIds(entitiesToUpdate)
+            .whereInIds(ids)
             .execute()
     }
 }

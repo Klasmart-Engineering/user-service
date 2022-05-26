@@ -437,6 +437,14 @@ export const UPDATE_CLASSES = `mutation($input: [UpdateClassInput!]!) {
     }
 }`
 
+export const ADD_SUBJECTS_TO_CLASSES = gql`
+    mutation myMutation($input: [AddSubjectsToClassInput!]!) {
+        addSubjectsToClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export const REMOVE_PROGRAMS_FROM_CLASSES = gql`
     mutation RemovePrograms($input: [RemoveProgramsFromClassInput!]!) {
         removeProgramsFromClasses(input: $input) {
@@ -450,6 +458,30 @@ export const SET_ACADEMIC_TERMS_OF_CLASSES = gql`mutation($input: [SetAcademicTe
         ${CLASSES_MUTATION_RESULT}
     }
 }`
+
+export const ADD_AGE_RANGES_TO_CLASSES = gql`
+    mutation AddAgeRangesToClasses($input: [AddAgeRangesToClassInput!]!) {
+        addAgeRangesToClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
+export const REMOVE_AGE_RANGES_FROM_CLASSES = gql`
+    mutation RemoveAgeRangesFromClasses($input: [RemoveAgeRangesFromClassInput!]!) {
+        removeAgeRangesFromClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
+export const REMOVE_SUBJECTS_FROM_CLASSES = gql`
+    mutation myMutation($input: [RemoveSubjectsFromClassInput!]!) {
+        removeSubjectsFromClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
 
 export async function updateClass(
     testClient: ApolloServerTestClient,

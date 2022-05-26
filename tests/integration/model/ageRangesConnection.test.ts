@@ -75,7 +75,7 @@ describe('model', () => {
         await AgeRangesInitializer.run()
 
         systemAgeRanges = await AgeRange.find({
-            where: { system: true, status: 'active' },
+            where: { system: true, status: Status.ACTIVE },
         })
 
         admin = await createAdminUser(testClient)
@@ -581,7 +581,9 @@ describe('model', () => {
             }).save()
             const token = { id: organizationMember1.user_id }
             const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
             fakeInfo = {
                 fieldNodes: [
                     {

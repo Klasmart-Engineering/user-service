@@ -1,5 +1,7 @@
 import DataLoader from 'dataloader'
+import { IsNull } from 'typeorm'
 import { Grade } from '../entities/grade'
+import { Status } from '../entities/status'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
@@ -19,9 +21,9 @@ export const fromGradeForGrades = async (
     const noneSpecifiedGrade = await Grade.findOneOrFail({
         where: {
             name: 'None Specified',
-            organization: null,
+            organization: IsNull(),
             system: true,
-            status: 'active',
+            status: Status.ACTIVE,
         },
     })
 
@@ -59,9 +61,9 @@ export const toGradeForGrades = async (
     const noneSpecifiedGrade = await Grade.findOneOrFail({
         where: {
             name: 'None Specified',
-            organization: null,
+            organization: IsNull(),
             system: true,
-            status: 'active',
+            status: Status.ACTIVE,
         },
     })
 

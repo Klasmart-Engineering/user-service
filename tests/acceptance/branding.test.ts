@@ -12,6 +12,7 @@ import { loadFixtures } from '../utils/fixtures'
 import { BrandingImageTag } from '../../src/types/graphQL/branding'
 import { User } from '../../src/entities/user'
 import { userToPayload } from '../utils/operations/userOps'
+import { createOrg } from '../utils/operations/acceptance/acceptanceOps.test'
 
 use(chaiAsPromised)
 
@@ -30,17 +31,6 @@ const GET_ORGANIZATION = `
             branding {
                 iconImageURL
                 primaryColor
-            }
-        }
-    }
-`
-
-const CREATE_ORGANIZATION = `
-    mutation {
-        user(user_id: "${user_id}") {
-            createOrganization(organization_name: "${org_name}") {
-                organization_id
-                organization_name
             }
         }
     }
@@ -74,20 +64,6 @@ const DELETE_BRANDING_COLOR = `
         ) 
     }
 `
-async function createOrg(user_id: string, token: string) {
-    return await request
-        .post('/graphql')
-        .set({
-            ContentType: 'application/json',
-            Authorization: token,
-        })
-        .send({
-            query: CREATE_ORGANIZATION,
-            variables: {
-                user_id,
-            },
-        })
-}
 
 async function getOrg(orgId: string, token: string) {
     return await request
@@ -147,7 +123,7 @@ describe('acceptance.branding', () => {
         const organization_id = ''
 
         // create organization
-        const createOrgResponse = await createOrg(user_id, getAdminAuthToken())
+        const createOrgResponse = await createOrg(user_id, org_name)
 
         expect(createOrgResponse.status).to.eq(200)
 
@@ -195,10 +171,10 @@ describe('acceptance.branding', () => {
 
         const user2 = await connection
             .getRepository(User)
-            .findOneOrFail({ user_id: user2_id })
+            .findOneByOrFail({ user_id: user2_id })
         const token = generateToken(userToPayload(user2))
         // create organization
-        const createOrgResponse = await createOrg(user2_id, token)
+        const createOrgResponse = await createOrg(user2_id, org_name)
 
         expect(createOrgResponse.status).to.eq(200)
 
@@ -220,7 +196,7 @@ describe('acceptance.branding', () => {
             orgId,
             primaryColor,
             imagePath,
-            getAdminAuthToken()
+            token
         )
 
         expect(setBrandingResponse.status).to.eq(200)
@@ -241,7 +217,7 @@ describe('acceptance.branding', () => {
             .post('/graphql')
             .set({
                 ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
+                Authorization: token,
             })
             .send({
                 query: DELETE_BRANDING_IMAGE,
@@ -273,10 +249,10 @@ describe('acceptance.branding', () => {
 
         const user2 = await connection
             .getRepository(User)
-            .findOneOrFail({ user_id: user2_id })
+            .findOneByOrFail({ user_id: user2_id })
         const token = generateToken(userToPayload(user2))
         // create organization
-        const createOrgResponse = await createOrg(user2_id, token)
+        const createOrgResponse = await createOrg(user2_id, org_name)
 
         expect(createOrgResponse.status).to.eq(200)
 
@@ -297,7 +273,7 @@ describe('acceptance.branding', () => {
             orgId,
             primaryColor,
             imagePath,
-            getAdminAuthToken()
+            token
         )
 
         expect(setBrandingResponse.status).to.eq(200)
@@ -319,7 +295,7 @@ describe('acceptance.branding', () => {
             .post('/graphql')
             .set({
                 ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
+                Authorization: token,
             })
             .send({
                 query: DELETE_BRANDING_COLOR,

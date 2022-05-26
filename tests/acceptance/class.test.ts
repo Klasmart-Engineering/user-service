@@ -19,6 +19,10 @@ import {
     RemoveStudentsFromClassInput,
     RemoveTeachersFromClassInput,
     UpdateClassInput,
+    AddAgeRangesToClassInput,
+    RemoveSubjectsFromClassInput,
+    RemoveAgeRangesFromClassInput,
+    AddSubjectsToClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
@@ -32,6 +36,7 @@ import {
     addSubjectsToClass,
     createAgeRanges,
     createGrades,
+    createOrg,
     createPrograms,
     createSchool,
     createSubjects,
@@ -55,6 +60,10 @@ import {
     CLASSES,
     CLASSES_STUDENTS,
     CLASSES_TEACHERS,
+    ADD_AGE_RANGES_TO_CLASSES,
+    REMOVE_SUBJECTS_FROM_CLASSES,
+    REMOVE_AGE_RANGES_FROM_CLASSES,
+    ADD_SUBJECTS_TO_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASS_NODE,
@@ -65,7 +74,7 @@ import {
     CREATE_CLASS,
     getSystemRoleIds,
 } from '../utils/operations/organizationOps'
-import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
+import { userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { print } from 'graphql'
 import { Program } from '../../src/entities/program'
@@ -101,6 +110,9 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createSchools } from '../factories/school.factory'
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { compareMultipleEntityFields } from '../utils/assertions'
+import { AgeRange } from '../../src/entities/ageRange'
+import { createAgeRange } from '../factories/ageRange.factory'
+import { createSubjects as createSubjectsFactory } from '../factories/subject.factory'
 
 use(deepEqualInAnyOrder)
 
@@ -141,22 +153,6 @@ const ageRangeDetail: IAgeRangeDetail = {
     low_value_unit: AgeRangeUnit.YEAR,
     high_value: 12,
     high_value_unit: AgeRangeUnit.YEAR,
-}
-
-async function createOrg(userId: string, orgName: string, token: string) {
-    return request
-        .post('/user')
-        .set({
-            ContentType: 'application/json',
-            Authorization: token,
-        })
-        .send({
-            query: CREATE_ORGANIZATION,
-            variables: {
-                user_id: userId,
-                org_name: orgName,
-            },
-        })
 }
 
 async function createClass(
@@ -216,24 +212,18 @@ describe('acceptance.class', () => {
         schoolIds = []
 
         await loadFixtures('users', connection)
-        const createOrg1Response = await createOrg(
-            user_id,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrg1Response = await createOrg(user_id, org_name)
 
         const createOrg1Data =
             createOrg1Response.body.data.user.createOrganization
 
         org1Id = createOrg1Data.organization_id
 
-        user2 = await connection.manager.findOneOrFail(User, user2_id)
+        user2 = await connection.manager.findOneByOrFail(User, {
+            user_id: user2_id,
+        })
 
-        const createOrg2Response = await createOrg(
-            user2_id,
-            org2_name,
-            generateToken(userToPayload(user2))
-        )
+        const createOrg2Response = await createOrg(user2_id, org2_name)
 
         const createOrg2Data =
             createOrg2Response.body.data.user.createOrganization
@@ -271,10 +261,9 @@ describe('acceptance.class', () => {
             createSchoolAdminResponse.body.data.organization.inviteUser
 
         schoolAdminId = createSchoolAdminData.user.user_id
-        schoolAdmin = await connection.manager.findOneOrFail(
-            User,
-            schoolAdminId
-        )
+        schoolAdmin = await connection.manager.findOneByOrFail(User, {
+            user_id: schoolAdminId,
+        })
 
         const createOrgMemberResponse = await inviteUserToOrganization(
             'organization',
@@ -290,7 +279,9 @@ describe('acceptance.class', () => {
             createOrgMemberResponse.body.data.organization.inviteUser
 
         orgMemberId = createOrgMemberData.user.user_id
-        orgMember = await connection.manager.findOneOrFail(User, orgMemberId)
+        orgMember = await connection.manager.findOneByOrFail(User, {
+            user_id: orgMemberId,
+        })
 
         // Creating Age Range to Filter
         const createAgeRangeResponse = await createAgeRanges(
@@ -334,7 +325,6 @@ describe('acceptance.class', () => {
         subjectId =
             createSubjectResponse.body.data.organization
                 .createOrUpdateSubjects[0].id
-
         // Creating Program to Filter
         const createProgramResponse = await createPrograms(
             org1Id,
@@ -931,8 +921,8 @@ describe('acceptance.class', () => {
         })
 
         it('queries paginated classes filtering by academic term', async () => {
-            const school = await School.findOneOrFail(schoolId)
-            const cls = await Class.findOneOrFail(class1Ids[2])
+            const school = await School.findOneByOrFail({ school_id: schoolId })
+            const cls = await Class.findOneByOrFail({ class_id: class1Ids[2] })
             const term = await createAcademicTerm(school, {}, [cls]).save()
 
             const response = await request
@@ -1139,7 +1129,7 @@ describe('acceptance.class', () => {
         })
 
         it('has programsConnection as a child', async () => {
-            const user1 = await User.findOneOrFail(user_id)
+            const user1 = await User.findOneByOrFail({ user_id })
             const response = await makeRequest(
                 request,
                 print(CLASSES_CONNECTION),
@@ -1217,9 +1207,9 @@ describe('acceptance.class', () => {
         })
 
         it("can access the class's academic term", async () => {
-            const org1 = await connection.manager.findOneOrFail(
+            const org1 = await connection.manager.findOneByOrFail(
                 Organization,
-                org1Id
+                { organization_id: org1Id }
             )
             const school = await createSchoolFactory(org1).save()
             const class_ = createClassFactory([], org1)
@@ -2057,6 +2047,232 @@ describe('acceptance.class', () => {
             const studentsToIds = studentsTo.map((u) => u.user_id)
             expect(studentsFrom.length).to.equal(0)
             expect(studentsToIds).to.deep.equalInAnyOrder(checkIds)
+        })
+    })
+
+    context('addAgeRangesToClasses', () => {
+        let input: AddAgeRangesToClassInput[]
+        let activeClass: Class
+        let activeClassAgeRange: AgeRange
+        let orgAgeRange: AgeRange
+
+        beforeEach(async () => {
+            activeClass = (
+                await connection.manager.find(Class, {
+                    where: { class_id: In(class1Ids), status: Status.ACTIVE },
+                })
+            )[0]
+            activeClassAgeRange = createAgeRange(await activeClass.organization)
+            activeClass.age_ranges = Promise.resolve([activeClassAgeRange])
+            await activeClassAgeRange.save()
+            await activeClass.save()
+            orgAgeRange = createAgeRange(await activeClass.organization)
+            await orgAgeRange.save()
+
+            input = [
+                {
+                    classId: activeClass.class_id,
+                    ageRangeIds: [orgAgeRange.id],
+                },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_AGE_RANGES_TO_CLASSES),
+                { input },
+                getAdminAuthToken()
+            )
+
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.be.undefined
+            expect(
+                response.body.data.addAgeRangesToClasses.classes
+            ).to.have.lengthOf(input.length)
+        })
+
+        it('has mandatory classId and ageRangeIds input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_AGE_RANGES_TO_CLASSES),
+                { input: [{}] },
+                getAdminAuthToken()
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "ageRangeIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('removeAgeRangesFromClasses', () => {
+        let input: RemoveAgeRangesFromClassInput[]
+        let activeClass: Class
+        let activeClassAgeRange: AgeRange
+
+        beforeEach(async () => {
+            activeClass = (
+                await connection.manager.find(Class, {
+                    where: { class_id: In(class1Ids), status: Status.ACTIVE },
+                })
+            )[0]
+            activeClassAgeRange = createAgeRange(await activeClass.organization)
+            activeClass.age_ranges = Promise.resolve([activeClassAgeRange])
+            await activeClassAgeRange.save()
+            await activeClass.save()
+
+            input = [
+                {
+                    classId: activeClass.class_id,
+                    ageRangeIds: [activeClassAgeRange.id],
+                },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_AGE_RANGES_FROM_CLASSES),
+                { input },
+                getAdminAuthToken()
+            )
+
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.be.undefined
+            expect(
+                response.body.data.removeAgeRangesFromClasses.classes
+            ).to.have.lengthOf(input.length)
+        })
+
+        it('has mandatory classId and ageRangeIds input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_AGE_RANGES_FROM_CLASSES),
+                { input: [{}] },
+                getAdminAuthToken()
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "ageRangeIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('removeSubjectsFromClasses', () => {
+        let adminUser: User
+        let input: RemoveSubjectsFromClassInput[]
+        let classes: Class[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const subjects = createSubjectsFactory(2)
+            await connection.manager.save(subjects)
+            classes = createClasses(2, org)
+            await connection.manager.save(classes)
+            classes[0].subjects = Promise.resolve([subjects[0], subjects[1]])
+            classes[1].subjects = Promise.resolve([subjects[0], subjects[1]])
+            await connection.manager.save(classes)
+            input = []
+            for (const class_ of classes) {
+                input.push({
+                    classId: class_.class_id,
+                    subjectIds: subjects.map((s) => s.id),
+                })
+            }
+        })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_SUBJECTS_FROM_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.removeSubjectsFromClasses.classes
+            expect(resClasses).to.have.length(classes.length)
+            expect(response.body.errors).to.be.undefined
+        })
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_SUBJECTS_FROM_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "subjectIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('addSubjectsToClasses', () => {
+        let adminUser: User
+        let input: AddSubjectsToClassInput[]
+        let classes: Class[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const subjects = createSubjectsFactory(2)
+            await connection.manager.save(subjects)
+            classes = createClasses(2, org)
+            await connection.manager.save(classes)
+            input = []
+            for (const class_ of classes) {
+                input.push({
+                    classId: class_.class_id,
+                    subjectIds: subjects.map((s) => s.id),
+                })
+            }
+        })
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_SUBJECTS_TO_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.addSubjectsToClasses.classes
+            expect(resClasses).to.have.length(classes.length)
+            expect(response.body.errors).to.be.undefined
+        })
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(ADD_SUBJECTS_TO_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "subjectIds" of required type "[ID!]!" was not provided.'
+            )
         })
     })
 })

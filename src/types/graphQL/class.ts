@@ -56,6 +56,16 @@ export interface RemoveProgramsFromClassInput {
     programIds: string[]
 }
 
+export interface AddAgeRangesToClassInput {
+    classId: string
+    ageRangeIds: string[]
+}
+
+export interface RemoveAgeRangesFromClassInput {
+    classId: string
+    ageRangeIds: string[]
+}
+
 export interface AddStudentsToClassInput {
     classId: string
     studentIds: string[]
@@ -89,4 +99,14 @@ export interface MoveUsersToClassInput {
 export interface MoveUsersToClassMutationResult {
     fromClass: ClassConnectionNode
     toClass: ClassConnectionNode
+}
+
+export interface RemoveSubjectsFromClassInput {
+    classId: string
+    subjectIds: string[]
+}
+
+export interface AddSubjectsToClassInput {
+    classId: string
+    subjectIds: string[]
 }

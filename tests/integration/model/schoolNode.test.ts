@@ -84,7 +84,6 @@ describe('schoolNode', () => {
     let ctx: Context
     const buildScopeAndContext = async (permissions: UserPermissions) => {
         const scopeObject = School.createQueryBuilder('School')
-
         const ctxObject = ({
             permissions,
             loaders: createContextLazyLoaders(permissions),

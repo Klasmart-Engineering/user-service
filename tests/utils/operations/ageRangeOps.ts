@@ -1,3 +1,4 @@
+import { gql } from 'apollo-server-core'
 import { Headers } from 'node-mocks-http'
 
 import { ApolloServerTestClient } from '../createTestClient'
@@ -29,3 +30,20 @@ export async function deleteAgeRange(
     const gqlBool = res.data?.age_range?.delete as boolean
     return gqlBool
 }
+
+export const DELETE_AGE_RANGES = gql`
+    mutation DeleteAgeRanges($input: [DeleteAgeRangeInput!]!) {
+        deleteAgeRanges(input: $input) {
+            ageRanges {
+                id
+                name
+                status
+                system
+                lowValue
+                lowValueUnit
+                highValue
+                highValueUnit
+            }
+        }
+    }
+`

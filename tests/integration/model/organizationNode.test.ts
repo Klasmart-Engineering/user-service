@@ -32,6 +32,7 @@ import { print } from 'graphql'
 import { Headers } from 'node-mocks-http'
 import { BrandingResult } from '../../../src/types/graphQL/branding'
 import { BrandingImage } from '../../../src/entities/brandingImage'
+import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 
 use(chaiAsPromised)
 
@@ -88,9 +89,13 @@ describe('organizationNode', () => {
         const scopeObject = Organization.createQueryBuilder('Organization')
 
         if (!permissions.isAdmin) {
-            await nonAdminOrganizationScope(scope, permissions)
+            await nonAdminOrganizationScope(
+                scope as SelectQueryBuilder<
+                    Organization | OrganizationMembership
+                >,
+                permissions
+            )
         }
-
         const ctxObject = ({
             permissions,
             loaders: createContextLazyLoaders(permissions),

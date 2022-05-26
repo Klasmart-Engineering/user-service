@@ -188,11 +188,7 @@ describe('acceptance.subcategory', () => {
         beforeEach(async () => {
             await SubcategoriesInitializer.run()
             await loadFixtures('users', connection)
-            const createOrgResponse = await createOrg(
-                user_id,
-                org_name,
-                getAdminAuthToken()
-            )
+            const createOrgResponse = await createOrg(user_id, org_name)
 
             const createOrgData =
                 createOrgResponse.body.data.user.createOrganization
@@ -327,17 +323,15 @@ describe('acceptance.subcategory', () => {
         beforeEach(async () => {
             await SubcategoriesInitializer.run()
             await loadFixtures('users', connection)
-            const createOrgResponse = await createOrg(
-                user_id,
-                org_name,
-                getAdminAuthToken()
-            )
+            const createOrgResponse = await createOrg(user_id, org_name)
 
             const createOrgData =
                 createOrgResponse.body.data.user.createOrganization
 
             orgId = createOrgData.organization_id
-            const org = await Organization.findOneOrFail(orgId)
+            const org = await Organization.findOneByOrFail({
+                organization_id: orgId,
+            })
 
             const subcategories = await Subcategory.save(
                 Array.from(new Array(subcategoriesCount), (_, i) =>

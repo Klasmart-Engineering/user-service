@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { Brackets, EntityManager } from 'typeorm'
 import { Category } from '../../entities/category'
 import { Organization } from '../../entities/organization'
 import { Subject } from '../../entities/subject'
@@ -100,7 +100,7 @@ export const processSubjectFromCSVRow = async (
     const subjects = await manager.find(Subject, {
         where: {
             name: row.subject_name,
-            organization: organization,
+            organization: { organization_id: organization.organization_id },
         },
     })
 
@@ -140,12 +140,23 @@ export const processSubjectFromCSVRow = async (
     }
 
     // does the category belong to organisation or a system category
-    const categoryToAdd = await manager.findOne(Category, {
-        where: [
-            { name: row.category_name, organization: organization },
-            { name: row.category_name, organization: null, system: true },
-        ],
-    })
+    const categoryToAdd = await Category.createQueryBuilder('Category')
+        .leftJoin('Category.organization', 'Organization')
+        .where('name = :categoryName', { categoryName: row.category_name })
+        .andWhere(
+            new Brackets((qb) => {
+                qb.where('Organization.organization_id = :organizationId', {
+                    organizationId: organization.organization_id,
+                }).orWhere(
+                    new Brackets((qb) => {
+                        qb.where('system = true').andWhere(
+                            'Organization.organization_id IS NULL'
+                        )
+                    })
+                )
+            })
+        )
+        .getOne()
 
     if (!categoryToAdd) {
         addCsvError(
@@ -166,7 +177,7 @@ export const processSubjectFromCSVRow = async (
     }
 
     for (const p of existingCategories) {
-        if (p.id === categoryToAdd.id) {
+        if (p.name === categoryToAdd.name) {
             addCsvError(
                 rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,

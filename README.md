@@ -96,9 +96,18 @@ docker exec -it postgres psql -U postgres
 INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>');
 ```
 
-#### 2 - Your user has been assigned to a organisation
+#### 2 - Your user has been assigned to an organization
 
-Start the user-service and create an organization on your local DB for your user
+Start the user-service and create an organization on your local DB for your user. 
+Organization creation requires admin permissions, so use an API key by setting the `Authorization` **request headers** in the GraphiQL UI:
+
+```
+{
+  "Authorization": "Bearer user_service_api_key"
+}
+```
+
+where `user_service_api_key` is the `USER_SERVICE_API_KEY` envvar defined in `.env`.
 
 ```graphql
 mutation {
@@ -108,6 +117,8 @@ mutation {
     }
   }
 }
+
+# use an API key for this request
 ```
 
 #### 3 - You've updated .env in both repositories
@@ -164,7 +175,7 @@ Replace the docker current container with another that logs output
 
 Then build a container that logs
 
-1. `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres postgres -c log_statement=all`
+1. `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres:11.9 -c log_statement=all`
 2. `docker start postgres`
 3. `docker container exec -it postgres psql -U postgres -c "create database testdb;"`
 4. Open a new terminal window perhaps in a different folder
@@ -200,7 +211,7 @@ Remember include `Authorization` with JWT token in request's header.
 The user-service uses [TypeORM migrations](https://github.com/typeorm/typeorm/blob/master/docs/migrations.md) for managing database schema changes. If you need to change the database schema or modify existing data, you can create a new migration:
 
 - Make the required schema changes
-- Use the TypeORM CLI to create a migration file: `npm run typeorm migration:create -- -n <MigrationName>`
+- Use the TypeORM CLI to create a migration file: `npm run typeorm migration:create -- -n <MigrationName> -d migrations`
 - Implement the migration logic in the `up` method of the migration file and the rollback logic in the `down` method
 - Start the application and verify that the migration has run as expected
 

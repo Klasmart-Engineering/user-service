@@ -37,6 +37,7 @@ import {
     subcategoriesConnectionResolver as resolverForOrganization,
 } from '../../../src/schemas/organization'
 import { sortObjectArray } from '../../../src/utils/array'
+import { WhereClauseCondition } from 'typeorm/query-builder/WhereClause'
 
 type SubcategoryConnectionNodeKey = keyof SubcategoryConnectionNode
 
@@ -241,7 +242,7 @@ describe('subcategoriesConnection', () => {
 
     context('filtering', () => {
         beforeEach(async () => {
-            const inactiveSubcategory = await Subcategory.findOneOrFail()
+            const inactiveSubcategory = await Subcategory.findOneByOrFail({})
             inactiveSubcategory.status = Status.INACTIVE
             await connection.manager.save(inactiveSubcategory)
         })
@@ -391,7 +392,7 @@ describe('subcategoriesConnection', () => {
 
     context('permissions', () => {
         let aliases: string[]
-        let conditions: string[]
+        let conditions: WhereClauseCondition[]
 
         context('when user is super admin', () => {
             it('should have access to any subcategory', async () => {
@@ -450,7 +451,9 @@ describe('subcategoriesConnection', () => {
         beforeEach(async () => {
             const token = { id: organizationMember1.user_id }
             const permissions = new UserPermissions(token)
-            ctx = { loaders: createContextLazyLoaders(permissions) }
+            ctx = {
+                loaders: createContextLazyLoaders(permissions),
+            }
             fakeInfo = {
                 fieldNodes: [
                     {

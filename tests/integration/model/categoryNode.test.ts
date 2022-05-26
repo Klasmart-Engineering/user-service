@@ -32,7 +32,6 @@ const buildScopeAndContext = async (permissions: UserPermissions) => {
     if (!permissions.isAdmin) {
         await nonAdminCategoryScope(scopeObject, permissions)
     }
-
     const ctxObject = ({
         permissions,
         loaders: createContextLazyLoaders(permissions),

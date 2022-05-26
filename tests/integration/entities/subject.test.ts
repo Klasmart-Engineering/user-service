@@ -244,8 +244,8 @@ describe('Subject', () => {
                                     })
 
                                     it('deletes the expected subject', async () => {
-                                        let dbSubject = await Subject.findOneOrFail(
-                                            subject.id
+                                        let dbSubject = await Subject.findOneByOrFail(
+                                            { id: subject.id }
                                         )
 
                                         expect(dbSubject.status).to.eq(
@@ -262,8 +262,8 @@ describe('Subject', () => {
                                         )
 
                                         expect(gqlBool).to.be.true
-                                        dbSubject = await Subject.findOneOrFail(
-                                            subject.id
+                                        dbSubject = await Subject.findOneByOrFail(
+                                            { id: subject.id }
                                         )
                                         expect(dbSubject.status).to.eq(
                                             Status.INACTIVE
@@ -295,8 +295,8 @@ describe('Subject', () => {
                                                 )
 
                                                 expect(gqlBool).to.be.false
-                                                const dbSubject = await Subject.findOneOrFail(
-                                                    subject.id
+                                                const dbSubject = await Subject.findOneByOrFail(
+                                                    { id: subject.id }
                                                 )
                                                 expect(dbSubject.status).to.eq(
                                                     Status.INACTIVE
@@ -322,8 +322,8 @@ describe('Subject', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbSubject = await Subject.findOneOrFail(
-                                            subject.id
+                                        const dbSubject = await Subject.findOneByOrFail(
+                                            { id: subject.id }
                                         )
                                         expect(dbSubject.status).to.eq(
                                             Status.ACTIVE
@@ -364,8 +364,8 @@ describe('Subject', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbSubject = await Subject.findOneOrFail(
-                                            subject.id
+                                        const dbSubject = await Subject.findOneByOrFail(
+                                            { id: subject.id }
                                         )
                                         expect(dbSubject.status).to.eq(
                                             Status.ACTIVE
@@ -388,8 +388,8 @@ describe('Subject', () => {
                                                 }
                                             )
                                         ).to.be.rejected
-                                        const dbSubject = await Subject.findOneOrFail(
-                                            subject.id
+                                        const dbSubject = await Subject.findOneByOrFail(
+                                            { id: subject.id }
                                         )
                                         expect(dbSubject.status).to.eq(
                                             Status.ACTIVE
@@ -408,9 +408,9 @@ describe('Subject', () => {
                     'and does not belong to the organization from the subject',
                     () => {
                         it('deletes the expected subject', async () => {
-                            let dbSubject = await Subject.findOneOrFail(
-                                subject.id
-                            )
+                            let dbSubject = await Subject.findOneByOrFail({
+                                id: subject.id,
+                            })
 
                             expect(dbSubject.status).to.eq(Status.ACTIVE)
                             expect(dbSubject.deleted_at).to.be.null
@@ -422,7 +422,9 @@ describe('Subject', () => {
                             )
 
                             expect(gqlBool).to.be.true
-                            dbSubject = await Subject.findOneOrFail(subject.id)
+                            dbSubject = await Subject.findOneByOrFail({
+                                id: subject.id,
+                            })
                             expect(dbSubject.status).to.eq(Status.INACTIVE)
                             expect(dbSubject.deleted_at).not.to.be.null
                         })
@@ -443,9 +445,9 @@ describe('Subject', () => {
 
                         context('with a non system subject', () => {
                             it('deletes the expected subject', async () => {
-                                let dbSubject = await Subject.findOneOrFail(
-                                    subject.id
-                                )
+                                let dbSubject = await Subject.findOneByOrFail({
+                                    id: subject.id,
+                                })
 
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
                                 expect(dbSubject.deleted_at).to.be.null
@@ -457,9 +459,9 @@ describe('Subject', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbSubject = await Subject.findOneOrFail(
-                                    subject.id
-                                )
+                                dbSubject = await Subject.findOneByOrFail({
+                                    id: subject.id,
+                                })
                                 expect(dbSubject.status).to.eq(Status.INACTIVE)
                                 expect(dbSubject.deleted_at).not.to.be.null
                             })
@@ -481,8 +483,8 @@ describe('Subject', () => {
                                     )
 
                                     expect(gqlBool).to.be.false
-                                    const dbSubject = await Subject.findOneOrFail(
-                                        subject.id
+                                    const dbSubject = await Subject.findOneByOrFail(
+                                        { id: subject.id }
                                     )
                                     expect(dbSubject.status).to.eq(
                                         Status.INACTIVE
@@ -499,9 +501,9 @@ describe('Subject', () => {
                             })
 
                             it('deletes the expected subject', async () => {
-                                let dbSubject = await Subject.findOneOrFail(
-                                    subject.id
-                                )
+                                let dbSubject = await Subject.findOneByOrFail({
+                                    id: subject.id,
+                                })
 
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
                                 expect(dbSubject.deleted_at).to.be.null
@@ -513,9 +515,9 @@ describe('Subject', () => {
                                 )
 
                                 expect(gqlBool).to.be.true
-                                dbSubject = await Subject.findOneOrFail(
-                                    subject.id
-                                )
+                                dbSubject = await Subject.findOneByOrFail({
+                                    id: subject.id,
+                                })
                                 expect(dbSubject.status).to.eq(Status.INACTIVE)
                                 expect(dbSubject.deleted_at).not.to.be.null
                             })
@@ -537,8 +539,8 @@ describe('Subject', () => {
                                     )
 
                                     expect(gqlBool).to.be.false
-                                    const dbSubject = await Subject.findOneOrFail(
-                                        subject.id
+                                    const dbSubject = await Subject.findOneByOrFail(
+                                        { id: subject.id }
                                     )
                                     expect(dbSubject.status).to.eq(
                                         Status.INACTIVE

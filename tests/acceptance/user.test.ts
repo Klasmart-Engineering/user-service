@@ -106,18 +106,15 @@ describe('acceptance.user', () => {
         classIds = []
 
         await loadFixtures('users', connection)
-        const createOrg1Response = await createOrg(
-            adminUserId,
-            org_name,
-            getAdminAuthToken()
-        )
+        const createOrg1Response = await createOrg(adminUserId, org_name)
 
         const createOrg1Data =
             createOrg1Response.body.data.user.createOrganization
 
         orgId = createOrg1Data.organization_id
-
-        organization = await Organization.findOneOrFail(orgId)
+        organization = await Organization.findOneByOrFail({
+            organization_id: orgId,
+        })
 
         users = await User.save(
             Array(usersCount).fill(undefined).map(createUser)

@@ -1,4 +1,4 @@
-import { EntityManager, In } from 'typeorm'
+import { Brackets, EntityManager, In } from 'typeorm'
 
 import { Class } from '../../entities/class'
 import { Organization } from '../../entities/organization'
@@ -56,6 +56,7 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
         },
         OrganizationMembership
     >()
+
     const schoolMemberships = new ObjMap<
         {
             userId: SchoolMembership['user_id']
@@ -65,7 +66,6 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
     >()
 
     const usersFound = await getUsers(rows, manager)
-
     const dataForMakingMemberships: {
         user: User
         org: Organization
@@ -101,8 +101,8 @@ export const processUserFromCSVRows: CreateEntityRowCallback<UserRow> = async (
                 organizationRole: entities.organizationRole,
                 row,
             })
-            users.set(entities.user.user_id, entities.user)
 
+            users.set(entities.user.user_id, entities.user)
             if (entities.cls !== undefined) {
                 dataForMakingClasses.push({
                     index: rowNumber + index,
@@ -205,12 +205,10 @@ async function getUsers(
     const familyNames = rows.map((r) => r.user_family_name)
 
     const users = await manager.find(User, {
-        where: [
-            {
-                given_name: In(givenNames),
-                family_name: In(familyNames),
-            },
-        ],
+        where: {
+            given_name: In(givenNames),
+            family_name: In(familyNames),
+        },
     })
 
     const usersFromDb = new ObjMap<
@@ -289,10 +287,10 @@ export const processUserFromCSVRow = async (
     }
 
     // Now check dynamic constraints
-    let org: Organization | undefined
-    let organizationRole: Role | undefined
-    let school: School | undefined
-    let cls: Class | undefined
+    let org: Organization | undefined | null
+    let organizationRole: Role | undefined | null
+    let school: School | undefined | null
+    let cls: Class | undefined | null
 
     // Does the organization exist? And is the client user part of it?
     org = queryResultCache.validatedOrgs.get(row.organization_name)
@@ -354,19 +352,25 @@ export const processUserFromCSVRow = async (
         row.organization_role_name
     )
     if (!organizationRole) {
-        organizationRole = await manager.findOne(Role, {
-            where: [
-                {
-                    role_name: row.organization_role_name,
-                    system_role: true,
-                    organization: null,
-                },
-                {
-                    role_name: row.organization_role_name,
-                    organization: { organization_id: org.organization_id },
-                },
-            ],
-        })
+        organizationRole = await Role.createQueryBuilder('Role')
+            .leftJoin('Role.organization', 'Organization')
+            .where('role_name = :roleName', {
+                roleName: row.organization_role_name,
+            })
+            .andWhere(
+                new Brackets((qb) => {
+                    qb.where('Organization.organization_id = :organizationId', {
+                        organizationId: org!.organization_id,
+                    }).orWhere(
+                        new Brackets((qb2) => {
+                            qb2.where('system_role = true').andWhere(
+                                'Organization.organization_id IS NULL'
+                            )
+                        })
+                    )
+                })
+            )
+            .getOne()
 
         if (!organizationRole) {
             addCsvError(
@@ -582,7 +586,7 @@ export const processUserFromCSVRow = async (
         const userShortcode = await manager.findOne(OrganizationMembership, {
             where: {
                 shortcode: row.user_shortcode,
-                organization: { organization_id: org.organization_id },
+                organization_id: org.organization_id,
             },
         })
 
@@ -606,7 +610,20 @@ export const processUserFromCSVRow = async (
         return { rowErrors }
     }
 
-    return { rowErrors, entities: { user, cls, org, organizationRole, school } }
+    if (cls === null) cls = undefined
+    if (school === null) school = undefined
+    if (organizationRole === null) organizationRole = undefined
+
+    return {
+        rowErrors,
+        entities: {
+            user,
+            cls,
+            org,
+            organizationRole,
+            school,
+        },
+    }
 }
 
 export const createOrUpdateMemberships = async (
@@ -649,7 +666,7 @@ export const createOrUpdateMemberships = async (
         }
     }
 
-    let schoolMembership: SchoolMembership | undefined
+    let schoolMembership: SchoolMembership | undefined | null
 
     if (school) {
         schoolMembership = await manager.findOne(SchoolMembership, {
@@ -668,7 +685,12 @@ export const createOrUpdateMemberships = async (
         }
     }
 
-    return { organizationMembership, schoolMembership }
+    if (schoolMembership === null) schoolMembership = undefined
+
+    return {
+        organizationMembership,
+        schoolMembership,
+    }
 }
 
 export async function addUserToClass(

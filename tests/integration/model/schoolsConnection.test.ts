@@ -17,6 +17,7 @@ import { Model } from '../../../src/model'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { classesChildConnection as schoolClassesChildConnection } from '../../../src/schemas/school'
+
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
@@ -814,7 +815,9 @@ describe('schoolsConnection', () => {
 
                 const token = { id: wizardUser.user_id }
                 const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
+                ctx = {
+                    loaders: createContextLazyLoaders(permissions),
+                }
             })
 
             it('returns classes for a school', async () => {
