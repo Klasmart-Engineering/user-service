@@ -58,7 +58,7 @@ const typeDefs = gql`
 
     extend type Mutation {
         classes: [Class]
-        class(class_id: ID!): Class
+        class(class_id: ID!): Class @isAdmin(entity: "class")
         uploadClassesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         createClasses(input: [CreateClassInput!]!): ClassesMutationResult
@@ -642,7 +642,8 @@ export default function getDefault(
                 updateClasses: (_parent, args, ctx, _info) =>
                     mutate(UpdateClasses, args, ctx.permissions),
                 classes: (_parent, args) => model.getClasses(args),
-                class: (_parent, args) => model.getClass(args),
+                class: (_parent, args, ctx, _info) =>
+                    model.getClass(args, ctx, _info),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadClassesFromCSV(args, ctx, info),
                 addProgramsToClasses: (_parent, args, ctx, _info) =>
@@ -681,7 +682,8 @@ export default function getDefault(
                     mutate(AddSubjectsToClasses, args, ctx.permissions),
             },
             Query: {
-                class: (_parent, args) => model.getClass(args),
+                class: (_parent, args) =>
+                    model.getClass(args),
                 classes: (_parent, args) => model.getClasses(args),
                 classesConnection: (_parent, args, _ctx: Context, info) => {
                     return model.classesConnection(info, args)

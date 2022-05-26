@@ -508,11 +508,11 @@ export async function eligibleTeachers(
     classId: string,
     headers?: Headers
 ) {
-    const { mutate } = testClient
+    const { query } = testClient
 
     const operation = () =>
-        mutate({
-            mutation: ELIGIBLE_TEACHERS,
+        query({
+            query: ELIGIBLE_TEACHERS,
             variables: { class_id: classId },
             headers: headers,
         })

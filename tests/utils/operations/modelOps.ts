@@ -129,6 +129,11 @@ const ME = `
         me {
             user_id
             email
+            organizationsWithPermission(permission_name: "edit_class_20334") {
+                organization {
+                  organization_id
+                }
+            }
         }
     }
 `
