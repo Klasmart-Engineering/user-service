@@ -32,7 +32,11 @@ const typeDefs = gql`
     }
 
     extend type Mutation {
-        subject(id: ID!): Subject @isAdmin(entity: "subject")
+        subject(id: ID!): Subject
+            @isAdmin(entity: "subject")
+            @deprecated(
+                reason: "Sunset Date: 25/08/2022 Details: https://calmisland.atlassian.net/l/c/85BxNDPR"
+            )
         uploadSubjectsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateSubjects: Boolean @isAdmin
