@@ -105,6 +105,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 09/08/2022 Details: https://calmisland.atlassian.net/l/c/Z7e0ZCzm"
             )
         edit_permissions(permission_names: [String!]): [Permission]
+            @deprecated(
+                reason: "Sunset Date: 26/05/2022 Details: https://calmisland.atlassian.net/l/c/ctBTX0xC"
+            )
         deny(permission_name: String!): Permission
             @isAdmin
             @deprecated(
