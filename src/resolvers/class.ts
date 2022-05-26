@@ -53,7 +53,7 @@ import {
     validateShortCode,
     newValidateShortCode,
 } from '../utils/shortcode'
-import clean from '../utils/clean'
+import clean, { uniqueAndTruthy } from '../utils/clean'
 import { ObjMap } from '../utils/stringUtils'
 import {
     getMap,
@@ -2903,15 +2903,17 @@ export class AddGradesToClasses extends AddMutation<
         input: AddGradesToClassInput[]
     ): Promise<AddGradesClassesEntityMap> => {
         const classIds = input.map((i) => i.classId)
-        const classMap = getMap.class(classIds, ['organization', 'grades'])
-        const organizationIds = await Promise.all(
-            Array.from((await classMap).values()).map(
-                async (c) => (await c.organization!).organization_id
-            )
-        )
         const gradeIds = input.flatMap((i) => i.gradeIds)
         const gradesMap = getMap.grade(gradeIds, ['organization'])
         const classesGrades = new Map<string, Grade[]>()
+        const classMap = await getMap.class(classIds, [
+            'organization',
+            'grades',
+        ])
+        const organizationIds = uniqueAndTruthy(
+            Array.from(classMap.values(), (c) => c.organization_id)
+        )
+
         for (const class_ of (await classMap).values()) {
             // eslint-disable-next-line no-await-in-loop
             const grades = (await class_.grades) || []
