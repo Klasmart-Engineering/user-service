@@ -1,3 +1,4 @@
+import { Status } from '../entities/status'
 import { GraphQLResolveInfo } from 'graphql'
 import { Brackets, SelectQueryBuilder } from 'typeorm'
 import { distinctMembers } from '../directives/isAdminUtils'
@@ -28,6 +29,18 @@ import {
 export interface EligibleMembersPaginationArgs extends IPaginationArgs<User> {
     classId: string
 }
+
+/* 
+The process for teachers and students is the same but we check a different permission.
+Currently we say a student is eligible to join a class in an organization:
+
+IF the student has the organizationMembership or schoolMembership permission “attend_live_class_as_a_student_187”
+        AND (
+             The class is not assigned to any school
+             OR the Student is not assigned to any school
+             OR the student is assigned to the same school as the class
+        )
+*/
 
 type ClassMembershipPermission =
     | PermissionName.attend_live_class_as_a_teacher_186
@@ -104,6 +117,23 @@ function membersWithPermission(
                 }).orWhere('SchoolPermission.permission_id = :permission_id')
             })
         )
+        .andWhere(
+            new Brackets((qb) => {
+                qb.where('OrganizationMembership.status = :status', {
+                    status: Status.ACTIVE,
+                }).andWhere('User.status = :status', {
+                    status: Status.ACTIVE,
+                })
+            })
+        )
+        .andWhere(
+            new Brackets((qb) => {
+                qb.where('SchoolMembership.status = :status', {
+                    status: Status.ACTIVE,
+                }).orWhere('SchoolMembership.status IS NULL')
+            })
+        )
+
         .groupBy(
             'User.user_id, OrganizationMembership.organization_id, Permission.permission_name, SchoolPermission.permission_name'
         )

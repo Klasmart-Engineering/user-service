@@ -370,6 +370,7 @@ const typeDefs = gql`
         organizationId: UUIDFilter
         roleId: UUIDFilter
         schoolId: UUIDExclusiveFilter
+        schoolMembershipStatus: StringFilter
         """
         Note: use organizationUserStatus with organizationId filter to avoid duplicating users
         """
