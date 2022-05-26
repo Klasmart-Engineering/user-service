@@ -1445,7 +1445,7 @@ describe('role', () => {
         })
     })
 
-    context('top-level mutations', () => {
+    describe('top-level mutations', () => {
         let admin: User
         let memberWithPermission: User
         let memberWithoutPermission: User
@@ -1932,6 +1932,7 @@ describe('role', () => {
         describe('updateRoles', () => {
             let orgsData: OrgData[]
             let systemRoles: Role[]
+            let customRoles: Role[]
 
             const updateRolesFromResolver = async (
                 caller: User,
@@ -2024,7 +2025,8 @@ describe('role', () => {
 
             const expectPermissionError = async (
                 caller: User,
-                rolesToUpdate: Role[]
+                rolesToUpdate: Role[],
+                systemRoleRelated?: boolean
             ) => {
                 const permError = permErrorMeta(
                     PermissionName.edit_role_and_permissions_30332
@@ -2032,7 +2034,15 @@ describe('role', () => {
 
                 const input = buildDefaultInputArray(rolesToUpdate)
                 const operation = updateRolesFromResolver(caller, input)
-                await expect(operation).to.be.rejectedWith(permError(caller))
+                if (systemRoleRelated) {
+                    await expect(operation).to.be.rejectedWith(
+                        'System roles cannot be modified'
+                    )
+                } else {
+                    await expect(operation).to.be.rejectedWith(
+                        permError(caller)
+                    )
+                }
             }
 
             const expectInputErrors = async (
@@ -2098,16 +2108,24 @@ describe('role', () => {
                     orgsData[0].org,
                     roleForUpdate
                 )
+                customRoles = await Promise.all(
+                    orgsData.map(async (orgData, idx) => {
+                        return await createARole(
+                            `Custom Role for Org ${idx}`,
+                            orgData.org
+                        ).save()
+                    })
+                )
             })
 
             context('permissions', () => {
                 context('successful cases', () => {
                     context('when caller is admin', () => {
-                        it('should delete any roles', async () => {
+                        it('should update any non-system roles', async () => {
                             const rolesToUpdate = orgsData
                                 .map((d) => d.roles)
                                 .flat()
-                            rolesToUpdate.push(...systemRoles)
+                            rolesToUpdate.push(...customRoles)
 
                             const input = buildDefaultInputArray(rolesToUpdate)
                             await expectRolesUpdated(admin, input)
@@ -2116,7 +2134,7 @@ describe('role', () => {
 
                     context('when caller is not admin', () => {
                         context('but has permission', () => {
-                            it('should delete roles from the organization which belongs', async () => {
+                            it('should update roles from the organization which they belong to', async () => {
                                 const rolesToUpdate = orgsData[0].roles
                                 const input = buildDefaultInputArray(
                                     rolesToUpdate
@@ -2131,23 +2149,41 @@ describe('role', () => {
                 })
 
                 context('error handling', () => {
+                    context('when caller is admin', () => {
+                        context('and tries to update system roles', () => {
+                            it('should throw a permission error', async () => {
+                                const caller = admin
+                                const rolesToUpdate = systemRoles
+                                await expectPermissionError(
+                                    caller,
+                                    rolesToUpdate,
+                                    true
+                                )
+                            })
+                        })
+                    })
                     context('when caller is not admin', () => {
                         context('but has permission', () => {
-                            context('and tries to delete system roles', () => {
-                                it('should throw a permission error', async () => {
-                                    const caller = memberWithPermission
-                                    const rolesToUpdate = systemRoles
-                                    await expectPermissionError(
-                                        caller,
-                                        rolesToUpdate
-                                    )
-
-                                    await expectNoChanges(rolesToUpdate)
-                                })
-                            })
+                            context(
+                                'and tries to update system roles in input',
+                                () => {
+                                    it('should throw a permission error', async () => {
+                                        const caller = memberWithPermission
+                                        const rolesToUpdate = [
+                                            ...systemRoles,
+                                            customRoles[0], // user has permission to update this org role in their org
+                                        ]
+                                        await expectPermissionError(
+                                            caller,
+                                            rolesToUpdate,
+                                            true
+                                        )
+                                    })
+                                }
+                            )
 
                             context(
-                                'and tries to delete roles from an organization which does not belongs',
+                                'and tries to update roles from an organization which they do not belong to',
                                 () => {
                                     it('should throw a permission error', async () => {
                                         const caller = memberWithPermission
@@ -2166,7 +2202,7 @@ describe('role', () => {
                         context('has not permission', () => {
                             context('but has membership', () => {
                                 context(
-                                    'and tries to delete roles from the organization which belongs',
+                                    'and tries to update roles from the organization which they belong to',
                                     () => {
                                         it('should throw a permission error', async () => {
                                             const caller = memberWithoutPermission
@@ -2184,13 +2220,13 @@ describe('role', () => {
                             })
 
                             context('has not membership', () => {
-                                context('and tries to delete any role', () => {
+                                context('and tries to update any role', () => {
                                     it('should throw a permission error', async () => {
                                         const caller = nonMember
                                         const rolesToUpdate = orgsData
                                             .map((d) => d.roles)
                                             .flat()
-                                        rolesToUpdate.push(...systemRoles)
+                                        rolesToUpdate.push(...customRoles)
 
                                         await expectPermissionError(
                                             caller,
