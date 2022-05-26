@@ -28,6 +28,7 @@ import { eligibleMembersConnectionResolver } from '../../../src/pagination/eligi
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Context } from '../../../src/main'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { Status } from '../../../src/entities/status'
 
 describe('eligibleMembersConnection', () => {
     let connection: TestConnection
@@ -40,8 +41,12 @@ describe('eligibleMembersConnection', () => {
 
     let teacherId: string
     let teacher: User
+    let otherTeacherId: string
+    let otherTeacher: User
     let studentId: string
     let student: User
+    let otherStudentId: string
+    let otherStudent: User
     let teacherRoleId: string
     let studentRoleId: string
     let teacherRole: Role
@@ -85,8 +90,20 @@ describe('eligibleMembersConnection', () => {
         } as unknown) as Context
         teacher = await createUser({ email: 'teacher@gmail.com' }).save()
         teacherId = teacher.user_id
+
+        otherTeacher = await createUser({
+            email: 'otherteacher@gmail.com',
+        }).save()
+        otherTeacherId = otherTeacher.user_id
+
         student = await createUser({ email: 'student@gmail.com' }).save()
         studentId = student.user_id
+
+        otherStudent = await createUser({
+            email: 'otherstudent@gmail.com',
+        }).save()
+        otherStudentId = otherStudent.user_id
+
         organization = await createOrganization(orgOwner).save()
 
         teacherMembership = await createOrganizationMembership({
@@ -204,6 +221,77 @@ describe('eligibleMembersConnection', () => {
                             })
                         }
                     )
+
+                    context('when the teacher is inactive', () => {
+                        let otherTeacherMembership: OrganizationMembership
+                        beforeEach(async () => {
+                            otherTeacherMembership = await createOrganizationMembership(
+                                {
+                                    user: otherTeacher,
+                                    organization,
+                                    roles: [teacherRole],
+                                }
+                            ).save()
+                            teacher.status = Status.INACTIVE
+                            await teacher.save()
+                        })
+                        it('is excluded from results', async () => {
+                            const scope = getRepository(
+                                User
+                            ).createQueryBuilder()
+                            const conn = await eligibleMembersConnectionResolver(
+                                info,
+                                PermissionName.attend_live_class_as_a_teacher_186,
+                                {
+                                    classId,
+                                    direction: 'FORWARD',
+                                    directionArgs: {
+                                        count: 50,
+                                    },
+                                    scope,
+                                }
+                            )
+                            expect(conn.edges).to.have.length(1)
+                            const userIds = conn.edges.map((x) => x.node.id)
+                            expect(userIds).to.have.length(1)
+                            expect(userIds[0]).to.equal(otherTeacherId)
+                        })
+                    })
+                    context('when the teacherMembership is inactive', () => {
+                        let otherTeacherMembership: OrganizationMembership
+                        beforeEach(async () => {
+                            otherTeacherMembership = await createOrganizationMembership(
+                                {
+                                    user: otherTeacher,
+                                    organization,
+                                    roles: [teacherRole],
+                                }
+                            ).save()
+                            teacherMembership.status = Status.INACTIVE
+                            await teacherMembership.save()
+                        })
+                        it('is excluded from results', async () => {
+                            const scope = getRepository(
+                                User
+                            ).createQueryBuilder()
+                            const conn = await eligibleMembersConnectionResolver(
+                                info,
+                                PermissionName.attend_live_class_as_a_teacher_186,
+                                {
+                                    classId,
+                                    direction: 'FORWARD',
+                                    directionArgs: {
+                                        count: 50,
+                                    },
+                                    scope,
+                                }
+                            )
+                            expect(conn.edges).to.have.length(1)
+                            const userIds = conn.edges.map((x) => x.node.id)
+                            expect(userIds).to.have.length(1)
+                            expect(userIds[0]).to.equal(otherTeacherId)
+                        })
+                    })
                 })
 
                 context('and via school permission', () => {
@@ -433,6 +521,79 @@ describe('eligibleMembersConnection', () => {
                             })
                         }
                     )
+
+                    context('when the student is inactive', () => {
+                        let otherStudentMembership: OrganizationMembership
+                        beforeEach(async () => {
+                            otherStudentMembership = await createOrganizationMembership(
+                                {
+                                    user: otherStudent,
+                                    organization,
+                                    roles: [studentRole],
+                                }
+                            ).save()
+                            student.status = Status.INACTIVE
+                            await student.save()
+                        })
+                        it('is excluded from results', async () => {
+                            const scope = getRepository(
+                                User
+                            ).createQueryBuilder()
+                            const conn = await eligibleMembersConnectionResolver(
+                                info,
+                                PermissionName.attend_live_class_as_a_student_187,
+                                {
+                                    classId,
+                                    direction: 'FORWARD',
+                                    directionArgs: {
+                                        count: 50,
+                                    },
+                                    scope,
+                                }
+                            )
+                            expect(conn.edges).to.have.length(1)
+                            const userIds = conn.edges.map((x) => x.node.id)
+                            expect(userIds).to.have.length(1)
+                            expect(userIds[0]).to.equal(otherStudentId)
+                        })
+                    })
+
+                    context('when the studentMembership is inactive', () => {
+                        let otherStudentMembership: OrganizationMembership
+                        beforeEach(async () => {
+                            otherStudentMembership = await createOrganizationMembership(
+                                {
+                                    user: otherStudent,
+                                    organization,
+                                    roles: [studentRole],
+                                }
+                            ).save()
+                            studentMembership.status = Status.INACTIVE
+                            await studentMembership.save()
+                        })
+                        it('is excluded from results', async () => {
+                            const scope = getRepository(
+                                User
+                            ).createQueryBuilder()
+                            const conn = await eligibleMembersConnectionResolver(
+                                info,
+                                PermissionName.attend_live_class_as_a_student_187,
+                                {
+                                    classId,
+                                    direction: 'FORWARD',
+                                    directionArgs: {
+                                        count: 50,
+                                    },
+                                    scope,
+                                }
+                            )
+
+                            expect(conn.edges).to.have.length(1)
+                            const userIds = conn.edges.map((x) => x.node.id)
+                            expect(userIds).to.have.length(1)
+                            expect(userIds[0]).to.equal(otherStudentId)
+                        })
+                    })
                 })
 
                 context('and via school permission', () => {
@@ -474,6 +635,61 @@ describe('eligibleMembersConnection', () => {
 
                         expect(userIds).to.have.length(1)
                         expect(userIds[0]).to.equal(studentId)
+                    })
+                })
+
+                context("when a user's schoolmembership is inactive", () => {
+                    let otherStudentMembership: OrganizationMembership
+                    beforeEach(async () => {
+                        otherStudentMembership = await createOrganizationMembership(
+                            {
+                                user: otherStudent,
+                                organization,
+                                roles: [studentRole],
+                            }
+                        ).save()
+                        const school = await createSchool(
+                            organization,
+                            'My School'
+                        ).save()
+
+                        await createSchoolMembership({
+                            user: teacher,
+                            school: school,
+                            roles: [teacherRole],
+                        }).save()
+
+                        await createSchoolMembership({
+                            user: student,
+                            school: school,
+                            roles: [studentRole],
+                            status: Status.INACTIVE,
+                        }).save()
+
+                        await createSchoolMembership({
+                            user: otherStudent,
+                            school: school,
+                            roles: [studentRole],
+                        }).save()
+                    })
+                    it('only one of the two students is returned', async () => {
+                        const scope = getRepository(User).createQueryBuilder()
+                        const conn = await eligibleMembersConnectionResolver(
+                            info,
+                            PermissionName.attend_live_class_as_a_student_187,
+                            {
+                                classId,
+                                direction: 'FORWARD',
+                                directionArgs: {
+                                    count: 50,
+                                },
+                                scope,
+                            }
+                        )
+
+                        const userIds = conn.edges.map((x) => x.node.id)
+                        expect(userIds).to.have.length(1)
+                        expect(userIds[0]).to.equal(otherStudentId)
                     })
                 })
             }

@@ -126,7 +126,8 @@ export async function usersConnectionQuery(
             )
         }
         if (
-            filterHasProperty('schoolId', filter) &&
+            (filterHasProperty('schoolId', filter) ||
+                filterHasProperty('schoolMembershipStatus', filter)) &&
             !scopeHasJoin(scope, SchoolMembership)
         ) {
             scope.leftJoin('User.school_memberships', 'SchoolMembership')
@@ -162,6 +163,7 @@ export async function usersConnectionQuery(
                 email: 'User.email',
                 username: 'User.username',
                 schoolId: 'SchoolMembership.school_id',
+                schoolMembershipStatus: 'SchoolMembership.status',
                 classId: {
                     operator: 'OR',
                     aliases: [
