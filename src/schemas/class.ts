@@ -642,8 +642,7 @@ export default function getDefault(
                 updateClasses: (_parent, args, ctx, _info) =>
                     mutate(UpdateClasses, args, ctx.permissions),
                 classes: (_parent, args) => model.getClasses(args),
-                class: (_parent, args, ctx, _info) =>
-                    model.getClass(args, ctx, _info),
+                class: (_parent, args, ctx, _info) => model.getClass(args),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadClassesFromCSV(args, ctx, info),
                 addProgramsToClasses: (_parent, args, ctx, _info) =>

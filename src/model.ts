@@ -8,7 +8,7 @@ import {
     SelectQueryBuilder,
     getConnection,
 } from 'typeorm'
-import { FieldNode, GraphQLResolveInfo } from 'graphql'
+import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
 import { OrganizationMembership } from './entities/organizationMembership'
 import { SchoolMembership } from './entities/schoolMembership'
@@ -715,43 +715,13 @@ export class Model {
         return newRole
     }
 
-    public async getClass(
-        {
-            class_id,
-            scope,
-        }: {
-            class_id: string
-            scope: SelectQueryBuilder<Class>
-        },
-        ctx?: Context,
-        info?: GraphQLResolveInfo
-    ) {
-        // Some permissions, such as those that allow roster editing,
-        // do not require the user to have class editing permissions.
-        const fieldNodes = info?.fieldNodes
-        const fields = fieldNodes
-            ?.filter((fn) =>
-                fn.selectionSet?.selections.map((s) => s.kind === 'Field')
-            )
-            ?.map((fn) =>
-                fn.selectionSet?.selections.map(
-                    (s) => (s as FieldNode).name.value
-                )
-            )
-            .flat()
-
-        const hasClassFields = fields?.find(
-            (field) =>
-                field === 'status' ||
-                field === 'class_name' ||
-                field === 'shortcode' ||
-                field === 'organization'
-        )
-
-        if (!hasClassFields) {
-            scope = this.classRepository.createQueryBuilder('Class')
-        }
-
+    public async getClass({
+        class_id,
+        scope,
+    }: {
+        class_id: string
+        scope: SelectQueryBuilder<Class>
+    }) {
         const _class = await scope
             ?.andWhere('Class.class_id = :class_id', {
                 class_id,
