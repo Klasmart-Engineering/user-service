@@ -1985,6 +1985,12 @@ describe('class', () => {
                             PermissionName.add_teachers_to_class_20226,
                             { authorization: getAdminAuthToken() }
                         )
+                        await grantPermission(
+                            testClient,
+                            role.role_id,
+                            PermissionName.view_classes_20114,
+                            { authorization: getAdminAuthToken() }
+                        )
                         await addRoleToOrganizationMembership(
                             testClient,
                             user.user_id,
@@ -2029,6 +2035,12 @@ describe('class', () => {
                             testClient,
                             role.role_id,
                             PermissionName.delete_teacher_from_class_20446,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        await grantPermission(
+                            testClient,
+                            role.role_id,
+                            PermissionName.view_classes_20114,
                             { authorization: getAdminAuthToken() }
                         )
                         await addRoleToOrganizationMembership(
@@ -2198,6 +2210,12 @@ describe('class', () => {
                     testClient,
                     role.role_id,
                     PermissionName.add_teachers_to_class_20226,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
                     { authorization: getAdminAuthToken() }
                 )
                 await addUserToOrganizationAndValidate(
@@ -2785,6 +2803,12 @@ describe('class', () => {
                             PermissionName.add_students_to_class_20225,
                             { authorization: getAdminAuthToken() }
                         )
+                        await grantPermission(
+                            testClient,
+                            role.role_id,
+                            PermissionName.view_classes_20114,
+                            { authorization: getAdminAuthToken() }
+                        )
                         await addRoleToOrganizationMembership(
                             testClient,
                             user.user_id,
@@ -2828,6 +2852,12 @@ describe('class', () => {
                             testClient,
                             role.role_id,
                             PermissionName.delete_student_from_class_roster_20445,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        await grantPermission(
+                            testClient,
+                            role.role_id,
+                            PermissionName.view_classes_20114,
                             { authorization: getAdminAuthToken() }
                         )
                         await addRoleToOrganizationMembership(
@@ -2884,6 +2914,12 @@ describe('class', () => {
                         testClient,
                         role.role_id,
                         PermissionName.delete_student_from_class_roster_20445,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.view_classes_20114,
                         { authorization: getAdminAuthToken() }
                     )
                     await addRoleToOrganizationMembership(
@@ -2990,6 +3026,12 @@ describe('class', () => {
                     testClient,
                     role.role_id,
                     PermissionName.add_students_to_class_20225,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
                     { authorization: getAdminAuthToken() }
                 )
                 await addUserToOrganizationAndValidate(
@@ -3106,6 +3148,12 @@ describe('class', () => {
                     testClient,
                     role.role_id,
                     PermissionName.add_students_to_class_20225,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
                     { authorization: getAdminAuthToken() }
                 )
                 await addRoleToOrganizationMembership(
@@ -3266,6 +3314,12 @@ describe('class', () => {
                     PermissionName.delete_student_from_class_roster_20445,
                     { authorization: getAdminAuthToken() }
                 )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
+                    { authorization: getAdminAuthToken() }
+                )
                 await addRoleToOrganizationMembership(
                     testClient,
                     userId,
@@ -3410,6 +3464,12 @@ describe('class', () => {
                     testClient,
                     role.role_id,
                     PermissionName.delete_student_from_class_roster_20445,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
                     { authorization: getAdminAuthToken() }
                 )
                 await addRoleToSchoolMembership(
@@ -3594,6 +3654,12 @@ describe('class', () => {
                         PermissionName.edit_school_20330,
                         { authorization: getAdminAuthToken() }
                     )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.view_classes_20114,
+                        { authorization: getAdminAuthToken() }
+                    )
                     await addRoleToOrganizationMembership(
                         testClient,
                         user.user_id,
@@ -3647,6 +3713,12 @@ describe('class', () => {
                         testClient,
                         role.role_id,
                         PermissionName.edit_school_20330,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.view_classes_20114,
                         { authorization: getAdminAuthToken() }
                     )
                     await addRoleToOrganizationMembership(
@@ -3761,6 +3833,12 @@ describe('class', () => {
                     testClient,
                     role.role_id,
                     PermissionName.edit_school_20330,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
                     { authorization: getAdminAuthToken() }
                 )
                 await addUserToOrganizationAndValidate(
@@ -3897,6 +3975,12 @@ describe('class', () => {
                     testClient,
                     role.role_id,
                     PermissionName.edit_school_20330,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
                     { authorization: getAdminAuthToken() }
                 )
                 await addRoleToOrganizationMembership(
@@ -4085,6 +4169,12 @@ describe('class', () => {
                     PermissionName.edit_class_20334,
                     { authorization: getAdminAuthToken() }
                 )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
+                    { authorization: getAdminAuthToken() }
+                )
                 await addRoleToOrganizationMembership(
                     testClient,
                     userId,
@@ -4224,6 +4314,12 @@ describe('class', () => {
                     testClient,
                     role.role_id,
                     PermissionName.edit_class_20334,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.view_classes_20114,
                     { authorization: getAdminAuthToken() }
                 )
                 await addRoleToSchoolMembership(
@@ -4367,6 +4463,12 @@ describe('class', () => {
                         testClient,
                         role.role_id,
                         PermissionName.delete_class_20444,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.view_classes_20114,
                         { authorization: getAdminAuthToken() }
                     )
                     await addRoleToOrganizationMembership(
@@ -4563,6 +4665,12 @@ describe('class', () => {
                         testClient,
                         role.role_id,
                         PermissionName.edit_class_20334,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.view_classes_20114,
                         { authorization: getAdminAuthToken() }
                     )
                 })
@@ -4973,6 +5081,12 @@ describe('class', () => {
                         PermissionName.edit_class_20334,
                         { authorization: getAdminAuthToken() }
                     )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.view_classes_20114,
+                        { authorization: getAdminAuthToken() }
+                    )
                 })
 
                 it('edits the class age ranges', async () => {
@@ -5111,6 +5225,12 @@ describe('class', () => {
                         PermissionName.edit_class_20334,
                         { authorization: getAdminAuthToken() }
                     )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.view_classes_20114,
+                        { authorization: getAdminAuthToken() }
+                    )
                 })
 
                 it('edits the class grades', async () => {
@@ -5247,6 +5367,12 @@ describe('class', () => {
                         testClient,
                         role.role_id,
                         PermissionName.edit_class_20334,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.view_classes_20114,
                         { authorization: getAdminAuthToken() }
                     )
                 })
