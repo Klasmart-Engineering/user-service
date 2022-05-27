@@ -62,12 +62,6 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(cors(corsOptions))
 
     // helmet middlewares
-    app.use(
-        helmet.contentSecurityPolicy({
-            directives: { 'frame-ancestors': 'none' },
-        })
-    )
-    app.use(helmet.crossOriginEmbedderPolicy())
     app.use(helmet.crossOriginOpenerPolicy())
     app.use(helmet.crossOriginResourcePolicy())
     app.use(helmet.referrerPolicy())
@@ -75,7 +69,7 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(helmet.noSniff())
     app.use(helmet.originAgentCluster())
     app.use(helmet.ieNoOpen())
-    app.use(helmet.frameguard({ action: 'DENY' }))
+    app.use(helmet.frameguard({ action: 'sameorigin' }))
     app.use(helmet.permittedCrossDomainPolicies())
     app.use(helmet.xssFilter())
 
