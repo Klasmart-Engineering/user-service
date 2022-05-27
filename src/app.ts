@@ -62,6 +62,28 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(cors(corsOptions))
 
     // helmet middlewares
+    app.use(
+        helmet.contentSecurityPolicy({
+            directives: {
+                'style-src': [
+                    "'self'",
+                    "'unsafe-inline'",
+                    'unpkg.com',
+                    'cdnjs.cloudflare.com',
+                    'fonts.googleapis.com',
+                    'cdn.jsdelivr.net',
+                ],
+                'script-src': [
+                    "'self'",
+                    "'unsafe-eval'",
+                    "'unsafe-inline'",
+                    'unpkg.com',
+                    'cdnjs.cloudflare.com',
+                    'cdn.jsdelivr.net',
+                ],
+            },
+        })
+    )
     app.use(helmet.crossOriginOpenerPolicy())
     app.use(helmet.crossOriginResourcePolicy())
     app.use(helmet.referrerPolicy())
