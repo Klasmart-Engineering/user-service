@@ -21,10 +21,10 @@ export const processSubjectFromCSVRow = async (
     if (!row.organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'organization',
                 attribute: 'name',
@@ -35,10 +35,10 @@ export const processSubjectFromCSVRow = async (
     if (!row.subject_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'subject_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'subject',
                 attribute: 'name',
@@ -161,15 +161,15 @@ export const processSubjectFromCSVRow = async (
     if (!categoryToAdd) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.code,
             rowNumber,
             'category_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.message,
             {
                 entity: 'category',
-                name: row.category_name,
-                parent_entity: 'organization',
-                parent_name: row.organization_name,
+                entityName: row.category_name,
+                parentEntity: 'organization',
+                parentName: row.organization_name,
             }
         )
 
@@ -180,15 +180,15 @@ export const processSubjectFromCSVRow = async (
         if (p.name === categoryToAdd.name) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'category_name',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
                     entity: 'category',
-                    name: row.category_name,
-                    parent_entity: 'subject',
-                    parent_name: row.subject_name,
+                    entityName: row.category_name,
+                    parentEntity: 'subject',
+                    parentName: row.subject_name,
                 }
             )
 

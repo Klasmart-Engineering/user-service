@@ -19,6 +19,7 @@ import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { Status } from '../../../../src/entities/status'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 use(chaiAsPromised)
 
@@ -73,7 +74,10 @@ describe('processRoleFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
-            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(programRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(programRowError.message).to.equal(
                 'On row number 1, organization name is required.'
             )
@@ -105,7 +109,10 @@ describe('processRoleFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
-            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(programRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(programRowError.message).to.equal(
                 'On row number 1, role name is required.'
             )
@@ -137,7 +144,10 @@ describe('processRoleFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
-            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(programRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(programRowError.message).to.equal(
                 'On row number 1, permission id is required.'
             )
@@ -169,9 +179,12 @@ describe('processRoleFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
-            expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+
+            expect(programRowError.code).to.equal(
+                customErrors.nonexistent_entity.code
+            )
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn't exist.`
+                `On row number 1, organization ${row.organization_name} doesn't exist or you don't have permissions to view it.`
             )
 
             const role = await Role.findOneBy({
@@ -201,9 +214,12 @@ describe('processRoleFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
-            expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+
+            expect(programRowError.code).to.equal(
+                customErrors.nonexistent_entity.code
+            )
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.permission_id}" permission doesn't exist.`
+                `On row number 1, permission ${row.permission_id} doesn't exist or you don't have permissions to view it.`
             )
 
             const role = await Role.findOneBy({
@@ -245,11 +261,12 @@ describe('processRoleFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const programRowError = rowErrors[0]
+
                 expect(programRowError.code).to.equal(
-                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                    customErrors.existent_child_entity.code
                 )
                 expect(programRowError.message).to.equal(
-                    `On row number 1, "${row.permission_id}" permission already exists for "${row.role_name}" role.`
+                    `On row number 1, permission ${row.permission_id} already exists for role ${row.role_name}.`
                 )
 
                 const role = await Role.findOneBy({

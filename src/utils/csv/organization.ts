@@ -14,6 +14,7 @@ import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { normalizedLowercaseTrimmed } from '../../utils/clean'
 import { config } from '../../config/config'
+import { customErrors } from '../../types/errors/customError'
 
 async function getUserByEmailOrPhone(
     manager: EntityManager,
@@ -137,12 +138,12 @@ export const processOrganizationFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
-                name: organization_name,
+                entityName: organization_name,
                 entity: 'organization',
             }
         )
@@ -151,15 +152,14 @@ export const processOrganizationFromCSVRow = async (
     if (!owner_email && !owner_phone) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
+            customErrors.missing_required_either.code,
             rowNumber,
             !owner_email ? 'owner_email' : 'owner_phone',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
+            customErrors.missing_required_either.message,
             {
                 entity: 'user',
                 attribute: 'email',
-                other_entity: 'user',
-                other_attribute: 'phone',
+                otherAttribute: 'phone',
             }
         )
     }
@@ -194,12 +194,12 @@ export const processOrganizationFromCSVRow = async (
     if (organizationExists) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            customErrors.existent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+            customErrors.existent_entity.message,
             {
-                name: organization_name,
+                entityName: organization_name,
                 entity: 'organization',
             }
         )
@@ -214,12 +214,12 @@ export const processOrganizationFromCSVRow = async (
     if (organizationUploaded) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            customErrors.existent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+            customErrors.existent_entity.message,
             {
-                name: organization_name,
+                entityName: organization_name,
                 entity: 'organization',
             }
         )
@@ -238,15 +238,15 @@ export const processOrganizationFromCSVRow = async (
     if (ownerUploaded) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.code,
             rowNumber,
             'owner_email',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.message,
             {
-                name: 'Owner',
+                entityName: 'Owner',
                 entity: 'user',
-                parent_entity: 'organization',
-                parent_name: organization_name,
+                parentEntity: 'organization',
+                parentName: organization_name,
             }
         )
 

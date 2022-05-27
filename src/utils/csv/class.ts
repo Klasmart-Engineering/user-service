@@ -47,10 +47,10 @@ export const processClassFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'organization',
                 attribute: 'name',
@@ -61,10 +61,10 @@ export const processClassFromCSVRow = async (
     if (!class_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'class_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'class',
                 attribute: 'name',
@@ -75,10 +75,10 @@ export const processClassFromCSVRow = async (
     if (class_name?.length > config.limits.CLASS_NAME_MAX_LENGTH) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
+            customErrors.invalid_max_length.code,
             rowNumber,
             'class_name',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+            customErrors.invalid_max_length.message,
             {
                 entity: 'class',
                 attribute: 'name',
@@ -140,12 +140,12 @@ export const processClassFromCSVRow = async (
     if (!org) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
-                name: organization_name,
+                entityName: organization_name,
                 entity: 'organization',
             }
         )
@@ -182,12 +182,12 @@ export const processClassFromCSVRow = async (
     if (classInDatabase.length) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            customErrors.existent_entity.code,
             rowNumber,
             'class_name',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+            customErrors.existent_entity.message,
             {
-                name: class_name,
+                entityName: class_name,
                 entity: 'class',
             }
         )
@@ -206,15 +206,15 @@ export const processClassFromCSVRow = async (
     if (class_shortcode && classExist) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.code,
             rowNumber,
             'class_shortcode',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.message,
             {
-                name: class_shortcode,
+                entityName: class_shortcode,
                 entity: 'shortcode',
-                parent_name: classExist.class_name,
-                parent_entity: 'class',
+                parentName: classExist.class_name,
+                parentEntity: 'class',
             }
         )
 
@@ -251,15 +251,15 @@ export const processClassFromCSVRow = async (
         if (!school) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.code,
                 rowNumber,
                 'school_name',
-                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.message,
                 {
-                    name: school_name,
+                    entityName: school_name,
                     entity: 'school',
-                    parent_name: organization_name,
-                    parent_entity: 'organization',
+                    parentName: organization_name,
+                    parentEntity: 'organization',
                 }
             )
 
@@ -271,15 +271,15 @@ export const processClassFromCSVRow = async (
         if (existingSchoolNames.includes(school_name)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'school_name',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
-                    name: school_name,
+                    entityName: school_name,
                     entity: 'school',
-                    parent_name: class_name,
-                    parent_entity: 'class',
+                    parentName: class_name,
+                    parentEntity: 'class',
                 }
             )
 
@@ -296,12 +296,12 @@ export const processClassFromCSVRow = async (
         if (!academicTerm) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                customErrors.nonexistent_entity.code,
                 rowNumber,
                 'academic_term_name',
-                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                customErrors.nonexistent_entity.message,
                 {
-                    name: academic_term_name,
+                    entityName: academic_term_name,
                     entity: 'AcademicTerm',
                 }
             )
@@ -324,15 +324,15 @@ export const processClassFromCSVRow = async (
             if (existingSchools[0].school_id !== academicTerm.school_id) {
                 addCsvError(
                     rowErrors,
-                    csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                    customErrors.nonexistent_child.code,
                     rowNumber,
                     'academic_term_name',
-                    csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                    customErrors.nonexistent_child.message,
                     {
-                        name: academic_term_name,
+                        entityName: academic_term_name,
                         entity: 'AcademicTerm',
-                        parent_name: school_name,
-                        parent_entity: 'School',
+                        parentName: school_name,
+                        parentEntity: 'School',
                     }
                 )
             }
@@ -370,15 +370,15 @@ export const processClassFromCSVRow = async (
         if (!programToAdd) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.code,
                 rowNumber,
                 'program_name',
-                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.message,
                 {
-                    name: program_name,
+                    entityName: program_name,
                     entity: 'program',
-                    parent_name: organization_name,
-                    parent_entity: 'organization',
+                    parentName: organization_name,
+                    parentEntity: 'organization',
                 }
             )
 
@@ -392,15 +392,15 @@ export const processClassFromCSVRow = async (
         if (existingProgramNames.includes(program_name)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'program_name',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
-                    name: program_name,
+                    entityName: program_name,
                     entity: 'program',
-                    parent_name: class_name,
-                    parent_entity: 'class',
+                    parentName: class_name,
+                    parentEntity: 'class',
                 }
             )
             return rowErrors
@@ -443,15 +443,15 @@ export const processClassFromCSVRow = async (
         if (!gradeToAdd) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.code,
                 rowNumber,
                 'grade_name',
-                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.message,
                 {
-                    name: grade_name,
+                    entityName: grade_name,
                     entity: 'grade',
-                    parent_name: organization_name,
-                    parent_entity: 'organization',
+                    parentName: organization_name,
+                    parentEntity: 'organization',
                 }
             )
 
@@ -463,15 +463,15 @@ export const processClassFromCSVRow = async (
         if (existingGradeNames.includes(grade_name)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'grade_name',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
-                    name: grade_name,
+                    entityName: grade_name,
                     entity: 'grade',
-                    parent_name: class_name,
-                    parent_entity: 'class',
+                    parentName: class_name,
+                    parentEntity: 'class',
                 }
             )
             return rowErrors
@@ -505,15 +505,15 @@ export const processClassFromCSVRow = async (
         if (!subjectToAdd) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.code,
                 rowNumber,
                 'subject_name',
-                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.message,
                 {
-                    name: subject_name,
+                    entityName: subject_name,
                     entity: 'subject',
-                    parent_name: organization_name,
-                    parent_entity: 'organization',
+                    parentName: organization_name,
+                    parentEntity: 'organization',
                 }
             )
 
@@ -525,15 +525,15 @@ export const processClassFromCSVRow = async (
         if (existingSubjectNames.includes(subject_name)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'subject_name',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
-                    name: subject_name,
+                    entityName: subject_name,
                     entity: 'subject',
-                    parent_name: class_name,
-                    parent_entity: 'class',
+                    parentName: class_name,
+                    parentEntity: 'class',
                 }
             )
             return rowErrors
@@ -588,15 +588,15 @@ export const processClassFromCSVRow = async (
         if (!ageRangeToAdd) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.code,
                 rowNumber,
                 'age_range_low_value, age_range_high_value, age_range_unit',
-                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                customErrors.nonexistent_child.message,
                 {
                     entity: 'ageRange',
-                    name: ageRangeName,
-                    parent_entity: 'organization',
-                    parent_name: organization_name,
+                    entityName: ageRangeName,
+                    parentEntity: 'organization',
+                    parentName: organization_name,
                 }
             )
             return rowErrors
@@ -607,15 +607,15 @@ export const processClassFromCSVRow = async (
         if (existingAgeRangeNames.includes(ageRangeName)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'age_range_low_value, age_range_high_value, age_range_unit',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
                     entity: 'ageRange',
-                    name: ageRangeName,
-                    parent_entity: 'class',
-                    parent_name: class_name,
+                    entityName: ageRangeName,
+                    parentEntity: 'class',
+                    parentName: class_name,
                 }
             )
             return rowErrors

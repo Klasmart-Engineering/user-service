@@ -26,6 +26,8 @@ import { User } from '@sentry/node'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { Status } from '../../../../src/entities/status'
+import { customErrors } from '../../../../src/types/errors/customError'
+import { config } from '../../../../src/config/config'
 
 use(chaiAsPromised)
 
@@ -87,7 +89,10 @@ describe('processSchoolFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const schoolRowError = rowErrors[0]
-            expect(schoolRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(schoolRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(schoolRowError.message).to.equal(
                 'On row number 1, organization name is required.'
             )
@@ -118,7 +123,10 @@ describe('processSchoolFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const schoolRowError = rowErrors[0]
-            expect(schoolRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(schoolRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(schoolRowError.message).to.equal(
                 'On row number 1, school name is required.'
             )
@@ -155,9 +163,12 @@ describe('processSchoolFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const schoolRowError = rowErrors[0]
-                expect(schoolRowError.code).to.equal('ERR_CSV_INVALID_LENGTH')
+
+                expect(schoolRowError.code).to.equal(
+                    customErrors.invalid_max_length.code
+                )
                 expect(schoolRowError.message).to.equal(
-                    'On row number 1, school name must not be greater than 120 characters.'
+                    `On row number 1, school name must not be greater than ${config.limits.SCHOOL_NAME_MAX_LENGTH} characters.`
                 )
 
                 const school = await School.findOneBy({
@@ -220,9 +231,12 @@ describe('processSchoolFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const schoolRowError = rowErrors[0]
-            expect(schoolRowError.code).to.equal('ERR_CSV_INVALID_ALPHA_NUM')
+
+            expect(schoolRowError.code).to.equal(
+                customErrors.invalid_alphanumeric.code
+            )
             expect(schoolRowError.message).to.equal(
-                'On row number 1, school shortcode must only contain letters and numbers.'
+                `On row number 1, school shortcode must only contain letters and numbers.`
             )
 
             const school = await School.findOneBy({
@@ -255,11 +269,12 @@ describe('processSchoolFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const schoolRowError = rowErrors[0]
+
                 expect(schoolRowError.code).to.equal(
-                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                    customErrors.existent_child_entity.code
                 )
                 expect(schoolRowError.message).to.equal(
-                    `On row number 1, "${row.school_shortcode}" shortcode already exists for "${sameShortcodeAnotherSchoolName}" school.`
+                    `On row number 1, shortcode ${row.school_shortcode} already exists for school ${sameShortcodeAnotherSchoolName}.`
                 )
 
                 const school = await School.findOneBy({
@@ -355,11 +370,12 @@ describe('processSchoolFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const schoolRowError = rowErrors[0]
+
             expect(schoolRowError.code).to.equal(
-                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+                customErrors.nonexistent_child.code
             )
             expect(schoolRowError.message).to.equal(
-                `On row number 1, "${row.program_name}" program doesn't exist for "${row.organization_name}" organization.`
+                `On row number 1, program ${row.program_name} doesn't exist for organization ${row.organization_name}.`
             )
 
             const school = await School.findOneBy({
@@ -402,11 +418,12 @@ describe('processSchoolFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const schoolRowError = rowErrors[0]
+
                 expect(schoolRowError.code).to.equal(
-                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                    customErrors.existent_child_entity.code
                 )
                 expect(schoolRowError.message).to.equal(
-                    `On row number 1, "${row.program_name}" program already exists for "${row.school_name}" school.`
+                    `On row number 1, program ${row.program_name} already exists for school ${row.school_name}.`
                 )
 
                 const school = await School.findOneBy({

@@ -28,7 +28,6 @@ import { createAdminUser } from '../../../utils/testEntities'
 import { config } from '../../../../src/config/config'
 import { createAcademicTerm } from '../../../factories/academicTerm.factory'
 import { AcademicTerm } from '../../../../src/entities/academicTerm'
-import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 import { customErrors } from '../../../../src/types/errors/customError'
 import { transactionalContext } from '../../hooks'
 import { createAdminUser as createAdminUserFactory } from '../../../factories/user.factory'
@@ -268,7 +267,10 @@ describe('processClassFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const classRowError = rowErrors[0]
-        expect(classRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+        expect(classRowError.code).to.equal(
+            customErrors.missing_required_entity_attribute.code
+        )
         expect(classRowError.message).to.equal(
             'On row number 1, organization name is required.'
         )
@@ -295,7 +297,10 @@ describe('processClassFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const classRowError = rowErrors[0]
-        expect(classRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+        expect(classRowError.code).to.equal(
+            customErrors.missing_required_entity_attribute.code
+        )
         expect(classRowError.message).to.equal(
             'On row number 1, class name is required.'
         )
@@ -410,9 +415,12 @@ describe('processClassFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const classRowError = rowErrors[0]
-        expect(classRowError.code).to.equal('ERR_CSV_DUPLICATE_CHILD_ENTITY')
+
+        expect(classRowError.code).to.equal(
+            customErrors.existent_child_entity.code
+        )
         expect(classRowError.message).to.equal(
-            `On row number 1, "${expectedClass.shortcode}" shortcode already exists for "${expectedClass.class_name}" class.`
+            `On row number 1, shortcode ${expectedClass.shortcode} already exists for class ${expectedClass.class_name}.`
         )
 
         const dbClass = await Class.find()
@@ -436,7 +444,10 @@ describe('processClassFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const classRowError = rowErrors[0]
-        expect(classRowError.code).to.equal('ERR_CSV_INVALID_LENGTH')
+
+        expect(classRowError.code).to.equal(
+            customErrors.invalid_max_length.code
+        )
         expect(classRowError.message).to.equal(
             `On row number 1, class name must not be greater than ${config.limits.CLASS_NAME_MAX_LENGTH} characters.`
         )
@@ -488,9 +499,10 @@ describe('processClassFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const classRowError = rowErrors[0]
-        expect(classRowError.code).to.equal('ERR_CSV_NONE_EXIST_CHILD_ENTITY')
+
+        expect(classRowError.code).to.equal(customErrors.nonexistent_child.code)
         expect(classRowError.message).to.equal(
-            `On row number 1, "${row.school_name}" school doesn't exist for "${orgName}" organization.`
+            `On row number 1, school ${row.school_name} doesn't exist for organization ${orgName}.`
         )
 
         const dbClass = await Class.find()
@@ -514,9 +526,10 @@ describe('processClassFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const classRowError = rowErrors[0]
-        expect(classRowError.code).to.equal('ERR_CSV_NONE_EXIST_CHILD_ENTITY')
+
+        expect(classRowError.code).to.equal(customErrors.nonexistent_child.code)
         expect(classRowError.message).to.equal(
-            `On row number 1, "${row.program_name}" program doesn't exist for "${orgName}" organization.`
+            `On row number 1, program ${row.program_name} doesn't exist for organization ${orgName}.`
         )
 
         const dbClass = await Class.find()
@@ -540,9 +553,10 @@ describe('processClassFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const classRowError = rowErrors[0]
-        expect(classRowError.code).to.equal('ERR_CSV_DUPLICATE_ENTITY')
+
+        expect(classRowError.code).to.equal(customErrors.existent_entity.code)
         expect(classRowError.message).to.equal(
-            `On row number 1, "${className}" class already exists.`
+            `On row number 1, class ${className} already exists.`
         )
 
         const dbClass = await Class.find()
@@ -575,11 +589,12 @@ describe('processClassFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const classRowError = rowErrors[0]
+
             expect(classRowError.code).to.equal(
-                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+                customErrors.nonexistent_child.code
             )
             expect(classRowError.message).to.equal(
-                `On row number 1, "${academicTerm.name}" AcademicTerm doesn't exist for "${expectedSchool.school_name}" School.`
+                `On row number 1, AcademicTerm ${academicTerm.name} doesn't exist for School ${expectedSchool.school_name}.`
             )
 
             const dbClass = await Class.find()
@@ -603,11 +618,12 @@ describe('processClassFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const classRowError = rowErrors[0]
+
             expect(classRowError.code).to.equal(
-                csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY
+                customErrors.nonexistent_entity.code
             )
             expect(classRowError.message).to.equal(
-                `On row number 1, "not a real academic term" AcademicTerm doesn't exist.`
+                `On row number 1, AcademicTerm ${row.academic_term_name} doesn't exist or you don't have permissions to view it.`
             )
 
             const dbClass = await Class.find()

@@ -19,27 +19,6 @@ export default {
 
     ERR_CSV_BAD_INPUT: 'ERR_CSV_BAD_INPUT',
 
-    ERR_CSV_MISSING_REQUIRED: 'ERR_CSV_MISSING_REQUIRED',
-    MSG_ERR_CSV_MISSING_REQUIRED: '{entity} {attribute} is required.', // For example: organization name is required.
-
-    ERR_CSV_MISSING_REQUIRED_EITHER: 'ERR_CSV_MISSING_REQUIRED_EITHER',
-    MSG_ERR_CSV_MISSING_REQUIRED_EITHER:
-        '{entity} {attribute} or {other_entity} {other_attribute} is required.', // For example: organization name or subcategory name is required.
-
-    ERR_CSV_DUPLICATE_ENTITY: 'ERR_CSV_DUPLICATE_ENTITY',
-    MSG_ERR_CSV_DUPLICATE_ENTITY: '"{name}" {entity} already exists.', // For example: "ABC" organization already exists.
-
-    ERR_CSV_DUPLICATE_CHILD_ENTITY: 'ERR_CSV_DUPLICATE_CHILD_ENTITY',
-    MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY:
-        '"{name}" {entity} already exists for "{parent_name}" {parent_entity}.', // For example: "ABC" subcategory already exists for "DEF" category.
-
-    ERR_CSV_NONE_EXIST_ENTITY: 'ERR_CSV_NONE_EXIST_ENTITY',
-    MSG_ERR_CSV_NONE_EXIST_ENTITY: '"{name}" {entity} doesn\'t exist.', // For example: "ABC" organization doesn't exist.
-
-    ERR_CSV_NONE_EXIST_CHILD_ENTITY: 'ERR_CSV_NONE_EXIST_CHILD_ENTITY',
-    MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY:
-        '"{name}" {entity} doesn\'t exist for "{parent_name}" {parent_entity}.',
-
     ERR_CSV_INVALID_FIELD: 'ERR_CSV_INVALID_FIELD',
 
     ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST: 'ERR_PROGRAM_AGE_RANGE_FIELD_EXIST',
@@ -66,18 +45,6 @@ export default {
     MSG_ERR_CSV_INVALID_BETWEEN:
         '{entity} {attribute} must be between {min} and {max}.',
 
-    ERR_CSV_INVALID_ALPHA: 'ERR_CSV_INVALID_ALPHA',
-    MSG_ERR_CSV_INVALID_ALPHA:
-        '{entity} {attribute} must only contain letters.',
-
-    ERR_CSV_INVALID_ALPHA_NUM: 'ERR_CSV_INVALID_ALPHA_NUM',
-    MSG_ERR_CSV_INVALID_ALPHA_NUM:
-        '{entity} {attribute} must only contain letters and numbers.',
-
-    ERR_CSV_INVALID_DATE_FORMAT: 'ERR_CSV_INVALID_DATE_FORMAT',
-    MSG_ERR_CSV_INVALID_DATE_FORMAT:
-        '{entity} {attribute} does not match the format {format}.',
-
     ERR_CSV_INVALID_BOOLEAN: 'ERR_CSV_INVALID_BOOLEAN',
     MSG_ERR_CSV_INVALID_BOOLEAN: '{entity} {attribute} must be true or false.',
 
@@ -85,15 +52,8 @@ export default {
     MSG_ERR_CSV_INVALID_EMAIL:
         '{entity} {attribute} must be a valid email address.',
 
-    ERR_CSV_INVALID_PHONE: 'ERR_CSV_INVALID_PHONE',
-    MSG_ERR_CSV_INVALID_PHONE:
-        '{entity} {attribute} must be a valid phone number.',
-
     ERR_CSV_INVALID_NUMBER: 'ERR_CSV_INVALID_NUMBER',
     MSG_ERR_CSV_INVALID_NUMBER: '{entity} {attribute} must be a number.',
-
-    ERR_CSV_INVALID_UUID: 'ERR_CSV_INVALID_UUID',
-    MSG_ERR_CSV_INVALID_UUID: '{entity} {attribute} must be a valid UUID.',
 
     ERR_CSV_INVALID_GREATER_THAN_OTHER: 'ERR_CSV_INVALID_GREATER_THAN_OTHER',
     MSG_ERR_CSV_INVALID_GREATER_THAN_OTHER:
@@ -116,8 +76,4 @@ export default {
         'ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD',
     MSG_ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD:
         '"{name}" {entity} already exists more than once in "{parent_name}" {parent_entity}.',
-
-    ERR_CSV_INVALID_LENGTH: 'ERR_CSV_INVALID_LENGTH',
-    MSG_ERR_CSV_INVALID_LENGTH:
-        '{entity} {attribute} must not be greater than {max} characters.',
 } as const

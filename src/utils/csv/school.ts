@@ -27,10 +27,10 @@ export const processSchoolFromCSVRow = async (
     if (!row.organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'organization',
                 attribute: 'name',
@@ -41,10 +41,10 @@ export const processSchoolFromCSVRow = async (
     if (!row.school_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'school_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'school',
                 attribute: 'name',
@@ -55,10 +55,10 @@ export const processSchoolFromCSVRow = async (
     if (row.school_name?.length > config.limits.SCHOOL_NAME_MAX_LENGTH) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
+            customErrors.invalid_max_length.code,
             rowNumber,
             'school_name',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+            customErrors.invalid_max_length.message,
             {
                 entity: 'school',
                 attribute: 'name',
@@ -89,10 +89,10 @@ export const processSchoolFromCSVRow = async (
     if (!validateShortCode(shortcode)) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_INVALID_ALPHA_NUM,
+            customErrors.invalid_alphanumeric.code,
             rowNumber,
             'school_shortcode',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_ALPHA_NUM,
+            customErrors.invalid_alphanumeric.message,
             {
                 entity: 'school',
                 attribute: 'shortcode',
@@ -160,15 +160,15 @@ export const processSchoolFromCSVRow = async (
     if (schoolShortcode && row.school_name !== schoolShortcode.school_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.code,
             rowNumber,
             'school_shortcode',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.message,
             {
                 entity: 'shortcode',
-                name: row.school_shortcode,
-                parent_entity: 'school',
-                parent_name: schoolShortcode.school_name,
+                entityName: row.school_shortcode,
+                parentEntity: 'school',
+                parentName: schoolShortcode.school_name,
             }
         )
     }
@@ -236,15 +236,15 @@ export const processSchoolFromCSVRow = async (
     if (!programToAdd) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.code,
             rowNumber,
             'program_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.message,
             {
                 entity: 'program',
-                name: row.program_name,
-                parent_entity: 'organization',
-                parent_name: row.organization_name,
+                entityName: row.program_name,
+                parentEntity: 'organization',
+                parentName: row.organization_name,
             }
         )
 
@@ -255,15 +255,15 @@ export const processSchoolFromCSVRow = async (
         if (p.id === programToAdd.id) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'program_name',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
                     entity: 'program',
-                    name: row.program_name,
-                    parent_entity: 'school',
-                    parent_name: row.school_name,
+                    entityName: row.program_name,
+                    parentEntity: 'school',
+                    parentName: row.school_name,
                 }
             )
 

@@ -7,7 +7,6 @@ import { Subject } from '../../entities/subject'
 import { ProgramRow } from '../../types/csv/programRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { validateAgeRanges } from './validations/ageRange'
 import { Status } from '../../entities/status'
@@ -42,10 +41,10 @@ export const processProgramFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'organization',
                 attribute: 'name',
@@ -56,10 +55,10 @@ export const processProgramFromCSVRow = async (
     if (!program_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'program_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'program',
                 attribute: 'name',
@@ -87,12 +86,12 @@ export const processProgramFromCSVRow = async (
     if (!organization) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
-                name: organization_name,
+                entityName: organization_name,
                 entity: 'organization',
             }
         )
@@ -174,15 +173,15 @@ export const processProgramFromCSVRow = async (
     if (!ageRange) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.code,
             rowNumber,
             'age_range_low_value, age_range_high_value, age_range_unit',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.message,
             {
                 entity: 'ageRange',
-                name: ageRangeName,
-                parent_entity: 'organization',
-                parent_name: organization_name,
+                entityName: ageRangeName,
+                parentEntity: 'organization',
+                parentName: organization_name,
             }
         )
     }
@@ -210,15 +209,15 @@ export const processProgramFromCSVRow = async (
     if (!grade) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.code,
             rowNumber,
             'grade_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.message,
             {
                 entity: 'grade',
-                name: grade_name,
-                parent_entity: 'organization',
-                parent_name: organization_name,
+                entityName: grade_name,
+                parentEntity: 'organization',
+                parentName: organization_name,
             }
         )
     }
@@ -246,15 +245,15 @@ export const processProgramFromCSVRow = async (
     if (!subject) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.code,
             rowNumber,
             'subject_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.message,
             {
                 entity: 'subject',
-                name: subject_name,
-                parent_entity: 'organization',
-                parent_name: organization_name,
+                entityName: subject_name,
+                parentEntity: 'organization',
+                parentName: organization_name,
             }
         )
     }
@@ -279,15 +278,15 @@ export const processProgramFromCSVRow = async (
         if (ageRangeNames.includes(ageRangeName)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'age_range_low_value, age_range_high_value, age_range_unit',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
                     entity: 'ageRange',
-                    name: ageRangeName,
-                    parent_entity: 'program',
-                    parent_name: program.name,
+                    entityName: ageRangeName,
+                    parentEntity: 'program',
+                    parentName: program.name,
                 }
             )
 
@@ -300,15 +299,15 @@ export const processProgramFromCSVRow = async (
         if (gradeNames.includes(grade_name)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'grade_name',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
                     entity: 'grade',
-                    name: grade_name,
-                    parent_entity: 'program',
-                    parent_name: program.name,
+                    entityName: grade_name,
+                    parentEntity: 'program',
+                    parentName: program.name,
                 }
             )
 
@@ -321,15 +320,15 @@ export const processProgramFromCSVRow = async (
         if (subjectNames.includes(subject_name)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'subject_name',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
                     entity: 'subject',
-                    name: subject_name,
-                    parent_entity: 'program',
-                    parent_name: program.name,
+                    entityName: subject_name,
+                    parentEntity: 'program',
+                    parentName: program.name,
                 }
             )
 

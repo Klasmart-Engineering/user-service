@@ -4,7 +4,6 @@ import { Subcategory } from '../../entities/subcategory'
 import { SubCategoryRow } from '../../types/csv/subCategoryRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { PermissionName } from '../../permissions/permissionNames'
 import { customErrors } from '../../types/errors/customError'
@@ -20,10 +19,10 @@ export const processSubCategoriesFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'organization',
                 attribute: 'name',
@@ -34,10 +33,10 @@ export const processSubCategoriesFromCSVRow = async (
     if (!subcategory_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'subcategory_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'subCategory',
                 attribute: 'name',
@@ -55,13 +54,13 @@ export const processSubCategoriesFromCSVRow = async (
     if (!org) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
                 entity: 'organization',
-                name: organization_name,
+                entityName: organization_name,
             }
         )
 
@@ -100,15 +99,15 @@ export const processSubCategoriesFromCSVRow = async (
     if (subCategoryExists) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.code,
             rowNumber,
             'subcategory_name',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.message,
             {
                 entity: 'subCategory',
-                name: subcategory_name,
-                parent_entity: 'organization',
-                parent_name: organization_name,
+                entityName: subcategory_name,
+                parentEntity: 'organization',
+                parentName: organization_name,
             }
         )
 
