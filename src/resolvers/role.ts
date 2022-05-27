@@ -444,6 +444,9 @@ export class DeleteRoles extends DeleteMutation<
     ) {
         const organizationIds: string[] = []
         for (const r of entityMaps.mainEntity.values()) {
+            if (r.system_role) {
+                throw new Error('System roles cannot be modified')
+            }
             // eslint-disable-next-line no-await-in-loop
             const organizationId = (await r.organization)?.organization_id
             if (organizationId) organizationIds.push(organizationId)
