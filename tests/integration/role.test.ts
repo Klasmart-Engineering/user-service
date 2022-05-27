@@ -2665,7 +2665,8 @@ describe('role', () => {
 
             const expectPermissionError = async (
                 caller: User,
-                rolesToDelete: Role[]
+                rolesToDelete: Role[],
+                systemRoleRelated?: boolean
             ) => {
                 const permError = permErrorMeta(
                     PermissionName.delete_role_30440
@@ -2673,7 +2674,15 @@ describe('role', () => {
                 const input = buildInputArray(rolesToDelete)
                 const operation = deleteRolesFromResolver(caller, input)
 
-                await expect(operation).to.be.rejectedWith(permError(caller))
+                if (systemRoleRelated) {
+                    await expect(operation).to.be.rejectedWith(
+                        'System roles cannot be modified'
+                    )
+                } else {
+                    await expect(operation).to.be.rejectedWith(
+                        permError(caller)
+                    )
+                }
             }
 
             const expectInputErrors = async (
@@ -2727,7 +2736,7 @@ describe('role', () => {
             context('permissions', () => {
                 context('successful cases', () => {
                     context('when caller is admin', () => {
-                        it('should delete any roles', async () => {
+                        it('should delete any non-system roles', async () => {
                             const rolesToDelete = orgsData
                                 .map((d) => d.roles)
                                 .flat()
@@ -2758,10 +2767,24 @@ describe('role', () => {
                 })
 
                 context('error handling', () => {
+                    context('when caller is admin', () => {
+                        context('and tries to delete system roles', () => {
+                            it('should throw a permission error', async () => {
+                                const caller = admin
+                                const rolesToDelete = systemRoles
+                                await expectPermissionError(
+                                    caller,
+                                    rolesToDelete,
+                                    true
+                                )
+                            })
+                        })
+                    })
+
                     context('when caller is not admin', () => {
                         context('but has permission', () => {
                             context(
-                                'and tries to delete roles from an organization which does not belongs',
+                                'and tries to delete roles from an organization which they do not belong to',
                                 () => {
                                     it('should throw a permission error', async () => {
                                         const caller = memberWithPermission
@@ -2773,12 +2796,26 @@ describe('role', () => {
                                     })
                                 }
                             )
+                            context('and tries to delete system roles', () => {
+                                it('should throw a permission error', async () => {
+                                    const caller = memberWithPermission
+                                    const rolesToDelete = [
+                                        ...orgsData[0].roles,
+                                        ...systemRoles,
+                                    ]
+                                    await expectPermissionError(
+                                        caller,
+                                        rolesToDelete,
+                                        true
+                                    )
+                                })
+                            })
                         })
 
                         context('has not permission', () => {
                             context('but has membership', () => {
                                 context(
-                                    'and tries to delete roles from the organization which belongs',
+                                    'and tries to delete roles from the organization which they belong to',
                                     () => {
                                         it('should throw a permission error', async () => {
                                             const caller = memberWithoutPermission
@@ -2861,11 +2898,10 @@ describe('role', () => {
                     )
 
                     context(
-                        'when roles belong to more than one organization or are system',
+                        'when roles belong to more than one organization',
                         () => {
                             it('should do 3 DB calls', async () => {
                                 const rolesToDelete = [
-                                    ...systemRoles,
                                     ...orgsData.map((d) => d.roles).flat(),
                                 ]
 
