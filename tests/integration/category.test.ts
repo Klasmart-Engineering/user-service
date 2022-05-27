@@ -548,10 +548,7 @@ describe('category', () => {
                             )
                         )
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
                         await expectCategories(0)
                     })
                 }
@@ -582,10 +579,7 @@ describe('category', () => {
                             )
                         )
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
                         await expectCategories(0)
                     })
                 }
@@ -623,10 +617,7 @@ describe('category', () => {
                             createCategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
                         await expectCategories(0)
                     })
                 }
@@ -654,7 +645,7 @@ describe('category', () => {
                         createCategoriesFromResolver(admin, input)
                     ).to.be.rejected
 
-                    await compareMultipleErrors(result.errors, expectedErrors)
+                    compareMultipleErrors(result.errors, expectedErrors)
                     await expectCategories(0)
                 })
             })
@@ -677,7 +668,7 @@ describe('category', () => {
                         createCategoriesFromResolver(admin, input)
                     ).to.be.rejected
 
-                    await compareMultipleErrors(result.errors, expectedErrors)
+                    compareMultipleErrors(result.errors, expectedErrors)
                     await expectCategories(0)
                 })
             })
@@ -705,7 +696,7 @@ describe('category', () => {
                         createCategoriesFromResolver(admin, input)
                     ).to.be.rejected
 
-                    await compareMultipleErrors(result.errors, expectedErrors)
+                    compareMultipleErrors(result.errors, expectedErrors)
                     await expectCategories(0)
                 })
             })
@@ -728,7 +719,7 @@ describe('category', () => {
                         createCategoriesFromResolver(admin, input)
                     ).to.be.rejected
 
-                    await compareMultipleErrors(result.errors, expectedErrors)
+                    compareMultipleErrors(result.errors, expectedErrors)
                     await expectCategories(0)
                 })
             })
@@ -761,7 +752,7 @@ describe('category', () => {
                         createCategoriesFromResolver(admin, input)
                     ).to.be.rejected
 
-                    await compareMultipleErrors(result.errors, expectedErrors)
+                    compareMultipleErrors(result.errors, expectedErrors)
 
                     // The already existent category is the only expected
                     await expectCategories(1)
@@ -1213,10 +1204,7 @@ describe('category', () => {
                                 updateCategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoChangesMade([categoryToRepeat])
                         })
@@ -1253,10 +1241,7 @@ describe('category', () => {
                                 updateCategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoChangesMade(catsToUpdate)
                         })
@@ -1304,10 +1289,7 @@ describe('category', () => {
                                 updateCategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoChangesMade(existentCatsToUpdate)
                         })
@@ -1342,10 +1324,7 @@ describe('category', () => {
                             updateCategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoChangesMade(catsToUpdate)
                     })
@@ -1381,10 +1360,7 @@ describe('category', () => {
                                 updateCategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoChangesMade(catsToUpdate)
                         })
@@ -1421,10 +1397,7 @@ describe('category', () => {
                                 updateCategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoChangesMade(catsToUpdate)
                         })
@@ -1455,10 +1428,7 @@ describe('category', () => {
                                 updateCategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoChangesMade(catsToUpdate)
                         })
@@ -1486,10 +1456,7 @@ describe('category', () => {
                             updateCategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoChangesMade(org1Categories)
                     })
@@ -1523,10 +1490,7 @@ describe('category', () => {
                             updateCategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoChangesMade(org1Categories)
                     })
@@ -1553,10 +1517,7 @@ describe('category', () => {
                             updateCategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoChangesMade(org1Categories)
                     })
@@ -1593,10 +1554,7 @@ describe('category', () => {
                                 updateCategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoChangesMade(org1Categories)
                         })
@@ -1920,7 +1878,6 @@ describe('category', () => {
         const orgsPerType = 5
         let apiErrors: APIError[]
         let inputs: AddSubcategoriesToCategoryInput[]
-        let permissions: UserPermissions
         let addSubcategoriesToCategories: AddSubcategoriesToCategories
 
         beforeEach(async () => {
@@ -1987,7 +1944,7 @@ describe('category', () => {
                 organization: org1,
             }).save()
 
-            permissions = new UserPermissions(userToPayload(admin))
+            const permissions = new UserPermissions(userToPayload(admin))
             addSubcategoriesToCategories = new AddSubcategoriesToCategories(
                 [],
                 permissions
@@ -1999,13 +1956,7 @@ describe('category', () => {
             input: AddSubcategoriesToCategoryInput[]
         ) => {
             const permissions = new UserPermissions(userToPayload(user))
-            const result: CategoriesMutationResult = await mutate(
-                AddSubcategoriesToCategories,
-                { input },
-                permissions
-            )
-
-            return result
+            return mutate(AddSubcategoriesToCategories, { input }, permissions)
         }
 
         context('generateEntityMaps', () => {
@@ -2187,7 +2138,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
 
             it('is rejected when subcategoryIds are duplicated', async () => {
@@ -2213,7 +2164,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
 
             it('is rejected when subcategoryIds is empty', async () => {
@@ -2237,7 +2188,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
 
             it('when there are too many subcategoryIds', async () => {
@@ -2268,7 +2219,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
         })
 
@@ -2280,7 +2231,7 @@ describe('category', () => {
                 fakeId2 = faker.datatype.uuid()
             })
 
-            it('is rejected when input categoryids does not exist', async () => {
+            it('is rejected when input categoryIds does not exist', async () => {
                 apiErrors = [
                     createEntityAPIError('nonExistent', 0, 'Category', fakeId),
                     createEntityAPIError('nonExistent', 1, 'Category', fakeId2),
@@ -2300,8 +2251,7 @@ describe('category', () => {
                 const result = await expect(
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
-
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
             it('is rejected when one input categoryIds does not exist', async () => {
                 apiErrors = [
@@ -2319,7 +2269,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
             it('is rejected when input subcategoryIds does not exist', async () => {
                 apiErrors = [
@@ -2352,7 +2302,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
             it('is rejected when one input subcategoryids does not exist', async () => {
                 apiErrors = [
@@ -2379,7 +2329,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
         })
 
@@ -2408,7 +2358,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
 
             it('is rejected when some category is inactive', async () => {
@@ -2435,7 +2385,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
         })
 
@@ -2463,7 +2413,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
         })
 
@@ -2491,7 +2441,7 @@ describe('category', () => {
                     addSubcategoriesToCategoriesResolver(admin, inputs)
                 ).to.be.rejected
 
-                await compareMultipleErrors(result.errors, apiErrors)
+                compareMultipleErrors(result.errors, apiErrors)
             })
         })
 
@@ -3051,10 +3001,7 @@ describe('category', () => {
                                 removeSubcategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoRemoves([catToEdit])
                         })
@@ -3089,10 +3036,7 @@ describe('category', () => {
                                 removeSubcategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoRemoves(catsToEdit)
                         })
@@ -3124,10 +3068,7 @@ describe('category', () => {
                             removeSubcategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoRemoves(catsToEdit)
                     })
@@ -3160,10 +3101,7 @@ describe('category', () => {
                                 removeSubcategoriesFromResolver(admin, input)
                             ).to.be.rejected
 
-                            await compareMultipleErrors(
-                                result.errors,
-                                expectedErrors
-                            )
+                            compareMultipleErrors(result.errors, expectedErrors)
 
                             await expectNoRemoves(catsToEdit)
                         })
@@ -3191,10 +3129,7 @@ describe('category', () => {
                             removeSubcategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoRemoves(catsToEdit)
                     })
@@ -3228,10 +3163,7 @@ describe('category', () => {
                             removeSubcategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoRemoves(catsToEdit)
                     })
@@ -3262,10 +3194,7 @@ describe('category', () => {
                             removeSubcategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoRemoves(catsToEdit)
                     })
@@ -3296,10 +3225,7 @@ describe('category', () => {
                             removeSubcategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoRemoves(catsToEdit)
                     })
@@ -3341,10 +3267,7 @@ describe('category', () => {
                             removeSubcategoriesFromResolver(admin, input)
                         ).to.be.rejected
 
-                        await compareMultipleErrors(
-                            result.errors,
-                            expectedErrors
-                        )
+                        compareMultipleErrors(result.errors, expectedErrors)
 
                         await expectNoRemoves(catsToEdit)
                     })
