@@ -30,7 +30,7 @@ export const permissionInfo = async () => {
                         ],
                     level:
                         row[
-                            'Permission Level \r\n(Super Admin, Org Admin, School Admin, Teacher, Parent, Student, None)'
+                            'Permission Level\r\n(Super Admin, Org Admin, School Admin, Teacher, Parent, Student, None)'
                         ],
                     group: row['Permission Group'],
                     description: row['Description'],
