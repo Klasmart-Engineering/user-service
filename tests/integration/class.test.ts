@@ -4559,6 +4559,18 @@ describe('class', () => {
             await editPrograms(testClient, cls.class_id, [program.id], {
                 authorization: getAdminAuthToken(),
             })
+
+            const role = await createRole(
+                testClient,
+                organization.organization_id
+            )
+
+            await grantPermission(
+                testClient,
+                role.role_id,
+                PermissionName.view_classes_20114,
+                { authorization: getAdminAuthToken() }
+            )
         })
 
         it('lists all the programs in the class', async () => {
