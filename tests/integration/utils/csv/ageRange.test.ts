@@ -20,6 +20,7 @@ import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { User } from '../../../../src/entities/user'
 import { createAdminUser } from '../../../utils/testEntities'
 import { Status } from '../../../../src/entities/status'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 use(chaiAsPromised)
 
@@ -75,7 +76,10 @@ describe('processAgeRangeFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const orgRowError = rowErrors[0]
-            expect(orgRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(orgRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(orgRowError.message).to.equal(
                 'On row number 1, organization name is required.'
             )
@@ -115,7 +119,10 @@ describe('processAgeRangeFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const ageRowError = rowErrors[0]
-            expect(ageRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(ageRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(ageRowError.message).to.equal(
                 'On row number 1, ageRange age_range_low_value is required.'
             )
@@ -155,7 +162,10 @@ describe('processAgeRangeFromCSVRow', () => {
             expect(rowErrors).to.have.length(3) // This is legacy behaviour and should be changed to only expect the below code+msg
 
             const ageRowError = rowErrors[0]
-            expect(ageRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(ageRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(ageRowError.message).to.equal(
                 'On row number 1, ageRange age_range_high_value is required.'
             )
@@ -195,7 +205,10 @@ describe('processAgeRangeFromCSVRow', () => {
             expect(rowErrors).to.have.length(2) // This is legacy behaviour and should be changed to only expect the below code+msg
 
             const ageRowError = rowErrors[0]
-            expect(ageRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(ageRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(ageRowError.message).to.equal(
                 'On row number 1, ageRange age_range_unit is required.'
             )
@@ -405,9 +418,12 @@ describe('processAgeRangeFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const ageRowError = rowErrors[0]
-            expect(ageRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+
+            expect(ageRowError.code).to.equal(
+                customErrors.nonexistent_entity.code
+            )
             expect(ageRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn't exist.`
+                `On row number 1, organization ${row.organization_name} doesn't exist or you don't have permissions to view it.`
             )
 
             const ageRange = await AgeRange.findOne({
@@ -452,9 +468,12 @@ describe('processAgeRangeFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const ageRowError = rowErrors[0]
-            expect(ageRowError.code).to.equal('ERR_CSV_DUPLICATE_CHILD_ENTITY')
+
+            expect(ageRowError.code).to.equal(
+                customErrors.existent_child_entity.code
+            )
             expect(ageRowError.message).to.equal(
-                `On row number 1, "6 - 7 year(s)" ageRange already exists for "${rowModel.organization_name}" organization.`
+                `On row number 1, ageRange ${row.age_range_low_value} - ${row.age_range_high_value} ${row.age_range_unit}(s) already exists for organization ${row.organization_name}.`
             )
 
             const ageRange = await AgeRange.findOne({

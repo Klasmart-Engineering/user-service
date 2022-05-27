@@ -5,7 +5,6 @@ import { Role } from '../../entities/role'
 import { RoleRow } from '../../types/csv/roleRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { Status } from '../../entities/status'
 import { PermissionName } from '../../permissions/permissionNames'
@@ -26,10 +25,10 @@ export const processRoleFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'organization',
                 attribute: 'name',
@@ -40,10 +39,10 @@ export const processRoleFromCSVRow = async (
     if (!role_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'role_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'role',
                 attribute: 'name',
@@ -54,10 +53,10 @@ export const processRoleFromCSVRow = async (
     if (!permission_id) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'permission_id',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'permission',
                 attribute: 'id',
@@ -77,13 +76,13 @@ export const processRoleFromCSVRow = async (
     if (!organization) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
                 entity: 'organization',
-                name: organization_name,
+                entityName: organization_name,
             }
         )
         return rowErrors
@@ -117,13 +116,13 @@ export const processRoleFromCSVRow = async (
     if (!permission) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
                 entity: 'permission',
-                name: permission_id,
+                entityName: permission_id,
             }
         )
     }
@@ -150,15 +149,15 @@ export const processRoleFromCSVRow = async (
         if (permissionNames.includes(permission_id)) {
             addCsvError(
                 rowErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.code,
                 rowNumber,
                 'permission_id',
-                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                customErrors.existent_child_entity.message,
                 {
                     entity: 'permission',
-                    name: permission_id,
-                    parent_entity: 'role',
-                    parent_name: role_name,
+                    entityName: permission_id,
+                    parentEntity: 'role',
+                    parentName: role_name,
                 }
             )
 

@@ -77,10 +77,10 @@ export const processGradeFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'organization',
                 attribute: 'name',
@@ -91,10 +91,10 @@ export const processGradeFromCSVRow = async (
     if (!grade_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'grade_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'grade',
                 attribute: 'name',
@@ -166,12 +166,12 @@ export const processGradeFromCSVRow = async (
     if (!organization) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
-                name: organization_name,
+                entityName: organization_name,
                 entity: 'organization',
             }
         )
@@ -209,15 +209,15 @@ export const processGradeFromCSVRow = async (
     if (grade) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.code,
             rowNumber,
             'grade_name',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.message,
             {
-                name: grade_name,
+                entityName: grade_name,
                 entity: 'grade',
-                parent_name: organization_name,
-                parent_entity: 'organization',
+                parentName: organization_name,
+                parentEntity: 'organization',
             }
         )
 
@@ -264,12 +264,12 @@ export const setGradeFromToFields = async (
     if (!organization) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
-                name: organization_name,
+                entityName: organization_name,
                 entity: 'organization',
             }
         )
@@ -304,14 +304,14 @@ export const setGradeFromToFields = async (
             progress_from_grade_name,
             rowNumber,
             'progress_from_grade_name',
-            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.code,
             rowErrors,
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
-                name: progress_from_grade_name,
+                entityName: progress_from_grade_name,
                 entity: 'grade',
-                parent_name: organization_name,
-                parent_entity: 'organization',
+                parentName: organization_name,
+                parentEntity: 'organization',
             }
         )
     } else {
@@ -331,14 +331,14 @@ export const setGradeFromToFields = async (
             progress_to_grade_name,
             rowNumber,
             'progress_to_grade_name',
-            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.code,
             rowErrors,
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            customErrors.nonexistent_child.message,
             {
-                name: progress_to_grade_name,
+                entityName: progress_to_grade_name,
                 entity: 'grade',
-                parent_name: organization_name,
-                parent_entity: 'organization',
+                parentName: organization_name,
+                parentEntity: 'organization',
             }
         )
     } else {

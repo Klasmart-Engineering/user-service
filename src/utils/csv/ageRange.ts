@@ -32,10 +32,10 @@ export const processAgeRangeFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'organization',
                 attribute: 'name',
@@ -46,10 +46,10 @@ export const processAgeRangeFromCSVRow = async (
     if (!age_range_low_value) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'age_range_low_value',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'ageRange',
                 attribute: 'age_range_low_value',
@@ -60,10 +60,10 @@ export const processAgeRangeFromCSVRow = async (
     if (!age_range_high_value) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'age_range_high_value',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'ageRange',
                 attribute: 'age_range_high_value',
@@ -74,10 +74,10 @@ export const processAgeRangeFromCSVRow = async (
     if (!age_range_unit) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.code,
             rowNumber,
             'age_range_unit',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            customErrors.missing_required_entity_attribute.message,
             {
                 entity: 'ageRange',
                 attribute: 'age_range_unit',
@@ -177,12 +177,12 @@ export const processAgeRangeFromCSVRow = async (
     if (!organization) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            customErrors.nonexistent_entity.message,
             {
-                name: organization_name,
+                entityName: organization_name,
                 entity: 'organization',
             }
         )
@@ -227,15 +227,15 @@ export const processAgeRangeFromCSVRow = async (
     if (ageRange) {
         addCsvError(
             rowErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.code,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.existent_child_entity.message,
             {
-                name: age_range_name,
+                entityName: age_range_name,
                 entity: 'ageRange',
-                parent_name: organization_name,
-                parent_entity: 'organization',
+                parentName: organization_name,
+                parentEntity: 'organization',
             }
         )
     }

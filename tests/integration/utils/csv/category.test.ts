@@ -20,6 +20,7 @@ import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { Status } from '../../../../src/entities/status'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 use(chaiAsPromised)
 
@@ -79,7 +80,10 @@ describe('processCategoryFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const orgRowError = rowErrors[0]
-            expect(orgRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(orgRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(orgRowError.message).to.equal(
                 'On row number 1, organization name is required.'
             )
@@ -115,7 +119,10 @@ describe('processCategoryFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const categoryRowError = rowErrors[0]
-            expect(categoryRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(categoryRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(categoryRowError.message).to.equal(
                 'On row number 1, category name is required.'
             )
@@ -151,9 +158,12 @@ describe('processCategoryFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const categoryRowError = rowErrors[0]
-            expect(categoryRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+
+            expect(categoryRowError.code).to.equal(
+                customErrors.nonexistent_entity.code
+            )
             expect(categoryRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn't exist.`
+                `On row number 1, organization ${row.organization_name} doesn't exist or you don't have permissions to view it.`
             )
 
             const category = await Category.findOne({
@@ -187,9 +197,12 @@ describe('processCategoryFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const categoryRowError = rowErrors[0]
-            expect(categoryRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+
+            expect(categoryRowError.code).to.equal(
+                customErrors.nonexistent_entity.code
+            )
             expect(categoryRowError.message).to.equal(
-                `On row number 1, "${row.subcategory_name}" subCategory doesn't exist.`
+                `On row number 1, subCategory ${row.subcategory_name} doesn't exist or you don't have permissions to view it.`
             )
 
             const category = await Category.findOne({
@@ -232,11 +245,12 @@ describe('processCategoryFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const categoryRowError = rowErrors[0]
+
                 expect(categoryRowError.code).to.equal(
-                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                    customErrors.existent_child_entity.code
                 )
                 expect(categoryRowError.message).to.equal(
-                    `On row number 1, "${subcategory.name}" subCategory already exists for "Category 1" category.`
+                    `On row number 1, subCategory ${subcategory.name} already exists for category Category 1.`
                 )
 
                 const category = await Category.findOne({

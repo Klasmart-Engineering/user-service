@@ -20,6 +20,7 @@ import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { Status } from '../../../../src/entities/status'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 describe('processSubjectFromCSVRow', () => {
     let connection: TestConnection
@@ -73,7 +74,10 @@ describe('processSubjectFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const subRowError = rowErrors[0]
-            expect(subRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(subRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(subRowError.message).to.equal(
                 'On row number 1, organization name is required.'
             )
@@ -105,7 +109,10 @@ describe('processSubjectFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const subRowError = rowErrors[0]
-            expect(subRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(subRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(subRowError.message).to.equal(
                 'On row number 1, subject name is required.'
             )
@@ -207,9 +214,12 @@ describe('processSubjectFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const subRowError = rowErrors[0]
-            expect(subRowError.code).to.equal('ERR_CSV_NONE_EXIST_CHILD_ENTITY')
+
+            expect(subRowError.code).to.equal(
+                customErrors.nonexistent_child.code
+            )
             expect(subRowError.message).to.equal(
-                `On row number 1, "${row.category_name}" category doesn't exist for "${row.organization_name}" organization.`
+                `On row number 1, category ${row.category_name} doesn't exist for organization ${row.organization_name}.`
             )
 
             const subject = await Subject.findOneBy({
@@ -254,11 +264,12 @@ describe('processSubjectFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const subRowError = rowErrors[0]
+
                 expect(subRowError.code).to.equal(
-                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                    customErrors.existent_child_entity.code
                 )
                 expect(subRowError.message).to.equal(
-                    `On row number 1, "${row.category_name}" category already exists for "${row.subject_name}" subject.`
+                    `On row number 1, category ${row.category_name} already exists for subject ${row.subject_name}.`
                 )
             })
         }

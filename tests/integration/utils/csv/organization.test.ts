@@ -23,6 +23,7 @@ import { Status } from '../../../../src/entities/status'
 import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 import { createOrganizationOwnership } from '../../../factories/organizationOwnership.factory'
 import { config } from '../../../../src/config/config'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 use(chaiAsPromised)
 
@@ -73,16 +74,17 @@ describe('processOrganizationFromCSVRow', () => {
 
             expect(errors).to.deep.equal([
                 {
-                    code: csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                    code: customErrors.nonexistent_entity.code,
                     column: 'organization_name',
                     entity: 'organization',
                     // TODO fix stringInject to not ignore falsey parameters
                     message:
-                        'On row number 1, "{name}" organization doesn\'t exist.',
-                    name: '',
+                        "On row number 1, organization {entityName} doesn't exist or you don't have permissions to view it.",
+                    entityName: '',
                     row: 1,
                 },
             ])
+
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -108,13 +110,11 @@ describe('processOrganizationFromCSVRow', () => {
             expect(errors).to.deep.equal([
                 {
                     attribute: 'email',
-                    code: csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
+                    code: customErrors.missing_required_either.code,
                     column: 'owner_email',
                     entity: 'user',
-                    message:
-                        'On row number 1, user email or user phone is required.',
-                    other_attribute: 'phone',
-                    other_entity: 'user',
+                    message: 'On row number 1, user email/phone is required.',
+                    otherAttribute: 'phone',
                     row: 1,
                 },
             ])
@@ -184,11 +184,11 @@ describe('processOrganizationFromCSVRow', () => {
 
             expect(errors).to.deep.equal([
                 {
-                    code: csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                    code: customErrors.existent_entity.code,
                     column: 'organization_name',
                     entity: 'organization',
-                    message: `On row number 1, "${existentOrganization.organization_name}" organization already exists.`,
-                    name: existentOrganization?.organization_name,
+                    message: `On row number 1, organization ${existentOrganization.organization_name} already exists.`,
+                    entityName: existentOrganization?.organization_name,
                     row: 1,
                 },
             ])

@@ -18,6 +18,7 @@ import { CSVError } from '../../../../src/types/csv/csvError'
 import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 use(chaiAsPromised)
 
@@ -78,7 +79,10 @@ describe('processSubCategoriesFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const subRowError = rowErrors[0]
-        expect(subRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+        expect(subRowError.code).to.equal(
+            customErrors.missing_required_entity_attribute.code
+        )
         expect(subRowError.message).to.equal(
             'On row number 1, organization name is required.'
         )
@@ -99,7 +103,10 @@ describe('processSubCategoriesFromCSVRow', () => {
         expect(rowErrors).to.have.length(1)
 
         const subRowError = rowErrors[0]
-        expect(subRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+        expect(subRowError.code).to.equal(
+            customErrors.missing_required_entity_attribute.code
+        )
         expect(subRowError.message).to.equal(
             'On row number 1, subCategory name is required.'
         )

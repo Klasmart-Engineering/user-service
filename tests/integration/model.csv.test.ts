@@ -363,15 +363,15 @@ describe('model.csv', () => {
                 await connection.manager.save(org)
 
                 const expectedCSVError = buildCsvError(
-                    csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                    customErrors.existent_child_entity.code,
                     1,
                     'owner_email',
-                    csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                    customErrors.existent_child_entity.message,
                     {
-                        name: 'Owner',
+                        entityName: 'Owner',
                         entity: 'user',
-                        parent_entity: 'organization',
-                        parent_name: 'Company 2', // Should read company 1, requires fix
+                        parentEntity: 'organization',
+                        parentName: 'Company 2', // Should read company 1, requires fix
                     }
                 )
 
@@ -1026,20 +1026,22 @@ describe('model.csv', () => {
                 it('should throw an error with correct code', async () => {
                     const expectedCSVErrors = [
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+                            customErrors.missing_required_entity_attribute.code,
                             1,
                             'organization_name',
-                            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+                            customErrors.missing_required_entity_attribute
+                                .message,
                             {
                                 entity: 'organization',
                                 attribute: 'name',
                             }
                         ),
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+                            customErrors.missing_required_entity_attribute.code,
                             1,
                             'class_name',
-                            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+                            customErrors.missing_required_entity_attribute
+                                .message,
                             {
                                 entity: 'class',
                                 attribute: 'name',
@@ -1076,13 +1078,13 @@ describe('model.csv', () => {
 
                     const expectedCSVErrors = [
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                            customErrors.nonexistent_entity.code,
                             1,
                             'organization_name',
-                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                            customErrors.nonexistent_entity.message,
                             {
                                 entity: 'organization',
-                                name: 'my-org',
+                                entityName: 'my-org',
                             }
                         ),
                     ]
@@ -1110,15 +1112,15 @@ describe('model.csv', () => {
 
                     const expectedCSVErrors = [
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.code,
                             1,
                             'school_name',
-                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.message,
                             {
                                 entity: 'school',
-                                name: 'test-school',
-                                parent_name: 'my-org',
-                                parent_entity: 'organization',
+                                entityName: 'test-school',
+                                parentName: 'my-org',
+                                parentEntity: 'organization',
                             }
                         ),
                     ]
@@ -1151,15 +1153,15 @@ describe('model.csv', () => {
 
                     const expectedCSVErrors = [
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.code,
                             1,
                             'program_name',
-                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.message,
                             {
                                 entity: 'program',
-                                name: 'outdoor activities',
-                                parent_name: 'my-org',
-                                parent_entity: 'organization',
+                                entityName: 'outdoor activities',
+                                parentName: 'my-org',
+                                parentEntity: 'organization',
                             }
                         ),
                     ]
@@ -1196,15 +1198,15 @@ describe('model.csv', () => {
 
                     const expectedCSVErrors = [
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.code,
                             1,
                             'grade_name',
-                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.message,
                             {
                                 entity: 'grade',
-                                name: 'first grade',
-                                parent_name: 'my-org',
-                                parent_entity: 'organization',
+                                entityName: 'first grade',
+                                parentName: 'my-org',
+                                parentEntity: 'organization',
                             }
                         ),
                     ]
@@ -1245,15 +1247,15 @@ describe('model.csv', () => {
 
                     const expectedCSVErrors = [
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.code,
                             1,
                             'subject_name',
-                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.message,
                             {
                                 entity: 'subject',
-                                name: 'pilates',
-                                parent_name: 'my-org',
-                                parent_entity: 'organization',
+                                entityName: 'pilates',
+                                parentName: 'my-org',
+                                parentEntity: 'organization',
                             }
                         ),
                     ]
@@ -1298,15 +1300,15 @@ describe('model.csv', () => {
 
                     const expectedCSVErrors = [
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.code,
                             1,
                             'age_range_low_value, age_range_high_value, age_range_unit',
-                            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                            customErrors.nonexistent_child.message,
                             {
                                 entity: 'ageRange',
-                                name: '5 - 7 year(s)',
-                                parent_name: 'my-org',
-                                parent_entity: 'organization',
+                                entityName: '5 - 7 year(s)',
+                                parentName: 'my-org',
+                                parentEntity: 'organization',
                             }
                         ),
                     ]
@@ -1347,10 +1349,10 @@ describe('model.csv', () => {
                             }
                         ),
                         buildCsvError(
-                            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
+                            customErrors.invalid_max_length.code,
                             2,
                             'class_name',
-                            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+                            customErrors.invalid_max_length.message,
                             {
                                 entity: 'class',
                                 attribute: 'name',
@@ -1396,13 +1398,13 @@ describe('model.csv', () => {
 
                         const expectedCSVErrors = [
                             buildCsvError(
-                                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                                customErrors.existent_entity.code,
                                 1,
                                 'class_name',
-                                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+                                customErrors.existent_entity.message,
                                 {
                                     entity: 'class',
-                                    name: 'class1',
+                                    entityName: 'class1',
                                 }
                             ),
                         ]
@@ -1431,15 +1433,15 @@ describe('model.csv', () => {
 
                         const expectedCSVErrors = [
                             buildCsvError(
-                                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                                customErrors.existent_child_entity.code,
                                 1,
                                 'class_shortcode',
-                                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                                customErrors.existent_child_entity.message,
                                 {
-                                    name: 'CSCODE',
+                                    entityName: 'CSCODE',
                                     entity: 'shortcode',
-                                    parent_name: 'class1-differentname',
-                                    parent_entity: 'class',
+                                    parentName: 'class1-differentname',
+                                    parentEntity: 'class',
                                 }
                             ),
                         ]

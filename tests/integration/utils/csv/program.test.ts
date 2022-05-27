@@ -25,6 +25,7 @@ import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { Status } from '../../../../src/entities/status'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 use(chaiAsPromised)
 
@@ -124,7 +125,10 @@ describe('processProgramFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
-            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(programRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(programRowError.message).to.equal(
                 'On row number 1, organization name is required.'
             )
@@ -156,7 +160,10 @@ describe('processProgramFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
-            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(programRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(programRowError.message).to.equal(
                 'On row number 1, program name is required.'
             )
@@ -362,9 +369,12 @@ describe('processProgramFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
-            expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+
+            expect(programRowError.code).to.equal(
+                customErrors.nonexistent_entity.code
+            )
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn't exist.`
+                `On row number 1, organization ${row.organization_name} doesn't exist or you don't have permissions to view it.`
             )
 
             const program = await Program.findOneBy({
@@ -394,11 +404,12 @@ describe('processProgramFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
+
             expect(programRowError.code).to.equal(
-                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+                customErrors.nonexistent_child.code
             )
             expect(programRowError.message).to.equal(
-                `On row number 1, "6 - 7 month(s)" ageRange doesn't exist for "${rowModel.organization_name}" organization.`
+                `On row number 1, ageRange ${row.age_range_low_value} - ${row.age_range_high_value} ${row.age_range_unit}(s) doesn't exist for organization ${rowModel.organization_name}.`
             )
 
             const program = await Program.findOneBy({
@@ -428,11 +439,12 @@ describe('processProgramFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
+
             expect(programRowError.code).to.equal(
-                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+                customErrors.nonexistent_child.code
             )
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.grade_name}" grade doesn't exist for "${rowModel.organization_name}" organization.`
+                `On row number 1, grade ${row.grade_name} doesn't exist for organization ${rowModel.organization_name}.`
             )
 
             const program = await Program.findOneBy({
@@ -462,11 +474,12 @@ describe('processProgramFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const programRowError = rowErrors[0]
+
             expect(programRowError.code).to.equal(
-                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+                customErrors.nonexistent_child.code
             )
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.subject_name}" subject doesn't exist for "${rowModel.organization_name}" organization.`
+                `On row number 1, subject ${row.subject_name} doesn't exist for organization ${rowModel.organization_name}.`
             )
 
             const program = await Program.findOneBy({
@@ -505,11 +518,12 @@ describe('processProgramFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const programRowError = rowErrors[0]
+
                 expect(programRowError.code).to.equal(
-                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                    customErrors.existent_child_entity.code
                 )
                 expect(programRowError.message).to.equal(
-                    `On row number 1, "6 - 7 year(s)" ageRange already exists for "${rowModel.program_name}" program.`
+                    `On row number 1, ageRange ${row.age_range_low_value} - ${row.age_range_high_value} ${row.age_range_unit}(s) already exists for program ${row.program_name}.`
                 )
 
                 const program = await Program.findOneBy({
@@ -551,11 +565,12 @@ describe('processProgramFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const programRowError = rowErrors[0]
+
                 expect(programRowError.code).to.equal(
-                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                    customErrors.existent_child_entity.code
                 )
                 expect(programRowError.message).to.equal(
-                    `On row number 1, "${rowModel.grade_name}" grade already exists for "${rowModel.program_name}" program.`
+                    `On row number 1, grade ${row.grade_name} already exists for program ${row.program_name}.`
                 )
 
                 const program = await Program.findOneBy({
@@ -597,11 +612,12 @@ describe('processProgramFromCSVRow', () => {
                 expect(rowErrors).to.have.length(1)
 
                 const programRowError = rowErrors[0]
+
                 expect(programRowError.code).to.equal(
-                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                    customErrors.existent_child_entity.code
                 )
                 expect(programRowError.message).to.equal(
-                    `On row number 1, "${rowModel.subject_name}" subject already exists for "${rowModel.program_name}" program.`
+                    `On row number 1, subject ${row.subject_name} already exists for program ${row.program_name}.`
                 )
 
                 const program = await Program.findOneBy({

@@ -20,6 +20,7 @@ import { User } from '../../../../src/entities/user'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { Status } from '../../../../src/entities/status'
+import { customErrors } from '../../../../src/types/errors/customError'
 
 use(chaiAsPromised)
 
@@ -69,7 +70,10 @@ describe('processGradeFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const gradeRowError = rowErrors[0]
-            expect(gradeRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(gradeRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(gradeRowError.message).to.equal(
                 'On row number 1, organization name is required.'
             )
@@ -100,7 +104,10 @@ describe('processGradeFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const gradeRowError = rowErrors[0]
-            expect(gradeRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+
+            expect(gradeRowError.code).to.equal(
+                customErrors.missing_required_entity_attribute.code
+            )
             expect(gradeRowError.message).to.equal(
                 'On row number 1, grade name is required.'
             )
@@ -131,9 +138,12 @@ describe('processGradeFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const gradeRowError = rowErrors[0]
-            expect(gradeRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+
+            expect(gradeRowError.code).to.equal(
+                customErrors.nonexistent_entity.code
+            )
             expect(gradeRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn't exist.`
+                `On row number 1, organization ${row.organization_name} doesn't exist or you don't have permissions to view it.`
             )
 
             const grade = await Grade.findOneBy({
@@ -177,11 +187,12 @@ describe('processGradeFromCSVRow', () => {
             expect(rowErrors).to.have.length(1)
 
             const gradeRowError = rowErrors[0]
+
             expect(gradeRowError.code).to.equal(
-                'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                customErrors.existent_child_entity.code
             )
             expect(gradeRowError.message).to.equal(
-                `On row number 1, "${row.grade_name}" grade already exists for "${row.organization_name}" organization.`
+                `On row number 1, grade ${row.grade_name} already exists for organization ${row.organization_name}.`
             )
 
             const grade = await Grade.findOneBy({
