@@ -1,9 +1,11 @@
 import { normalizePhoneNumber } from './phoneNumberCleaning'
 import { isEmail, isPhone } from './validations'
 
-export const uniqueAndTruthy = <T>(array: Array<T> | undefined): T[] => {
+export const uniqueAndTruthy = <T>(
+    array: Array<T | undefined> | undefined
+): T[] => {
     if (!array) return []
-    return [...new Set(array.filter((a) => a))]
+    return [...new Set(array.filter((a): a is T => !!a))]
 }
 
 export const normalizedLowercaseTrimmed = (x?: string) =>

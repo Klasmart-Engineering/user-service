@@ -8,6 +8,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    RelationId,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -30,9 +31,12 @@ export class Category extends CustomBaseEntity {
     @Column({ nullable: false, default: false })
     public system!: boolean
 
-    @ManyToOne(() => Organization, (organization) => organization.ageRanges)
+    @ManyToOne(() => Organization)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @RelationId((cat: Category) => cat.organization)
+    public readonly organizationId?: string
 
     @ManyToMany(() => Subcategory, (subcategory) => subcategory.categories)
     @JoinTable()

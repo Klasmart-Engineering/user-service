@@ -16,7 +16,6 @@ import {
     RemoveSubcategoriesFromCategoryInput,
 } from '../types/graphQL/category'
 import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
-import { categoryConnectionNodeFields } from '../pagination/categoriesConnection'
 import {
     AddMutation,
     CreateMutation,
@@ -40,9 +39,7 @@ import {
     flagNonExistentChild,
     validateSubItemsInOrg,
 } from '../utils/resolvers/inputValidation'
-
-export type CategoryAndOrg = Category & { __organization__?: Organization }
-
+import { uniqueAndTruthy } from '../utils/clean'
 export interface CreateCategoriesEntityMap extends EntityMap<Category> {
     organizations: Map<string, Organization>
     subcategories: Map<string, Subcategory>
@@ -112,8 +109,7 @@ export class CreateCategories extends CreateMutation<
 
         const conflictingNames = new ObjMap<ConflictingNameKey, Category>()
         for (const c of await matchingPreloadedCategoryArray) {
-            // eslint-disable-next-line no-await-in-loop
-            const organizationId = (await c.organization)!.organization_id
+            const organizationId = c.organizationId
             const name = c.name
             conflictingNames.set({ organizationId, name }, c)
         }
@@ -181,7 +177,6 @@ export class CreateCategories extends CreateMutation<
             organizationId,
             name,
         })?.id
-
         if (conflictingNameCategoryId) {
             errors.push(
                 createExistentEntityAttributeAPIError(
@@ -194,26 +189,23 @@ export class CreateCategories extends CreateMutation<
             )
         }
 
-        if (subcategoryIds) {
-            const subcategories = flagNonExistent(
-                Subcategory,
-                index,
-                subcategoryIds,
-                subcategoryMap
-            )
+        if (!subcategoryIds) return errors
+        const subcategories = flagNonExistent(
+            Subcategory,
+            index,
+            subcategoryIds,
+            subcategoryMap
+        )
+        errors.push(...subcategories.errors)
 
-            errors.push(...subcategories.errors)
-
-            const invalidSubcategoriesInOrg = validateSubItemsInOrg(
-                Subcategory,
-                subcategories.values.map((s) => s.id),
-                index,
-                maps.subcategories,
-                organizationId
-            )
-
-            errors.push(...invalidSubcategoriesInOrg)
-        }
+        const invalidSubcategoriesInOrg = validateSubItemsInOrg(
+            Subcategory,
+            subcategories.values.map((s) => s.id),
+            index,
+            maps.subcategories,
+            organizationId
+        )
+        errors.push(...invalidSubcategoriesInOrg)
 
         return errors
     }
@@ -298,18 +290,10 @@ export class UpdateCategories extends UpdateMutation<
         })
 
         const preloadedOrgIds = preloadedCategories
-            .then((categories) =>
-                Promise.all(
-                    Array.from(categories.values(), (c) =>
-                        c.organization?.then((org) => org?.organization_id)
-                    )
-                )
+            .then((categoryMap) =>
+                Array.from(categoryMap.values(), (c) => c.organizationId)
             )
-            .then((orgIds) => [
-                ...new Set(
-                    orgIds.filter((id): id is string => id !== undefined)
-                ),
-            ])
+            .then(uniqueAndTruthy)
 
         const conflictingNames = new ObjMap<ConflictingNameKey, Category>()
         for (const p of await preloadedMatchingNames) {
@@ -358,15 +342,11 @@ export class UpdateCategories extends UpdateMutation<
 
         const values = []
         for (const { id, name } of inputs) {
-            const category = maps.mainEntity.get(id) as CategoryAndOrg
+            const category = maps.mainEntity.get(id)
             let organizationId = undefined
-
-            if (category) {
-                /* when category has not organization, which is something common for system categories,
-                the organizationId is setted as '' to have a way to identify the system ones */
-                organizationId =
-                    category.__organization__?.organization_id || ''
-            }
+            // when category has not organization, which is something common for system categories,
+            // the organizationId is setted as '' to have a way to identify the system ones
+            if (category) organizationId = category.organizationId || ''
 
             values.push({ entityId: organizationId, attributeValue: name })
         }
@@ -393,7 +373,7 @@ export class UpdateCategories extends UpdateMutation<
 
     validate(
         index: number,
-        category: Category,
+        _category: Category,
         currentInput: UpdateCategoryInput,
         maps: UpdateCategoriesEntityMap
     ): APIError[] {
@@ -408,10 +388,8 @@ export class UpdateCategories extends UpdateMutation<
         )
         errors.push(...categoryExists.errors)
 
-        if (!categoryExists.values.length) return errors
-
-        const organizationId = (category as CategoryAndOrg).__organization__
-            ?.organization_id
+        if (categoryExists.values.length !== 1) return errors
+        const organizationId = categoryExists.values[0].organizationId
 
         if (name) {
             const conflictingNameCategoryId = maps.conflictingNames.get({
@@ -504,15 +482,8 @@ export class DeleteCategories extends DeleteMutation<
     }
 
     protected async generateEntityMaps(): Promise<DeleteEntityMap<Category>> {
-        const categories = await Category.createQueryBuilder()
-            .select([
-                ...categoryConnectionNodeFields,
-                'Organization.organization_id',
-            ])
-            .leftJoin('Category.organization', 'Organization')
-            .where('Category.id IN (:...ids)', { ids: this.mainEntityIds })
-            .getMany()
-        return { mainEntity: new Map(categories.map((c) => [c.id, c])) }
+        const map = await getMap.category(this.mainEntityIds, ['organization'])
+        return { mainEntity: map }
     }
 
     protected async authorize(
@@ -520,8 +491,7 @@ export class DeleteCategories extends DeleteMutation<
         entityMaps: DeleteEntityMap<Category>
     ) {
         const organizationIds: string[] = []
-        for (const c of entityMaps.mainEntity.values()) {
-            const organizationId = (await c.organization)?.organization_id
+        for (const { organizationId } of entityMaps.mainEntity.values()) {
             if (organizationId) organizationIds.push(organizationId)
         }
         await this.permissions.rejectIfNotAllowed(
@@ -598,7 +568,7 @@ export class AddSubcategoriesToCategories extends AddMutation<
 
     validate = (
         index: number,
-        currentCategory: Category,
+        _currentCategory: Category,
         currentInput: AddSubcategoriesToCategoryInput,
         maps: AddSubcategoriesToCategoriesEntityMap
     ): APIError[] => {
@@ -619,16 +589,15 @@ export class AddSubcategoriesToCategories extends AddMutation<
             subcategoryIds,
             maps.subcategories
         )
-
         errors.push(...subcategories.errors)
 
+        if (categories.values.length !== 1) return errors
         const invalidSubcategoriesInOrg = validateSubItemsInOrg(
             Subcategory,
             subcategories.values.map((s) => s.id),
             index,
             maps.subcategories,
-            (currentCategory as CategoryAndOrg)?.__organization__
-                ?.organization_id
+            categories.values[0].organizationId
         )
 
         errors.push(...invalidSubcategoriesInOrg)
@@ -771,28 +740,23 @@ export class RemoveSubcategoriesFromCategories extends RemoveMutation<
         )
         errors.push(...subcategories.errors)
 
-        if (currentCategory) {
-            const currentCategorySubcategories = new Map(
-                maps.categoriesSubcategories
-                    .get(categoryId)
-                    ?.map((c) => [c.id, c])
-            )
-
-            const subcategoryInCategoryErrors = flagNonExistentChild(
-                Category,
-                Subcategory,
-                index,
-                categoryId,
-                subcategories.values.map((s) => s.id),
-                new Set(
-                    Array.from(currentCategorySubcategories.values()).map(
-                        (subcategory) => subcategory.id
-                    )
+        if (categories.values.length !== 1) return errors
+        const currentCategorySubcategories = new Map(
+            maps.categoriesSubcategories.get(categoryId)?.map((c) => [c.id, c])
+        )
+        const subcategoryInCategoryErrors = flagNonExistentChild(
+            Category,
+            Subcategory,
+            index,
+            categoryId,
+            subcategories.values.map((s) => s.id),
+            new Set(
+                Array.from(currentCategorySubcategories.values()).map(
+                    (subcategory) => subcategory.id
                 )
             )
-
-            errors.push(...subcategoryInCategoryErrors)
-        }
+        )
+        errors.push(...subcategoryInCategoryErrors)
 
         return errors
     }
@@ -838,16 +802,8 @@ async function generateAddRemoveSubcategoriesMaps(
     ])
 
     const preloadedOrgIds = categoryMap
-        .then((categories) =>
-            Promise.all(
-                Array.from(categories.values(), (c) =>
-                    c.organization?.then((org) => org?.organization_id)
-                )
-            )
-        )
-        .then((orgIds) => [
-            ...new Set(orgIds.filter((id): id is string => id !== undefined)),
-        ])
+        .then((map) => Array.from(map.values(), (c) => c.organizationId))
+        .then(uniqueAndTruthy)
 
     const subcategoryIds = input.flatMap((i) => i.subcategoryIds)
     const subcategoryMap = getMap.subcategory(subcategoryIds, ['organization'])
