@@ -18,6 +18,7 @@ import {
     RemoveSubjectsFromClassInput,
     RemoveAgeRangesFromClassInput,
     AddSubjectsToClassInput,
+    AddGradesToClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { Class } from '../entities/class'
@@ -52,7 +53,7 @@ import {
     validateShortCode,
     newValidateShortCode,
 } from '../utils/shortcode'
-import clean from '../utils/clean'
+import clean, { uniqueAndTruthy } from '../utils/clean'
 import { ObjMap } from '../utils/stringUtils'
 import {
     getMap,
@@ -63,6 +64,7 @@ import {
     flagNonExistent,
     flagNonExistentChild,
     flagNonExistentOrganizationMembership,
+    validateSubItemsInOrg,
 } from '../utils/resolvers/inputValidation'
 import logger from '../logging'
 import { User } from '../entities/user'
@@ -72,6 +74,7 @@ import { School } from '../entities/school'
 import { customErrors } from '../types/errors/customError'
 import { AgeRange } from '../entities/ageRange'
 import { Subject } from '../entities/subject'
+import { Grade } from '../entities/grade'
 
 export class DeleteClasses extends DeleteMutation<
     Class,
@@ -177,12 +180,12 @@ export class AddProgramsToClasses extends AddMutation<
         )
     }
 
-    protected validate = (
+    protected validate(
         index: number,
         _currentClass: Class,
         currentInput: AddProgramsToClassInput,
         maps: EntityMapAddRemovePrograms
-    ): APIError[] => {
+    ): APIError[] {
         const errors: APIError[] = []
         const { classId, programIds } = currentInput
         const programMap = maps.programs
@@ -2861,6 +2864,169 @@ export class AddSubjectsToClasses extends AddMutation<
         currentEntity.subjects = Promise.resolve([
             ...preExistentSubjects,
             ...subjectsToAdd,
+        ])
+        return { outputEntity: currentEntity }
+    }
+
+    protected buildOutput = async (currentEntity: Class): Promise<void> => {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
+    }
+}
+
+export interface AddGradesClassesEntityMap extends EntityMap<Class> {
+    mainEntity: Map<string, Class>
+    grades: Map<string, Grade>
+    classesGrades: Map<string, Grade[]>
+    organizationIds: string[]
+}
+
+export class AddGradesToClasses extends AddMutation<
+    Class,
+    AddGradesToClassInput,
+    ClassesMutationResult,
+    AddGradesClassesEntityMap
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'AddGradesToClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: AddGradesToClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    generateEntityMaps = async (
+        input: AddGradesToClassInput[]
+    ): Promise<AddGradesClassesEntityMap> => {
+        const gradeIds = input.flatMap((i) => i.gradeIds)
+        const gradesMap = getMap.grade(gradeIds, ['organization'])
+        const classIds = input.map((i) => i.classId)
+        const classesGrades = new Map<string, Grade[]>()
+        const classMap = await getMap.class(classIds, [
+            'organization',
+            'grades',
+        ])
+        const organizationIds = uniqueAndTruthy(
+            Array.from(classMap.values(), (c) => c.organization_id)
+        )
+
+        for (const class_ of (await classMap).values()) {
+            // eslint-disable-next-line no-await-in-loop
+            const grades = (await class_.grades) || []
+            classesGrades.set(class_.class_id, grades)
+        }
+
+        return {
+            mainEntity: await classMap,
+            grades: await gradesMap,
+            classesGrades,
+            organizationIds,
+        }
+    }
+
+    async authorize(
+        input: AddGradesToClassInput[],
+        maps: AddGradesClassesEntityMap
+    ): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: maps.organizationIds },
+            PermissionName.edit_class_20334
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: AddGradesToClassInput[]
+    ): {
+        validInputs: { index: number; input: AddGradesToClassInput }[]
+        apiErrors: APIError[]
+    } {
+        const classIdErrorMap = validateNoDuplicate(
+            inputs.map((cls) => cls.classId),
+            this.inputTypeName,
+            ['classId']
+        )
+
+        const gradeIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'gradeIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            classIdErrorMap,
+            ...gradeIdsErrorMap,
+        ])
+    }
+
+    validate(
+        index: number,
+        currentEntity: Class,
+        currentInput: AddGradesToClassInput,
+        maps: AddGradesClassesEntityMap
+    ): APIError[] {
+        const errors: APIError[] = []
+        const { classId, gradeIds } = currentInput
+
+        const classes = flagNonExistent(
+            Class,
+            index,
+            [classId],
+            maps.mainEntity
+        )
+        errors.push(...classes.errors)
+
+        const currentClassGrades = new Set(
+            maps.classesGrades.get(classId)?.map((s) => s.id)
+        )
+
+        const grades = flagNonExistent(Grade, index, gradeIds, maps.grades)
+        errors.push(...grades.errors)
+
+        // Checking that these grades also exists for the same organization or are system
+        errors.push(
+            ...validateSubItemsInOrg(
+                Grade,
+                grades.values.map((g) => g.id),
+                index,
+                maps.grades,
+                currentEntity?.organization_id
+            )
+        )
+
+        const alreadyAddedErrors = flagExistentChild(
+            Class,
+            Grade,
+            index,
+            classId,
+            gradeIds,
+            currentClassGrades
+        )
+
+        errors.push(...alreadyAddedErrors)
+
+        return errors
+    }
+
+    process(
+        currentInput: AddGradesToClassInput,
+        maps: AddGradesClassesEntityMap,
+        index: number
+    ) {
+        const { classId, gradeIds } = currentInput
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+        const gradesToAdd: Grade[] = []
+        for (const gradeId of gradeIds) {
+            const gradeToAdd = maps.grades.get(gradeId)!
+            gradesToAdd.push(gradeToAdd)
+        }
+        const preExistentGrades = maps.classesGrades.get(classId)!
+        currentEntity.grades = Promise.resolve([
+            ...preExistentGrades,
+            ...gradesToAdd,
         ])
         return { outputEntity: currentEntity }
     }
