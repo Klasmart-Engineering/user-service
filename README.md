@@ -211,7 +211,7 @@ Remember include `Authorization` with JWT token in request's header.
 The user-service uses [TypeORM migrations](https://github.com/typeorm/typeorm/blob/master/docs/migrations.md) for managing database schema changes. If you need to change the database schema or modify existing data, you can create a new migration:
 
 - Make the required schema changes
-- Use the TypeORM CLI to create a migration file: `npm run typeorm migration:create -- -n <MigrationName> -d migrations`
+- Use the TypeORM CLI to create a migration file: `npm run typeorm migration:create -- ./migrations/ <MigrationName>`
 - Implement the migration logic in the `up` method of the migration file and the rollback logic in the `down` method
 - Start the application and verify that the migration has run as expected
 
