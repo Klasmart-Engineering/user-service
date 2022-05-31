@@ -16,10 +16,19 @@ import { ObjMap } from '../stringUtils'
 import { Subject } from '../../entities/subject'
 import { Grade } from '../../entities/grade'
 import { AcademicTerm } from '../../entities/academicTerm'
+import { AgeRangeUnit } from '../../entities/ageRangeUnit'
 
 export type ConflictingNameKey = {
     organizationId?: string
     name: string
+}
+
+export type ConflictingAgeRangeKey = {
+    organizationId?: string
+    low_value: string
+    high_value: string
+    low_value_unit: AgeRangeUnit
+    high_value_unit: AgeRangeUnit
 }
 
 /**

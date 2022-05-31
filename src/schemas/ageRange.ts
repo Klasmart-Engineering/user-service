@@ -32,6 +32,7 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         createAgeRanges(input: [CreateAgeRangeInput!]!): AgeRangesMutationResult
         deleteAgeRanges(input: [DeleteAgeRangeInput!]!): AgeRangesMutationResult
+        updateAgeRanges(input: [UpdateAgeRangeInput!]!): AgeRangesMutationResult
     }
 
     type AgeRangeConnectionNode {
@@ -128,6 +129,15 @@ const typeDefs = gql`
         id: ID!
     }
 
+    input UpdateAgeRangeInput {
+        id: ID!
+        name: String!
+        low_value: Int!
+        high_value: Int!
+        low_value_unit: AgeRangeUnit!
+        high_value_unit: AgeRangeUnit!
+    }
+
     type AgeRangesMutationResult {
         ageRanges: [AgeRangeConnectionNode!]!
     }
@@ -149,6 +159,8 @@ export default function getDefault(
                     mutate(DeleteAgeRanges, args, ctx.permissions),
                 createAgeRanges: (_parent, args, ctx) =>
                     mutate(CreateAgeRanges, args, ctx.permissions),
+                updateAgeRanges: (_parent, args, ctx) =>
+                    mutate(UpdateAgeRanges, args, ctx.permissions),
             },
             Query: {
                 age_range: (_parent, args, ctx, _info) =>
