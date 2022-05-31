@@ -3,7 +3,7 @@ import supertest from 'supertest'
 import { getConnection } from 'typeorm'
 import { expect, use } from 'chai'
 import { TestConnection } from '../utils/testConnection'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { getAPIKeyAuth } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import { User } from '../../src/entities/user'
 import { createUser } from '../factories/user.factory'
@@ -125,7 +125,7 @@ describe('acceptance.complexity', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: TOO_DEEP_QUERY,
@@ -145,7 +145,7 @@ describe('acceptance.complexity', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: DEEPEST_ALLOWED_QUERY,
@@ -163,7 +163,7 @@ describe('acceptance.complexity', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: COMPLEXITY_CHILD_CONNECTIONS_QUERY,

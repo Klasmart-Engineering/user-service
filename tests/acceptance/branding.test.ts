@@ -7,7 +7,7 @@ import { expect, use } from 'chai'
 import { before } from 'mocha'
 
 import { TestConnection } from '../utils/testConnection'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import { BrandingImageTag } from '../../src/types/graphQL/branding'
 import { User } from '../../src/entities/user'
@@ -144,7 +144,7 @@ describe('acceptance.branding', () => {
             orgId,
             primaryColor,
             imagePath,
-            getAdminAuthToken()
+            getAPIKeyAuth()
         )
 
         expect(setBrandingResponse.status).to.eq(200)
@@ -154,7 +154,7 @@ describe('acceptance.branding', () => {
         expect(setBrandingData.iconImageURL).to.exist
 
         // get organization
-        const getOrgResponse = await getOrg(orgId, getAdminAuthToken())
+        const getOrgResponse = await getOrg(orgId, getAPIKeyAuth())
 
         expect(getOrgResponse.status).to.eq(200)
         expect(getOrgResponse.body.errors).to.not.exist

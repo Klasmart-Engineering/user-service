@@ -3,7 +3,7 @@ import supertest from 'supertest'
 import chai, { expect, use } from 'chai'
 import { before } from 'mocha'
 import { TestConnection } from '../utils/testConnection'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addStudentsToClass,
@@ -145,24 +145,25 @@ describe('acceptance.user', () => {
             await addStudentsToClass(
                 class_.class_id,
                 students.map((u) => u.user_id),
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
     })
 
     it('queries current user information successfully', async () => {
+        const user = await createUser().save()
         const response = await request
             .post('/user')
             .set({
                 ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
+                Authorization: generateToken(userToPayload(user)),
             })
             .send({
                 query: ME,
             })
 
         expect(response.status).to.eq(200)
-        expect(response.body.data.me.email).to.equal('joe@gmail.com')
+        expect(response.body.data.me.email).to.equal(user.email)
     })
 
     context('school membership dataloaders', () => {
@@ -229,7 +230,7 @@ describe('acceptance.user', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: getAPIKeyAuth(),
                     })
                     .send({
                         query: USERS_CONNECTION,
@@ -262,7 +263,7 @@ describe('acceptance.user', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: USERS_CONNECTION,
@@ -274,7 +275,8 @@ describe('acceptance.user', () => {
             const usersConnection = response.body.data.usersConnection
 
             expect(response.status).to.eq(200)
-            expect(usersConnection.totalCount).to.equal(usersCount + 1)
+            //Why 2 => loadFixtures users
+            expect(usersConnection.totalCount).to.equal(usersCount + 2)
         })
 
         it('supports filtering on expected fields', async () => {
@@ -321,7 +323,7 @@ describe('acceptance.user', () => {
                         gradeId: uuidFilter,
                     },
                 },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
             expect(response.statusCode).to.eq(200)
             expect(response.body.errors).to.be.undefined
@@ -333,7 +335,7 @@ describe('acceptance.user', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: USERS_CONNECTION,
@@ -618,7 +620,7 @@ describe('acceptance.user', () => {
             expect(response.body.data.my_users.length).to.equal(1)
         })
         it('Finds no users if my membership is inactive', async () => {
-            await leaveTheOrganization(userIds[0], orgId, getAdminAuthToken())
+            await leaveTheOrganization(userIds[0], orgId, getAPIKeyAuth())
             const token = generateToken({
                 id: userIds[0],
                 email: userEmails[0],
@@ -665,7 +667,7 @@ describe('acceptance.user', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: getAPIKeyAuth(),
                     })
                     .send({
                         query: ADD_ORG_ROLES_TO_USERS,
@@ -821,7 +823,7 @@ describe('acceptance.user', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: getAPIKeyAuth(),
                     })
                     .send({
                         query: REMOVE_ORG_ROLES_FROM_USERS,
@@ -1010,7 +1012,7 @@ describe('acceptance.user', () => {
                         username: stringFilter,
                     },
                 },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
             expect(response.statusCode).to.eq(200)
             expect(response.body.errors).to.be.undefined
@@ -1028,7 +1030,7 @@ describe('acceptance.user', () => {
                             count: 50,
                         },
                     },
-                    getAdminAuthToken()
+                    getAPIKeyAuth()
                 )
                 expect(
                     response.body.data.eligibleStudentsConnection.edges.length

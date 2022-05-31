@@ -5,7 +5,7 @@ import { Role } from '../../src/entities/role'
 import { createOrganization } from '../factories/organization.factory'
 import { loadFixtures } from '../utils/fixtures'
 import { ROLE_NODE, ROLES_CONNECTION } from '../utils/operations/modelOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { createRole } from '../factories/role.factory'
 import {
@@ -45,13 +45,14 @@ describe('acceptance.role', () => {
     const url = 'http://localhost:8080/user'
     const request = supertest(url)
     const rolesCount = 12
+    let allRolesCount = 0
 
     async function makeConnectionQuery(pageSize: number) {
         return request
             .post('/user')
             .set({
                 ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
+                Authorization: getAPIKeyAuth(),
             })
             .send({
                 query: print(ROLES_CONNECTION),
@@ -69,7 +70,7 @@ describe('acceptance.role', () => {
             .post('/user')
             .set({
                 ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
+                Authorization: getAPIKeyAuth(),
             })
             .send({
                 query: print(ROLE_NODE),
@@ -130,6 +131,9 @@ describe('acceptance.role', () => {
         systemRolesCount = await connection.manager.count(Role, {
             where: { system_role: true },
         })
+
+        //Why 3? => roleForCreateRoles, roleForUpdateRoles, roleForDeleteRoles
+        allRolesCount = systemRolesCount + orgRoles.length + 3
     })
 
     context('rolesConnection', () => {
@@ -141,7 +145,7 @@ describe('acceptance.role', () => {
             const rolesConnection = response.body.data.rolesConnection
 
             expect(response.status).to.eq(200)
-            expect(rolesConnection.totalCount).to.equal(systemRolesCount)
+            expect(rolesConnection.totalCount).to.equal(allRolesCount)
             expect(rolesConnection.edges.length).to.equal(pageSize)
         })
         it('fails validation', async () => {

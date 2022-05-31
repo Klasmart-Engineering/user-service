@@ -10,7 +10,7 @@ import { userToPayload } from '../utils/operations/userOps'
 
 const DEFAULT_GENDERS = ['Male', 'Female', 'Unspecified']
 
-export const ADMIN_EMAIL = 'joe@gmail.com'
+export const ADMIN_EMAIL = UserPermissions.ADMIN_EMAILS[0]
 
 type PartialUser = Pick<
     User,

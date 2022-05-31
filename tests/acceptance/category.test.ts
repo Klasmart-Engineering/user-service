@@ -22,7 +22,7 @@ import {
     ADD_SUBCATEGORIES_TO_CATEGORIES,
     CATEGORIES_CONNECTION,
 } from '../utils/operations/modelOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import {
@@ -73,17 +73,12 @@ async function makeQuery(pageSize: any) {
             direction: 'FORWARD',
             directionArgs: { count: pageSize },
         },
-        getAdminAuthToken()
+        getAPIKeyAuth()
     )
 }
 
 const makeNodeQuery = async (id: string) => {
-    return makeRequest(
-        request,
-        print(CATEGORY_NODE),
-        { id },
-        getAdminAuthToken()
-    )
+    return makeRequest(request, print(CATEGORY_NODE), { id }, getAPIKeyAuth())
 }
 
 describe('acceptance.category', () => {
@@ -208,7 +203,7 @@ describe('acceptance.category', () => {
                 request,
                 print(CREATE_CATEGORIES),
                 { input },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 
@@ -270,7 +265,7 @@ describe('acceptance.category', () => {
                 request,
                 print(UPDATE_CATEGORIES),
                 { input },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 
@@ -316,7 +311,7 @@ describe('acceptance.category', () => {
                 request,
                 print(DELETE_CATEGORIES),
                 { input },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 
@@ -455,7 +450,7 @@ describe('acceptance.category', () => {
                             },
                         ],
                     },
-                    getAdminAuthToken()
+                    getAPIKeyAuth()
                 )
                 const errors = response.body.errors
                 expect(response.status).to.eq(200)
@@ -472,7 +467,7 @@ describe('acceptance.category', () => {
                 request,
                 print(REMOVE_SUBCATEGORIES_FROM_CATEGORIES),
                 { input },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 
