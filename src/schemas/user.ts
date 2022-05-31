@@ -89,6 +89,9 @@ const typeDefs = gql`
             input: [RemoveSchoolRolesFromUserInput!]!
         ): UsersMutationResult
         me: User
+            @deprecated(
+                reason: "Sunset Date: 01/09/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2704867356"
+            )
         user(
             user_id: ID!
             given_name: String
@@ -102,6 +105,9 @@ const typeDefs = gql`
             alternate_phone: String
             gender: String
         ): User
+            @deprecated(
+                reason: "Sunset Date: 01/09/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2704900487"
+            )
         newUser(
             given_name: String
             family_name: String
@@ -231,6 +237,10 @@ const typeDefs = gql`
             alternate_email: String
             alternate_phone: String
         ): User
+            @deprecated(
+                reason: "Sunset Date: 01/09/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2704867347/"
+            )
+
         createOrganization(
             organization_name: String
             email: String # Not being used in resolver.
@@ -251,7 +261,14 @@ const typeDefs = gql`
                 reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2462417870/"
             )
         addSchool(school_id: ID!): SchoolMembership
-        setPrimary(_: Int): Boolean @isAdmin(entity: "user")
+            @deprecated(
+                reason: "Sunset Date: 01/09/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2704900507/"
+            )
+        setPrimary(_: Int): Boolean
+            @isAdmin(entity: "user")
+            @deprecated(
+                reason: "Sunset Date: 01/09/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2704900497/"
+            )
     }
 
     input UpdateUserInput {
