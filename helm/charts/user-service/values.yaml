@@ -1,0 +1,137 @@
+nameOverride: ""
+fullNameOverride: ""
+replicaCount: 1
+imagePullSecrets: []
+
+domain: "beta.klpsre.com"
+# Specify the project name (deployment name)
+project: sre-mvp
+# Specify the business region
+region: global
+environment: beta
+provider: aws
+
+# If enabled, pageDocs adds a live documentation site to the endpoints that the microservice
+# supports. This feature is intended to assist developers and should be disabled in prod.
+pageDocs: false
+
+aws:
+  region_name: eu-west-2
+
+userService:
+  repository: 942095822719.dkr.ecr.eu-west-2.amazonaws.com/kidsloop-user
+  pullPolicy: Always
+  tag: # Do not set anything here, this is for overrides only. Update the default AppVersion image tag in Chart.yaml.
+  port: 8080
+  routePrefix: /user
+  nodeSelector: {}
+  resources:
+    limits:
+      cpu: "1.5"
+      memory: "1Gi"
+    requests:
+      cpu: "1.25"
+      memory: "512Mi"
+  log:
+    # Format type for logs. One of: [STRING_COLOR, STRING, JSON, SILENT, NEW_RELIC]
+    style: NEW_RELIC
+    # Global log level used for this application. One of: [silly, debug, verbose, info, warn, error]
+    level: info
+
+  # This is the NodeJS environment, NOT the Kidsloop environment. It should be set to either "production" or "development" only.
+  node_env: production
+
+  apiKey:
+    secretName: kidsloop-user-service-api
+
+  database:
+    hostname: ""
+    port: 5432
+    schema: user_service_db
+    credentials:
+      secretName: kidsloop-user-service-db
+      userKey: username
+      passKey: password
+
+  assets:
+    # If set, these will configure the environment variables for object storage access for user avatars.
+    # Requires credentials to be configured through IRSA.
+    bucketName: ""
+    bucketRegion: ""
+    provider: amazon
+
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    minAvailable: 1
+    targetCPUUtilizationPercentage: 80
+  service:
+    enabled: true
+    serviceType: ClusterIP
+
+ingress:
+  enabled: true #Set to false if you plan to manually deploy
+  tls: false #in AWS this is currently handled at the LB
+  className: nginx
+  controller: nginx
+
+serviceAccount:
+  create: true
+  name: kidsloop-user-service-sa
+  annotations: {}
+
+# backend config
+timeoutSec: 30
+cdn:
+  enabled: false
+connectionDraining:
+  drainingTimeoutSec: 60
+healthCheck:
+  requestPath: /
+  type: HTTP
+  port: 80
+  checkIntervalSec: 15
+  timeoutSec: 15
+  healthyThreshold: 1
+  unhealthyThreshold: 2
+
+newrelic:
+  enabled: false
+  secretName: new-relic
+  licenseKeyKey: api_key
+  distributed_tracing: true
+
+istio:
+  enabled: false
+  createServiceEntries: true
+
+userCount:
+  enabled: false
+  sleepTime: 3600
+  nameOverride: "kidsloop-user-count"
+  fullNameOverride: "kidsloop-user-count"
+
+  repository: 942095822719.dkr.ecr.eu-west-2.amazonaws.com/user-count
+  pullPolicy: Always
+  tag: 2.0.3
+
+  service:
+    serviceType: ClusterIP
+
+  port: 15020
+  nodeSelector: {}
+  resources:
+    limits:
+      cpu: "1"
+      memory: "512Mi"
+    requests:
+      cpu: "1"
+      memory: "256Mi"
+  log:
+    # Format type for logs. One of: [STRING_COLOR, STRING, JSON, SILENT, NEW_RELIC]
+    style: NEW_RELIC
+    # Global log level used for this application. One of: [silly, debug, verbose, info, warn, error]
+    level: info
+
+  node_env: production
