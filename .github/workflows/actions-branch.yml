@@ -151,7 +151,7 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         run: |
           echo ${GITHUB_REF_NAME}
-          export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z\.\-\_]+)/-/g' | awk '{print tolower($0)}')
           
           docker build -t $ECR_REPOSITORY .
             
@@ -171,7 +171,7 @@ jobs:
     steps:
       - name: "Deploy"
         run: |
-          export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z\.\-\_]+)/-/g' | awk '{print tolower($0)}')
           if test -z "$BRANCH_TAG"; then export TAG=commit; else export TAG=$BRANCH_TAG;fi
 
           echo "TAG - ${TAG}"
@@ -223,7 +223,7 @@ jobs:
 
       - name: Configure tags
         run: |
-          export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z\.\-\_]+)/-/g' | awk '{print tolower($0)}')
           export DEPLOY_TAG=$BRANCH_TAG-${GITHUB_SHA::7}
           echo "TAG    : ${TAG}"
           echo "COMMIT : ${GITHUB_SHA::7}"
