@@ -2902,9 +2902,9 @@ export class AddGradesToClasses extends AddMutation<
     generateEntityMaps = async (
         input: AddGradesToClassInput[]
     ): Promise<AddGradesClassesEntityMap> => {
-        const classIds = input.map((i) => i.classId)
         const gradeIds = input.flatMap((i) => i.gradeIds)
         const gradesMap = getMap.grade(gradeIds, ['organization'])
+        const classIds = input.map((i) => i.classId)
         const classesGrades = new Map<string, Grade[]>()
         const classMap = await getMap.class(classIds, [
             'organization',
