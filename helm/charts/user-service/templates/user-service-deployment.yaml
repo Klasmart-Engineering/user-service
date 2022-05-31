@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "user_service.fullname" . }}
+  labels:
+    {{- include "user_service.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.userService.autoscaling.enabled }}
+  replicas: {{ .Values.userService.autoscaling.minReplicas }}
+  {{- else }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "user_service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "user_service.labels" . | nindent 8 }}
+        {{- include "user_service.selectorLabels" . | nindent 8 }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          # Prefer different node - weight 80
+          - weight: 80
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "user_service.selectorLabels" . | nindent 18 }}
+              topologyKey: kubernetes.io/hostname
+          # Prefer different AZ - weight 20
+          - weight: 20
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "user_service.selectorLabels" . | nindent 18 }}
+              topologyKey: failure-domain.beta.kubernetes.io/zone
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.userService.repository }}:{{ .Values.userService.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: "{{ .Values.userService.pullPolicy }}"
+        ports:
+          - name: http
+            protocol: TCP
+            containerPort: 8080
+        env:
+          # Microservice env vars
+          - name: NODE_ENV
+            value: "{{ .Values.userService.node_env }}"
+          - name: DOMAIN
+            value: {{ .Values.domain }}
+          - name: PORT
+            value: "8080"
+          - name: ROUTE_PREFIX
+            value: "{{ .Values.userService.routePrefix }}"
+          - name: ENABLE_PAGE_DOCS
+            {{- if .Values.pageDocs }}
+            value: "1"
+            {{- else }}
+            value: "0"
+            {{- end}}
+          - name: LOG_STYLE
+            value: {{ .Values.userService.log.style }}
+          - name: LOG_LEVEL
+            value: {{ .Values.userService.log.level }}
+
+          - name: USER_SERVICE_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.userService.apiKey.secretName }}
+                key: USER_SERVICE_API_KEY
+
+          # UserDB inputs
+          - name: DB_HOST
+            value: {{ .Values.userService.database.hostname }}
+          - name: DB_PORT
+            value: {{ .Values.userService.database.port | quote }}
+          - name: DB_NAME
+            value: {{ .Values.userService.database.schema }}
+          - name: DB_USER
+            valueFrom:
+             secretKeyRef:
+               name: {{ .Values.userService.database.credentials.secretName }}
+               key: {{ .Values.userService.database.credentials.userKey }}
+          - name: DB_PASS
+            valueFrom:
+             secretKeyRef:
+               name: {{ .Values.userService.database.credentials.secretName }}
+               key: {{ .Values.userService.database.credentials.passKey }}
+          - name: DATABASE_URL
+            value: postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
+
+          {{- if .Values.userService.assets.bucketName }}
+          # User avatar storage settings
+          - name: STORAGE_BUCKET
+            value: {{ .Values.userService.assets.bucketName }}
+          - name: STORAGE_REGION
+            value: {{ .Values.userService.assets.bucketRegion }}
+          - name: STORAGE_PROVIDER
+            value: {{ .Values.userService.assets.provider }}
+          {{- end }}
+
+          {{- if .Values.newrelic.enabled }}
+          - name: NEW_RELIC_NO_CONFIG_FILE
+            value: "true"
+          - name: NEW_RELIC_APP_NAME
+            value: "user-service_{{ .Values.region }}-{{ .Values.environment }}, user-service-aggregated"
+          - name: NEW_RELIC_DISTRIBUTED_TRACING_ENABLED
+            value: "{{ .Values.newrelic.distributed_tracing }}"
+          - name: NEW_RELIC_LABELS
+            value: "Deployment:{{ .Values.region }}-{{ .Values.environment }};Region:{{ .Values.region }};Environment:{{ .Values.environment }};Version:{{ .Values.userService.tag | default .Chart.AppVersion }};Component:user-service"
+          - name: NEW_RELIC_LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.newrelic.secretName }}
+                key: {{ .Values.newrelic.licenseKeyKey }}
+          {{- end }}
+
+        resources:
+          {{- toYaml .Values.userService.resources | nindent 10 }}
+      nodeSelector:
+        {{- toYaml .Values.userService.nodeSelector | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: user-service
+description: Kidsloop User Service
+type: application
+version: 4.4.0
+appVersion: v4-4-0

@@ -1,0 +1,18 @@
+{{- if .Values.userService.autoscaling.enabled }}
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "user_service.fullname" . }}
+  labels:
+    {{- include "user_service.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "user_service.fullname" . }}
+  minReplicas: {{ .Values.userService.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.userService.autoscaling.maxReplicas }}
+  {{- if .Values.userService.autoscaling.targetCPUUtilizationPercentage }}
+  targetCPUUtilizationPercentage: {{ .Values.userService.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+{{- end }}

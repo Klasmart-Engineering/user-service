@@ -1,0 +1,11 @@
+{{- if or (and (.Values.userService.autoscaling.enabled) (gt .Values.userService.autoscaling.minReplicas 1.0)) (gt .Values.replicaCount 1.0) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "user_service.fullname" . }}
+spec:
+  minAvailable: {{ .Values.userService.autoscaling.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "user_service.selectorLabels" . | nindent 6 }}
+{{- end }}

@@ -1,0 +1,19 @@
+{{- if .Values.userCount.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "user_count.fullname" . }}-svc
+  labels:
+    {{- include "user_count.labels" . | nindent 4 }}
+  annotations:
+    service.kubernetes.io/topology-aware-hints: auto
+spec:
+  ports:
+  - name: http
+    port: 15020
+    protocol: TCP
+    targetPort: 15020
+  selector:
+    {{- include "user_count.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.userCount.service.serviceType }}
+{{- end }}

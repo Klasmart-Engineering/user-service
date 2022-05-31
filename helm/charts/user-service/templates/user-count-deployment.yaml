@@ -1,0 +1,100 @@
+{{- if .Values.userCount.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "user_count.fullname" . }}
+  labels:
+    {{- include "user_count.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "user_count.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "user_count.labels" . | nindent 8 }}
+        {{- include "user_count.selectorLabels" . | nindent 8 }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          # Prefer different node - weight 80
+          - weight: 80
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "user_count.selectorLabels" . | nindent 18 }}
+              topologyKey: kubernetes.io/hostname
+          # Prefer different AZ - weight 20
+          - weight: 20
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "user_count.selectorLabels" . | nindent 18 }}
+              topologyKey: failure-domain.beta.kubernetes.io/zone
+      containers:
+      - name: {{ .Values.userCount.nameOverride }}
+        image: "{{ .Values.userCount.repository }}:{{ .Values.userCount.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: "{{ .Values.userCount.pullPolicy }}"
+        ports:
+          - name: http
+            protocol: TCP
+            containerPort: 15020
+        env:
+          # Microservice configuration
+          - name: NODE_ENV
+            value: {{ .Values.userCount.node_env }}
+          - name: PORT
+            value: "15020"
+          - name: SLEEP_TIME
+            value: {{ .Values.userCount.sleepTime | quote }}
+
+          # UserDB inputs
+          - name: DB_HOST
+            value: {{ .Values.userService.database.hostname }}
+          - name: DB_PORT
+            value: {{ .Values.userService.database.port | quote }}
+          - name: DB_NAME
+            value: {{ .Values.userService.database.schema }}
+          - name: DB_USER
+            valueFrom:
+             secretKeyRef:
+               name: {{ .Values.userService.database.credentials.secretName }}
+               key: {{ .Values.userService.database.credentials.userKey }}
+          - name: DB_PASS
+            valueFrom:
+             secretKeyRef:
+               name: {{ .Values.userService.database.credentials.secretName }}
+               key: {{ .Values.userService.database.credentials.passKey }}
+          - name: DATABASE_URL
+            value: postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
+
+          {{- if .Values.newrelic.enabled }}
+          # New Relic
+          - name: NEW_RELIC_NO_CONFIG_FILE
+            value: "true"
+          - name: NEW_RELIC_APP_NAME
+            value: "user-count{{ .Values.region }}-{{ .Values.environment }}, user-count-aggregated"
+          - name: NEW_RELIC_DISTRIBUTED_TRACING_ENABLED
+            value: "{{ .Values.newrelic.distributed_tracing }}"
+          - name: NEW_RELIC_LABELS
+            value: "Deployment:{{ .Values.region }}-{{ .Values.environment }};Region:{{ .Values.region }};Environment:{{ .Values.environment }};Version:{{ .Values.userCount.tag | default .Chart.AppVersion }};Component:user-count"
+          - name: NEW_RELIC_LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.newrelic.secretName }}
+                key: {{ .Values.newrelic.licenseKeyKey }}
+          {{- end }}
+
+        resources:
+          {{- toYaml .Values.userCount.resources | nindent 10 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.userCount.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

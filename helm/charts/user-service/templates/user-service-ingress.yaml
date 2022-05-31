@@ -1,0 +1,43 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "user_service.fullname" . }}-ingress
+  labels:
+    {{- include "user_service.labels" . | nindent 4 }}
+  annotations:
+  {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if eq .Values.ingress.controller "nginx" }}
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/send-timeout: "3600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- range .Values.ingress.tls }}
+    - hosts:
+      - api.{{ .Values.domain }}
+      secretName: {{ include "user_service.fullname" . }}-tls
+    {{- end }}
+  {{- end }}
+  rules:
+  - host: api.{{ .Values.domain }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ include "user_service.fullname" . }}-svc
+            port:
+              name: http
+        path: /user
+        {{- if eq .Values.ingress.controller "nginx" }}
+        pathType: Prefix
+        {{- end }}
+{{- end }}

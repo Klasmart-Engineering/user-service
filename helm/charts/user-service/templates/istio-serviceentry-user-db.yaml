@@ -1,0 +1,17 @@
+{{- if .Values.istio.enabled }}
+{{- if .Values.istio.createServiceEntries }}
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: {{ include "user_service.fullname" . }}-db
+  namespace: {{ .Release.Namespace }}
+spec:
+  hosts: ["{{ .Values.userService.database.hostname }}"]
+  ports:
+    - name: postgres
+      number: {{ .Values.userService.database.port }}
+      protocol: TCP
+  resolution: DNS
+  location: MESH_EXTERNAL
+{{- end }}
+{{- end }}
