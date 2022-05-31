@@ -7,7 +7,7 @@ import { User } from '../../src/entities/user'
 import { createUser, createUsers } from '../factories/user.factory'
 import { ORGANIZATION_NODE } from '../utils/operations/modelOps'
 import { userToPayload } from '../utils/operations/userOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Branding } from '../../src/entities/branding'
@@ -532,7 +532,7 @@ describe('acceptance.organization', () => {
                         userId: uuidFilter,
                     },
                 },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
             expect(response.statusCode).to.eq(200)
             expect(response.body.errors).to.be.undefined

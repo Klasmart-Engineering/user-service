@@ -50,7 +50,7 @@ import {
     SCHOOLS_CONNECTION_WITH_CHILDREN,
     SCHOOL_NODE,
 } from '../utils/operations/modelOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 import ProgramsInitializer from '../../src/initializers/programs'
@@ -86,7 +86,7 @@ async function makeConnectionQuery() {
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: getAPIKeyAuth(),
         })
         .send({
             query: SCHOOLS_CONNECTION,
@@ -101,7 +101,7 @@ const makeNodeQuery = async (id: string) => {
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: getAPIKeyAuth(),
         })
         .send({
             query: print(SCHOOL_NODE),
@@ -139,7 +139,7 @@ describe('acceptance.school', () => {
         const createSchoolResponse = await createSchool(
             organizationId,
             `school x`,
-            getAdminAuthToken()
+            getAPIKeyAuth()
         )
         schoolId =
             createSchoolResponse.body.data.organization.createSchool.school_id
@@ -187,7 +187,7 @@ describe('acceptance.school', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: getAPIKeyAuth(),
                     })
                     .send({
                         query: SCHOOLS_CONNECTION,
@@ -414,7 +414,7 @@ describe('acceptance.school', () => {
                 request,
                 print(DELETE_SCHOOLS),
                 { input },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 
@@ -513,7 +513,7 @@ describe('acceptance.school', () => {
                 request,
                 print(CREATE_SCHOOLS),
                 { input },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 
@@ -579,7 +579,7 @@ describe('acceptance.school', () => {
                 request,
                 print(UPDATE_SCHOOLS),
                 { input: mutationInput },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 
@@ -688,7 +688,7 @@ describe('acceptance.school', () => {
                 request,
                 print(REMOVE_USERS_FROM_SCHOOLS),
                 { input },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 

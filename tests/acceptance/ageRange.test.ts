@@ -15,7 +15,7 @@ import {
     AGE_RANGES_CONNECTION,
     AGE_RANGE_NODE,
 } from '../utils/operations/modelOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Organization } from '../../src/entities/organization'
@@ -46,7 +46,7 @@ const makeConnectionQuery = async () => {
         .post('/graphql')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: getAPIKeyAuth(),
         })
         .send({
             query: AGE_RANGES_CONNECTION,
@@ -61,7 +61,7 @@ const makeNodeQuery = async (id: string) => {
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: getAPIKeyAuth(),
         })
         .send({
             query: print(AGE_RANGE_NODE),
@@ -110,7 +110,7 @@ describe('acceptance.ageRange', () => {
             })
         }
 
-        await createAgeRanges(orgId, ageRangeDetails, getAdminAuthToken())
+        await createAgeRanges(orgId, ageRangeDetails, getAPIKeyAuth())
 
         systemAgeRangesCount = await connection.manager.count(AgeRange, {
             where: { system: true },
@@ -136,7 +136,7 @@ describe('acceptance.ageRange', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: AGE_RANGES_CONNECTION,
@@ -177,7 +177,7 @@ describe('acceptance.ageRange', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: AGE_RANGES_CONNECTION,

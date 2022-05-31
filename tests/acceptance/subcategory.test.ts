@@ -8,7 +8,7 @@ import {
     SUBCATEGORY_NODE,
     UPDATE_SUBCATEGORIES,
 } from '../utils/operations/modelOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
@@ -49,7 +49,7 @@ async function makeConnectionQuery() {
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: getAPIKeyAuth(),
         })
         .send({
             query: print(SUBCATEGORIES_CONNECTION),
@@ -64,7 +64,7 @@ const makeNodeQuery = async (id: string) => {
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: getAPIKeyAuth(),
         })
         .send({
             query: print(SUBCATEGORY_NODE),
@@ -111,7 +111,7 @@ describe('acceptance.subcategory', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: getAPIKeyAuth(),
                     })
                     .send({
                         query: print(SUBCATEGORIES_CONNECTION),
@@ -175,7 +175,7 @@ describe('acceptance.subcategory', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(CREATE_SUBCATEGORIES),
@@ -308,7 +308,7 @@ describe('acceptance.subcategory', () => {
                     request,
                     print(SUBCATEGORIES_DELETE),
                     { input: [{ id: NIL_UUID }] },
-                    getAdminAuthToken()
+                    getAPIKeyAuth()
                 )
                 const errors = response.body.errors
                 expect(response.status).to.eq(200)
@@ -348,7 +348,7 @@ describe('acceptance.subcategory', () => {
                 request,
                 print(UPDATE_SUBCATEGORIES),
                 { input },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
         }
 

@@ -2,7 +2,7 @@ import { sign } from 'jsonwebtoken'
 
 // {
 //   "id": "c6d4feed-9133-5529-8d72-1003526d1b13",
-//   "email": "joe@gmail.com",
+//   "email": "sandy@kidsloop.live",
 //   "given_name": "Joe",
 //   "family_name": "Brown",
 //   "name": "Joe Brown",
@@ -10,17 +10,17 @@ import { sign } from 'jsonwebtoken'
 //   "iss": "calmid-debug"
 // }
 let AdminAuthToken =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImM2ZDRmZWVkLTkxMzMtNTUyOS04ZDcyLTEwMDM1MjZkMWIxMyIsImVtYWlsIjoiam9lQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJKb2UiLCJmYW1pbHlfbmFtZSI6IkJyb3duIiwibmFtZSI6IkpvZSBCcm93biIsImlzcyI6ImNhbG1pZC1kZWJ1ZyJ9.Ub8UkFgK6lcyQrIA3d1Nj4sOZaNxEjATrI3tcNllLCM'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImM2ZDRmZWVkLTkxMzMtNTUyOS04ZDcyLTEwMDM1MjZkMWIxMyIsImVtYWlsIjoic2FuZHlAa2lkc2xvb3AubGl2ZSIsImdpdmVuX25hbWUiOiJKb2UiLCJmYW1pbHlfbmFtZSI6IkJyb3duIiwibmFtZSI6IkpvZSBCcm93biIsImlzcyI6ImNhbG1pZC1kZWJ1ZyJ9.jwmaXSz73zEfsKH1aztAVfhFgh6iiie9vY7uJ-Ke940'
 
 // {
-//   "email": "joe@gmail.com",
+//   "email": "sandy@kidsloop.live",
 //   "given_name": "Joe",
 //   "family_name": "Brown",
 //   "name": "Joe Brown",
 //   "iss": "calmid-debug"
 // }
 let AdminAuthWithoutIdToken =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvZUBnbWFpbC5jb20iLCJnaXZlbl9uYW1lIjoiSm9lIiwiZmFtaWx5X25hbWUiOiJCcm93biIsIm5hbWUiOiJKb2UgQnJvd24iLCJpc3MiOiJjYWxtaWQtZGVidWcifQ._ji07rJi_18z49xsjfE0ixsL01ynp-8Jz-TOX5dH9-g'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhbmR5QGtpZHNsb29wLmxpdmUiLCJnaXZlbl9uYW1lIjoiSm9lIiwiZmFtaWx5X25hbWUiOiJCcm93biIsIm5hbWUiOiJKb2UgQnJvd24iLCJpc3MiOiJjYWxtaWQtZGVidWcifQ.nUKChAeIQ3OrNSxXGSybd0LM2MEU3UZVAK3Q-eL52hI'
 
 // {
 //   "id": "fcf922e5-25c9-5dce-be9f-987a600c1356",

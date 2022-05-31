@@ -1,7 +1,7 @@
 import supertest from 'supertest'
 import { Grade } from '../../src/entities/grade'
 import GradesInitializer from '../../src/initializers/grades'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { getAPIKeyAuth } from '../utils/testConfig'
 import { expect } from 'chai'
 import { GRADE_NODE } from '../utils/operations/modelOps'
 import { print } from 'graphql'
@@ -28,7 +28,7 @@ describe('acceptance.grade', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: getAPIKeyAuth(),
                     })
                     .send({
                         query: print(GRADE_NODE),
@@ -68,7 +68,7 @@ describe('acceptance.grade', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: getAPIKeyAuth(),
                     })
                     .send({
                         query: print(GRADE_NODE),

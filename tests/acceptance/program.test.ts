@@ -29,7 +29,7 @@ import {
     DELETE_PROGRAMS,
 } from '../utils/operations/programOps'
 import { userToPayload } from '../utils/operations/userOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { failsValidation, makeRequest } from './utils'
 import { createUser as createUserFactory } from './../factories/user.factory'
@@ -90,7 +90,7 @@ describe('acceptance.program', () => {
             })
         }
 
-        await createAgeRanges(orgId, ageRangeDetails, getAdminAuthToken())
+        await createAgeRanges(orgId, ageRangeDetails, getAPIKeyAuth())
 
         const ageRanges =
             (await connection.manager.find(AgeRange, {
@@ -110,7 +110,7 @@ describe('acceptance.program', () => {
         const programsResponse = await createPrograms(
             orgId,
             programDetails,
-            getAdminAuthToken()
+            getAPIKeyAuth()
         )
 
         const programs =
@@ -121,7 +121,7 @@ describe('acceptance.program', () => {
             const classResponse = await createClass(
                 orgId,
                 `class ${i + 1}`,
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
 
             const classId =
@@ -132,7 +132,7 @@ describe('acceptance.program', () => {
         for (const classId of classIds) {
             const ids = [programIds[0], programIds[1], programIds[2]]
 
-            await addProgramsToClass(classId, ids, getAdminAuthToken())
+            await addProgramsToClass(classId, ids, getAPIKeyAuth())
         }
     })
 
@@ -143,7 +143,7 @@ describe('acceptance.program', () => {
                     .post('/user')
                     .set({
                         ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
+                        Authorization: getAPIKeyAuth(),
                     })
                     .send({
                         query: PROGRAMS_CONNECTION,
@@ -176,7 +176,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -201,7 +201,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -257,7 +257,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -309,7 +309,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -340,7 +340,7 @@ describe('acceptance.program', () => {
                 .post('/user')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: PROGRAMS_CONNECTION,
@@ -382,7 +382,7 @@ describe('acceptance.program', () => {
                         },
                     },
                 },
-                getAdminAuthToken()
+                getAPIKeyAuth()
             )
             const programsConnection = response.body.data.programsConnection
             expect(programsConnection.edges).to.have.lengthOf(1)

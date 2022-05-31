@@ -1,4 +1,5 @@
 import { User } from '../../src/entities/user'
+import { UserPermissions } from '../../src/permissions/userPermissions'
 import { ApolloServerTestClient } from './createTestClient'
 import { createUserAndValidate } from './operations/modelOps'
 import { userToPayload } from './operations/userOps'
@@ -29,7 +30,7 @@ export async function createNonAdminUser(testClient: ApolloServerTestClient) {
 const joe = {
     given_name: 'Joe',
     family_name: 'Brown',
-    email: 'joe@gmail.com',
+    email: UserPermissions.ADMIN_EMAILS[0],
     avatar: 'joe_avatar',
     date_of_birth: '03-1984',
     username: 'Tigger',

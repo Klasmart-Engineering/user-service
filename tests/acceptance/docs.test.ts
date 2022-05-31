@@ -1,7 +1,7 @@
 import supertest from 'supertest'
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { getAPIKeyAuth } from '../utils/testConfig'
 
 use(chaiAsPromised)
 
@@ -14,7 +14,7 @@ describe('API docs', () => {
         context('when authenticated', () => {
             it('returns the API docs landing page', async () => {
                 const response = await request.get('/user').set({
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 expect(response.status).to.eq(200)
                 expect(response.type).to.eq('text/html')
@@ -27,7 +27,7 @@ describe('API docs', () => {
         context('when authenticated', () => {
             it('returns the GraphiQL explorer', async () => {
                 const response = await request.get('/user/explorer').set({
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 expect(response.status).to.eq(200)
                 expect(response.type).to.eq('text/html')
@@ -40,7 +40,7 @@ describe('API docs', () => {
         context('when authenticated', () => {
             it('returns the GraphQL Playground', async () => {
                 const response = await request.get('/user/playground').set({
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 expect(response.status).to.eq(200)
                 expect(response.type).to.eq('text/html')

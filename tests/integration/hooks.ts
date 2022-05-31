@@ -1,7 +1,6 @@
 import faker from 'faker'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import RoleInitializer from '../../src/initializers/roles'
-import { UserPermissions } from '../../src/permissions/userPermissions'
 import TransactionalTestContext from '../utils/transactionalTestContext'
 import { runMigrations } from '../../src/initializers/migrations'
 import { truncateTables } from '../utils/database'
@@ -21,13 +20,10 @@ before(async () => {
     connection = await createTestConnection()
     await runMigrations(connection)
     await truncateTables(connection)
-    originalAdmins = UserPermissions.ADMIN_EMAILS
-    UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     await RoleInitializer.run()
 })
 
 after(async () => {
-    UserPermissions.ADMIN_EMAILS = originalAdmins
     await connection.close()
 })
 

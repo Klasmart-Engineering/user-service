@@ -14,7 +14,7 @@ import {
     ISubjectDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { SUBJECTS_CONNECTION, SUBJECT_NODE } from '../utils/operations/modelOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { SubjectConnectionNode } from '../../src/types/graphQL/subject'
@@ -76,7 +76,7 @@ describe('acceptance.subject', () => {
                 direction: 'FORWARD',
                 directionArgs: { count: pageSize },
             },
-            getAdminAuthToken()
+            getAPIKeyAuth()
         )
     }
 
@@ -85,7 +85,7 @@ describe('acceptance.subject', () => {
             request,
             print(SUBJECT_NODE),
             { id },
-            getAdminAuthToken()
+            getAPIKeyAuth()
         )
     }
 
@@ -125,7 +125,7 @@ describe('acceptance.subject', () => {
         const createCategoriesResponse = await createCategories(
             org1Id,
             categoryDetails,
-            getAdminAuthToken()
+            getAPIKeyAuth()
         )
 
         const createCategoriesData =
@@ -149,7 +149,7 @@ describe('acceptance.subject', () => {
         const createSubjectsResponse = await createSubjects(
             org1Id,
             subjectDetails,
-            getAdminAuthToken()
+            getAPIKeyAuth()
         )
 
         const createSubjectsData =
@@ -159,7 +159,7 @@ describe('acceptance.subject', () => {
             (s: { id: string; name: string; system: boolean }) => s.id
         )
 
-        await deleteSubject(subjectIds[1], getAdminAuthToken())
+        await deleteSubject(subjectIds[1], getAPIKeyAuth())
     })
 
     context('subjectsConnection', () => {
@@ -168,7 +168,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
@@ -190,7 +190,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
@@ -216,7 +216,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
@@ -243,7 +243,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
@@ -270,7 +270,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
@@ -297,7 +297,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
@@ -324,7 +324,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
@@ -351,7 +351,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
@@ -378,7 +378,7 @@ describe('acceptance.subject', () => {
                 .post('/graphql')
                 .set({
                     ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
+                    Authorization: getAPIKeyAuth(),
                 })
                 .send({
                     query: print(SUBJECTS_CONNECTION),
