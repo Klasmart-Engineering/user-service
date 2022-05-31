@@ -57,7 +57,7 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         run: |
           echo ${GITHUB_HEAD_REF}
-          export BRANCH_TAG=$(echo "${GITHUB_HEAD_REF}" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          export BRANCH_TAG=$(echo "${GITHUB_HEAD_REF}" | sed -E 's/([^0-9a-zA-Z\.\-\_]+)/-/g' | awk '{print tolower($0)}')
           
           docker build -t $ECR_REPOSITORY .
           
