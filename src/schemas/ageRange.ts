@@ -23,7 +23,11 @@ const typeDefs = gql`
     }
 
     extend type Mutation {
-        age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
+        age_range(id: ID!): AgeRange
+            @isAdmin(entity: "ageRange")
+            @deprecated(
+                reason: "Sunset Date: 30/08/2022 Details: https://calmisland.atlassian.net/l/c/W8zhP5g1"
+            )
         uploadAgeRangesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         deleteAgeRanges(input: [DeleteAgeRangeInput!]!): AgeRangesMutationResult
@@ -52,6 +56,9 @@ const typeDefs = gql`
 
         # Mutations
         delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 30/08/2022 Details: https://calmisland.atlassian.net/l/c/W8zhP5g1"
+            )
     }
 
     # pagination extension types start here
