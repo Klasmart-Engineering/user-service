@@ -577,7 +577,7 @@ describe('processClassFromCSVRow', () => {
                 organization_name: orgName,
                 class_name: 'class1',
                 school_name: expectedSchool.school_name,
-                academic_term_name: academicTerm.name,
+                academic_period: academicTerm.name,
             }
             const rowErrors = await processClassFromCSVRow(
                 connection.manager,
@@ -594,7 +594,7 @@ describe('processClassFromCSVRow', () => {
                 customErrors.nonexistent_child.code
             )
             expect(classRowError.message).to.equal(
-                `On row number 1, AcademicTerm ${academicTerm.name} doesn't exist for School ${expectedSchool.school_name}.`
+                `On row number 1, AcademicPeriod ${academicTerm.name} doesn't exist for School ${expectedSchool.school_name}.`
             )
 
             const dbClass = await Class.find()
@@ -606,7 +606,7 @@ describe('processClassFromCSVRow', () => {
                 organization_name: orgName,
                 class_name: 'class1',
                 school_name: expectedSchool.school_name,
-                academic_term_name: 'not a real academic term',
+                academic_period: 'not a real academic term',
             }
             const rowErrors = await processClassFromCSVRow(
                 connection.manager,
@@ -623,7 +623,7 @@ describe('processClassFromCSVRow', () => {
                 customErrors.nonexistent_entity.code
             )
             expect(classRowError.message).to.equal(
-                `On row number 1, AcademicTerm ${row.academic_term_name} doesn't exist or you don't have permissions to view it.`
+                `On row number 1, AcademicPeriod ${row.academic_period} doesn't exist or you don't have permissions to view it.`
             )
 
             const dbClass = await Class.find()
@@ -635,7 +635,7 @@ describe('processClassFromCSVRow', () => {
                 organization_name: orgName,
                 class_name: 'class1',
                 school_name: undefined,
-                academic_term_name: academicTerm.name,
+                academic_period: academicTerm.name,
             }
             const rowErrors = await processClassFromCSVRow(
                 connection.manager,
@@ -717,7 +717,7 @@ describe('processClassFromCSVRow', () => {
                 organization_name: orgName,
                 class_name: classFromPreviousRow.class_name!,
                 school_name: undefined,
-                academic_term_name: academicTerm.name,
+                academic_period: academicTerm.name,
             }
             const rowErrors = await processClassFromCSVRow(
                 queryRunner.manager,

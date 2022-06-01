@@ -37,7 +37,7 @@ export const processClassFromCSVRow = async (
         age_range_low_value,
         age_range_high_value,
         age_range_unit,
-        academic_term_name,
+        academic_period,
     }: ClassRow,
     rowNumber: number,
     fileErrors: CSVError[],
@@ -289,20 +289,24 @@ export const processClassFromCSVRow = async (
         existingSchools.push(school)
     }
 
-    if (academic_term_name) {
+    /**
+     * NOTE: "academic term" and "academic period" are equivalent: https://calmisland.atlassian.net/browse/UD-2551
+     * Internal schema naming keeps "AcademicTerm" for convenience
+     */
+    if (academic_period) {
         const academicTerm = await AcademicTerm.findOneBy({
-            name: academic_term_name,
+            name: academic_period,
         })
         if (!academicTerm) {
             addCsvError(
                 rowErrors,
                 customErrors.nonexistent_entity.code,
                 rowNumber,
-                'academic_term_name',
+                'academic_period',
                 customErrors.nonexistent_entity.message,
                 {
-                    entityName: academic_term_name,
-                    entity: 'AcademicTerm',
+                    entityName: academic_period,
+                    entity: 'AcademicPeriod',
                 }
             )
         }
@@ -326,11 +330,11 @@ export const processClassFromCSVRow = async (
                     rowErrors,
                     customErrors.nonexistent_child.code,
                     rowNumber,
-                    'academic_term_name',
+                    'academic_period',
                     customErrors.nonexistent_child.message,
                     {
-                        entityName: academic_term_name,
-                        entity: 'AcademicTerm',
+                        entityName: academic_period,
+                        entity: 'AcademicPeriod',
                         parentName: school_name,
                         parentEntity: 'School',
                     }
