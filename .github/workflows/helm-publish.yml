@@ -1,0 +1,12 @@
+name: Publish charts
+
+on:
+  push:
+
+jobs:
+  helm-publish:
+    name: helm
+    # TODO - switch to main once this is merged:
+    # https://github.com/KL-Engineering/github-action-workflows/pull/20
+    # uses: KL-Infrastructure/github-action-workflows/.github/workflows/helm-publish.yml@main
+    uses: KL-Infrastructure/github-action-workflows/.github/workflows/helm-publish.yml@feature/ghcr
