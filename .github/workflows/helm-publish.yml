@@ -8,5 +8,5 @@ jobs:
     name: helm
     # TODO - switch to main once this is merged:
     # https://github.com/KL-Engineering/github-action-workflows/pull/20
-    # uses: KL-Infrastructure/github-action-workflows/.github/workflows/helm-publish.yml@main
-    uses: KL-Infrastructure/github-action-workflows/.github/workflows/helm-publish.yml@feature/ghcr
+    # uses: KL-Engineering/github-action-workflows/.github/workflows/helm-publish.yml@main
+    uses: KL-Engineering/github-action-workflows/.github/workflows/helm-publish.yml@feature/ghcr
