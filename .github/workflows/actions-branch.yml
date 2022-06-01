@@ -148,21 +148,39 @@ jobs:
           aws-region: eu-west-2
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
-      - name: Build, tag, and push image to Amazon ECR
+
+      - name: Login to Github Packages
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set docker tags
+        id: set-tags
+        shell: bash
         run: |
           echo ${GITHUB_REF_NAME}
           export BRANCH_TAG=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z\.\-\_]+)/-/g' | awk '{print tolower($0)}')
-          
-          docker build -t $ECR_REPOSITORY .
-            
-          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG
-          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG-${GITHUB_SHA::7}
-            
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG-${GITHUB_SHA::7}
+          echo "::set-output name=branch_tag::$BRANCH_TAG"
+          echo "::set-output name=sha_tag::$BRANCH_TAG-${GITHUB_SHA::7}"
         env:
           ECR_REGISTRY: ${{ secrets.DOCKER_REPO_URL }}
           ECR_REPOSITORY: "kidsloop-user"
+
+      - name: Build image and push to GitHub Container Registry and ECR
+        uses: docker/build-push-action@v2
+        with:
+          # relative path to the place where source code with Dockerfile is located
+          context: '.'
+          # Note: tags has to be all lower-case
+          tags: |
+            ghcr.io/kl-engineering/user-service/kidsloop-user:${{ steps.set-tags.outputs.branch_tag }}
+            ghcr.io/kl-engineering/user-service/kidsloop-user:${{ steps.set-tags.outputs.sha_tag }}
+            ${{ secrets.DOCKER_REPO_URL }}/kidsloop-user:${{ steps.set-tags.outputs.branch_tag }}
+            ${{ secrets.DOCKER_REPO_URL }}/kidsloop-user:${{ steps.set-tags.outputs.sha_tag }}
+          # conditions for pushing - for example, only push on "main"
+          # push: ${{ github.ref == 'refs/heads/main' }}
 
   deploy-alpha-dev:
     runs-on: ubuntu-latest
