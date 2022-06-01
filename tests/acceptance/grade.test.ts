@@ -1,10 +1,18 @@
 import supertest from 'supertest'
 import { Grade } from '../../src/entities/grade'
 import GradesInitializer from '../../src/initializers/grades'
-import { getAPIKeyAuth } from '../utils/testConfig'
+import { getAPIKeyAuth, generateToken } from '../utils/testConfig'
 import { expect } from 'chai'
 import { GRADE_NODE } from '../utils/operations/modelOps'
 import { print } from 'graphql'
+import { User } from '../../src/entities/user'
+import { makeRequest } from './utils'
+import { DELETE_GRADES } from '../utils/operations/gradeOps'
+import { userToPayload } from '../utils/operations/userOps'
+import { createOrganization } from '../factories/organization.factory'
+import { createGrade } from '../factories/grade.factory'
+import { createUser } from '../factories/user.factory'
+import { UserPermissions } from '../../src/permissions/userPermissions'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -84,6 +92,56 @@ describe('acceptance.grade', () => {
                 expect(errors).to.exist
                 expect(gradeNode).to.be.null
             })
+        })
+    })
+
+    context('deleteGrades', () => {
+        let adminUser: User
+        let gradeToDelete: Grade
+
+        const makeDeleteGradesMutation = async (input: any, caller: User) => {
+            return await makeRequest(
+                request,
+                print(DELETE_GRADES),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            const org = await createOrganization().save()
+            gradeToDelete = await createGrade(org).save()
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [{ id: gradeToDelete.id }]
+                const response = await makeDeleteGradesMutation(
+                    input,
+                    adminUser
+                )
+
+                const {
+                    grades: deletedGrades,
+                } = response.body.data.deleteGrades
+                expect(response.status).to.eq(200)
+                expect(deletedGrades).to.have.lengthOf(input.length)
+                expect(response.body.errors).to.be.undefined
+            })
+        })
+
+        it('has mandatory id field', async () => {
+            const response = await makeDeleteGradesMutation([{}], adminUser)
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
+            )
         })
     })
 })

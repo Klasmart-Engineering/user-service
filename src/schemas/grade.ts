@@ -3,6 +3,8 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { GradeConnectionNode } from '../types/graphQL/grade'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { mutate } from '../utils/mutations/commonStructure'
+import { DeleteGrades } from '../resolvers/grade'
 
 const typeDefs = gql`
     extend type Query {
@@ -25,6 +27,7 @@ const typeDefs = gql`
         uploadGradesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateGrades: Boolean @isAdmin
+        deleteGrades(input: [DeleteGradeInput!]!): GradesMutationResult
     }
 
     type GradeConnectionNode {
@@ -46,6 +49,9 @@ const typeDefs = gql`
 
         # Mutations
         delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 08/30/2022 Details: https://calmisland.atlassian.net/l/c/XopY1izU"
+            )
     }
 
     # pagination exyension types start here
@@ -96,6 +102,14 @@ const typeDefs = gql`
         progress_to_grade_id: ID
         system: Boolean
     }
+
+    input DeleteGradeInput {
+        id: ID!
+    }
+
+    type GradesMutationResult {
+        grades: [GradeConnectionNode!]!
+    }
 `
 
 export default function getDefault(
@@ -131,6 +145,8 @@ export default function getDefault(
                     model.uploadGradesFromCSV(args, ctx, info),
                 renameDuplicateGrades: (_parent, args, ctx, info) =>
                     model.renameDuplicateGrades(args, ctx, info),
+                deleteGrades: (_parent, args, ctx) =>
+                    mutate(DeleteGrades, args, ctx.permissions),
             },
             Query: {
                 grade: (_parent, args, ctx, _info) => model.getGrade(args, ctx),

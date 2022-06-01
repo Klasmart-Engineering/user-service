@@ -1,5 +1,5 @@
-import { Context } from 'mocha'
 import { AgeRange } from '../entities/ageRange'
+import { Context } from '../main'
 import { mapAgeRangeToAgeRangeConnectionNode } from '../pagination/ageRangesConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import {
@@ -8,6 +8,7 @@ import {
 } from '../types/graphQL/ageRange'
 import { DeleteMutation, EntityMap } from '../utils/mutations/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
+import { flagUnauthorized } from '../utils/resolvers/inputValidation'
 
 export interface DeleteAgeRangesEntityMap extends EntityMap<AgeRange> {
     mainEntity: Map<string, AgeRange>
@@ -46,10 +47,16 @@ export class DeleteAgeRanges extends DeleteMutation<
         _input: DeleteAgeRangeInput[],
         maps: DeleteAgeRangesEntityMap
     ): Promise<void> {
+        flagUnauthorized(
+            AgeRange,
+            this.mainEntityIds,
+            maps.mainEntity,
+            'system'
+        )
+
         const organizationIds: string[] = []
-        for (const s of maps.mainEntity.values()) {
-            // eslint-disable-next-line no-await-in-loop
-            const organizationId = (await s.organization)?.organization_id
+        for (const ageRange of maps.mainEntity.values()) {
+            const organizationId = ageRange.organization_id
             if (organizationId) organizationIds.push(organizationId)
         }
 

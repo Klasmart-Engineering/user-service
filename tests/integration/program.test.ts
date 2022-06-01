@@ -27,12 +27,9 @@ import { ObjMap } from '../../src/utils/stringUtils'
 import { createAgeRange, createAgeRanges } from '../factories/ageRange.factory'
 import { createGrade, createGrades } from '../factories/grade.factory'
 import { createOrganization } from '../factories/organization.factory'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createProgram, createPrograms } from '../factories/program.factory'
-import { createRole } from '../factories/role.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
-import { createUser, makeUserWithPermission } from '../factories/user.factory'
-import { userToPayload } from '../utils/operations/userOps'
+import { makeUserWithPermission } from '../factories/user.factory'
 import { TestConnection } from '../utils/testConnection'
 import { PermissionName } from './../../src/permissions/permissionNames'
 import { v4 as uuid_v4 } from 'uuid'
@@ -47,6 +44,7 @@ import {
     createInputRequiresAtLeastOne,
 } from '../../src/utils/resolvers/errors'
 import { getConnection } from 'typeorm'
+import { createInitialData } from '../utils/createTestData'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -57,24 +55,6 @@ describe('program', () => {
     before(async () => {
         connection = getConnection() as TestConnection
     })
-
-    const createInitialData = async (permissionNames: PermissionName[]) => {
-        const clientUser = await createUser().save()
-        const organization = await createOrganization().save()
-        const role = await createRole(undefined, organization, {
-            permissions: permissionNames,
-        }).save()
-
-        await createOrganizationMembership({
-            user: clientUser,
-            organization: organization,
-            roles: [role],
-        }).save()
-
-        const permissions = new UserPermissions(userToPayload(clientUser))
-        const context = { permissions }
-        return { organization, context }
-    }
 
     const getAgeRanges = async () =>
         await AgeRange.save(

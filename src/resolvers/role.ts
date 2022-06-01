@@ -32,6 +32,7 @@ import {
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
 } from '../utils/resolvers/errors'
+import { flagUnauthorized } from '../utils/resolvers/inputValidation'
 
 type RoleAndOrg = Role & {
     __organization__: Organization
@@ -241,12 +242,15 @@ export class UpdateRoles extends UpdateMutation<
         _input: UpdateRoleInput[],
         entityMaps: UpdateRolesEntityMap
     ) {
-        const organizationIds: string[] = []
+        flagUnauthorized(
+            Role,
+            this.mainEntityIds,
+            entityMaps.mainEntity,
+            'system_role'
+        )
 
+        const organizationIds: string[] = []
         for (const role of entityMaps.mainEntity.values()) {
-            if (role.system_role) {
-                throw new Error('System roles cannot be modified')
-            }
             // eslint-disable-next-line no-await-in-loop
             const organizationId = (await role.organization)?.organization_id
             if (organizationId) organizationIds.push(organizationId)
