@@ -176,16 +176,16 @@ export function createDatabaseSaveAPIError(
 
 export function createUnauthorizedAPIError(
     entity: string,
-    attribute: string,
-    entityName?: string
+    entityName: string,
+    index: number
 ) {
     return new APIError({
         code: customErrors.unauthorized.code,
         message: customErrors.unauthorized.message,
-        variables: [attribute],
-        entity: entity,
-        entityName: entityName,
-        index: 0,
+        variables: [],
+        entity,
+        entityName,
+        index,
     })
 }
 

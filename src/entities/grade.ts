@@ -6,6 +6,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    RelationId,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -36,9 +37,12 @@ export class Grade extends CustomBaseEntity {
     @JoinColumn({ name: 'progress_to_grade_id' })
     public progress_to_grade?: Promise<Grade>
 
-    @ManyToOne(() => Organization, (organization) => organization.grades)
+    @ManyToOne(() => Organization)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @RelationId((grade: Grade) => grade.organization)
+    public readonly organizationId?: string
 
     @ManyToMany(() => Class, (class_) => class_.grades)
     public classes?: Promise<Class[]>

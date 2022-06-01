@@ -1,12 +1,8 @@
 import { getConnection } from 'typeorm'
-import { createOrganization } from '../factories/organization.factory'
-import { createRole } from '../factories/role.factory'
-import { createUser, makeUserWithPermission } from '../factories/user.factory'
+import { makeUserWithPermission } from '../factories/user.factory'
 import { TestConnection } from '../utils/testConnection'
 import { PermissionName } from '../../src/permissions/permissionNames'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { userToPayload } from '../utils/operations/userOps'
 import { Organization } from '../../src/entities/organization'
 import { AgeRange } from '../../src/entities/ageRange'
 import { DeleteAgeRanges } from '../../src/resolvers/ageRange'
@@ -18,6 +14,7 @@ import { expect, use } from 'chai'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import chaiAsPromised from 'chai-as-promised'
 import { buildPermissionError } from '../utils/errors'
+import { createInitialData } from '../utils/createTestData'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -28,26 +25,6 @@ describe('ageRange', () => {
     before(async () => {
         connection = getConnection() as TestConnection
     })
-
-    //Methods to be reused by Create, Update and Delete
-    const createInitialData = async (permissionNames: PermissionName[]) => {
-        const clientUser = await createUser().save()
-        const organization = await createOrganization().save()
-        const role = await createRole(undefined, organization, {
-            permissions: permissionNames,
-        }).save()
-
-        await createOrganizationMembership({
-            user: clientUser,
-            organization: organization,
-            roles: [role],
-        }).save()
-
-        const permissions = new UserPermissions(userToPayload(clientUser))
-        const context = { permissions }
-
-        return { organization, context, user: clientUser }
-    }
 
     const createAgeRangesToUse = async (org: Organization) =>
         await AgeRange.save(createAgeRanges(10, org))
@@ -120,8 +97,8 @@ describe('ageRange', () => {
                 userCtx: { permissions: UserPermissions },
                 ageRanges: AgeRange[]
             ) => {
-                const mutation = new DeleteAgeRanges([], userCtx.permissions)
                 const input = buildDefaultInput(ageRanges)
+                const mutation = new DeleteAgeRanges(input, userCtx.permissions)
                 const maps = await deleteAgeRanges.generateEntityMaps(input)
                 return mutation.authorize(input, maps)
             }
@@ -160,6 +137,24 @@ describe('ageRange', () => {
                         clientUser,
                         [permittedOrg]
                     )
+                )
+            })
+
+            it('rejects to delete a system age range', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.delete_age_range_20442
+                )
+                const permittedGrade = await createAgeRange(permittedOrg).save()
+                const systemGrade = await createAgeRange(
+                    undefined,
+                    undefined,
+                    undefined,
+                    true
+                ).save()
+                await expect(
+                    callAuthorize(userCtx, [permittedGrade, systemGrade])
+                ).to.be.rejectedWith(
+                    'On index 1, You are unauthorized to perform this action.'
                 )
             })
         })

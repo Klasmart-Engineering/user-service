@@ -1,5 +1,5 @@
 import { Headers } from 'node-mocks-http'
-
+import { gql } from 'apollo-server-core'
 import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 
@@ -29,3 +29,16 @@ export async function deleteGrade(
     const gqlBool = res.data?.grade?.delete as boolean
     return gqlBool
 }
+
+export const DELETE_GRADES = gql`
+    mutation DeleteGrades($input: [DeleteGradeInput!]!) {
+        deleteGrades(input: $input) {
+            grades {
+                id
+                name
+                status
+                system
+            }
+        }
+    }
+`

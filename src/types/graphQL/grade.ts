@@ -15,3 +15,11 @@ export interface GradeSummaryNode {
     status: Status
     system: boolean
 }
+
+export interface DeleteGradeInput {
+    id: string
+}
+
+export interface GradesMutationResult {
+    grades: GradeSummaryNode[]
+}

@@ -2036,7 +2036,7 @@ describe('role', () => {
                 const operation = updateRolesFromResolver(caller, input)
                 if (systemRoleRelated) {
                     await expect(operation).to.be.rejectedWith(
-                        'System roles cannot be modified'
+                        'On index 0, You are unauthorized to perform this action.'
                     )
                 } else {
                     await expect(operation).to.be.rejectedWith(
