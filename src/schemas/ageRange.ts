@@ -3,7 +3,7 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { mutate } from '../utils/resolvers/commonStructure'
-import { CreateAgeRanges, DeleteAgeRanges } from '../resolvers/ageRange'
+import { CreateAgeRanges, UpdateAgeRanges, DeleteAgeRanges } from '../resolvers/ageRange'
 
 const typeDefs = gql`
     extend type Query {
@@ -132,10 +132,10 @@ const typeDefs = gql`
     input UpdateAgeRangeInput {
         id: ID!
         name: String!
-        low_value: Int!
-        high_value: Int!
-        low_value_unit: AgeRangeUnit!
-        high_value_unit: AgeRangeUnit!
+        lowValue: Int!
+        highValue: Int!
+        lowValueUnit: AgeRangeUnit!
+        highValueUnit: AgeRangeUnit!
     }
 
     type AgeRangesMutationResult {

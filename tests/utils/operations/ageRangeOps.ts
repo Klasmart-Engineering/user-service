@@ -1,5 +1,8 @@
 import { gql } from 'apollo-server-core'
+import faker from 'faker'
 import { Headers } from 'node-mocks-http'
+import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
+import { UpdateAgeRangeInput } from '../../../src/types/graphQL/ageRange'
 
 import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
@@ -67,3 +70,28 @@ export const DELETE_AGE_RANGES = gql`
         }
     }
 `
+
+export function buildSingleUpdateAgeRangeInput(
+    id: string,
+    name?: string,
+    lowValue?: number,
+    lowValueUnit?: AgeRangeUnit,
+    highValue?: number,
+    highValueUnit?: AgeRangeUnit
+): UpdateAgeRangeInput {
+    const units = [AgeRangeUnit.MONTH, AgeRangeUnit.YEAR]
+    return {
+        id,
+        name: name ?? faker.datatype.string(),
+        lowValue: lowValue ?? faker.datatype.number(99),
+        lowValueUnit: lowValueUnit ?? units[faker.datatype.number(1)],
+        highValue: highValue ?? faker.datatype.number(99),
+        highValueUnit: highValueUnit ?? units[faker.datatype.number(1)],
+    }
+}
+
+export function buildUpdateAgeRangeInputArray(
+    ids: string[]
+): UpdateAgeRangeInput[] {
+    return Array.from(ids, (id, i) => buildSingleUpdateAgeRangeInput(id))
+}

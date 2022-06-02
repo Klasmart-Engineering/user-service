@@ -404,10 +404,10 @@ export class UpdateAgeRanges extends UpdateMutation<
         ])
         const preloadedMatchingAgeRanges = AgeRange.find({
             where: input.map((i) => ({
-                lowValue: i.lowValue,
-                lowValueUnit: i.lowValueUnit,
-                highValue: i.highValue,
-                highValueUnit: i.highValueUnit,
+                low_value: i.lowValue,
+                low_value_unit: i.lowValueUnit,
+                high_value: i.highValue,
+                high_value_unit: i.highValueUnit,
                 id: Not(i.id),
             })),
             relations: ['organization'],
@@ -417,16 +417,13 @@ export class UpdateAgeRanges extends UpdateMutation<
             AgeRange
         >()
         for (const ageRange of await preloadedMatchingAgeRanges) {
-            if (ageRange.system) {
-                throw new Error('System age ranges cannot be modified')
-            }
             conflictingAgeRanges.set(
                 {
                     organizationId: ageRange.organization_id,
-                    low_value: `${ageRange.low_value}`,
-                    low_value_unit: ageRange.low_value_unit,
-                    high_value: `${ageRange.high_value}`,
-                    high_value_unit: ageRange.high_value_unit,
+                    lowValue: `${ageRange.low_value}`,
+                    lowValueUnit: ageRange.low_value_unit,
+                    highValue: `${ageRange.high_value}`,
+                    highValueUnit: ageRange.high_value_unit,
                 },
                 ageRange
             )
@@ -468,7 +465,6 @@ export class UpdateAgeRanges extends UpdateMutation<
         const values = []
         for (const {
             id,
-            name,
             lowValue,
             lowValueUnit,
             highValue,
@@ -481,7 +477,6 @@ export class UpdateAgeRanges extends UpdateMutation<
             values.push({
                 entityId: organizationId,
                 attributeValue: [
-                    name,
                     lowValue,
                     lowValueUnit,
                     highValue,
@@ -493,7 +488,7 @@ export class UpdateAgeRanges extends UpdateMutation<
         const failedDuplicateInOrg = validateNoDuplicateAttribute(
             values,
             'Age Range',
-            'name-lowValue-lowValueUnit-highValue-highValueUnit'
+            'lowValue-lowValueUnit-highValue-highValueUnit'
         )
 
         return filterInvalidInputs(inputs, [
@@ -532,10 +527,10 @@ export class UpdateAgeRanges extends UpdateMutation<
         if (name) {
             const conflictingAgeRange = maps.conflictingAgeRanges.get({
                 organizationId: organizationId,
-                low_value: `${lowValue}`,
-                low_value_unit: lowValueUnit,
-                high_value: `${highValue}`,
-                high_value_unit: highValueUnit,
+                lowValue: `${lowValue}`,
+                lowValueUnit: lowValueUnit,
+                highValue: `${highValue}`,
+                highValueUnit: highValueUnit,
             })?.id
 
             if (conflictingAgeRange) {

@@ -40,16 +40,90 @@ import { ObjMap } from '../../src/utils/stringUtils'
 import { v4 as uuid_v4 } from 'uuid'
 import { config } from '../../src/config/config'
 import { createInitialData } from '../utils/createTestData'
+import { buildPermissionError, permErrorMeta } from '../utils/errors'
+import { User } from '../../src/entities/user'
+import AgeRangesInitializer from '../../src/initializers/ageRanges'
+import {
+    createDuplicateAttributeAPIError,
+    createDuplicateInputAttributeAPIError,
+    createEntityAPIError,
+} from '../../src/utils/resolvers/errors'
+import { compareMultipleErrors } from '../utils/apiError'
+import { Role } from '../../src/entities/role'
+import { NIL_UUID } from '../utils/database'
+import { buildUpdateAgeRangeInputArray } from '../utils/operations/ageRangeOps'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { userToPayload } from '../utils/operations/userOps'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
 
 describe('ageRange', () => {
     let connection: TestConnection
+    let admin: User
+    let userWithPermission: User
+    let userWithoutPermission: User
+    let userWithoutMembership: User
+    let systemAgeRanges: AgeRange[]
+    let org1: Organization
+    let org2: Organization
+    let org1AgeRanges: AgeRange[]
+    let org2AgeRanges: AgeRange[]
+    const ageRangesCount = 5
+    let ageRangesTotalCount = 0
+    let updateAgeRangesRole: Role
 
     before(async () => {
         connection = getConnection() as TestConnection
     })
+
+    beforeEach(async () => {
+        admin = await createAdminUser().save()
+        userWithPermission = await createUser().save()
+        userWithoutPermission = await createUser().save()
+        userWithoutMembership = await createUser().save()
+
+        // Creating Organizations
+        org1 = createOrganization()
+        org1.organization_name = 'Organization 1'
+        await org1.save()
+        org2 = createOrganization()
+        org2.organization_name = 'Organization 2'
+        await org2.save()
+
+        // Creating Role for update age ranges
+        updateAgeRangesRole = await createRole('Update Age Ranges', org1, {
+            permissions: [PermissionName.edit_age_range_20332],
+        }).save()
+
+        // Assigning userWithPermission to org1 with the role
+        await createOrganizationMembership({
+            user: userWithPermission,
+            organization: org1,
+            roles: [updateAgeRangesRole],
+        }).save()
+
+        // Assigning userWithoutPermission to org1
+        await createOrganizationMembership({
+            user: userWithoutPermission,
+            organization: org1,
+        }).save()
+    })
+
+    const createInitialAgeRanges = async () => {
+        await AgeRangesInitializer.run()
+        systemAgeRanges = await AgeRange.find({ take: ageRangesCount })
+
+        org1AgeRanges = await AgeRange.save(
+            Array.from(new Array(ageRangesCount), () => createAgeRange(org1))
+        )
+
+        org2AgeRanges = await AgeRange.save(
+            Array.from(new Array(ageRangesCount), () => createAgeRange(org2))
+        )
+
+        ageRangesTotalCount = await AgeRange.count()
+    }
 
     const createAgeRangesToUse = async (org: Organization) =>
         await AgeRange.save(createAgeRanges(10, org))

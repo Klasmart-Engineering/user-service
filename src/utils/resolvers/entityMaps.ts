@@ -25,10 +25,10 @@ export type ConflictingNameKey = {
 
 export type ConflictingAgeRangeKey = {
     organizationId?: string
-    low_value: string
-    high_value: string
-    low_value_unit: AgeRangeUnit
-    high_value_unit: AgeRangeUnit
+    lowValue: string
+    highValue: string
+    lowValueUnit: AgeRangeUnit
+    highValueUnit: AgeRangeUnit
 }
 
 /**
