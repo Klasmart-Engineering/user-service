@@ -828,6 +828,23 @@ export class CategoriesInitializer {
                 '3b148168-31d0-4bef-9152-63c3ff516180', // Miscellaneous
             ],
         },
+        {
+            id: '1b77de04-6ac0-4b05-8dfb-39e5db84dd9a',
+            name: 'English Language Learning',
+            subcategories: [
+                'af4f04f0-0e16-456b-b001-700330ff56ca', // Decoding & Word Recognition
+                '168a9bc2-5ab7-46df-91a4-e044868764a2', // Reading Comprehension
+                '44fe19d3-f6c5-45b0-b999-62299d10357b', // Oral Presentation
+                'ff1712bd-cc79-4b2b-9f9f-a970f3a2aa7d', // Bilingual Translation
+                'b85f6396-5a14-4365-b0ec-7d192c9bce8a', // Written Response
+                '2d1152a3-fb03-4c4e-aeba-98856c3241bd', // Vocabulary
+                '720fef48-574e-4197-b0a7-f4d033544866', // Syntax & Grammar
+                'c323f05f-ac6d-420d-bb3b-5867636121dc', // Visual Processing
+                '6ff4c1af-252b-4e07-9537-94eaa20e0958', // Logic & Reasoning
+                'bea9244e-ff17-47fc-8e7c-bceadf0f4f6e', // Drawing
+                '11351e3f-afc3-476e-b3af-a0c7718269ac', // Coloring
+            ],
+        },
     ]
 
     public async run() {

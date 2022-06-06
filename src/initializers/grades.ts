@@ -1,5 +1,6 @@
 import { Grade } from '../entities/grade'
 import { Status } from '../entities/status'
+import logger from '../logging'
 
 export class GradesInitializer {
     SYSTEM_GRADES = [
@@ -89,13 +90,67 @@ export class GradesInitializer {
             id: '9d3e591d-06a6-4fc4-9714-cf155a15b415',
             name: 'Grade 2',
             progress_from_grade: '100f774a-3d7e-4be5-9c2c-ae70f40f0b50',
-            progress_to_grade: '98461ca1-06a1-432a-97d0-4e1dff33e1a5',
+            progress_to_grade: '0b49f0cf-fdfd-40c9-8b19-ee8c58b4dd81',
         },
         {
             id: '4b9c1e70-0178-4c68-897b-dac052a38a80',
             name: 'Preschool',
             progress_from_grade: '98461ca1-06a1-432a-97d0-4e1dff33e1a5', // None Specified
             progress_to_grade: 'a9f0217d-f7ec-4add-950d-4e8986ab2c82', // Kindergarten
+        },
+        {
+            id: '0b49f0cf-fdfd-40c9-8b19-ee8c58b4dd81',
+            name: 'Grade 3',
+            progress_from_grade: '9d3e591d-06a6-4fc4-9714-cf155a15b415', // Grade 2
+            progress_to_grade: '3d4fe0f7-2b4c-4925-8d06-e22b71ee63e0', //Grade 4
+        },
+        {
+            id: '3d4fe0f7-2b4c-4925-8d06-e22b71ee63e0',
+            name: 'Grade 4',
+            progress_from_grade: '0b49f0cf-fdfd-40c9-8b19-ee8c58b4dd81', // Grade 3
+            progress_to_grade: '2e590398-267e-4186-857a-412c09d31377', // Grade 5
+        },
+        {
+            id: '2e590398-267e-4186-857a-412c09d31377',
+            name: 'Grade 5',
+            progress_from_grade: '3d4fe0f7-2b4c-4925-8d06-e22b71ee63e0', // Grade 4
+            progress_to_grade: 'fcdf94da-0cd5-4a8f-a2dd-c7ca5d902745', // Grade 6
+        },
+        {
+            id: 'fcdf94da-0cd5-4a8f-a2dd-c7ca5d902745',
+            name: 'Grade 6',
+            progress_from_grade: '2e590398-267e-4186-857a-412c09d31377', // Grade 5
+            progress_to_grade: '7bb0efd2-25eb-4c8c-9bae-bd4f379d2635', // Grade 7
+        },
+        {
+            id: '7bb0efd2-25eb-4c8c-9bae-bd4f379d2635',
+            name: 'Grade 7',
+            progress_from_grade: 'fcdf94da-0cd5-4a8f-a2dd-c7ca5d902745', // Grade 6
+            progress_to_grade: '491e3d8c-a781-48ee-83fb-3d6dc9c98e34', // Grade 8
+        },
+        {
+            id: '491e3d8c-a781-48ee-83fb-3d6dc9c98e34',
+            name: 'Grade 8',
+            progress_from_grade: '7bb0efd2-25eb-4c8c-9bae-bd4f379d2635', // Grade 7
+            progress_to_grade: '4ac72cb2-b3c4-488d-bf2f-83bf3a0e116d', // Grade 9
+        },
+        {
+            id: '4ac72cb2-b3c4-488d-bf2f-83bf3a0e116d',
+            name: 'Grade 9',
+            progress_from_grade: '491e3d8c-a781-48ee-83fb-3d6dc9c98e34', // Grade 8
+            progress_to_grade: '5437a66d-2625-4ca4-96a0-1f0b39f3731f', // Grade 10
+        },
+        {
+            id: '5437a66d-2625-4ca4-96a0-1f0b39f3731f',
+            name: 'Grade 10',
+            progress_from_grade: '4ac72cb2-b3c4-488d-bf2f-83bf3a0e116d', // Grade 9
+            progress_to_grade: '16fba7b3-eba8-489b-af3f-a8ae5a9c5ff8', // Grade 11
+        },
+        {
+            id: '16fba7b3-eba8-489b-af3f-a8ae5a9c5ff8',
+            name: 'Grade 11',
+            progress_from_grade: '5437a66d-2625-4ca4-96a0-1f0b39f3731f', // Grade 10
+            progress_to_grade: '98461ca1-06a1-432a-97d0-4e1dff33e1a5', // None Specified
         },
     ]
 
@@ -126,9 +181,23 @@ export class GradesInitializer {
                 id: systemGrade.progress_from_grade,
             })
 
+            if (!fromGrade) {
+                logger.log(
+                    'error',
+                    `Could not find fromGrade for ${systemGrade.id} with id: ${systemGrade.progress_from_grade}`
+                )
+            }
+
             const toGrade = await Grade.findOneBy({
                 id: systemGrade.progress_to_grade,
             })
+
+            if (!toGrade) {
+                logger.log(
+                    'error',
+                    `Could not find toGrade for ${systemGrade.id} with id: ${systemGrade.progress_to_grade}`
+                )
+            }
 
             if (fromGrade && toGrade) {
                 grade.progress_from_grade = Promise.resolve(fromGrade)
