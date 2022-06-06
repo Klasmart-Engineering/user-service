@@ -210,6 +210,29 @@ export class ProgramsInitializer {
                 '9d3e591d-06a6-4fc4-9714-cf155a15b415', // Grade 2
             ],
         },
+        {
+            id: 'f3a9eba7-5d92-4927-9363-ba0a364db72f',
+            name: 'Junior Reading Tutor',
+            subjects: [
+                'ae899fcf-0f50-4cf8-b633-ef9debfb78a1', // English Language Learning
+            ],
+            age_ranges: [
+                '4cdccdc2-a928-44d4-8298-d63196c86dd1', // 11 - 12 year(s)
+                '7cf0d4b8-e26e-4580-93fb-a1fdad39b4df', // 12 - 13 year(s)
+                'd493188f-5503-4820-beef-6c6583657ab3', // 13 - 14 year(s)
+                'e07cacc3-718d-4c19-948e-57bba80906ee', // 14 - 15 year(s)
+                'f58759cd-f65e-4deb-87f1-d972baf38106', // 15 - 16 year(s)
+            ],
+            grades: [
+                '2e590398-267e-4186-857a-412c09d31377', // Grade 5
+                'fcdf94da-0cd5-4a8f-a2dd-c7ca5d902745', // Grade 6
+                '7bb0efd2-25eb-4c8c-9bae-bd4f379d2635', // Grade 7
+                '491e3d8c-a781-48ee-83fb-3d6dc9c98e34', // Grade 8
+                '4ac72cb2-b3c4-488d-bf2f-83bf3a0e116d', // Grade 9
+                '5437a66d-2625-4ca4-96a0-1f0b39f3731f', // Grade 10
+                '16fba7b3-eba8-489b-af3f-a8ae5a9c5ff8', // Grade 11
+            ],
+        },
     ]
 
     public async run() {

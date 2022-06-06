@@ -266,7 +266,7 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(2)
+            expect(result.totalCount).to.eq(3)
 
             const names = result.edges.map((edge) => edge.node.name)
             names.every((name) => name?.includes(filterValue))
