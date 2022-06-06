@@ -253,6 +253,11 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                         args.permissionIds,
                         args.operator
                     )
+                    const orgIds = await ctx.permissions.orgMembershipsWithPermissions(
+                        args.permissionIds,
+                        args.operator
+                    )
+
                     if (schoolIds.length !== 0) {
                         return schoolsConnectionResolver(info, {
                             direction: args.direction || 'FORWARD',
@@ -263,10 +268,20 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                             scope: args.scope,
                             filter: {
                                 ...args.filter,
-                                schoolId: {
-                                    operator: 'in',
-                                    value: schoolIds,
-                                },
+                                OR: [
+                                    {
+                                        schoolId: {
+                                            operator: 'in',
+                                            value: schoolIds,
+                                        },
+                                    },
+                                    {
+                                        organizationId: {
+                                            operator: 'in',
+                                            value: orgIds,
+                                        },
+                                    },
+                                ],
                             },
                         })
                     } else {

@@ -308,8 +308,10 @@ describe('acceptance.myUser', () => {
         let clientUser: User
         let org1: Organization
         let org2: Organization
+        let org3: Organization
         let role1: Role
         let role2: Role
+        let role3: Role
         let permissionIds: PermissionName[]
         let token: string
 
@@ -322,6 +324,7 @@ describe('acceptance.myUser', () => {
 
             org1 = await createOrganization().save()
             org2 = await createOrganization().save()
+            org3 = await createOrganization().save()
             role1 = await createRole(undefined, org1, {
                 permissions: [
                     permissionIds[0],
@@ -336,6 +339,13 @@ describe('acceptance.myUser', () => {
                 ],
             }).save()
 
+            role3 = await createRole(undefined, org1, {
+                permissions: [
+                    permissionIds[0],
+                    PermissionName.view_classes_20114,
+                ],
+            }).save()
+
             const orgs = [org1, org2],
                 roles = [role1, role2]
 
@@ -343,9 +353,15 @@ describe('acceptance.myUser', () => {
                 await createOrganizationMembership({
                     user: clientUser,
                     organization: orgs[i],
-                    roles: [roles[i]],
+                    roles: [roles[i], role3],
                 }).save()
             }
+
+            await createOrganizationMembership({
+                user: clientUser,
+                organization: org3,
+                roles: [],
+            }).save()
 
             token = generateToken({
                 id: clientUser.user_id,
@@ -408,6 +424,8 @@ describe('acceptance.myUser', () => {
         context('Schools', () => {
             let school1: School
             let school2: School
+            let school3: School
+            let school4: School
 
             const query = `
                     query SchoolsWithPermissions($permissionIds: [String!]!, $operator: LogicalOperator, $direction: ConnectionDirection, $count: PageSize, $cursor: String, $sort: SchoolSortInput, $filter: SchoolFilter){
@@ -426,6 +444,9 @@ describe('acceptance.myUser', () => {
             beforeEach(async () => {
                 school1 = await createSchool(org1).save()
                 school2 = await createSchool(org2).save()
+                school3 = await createSchool(org2).save()
+                school4 = await createSchool(org3).save()
+
                 const schools = [school1, school2],
                     roles = [role1, role2]
                 for (let i = 0; i < schools.length; i++) {
@@ -435,6 +456,12 @@ describe('acceptance.myUser', () => {
                         roles: [roles[i]],
                     }).save()
                 }
+
+                await createSchoolMembership({
+                    user: clientUser,
+                    school: school4,
+                    roles: [],
+                }).save()
             })
 
             it('fetches schools which the user has the checked permissions in', async () => {
@@ -445,6 +472,7 @@ describe('acceptance.myUser', () => {
                         permissionIds: [
                             PermissionName.view_users_40110,
                             PermissionName.view_school_classes_20117,
+                            PermissionName.view_classes_20114,
                         ],
                         operator: 'OR',
                     },
@@ -456,7 +484,15 @@ describe('acceptance.myUser', () => {
 
                 expect(
                     result.edges.map((e) => e.node['id'])
-                ).to.have.same.members([school1.school_id, school2.school_id])
+                ).to.have.same.members([
+                    school1.school_id,
+                    school2.school_id,
+                    school3.school_id,
+                ])
+
+                expect(
+                    result.edges.map((e) => e.node['id'])
+                ).to.not.have.members([school4.school_id])
             })
 
             it('errors with status 400 if the required arguments are not given', async () => {
