@@ -175,6 +175,13 @@ export class SubjectsInitializer {
                 'd68c6c5d-c739-46d8-be70-e70d6c565949', // Core Subjects
             ],
         },
+        {
+            id: 'ae899fcf-0f50-4cf8-b633-ef9debfb78a1',
+            name: 'English Language Learning',
+            categories: [
+                '1b77de04-6ac0-4b05-8dfb-39e5db84dd9a', // English Language Learning
+            ],
+        },
     ]
 
     public async run() {

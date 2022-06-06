@@ -400,6 +400,34 @@ export class SubcategoriesInitializer {
         { id: '51f09b4e-2b74-4ace-a056-cf97f85664cf', name: 'Attributes' },
         { id: '7ce95d05-ad4d-4bfc-b6be-901739a4bac0', name: 'Comparison' },
         { id: 'b41ef932-8a75-4aee-b845-1a587f77dad9', name: 'Precision' },
+        {
+            id: 'af4f04f0-0e16-456b-b001-700330ff56ca',
+            name: 'Decoding & Word Recognition',
+        },
+        {
+            id: '168a9bc2-5ab7-46df-91a4-e044868764a2',
+            name: 'Reading Comprehension',
+        },
+        {
+            id: '44fe19d3-f6c5-45b0-b999-62299d10357b',
+            name: 'Oral Presentation',
+        },
+        {
+            id: 'ff1712bd-cc79-4b2b-9f9f-a970f3a2aa7d',
+            name: 'Bilingual Translation ',
+        },
+        {
+            id: 'b85f6396-5a14-4365-b0ec-7d192c9bce8a',
+            name: 'Written Response',
+        },
+        {
+            id: '720fef48-574e-4197-b0a7-f4d033544866',
+            name: 'Syntax & Grammar',
+        },
+        {
+            id: 'c323f05f-ac6d-420d-bb3b-5867636121dc',
+            name: 'Visual Processing',
+        },
     ]
 
     public async run() {
