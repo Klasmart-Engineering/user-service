@@ -125,7 +125,6 @@ export interface EntityMapAddRemovePrograms extends EntityMap<Class> {
     mainEntity: Map<string, Class>
     programs: Map<string, Program>
     classPrograms: Map<string, Program[]>
-    organizations: Map<string, Organization>
 }
 
 export class AddProgramsToClasses extends AddMutation<
@@ -154,30 +153,28 @@ export class AddProgramsToClasses extends AddMutation<
         _input: AddProgramsToClassInput[],
         maps: EntityMapAddRemovePrograms
     ): Promise<void> {
+        const organization_ids = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values(), (c) => c.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: [...maps.organizations.keys()] },
+            { organization_ids },
             PermissionName.edit_class_20334
         )
     }
 
     protected validationOverAllInputs(
-        inputs: AddProgramsToClassInput[],
-        entityMaps: EntityMapAddRemovePrograms
+        inputs: AddProgramsToClassInput[]
     ): {
         validInputs: { index: number; input: AddProgramsToClassInput }[]
         apiErrors: APIError[]
     } {
-        return filterInvalidInputs(
-            inputs,
-            validateActiveAndNoDuplicates(
-                inputs,
-                entityMaps,
+        return filterInvalidInputs(inputs, [
+            validateNoDuplicate(
                 inputs.map((val) => val.classId),
-                this.EntityType.name,
                 this.inputTypeName,
-                'classId'
-            )
-        )
+                ['classId']
+            ),
+        ])
     }
 
     protected validate(
@@ -188,12 +185,30 @@ export class AddProgramsToClasses extends AddMutation<
     ): APIError[] {
         const errors: APIError[] = []
         const { classId, programIds } = currentInput
-        const programMap = maps.programs
 
+        const classExists = flagNonExistent(
+            Class,
+            index,
+            [classId],
+            maps.mainEntity
+        )
+        errors.push(...classExists.errors)
+
+        const programMap = maps.programs
         const programs = flagNonExistent(Program, index, programIds, programMap)
         errors.push(...programs.errors)
 
-        if (programs.errors.length) return errors
+        if (errors.length) return errors
+
+        const programsNotInOrgError = validateSubItemsInOrg(
+            Program,
+            programIds,
+            index,
+            programMap,
+            classExists.values[0].organization_id
+        )
+        errors.push(...programsNotInOrgError)
+
         const classProgramIds = new Set(
             maps.classPrograms.get(classId)?.map((p) => p.id)
         )
@@ -268,15 +283,17 @@ export class RemoveProgramsFromClasses extends RemoveMutation<
         _input: RemoveProgramsFromClassInput[],
         maps: EntityMapAddRemovePrograms
     ): Promise<void> {
+        const organization_ids = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values(), (c) => c.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: [...maps.organizations.keys()] },
+            { organization_ids },
             PermissionName.edit_class_20334
         )
     }
 
     protected validationOverAllInputs(
-        inputs: RemoveProgramsFromClassInput[],
-        entityMaps: EntityMapAddRemovePrograms
+        inputs: RemoveProgramsFromClassInput[]
     ): {
         validInputs: { index: number; input: RemoveProgramsFromClassInput }[]
         apiErrors: APIError[]
@@ -287,19 +304,13 @@ export class RemoveProgramsFromClasses extends RemoveMutation<
             'programIds'
         )
 
-        const validateActAndNoDup = validateActiveAndNoDuplicates(
-            inputs,
-            entityMaps,
+        const validateNoDup = validateNoDuplicate(
             inputs.map((val) => val.classId),
-            this.EntityType.name,
             this.inputTypeName,
-            'classId'
+            ['classId']
         )
 
-        return filterInvalidInputs(inputs, [
-            ...validateActAndNoDup,
-            ...validateSubItems,
-        ])
+        return filterInvalidInputs(inputs, [validateNoDup, ...validateSubItems])
     }
 
     protected validate = (
@@ -310,12 +321,20 @@ export class RemoveProgramsFromClasses extends RemoveMutation<
     ): APIError[] => {
         const errors: APIError[] = []
         const { classId, programIds } = currentInput
-        const programMap = maps.programs
 
+        const classExists = flagNonExistent(
+            Class,
+            index,
+            [classId],
+            maps.mainEntity
+        )
+        errors.push(...classExists.errors)
+
+        const programMap = maps.programs
         const programs = flagNonExistent(Program, index, programIds, programMap)
         errors.push(...programs.errors)
 
-        if (programs.errors.length) return errors
+        if (errors.length) return errors
         const classProgramIds = new Set(
             maps.classPrograms.get(classId)?.map((p) => p.id)
         )
@@ -351,9 +370,7 @@ export class RemoveProgramsFromClasses extends RemoveMutation<
     }
 
     protected buildOutput = async (currentClass: Class): Promise<void> => {
-        this.output.classes.push(
-            await mapClassToClassConnectionNode(currentClass)
-        )
+        this.output.classes.push(mapClassToClassConnectionNode(currentClass))
     }
 }
 
@@ -361,33 +378,20 @@ async function generateMapsForAddingRemovingPrograms(
     classIds: string[],
     input: AddProgramsToClassInput[]
 ): Promise<EntityMapAddRemovePrograms> {
-    const classes = getMap.class(classIds, ['programs'])
-    const programs = getMap.program(input.flatMap((i) => i.programIds))
+    const programIds = input.flatMap((i) => i.programIds)
+    const programs = getMap.program(programIds, ['organization'])
 
+    const classes = await getMap.class(classIds, ['programs', 'organization'])
     const classPrograms = new Map<string, Program[]>()
-    for (const class_ of (await classes).values()) {
+    for (const class_ of classes.values()) {
         // eslint-disable-next-line no-await-in-loop
         classPrograms.set(class_.class_id, (await class_.programs) || [])
     }
 
-    const preloadedOrganizationArray = Organization.createQueryBuilder()
-        .select('Organization.organization_id')
-        .innerJoin(`Organization.classes`, 'Class')
-        .where(`"Class"."class_id" IN (:...classIds)`, {
-            classIds,
-        })
-        .getMany()
-
     return {
-        mainEntity: await classes,
+        mainEntity: classes,
         programs: await programs,
         classPrograms,
-        organizations: new Map(
-            (await preloadedOrganizationArray).map((i) => [
-                i.organization_id,
-                i,
-            ])
-        ),
     }
 }
 

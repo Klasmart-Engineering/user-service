@@ -633,10 +633,11 @@ describe('acceptance.school', () => {
                 email: UserPermissions.ADMIN_EMAILS[0],
             }).save()
 
-            const org = await createOrganization().save()
-            const school = await createSchoolFactory(org).save()
+            const organization = await createOrganization().save()
+            const school = await createSchoolFactory(organization).save()
             const user = await createUser().save()
             const role = await createRole().save()
+            await createOrganizationMembership({ user, organization }).save()
 
             input = [
                 {

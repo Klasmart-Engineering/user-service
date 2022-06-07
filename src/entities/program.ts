@@ -8,6 +8,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    RelationId,
 } from 'typeorm'
 import { Status } from './status'
 import { Organization } from './organization'
@@ -50,6 +51,9 @@ export class Program extends CustomBaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.programs)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @RelationId((program: Program) => program.organization)
+    public readonly organization_id?: string
 
     @ManyToMany(() => School, (school) => school.programs)
     public schools?: Promise<School>

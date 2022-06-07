@@ -75,7 +75,10 @@ import {
     DeleteUsersFromSchools,
 } from '../../src/resolvers/school'
 import { buildPermissionError, permErrorMeta } from '../utils/errors'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import {
+    createOrganizationMembership,
+    createOrganizationMemberships,
+} from '../factories/organizationMembership.factory'
 import {
     createUser,
     createAdminUser as createAdmin,
@@ -84,7 +87,10 @@ import {
 import { createOrganization } from '../factories/organization.factory'
 import { formatShortCode, generateShortCode } from '../../src/utils/shortcode'
 import faker from 'faker'
-import { createSchools } from '../factories/school.factory'
+import {
+    createSchool as createSchoolFactory,
+    createSchools,
+} from '../factories/school.factory'
 import {
     createClasses,
     createClass as createFactoryClass,
@@ -119,6 +125,7 @@ import { customErrors } from '../../src/types/errors/customError'
 import { createAcademicTerm } from '../factories/academicTerm.factory'
 import { SinonFakeTimers } from 'sinon'
 import sinon from 'sinon'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
 
 use(deepEqualInAnyOrder)
 use(chaiAsPromised)
@@ -1904,7 +1911,7 @@ describe('school', () => {
                     async () => await schools[2].inactivate(getManager())
                 )
 
-                it('returns an nonexistent school error', async () => {
+                it('returns a nonexistent school error', async () => {
                     const res = await expect(addClasses()).to.be.rejected
                     checkNotFoundErrors(res, [
                         {
@@ -1923,7 +1930,7 @@ describe('school', () => {
                     async () => await classes[1].inactivate(getManager())
                 )
 
-                it('returns an nonexistent class error', async () => {
+                it('returns a nonexistent class error', async () => {
                     const res = await expect(addClasses()).to.be.rejected
                     checkNotFoundErrors(res, [
                         {
@@ -2142,7 +2149,7 @@ describe('school', () => {
                 expect(apiErrors).to.have.length(1)
                 const error = createDuplicateAttributeAPIError(
                     1,
-                    ['id'],
+                    ['schoolId'],
                     'TestChangeSchoolMembershipStatusInput'
                 )
                 compareErrors(apiErrors[0], error)
@@ -2598,6 +2605,7 @@ describe('school', () => {
         let schools: School[]
         let programs: Program[]
         let input: AddProgramsToSchoolInput[]
+        let otherOrganization: Organization
 
         function addPrograms(authUser = adminUser) {
             const permissions = new UserPermissions(userToPayload(authUser))
@@ -2639,8 +2647,16 @@ describe('school', () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
-            schools = createSchools(3)
-            programs = createPrograms(4, organization)
+            otherOrganization = await createOrganization().save()
+            schools = [
+                createSchoolFactory(otherOrganization),
+                ...createSchools(2, organization),
+            ]
+            programs = [
+                createProgram(otherOrganization),
+                ...createPrograms(2, organization),
+                createProgram(undefined, undefined, undefined, undefined, true),
+            ]
             await connection.manager.save([...schools, ...programs])
             input = [
                 {
@@ -2653,180 +2669,211 @@ describe('school', () => {
                 },
                 {
                     schoolId: schools[2].school_id,
-                    programIds: [
-                        programs[0].id,
-                        programs[2].id,
-                        programs[3].id,
-                    ],
+                    programIds: [programs[2].id, programs[3].id],
                 },
             ]
         })
 
-        context(
-            'when caller has permissions to add programs to schools',
-            () => {
-                context('and all attributes are valid', () => {
-                    it('adds all the programs', async () => {
-                        await expect(addPrograms()).to.be.fulfilled
-                        await checkProgramsAddedToSchools()
-                    })
+        context('when caller is an admin', () => {
+            context('and all attributes are valid', () => {
+                it('adds all the programs', async () => {
+                    await expect(addPrograms()).to.be.fulfilled
+                    await checkProgramsAddedToSchools()
                 })
+            })
 
-                context('and one of the programs was already added', () => {
-                    beforeEach(async () => {
-                        schools[0].programs = Promise.resolve([programs[0]])
-                        await schools[0].save()
-                    })
-
-                    it('returns a duplicate user error', async () => {
-                        const res = await expect(addPrograms()).to.be.rejected
-                        expectAPIError.existent_child_entity(
-                            res,
-                            {
-                                entity: 'Program',
-                                entityName: programs[0].id,
-                                parentEntity: 'School',
-                                parentName: schools[0].school_id,
-                                index: 0,
-                            },
-                            [''],
-                            0,
-                            1
-                        )
-                    })
-                })
-
-                context('and one of the schools is inactive', async () => {
-                    beforeEach(
-                        async () => await schools[2].inactivate(getManager())
-                    )
-
-                    it('returns an nonexistent school error', async () => {
-                        const res = await expect(addPrograms()).to.be.rejected
-                        checkNotFoundErrors(res, [
-                            {
-                                entity: 'School',
-                                id: schools[2].school_id,
-                                entryIndex: 2,
-                            },
-                        ])
-                    })
-
-                    await checkNoChangesMade()
-                })
-
-                context('and one of the programs is inactive', async () => {
-                    beforeEach(
-                        async () => await programs[1].inactivate(getManager())
-                    )
-
-                    it('returns an nonexistent program error', async () => {
-                        const res = await expect(addPrograms()).to.be.rejected
-                        checkNotFoundErrors(res, [
-                            {
-                                entity: 'Program',
-                                id: programs[1].id,
-                                entryIndex: 1,
-                            },
-                        ])
-                    })
-
-                    await checkNoChangesMade()
-                })
-
-                context('and one of each attribute is inactive', async () => {
-                    beforeEach(async () => {
-                        await Promise.all([
-                            schools[2].inactivate(getManager()),
-                            programs[1].inactivate(getManager()),
-                        ])
-                    })
-
-                    it('returns several nonexistent errors', async () => {
-                        const res = await expect(addPrograms()).to.be.rejected
-                        checkNotFoundErrors(res, [
-                            {
-                                entity: 'School',
-                                id: schools[2].school_id,
-                                entryIndex: 2,
-                            },
-                            {
-                                entity: 'Program',
-                                id: programs[1].id,
-                                entryIndex: 1,
-                            },
-                        ])
-                    })
-
-                    await checkNoChangesMade()
-                })
-
-                context('when adding 1 program then 20 programs', () => {
-                    it('makes the same number of database calls', async () => {
-                        const twentyPrograms = createPrograms(20, organization)
-                        connection.logger.reset()
-                        input = [
-                            {
-                                schoolId: schools[0].school_id,
-                                programIds: [programs[0].id],
-                            },
-                        ]
-                        await expect(addPrograms()).to.be.fulfilled
-                        const baseCount = connection.logger.count
-                        await connection.manager.save([...twentyPrograms])
-                        input = [
-                            {
-                                schoolId: schools[0].school_id,
-                                programIds: twentyPrograms.map((p) => p.id),
-                            },
-                        ]
-                        connection.logger.reset()
-                        await expect(addPrograms()).to.be.fulfilled
-                        expect(connection.logger.count).to.equal(baseCount)
-                    })
-                })
-            }
-        )
-
-        context(
-            'when caller does not have permissions to add programs to all schools',
-            async () => {
+            context('and one of the programs was already added', () => {
                 beforeEach(async () => {
-                    const nonAdminRole = await roleFactory(
-                        'Non Admin Role',
-                        organization,
+                    schools[0].programs = Promise.resolve([programs[0]])
+                    await schools[0].save()
+                })
+
+                it('returns a duplicate user error', async () => {
+                    const res = await expect(addPrograms()).to.be.rejected
+                    expectAPIError.existent_child_entity(
+                        res,
                         {
-                            permissions: [PermissionName.edit_school_20330],
-                        }
-                    ).save()
-                    await createOrganizationMembership({
-                        user: nonAdminUser,
-                        organization: organization,
-                        roles: [nonAdminRole],
-                    }).save()
-                    await createSchoolMembership({
-                        user: nonAdminUser,
-                        school: schools[0],
-                        roles: [nonAdminRole],
-                    }).save()
-                })
-
-                it('returns a permission error', async () => {
-                    const sc = [schools[1], schools[2]]
-                    const errorMessage = buildPermissionError(
-                        PermissionName.edit_school_20330,
-                        nonAdminUser,
-                        undefined,
-                        sc
-                    )
-                    await expect(addPrograms(nonAdminUser)).to.be.rejectedWith(
-                        errorMessage
+                            entity: 'Program',
+                            entityName: programs[0].id,
+                            parentEntity: 'School',
+                            parentName: schools[0].school_id,
+                            index: 0,
+                        },
+                        [''],
+                        0,
+                        1
                     )
                 })
+            })
 
-                await checkNoChangesMade(false)
-            }
-        )
+            context('and one of the schools is inactive', async () => {
+                beforeEach(
+                    async () => await schools[2].inactivate(getManager())
+                )
+
+                it('returns a nonexistent school error', async () => {
+                    const res = await expect(addPrograms()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'School',
+                            id: schools[2].school_id,
+                            entryIndex: 2,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of the programs is inactive', async () => {
+                beforeEach(
+                    async () => await programs[1].inactivate(getManager())
+                )
+
+                it('returns a nonexistent program error', async () => {
+                    const res = await expect(addPrograms()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Program',
+                            id: programs[1].id,
+                            entryIndex: 1,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        schools[2].inactivate(getManager()),
+                        programs[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent errors', async () => {
+                    const res = await expect(addPrograms()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Program',
+                            id: programs[1].id,
+                            entryIndex: 1,
+                        },
+                        {
+                            entity: 'School',
+                            id: schools[2].school_id,
+                            entryIndex: 2,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context(
+                'and a non-system program belongs to a different organization',
+                async () => {
+                    beforeEach(() => input[2].programIds.push(programs[0].id))
+
+                    it('returns a nonexistent program error', async () => {
+                        const xError = createEntityAPIError(
+                            'nonExistentChild',
+                            2,
+                            'Program',
+                            programs[0].id,
+                            'Organization',
+                            organization.organization_id
+                        )
+                        const res = await expect(addPrograms()).to.be.rejected
+                        compareMultipleErrors(res.errors, [xError])
+                    })
+
+                    await checkNoChangesMade()
+                }
+            )
+
+            context('when adding 1 program then 5 programs', () => {
+                it('makes the same number of database calls', async () => {
+                    connection.logger.reset()
+                    input = [
+                        {
+                            schoolId: schools[1].school_id,
+                            programIds: [programs[1].id],
+                        },
+                    ]
+                    await expect(addPrograms()).to.be.fulfilled
+                    const baseCount = connection.logger.count
+
+                    const fivePrograms = createPrograms(5, organization)
+                    await connection.manager.save([...fivePrograms])
+                    input = [
+                        {
+                            schoolId: schools[2].school_id,
+                            programIds: fivePrograms.map((p) => p.id),
+                        },
+                    ]
+                    connection.logger.reset()
+                    await expect(addPrograms()).to.be.fulfilled
+                    expect(connection.logger.count).to.equal(baseCount)
+                })
+            })
+        })
+
+        context('when caller is regular user', () => {
+            beforeEach(async () => {
+                const nonAdminRole = await roleFactory(
+                    'Non Admin Role 1',
+                    organization,
+                    { permissions: [PermissionName.edit_school_20330] }
+                ).save()
+                await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: organization,
+                    roles: [nonAdminRole],
+                }).save()
+            })
+
+            context(
+                'when caller does have permissions to add programs to all classes',
+                async () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await roleFactory(
+                            'Non Admin Role 2',
+                            otherOrganization,
+                            { permissions: [PermissionName.edit_school_20330] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: otherOrganization,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('does not return a permission error', async () => {
+                        await expect(addPrograms(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when caller does not have permissions to add programs to all classes',
+                async () => {
+                    it('returns a permission error', async () => {
+                        const errorMessage = buildPermissionError(
+                            PermissionName.edit_school_20330,
+                            nonAdminUser,
+                            [otherOrganization]
+                        )
+                        await expect(
+                            addPrograms(nonAdminUser)
+                        ).to.be.rejectedWith(errorMessage)
+                    })
+
+                    await checkNoChangesMade(false)
+                }
+            )
+        })
     })
 
     describe('RemoveProgramsFromSchools', () => {
@@ -2954,7 +3001,7 @@ describe('school', () => {
                         async () => await schools[2].inactivate(getManager())
                     )
 
-                    it('returns an nonexistent school error', async () => {
+                    it('returns a nonexistent school error', async () => {
                         const res = await expect(removePrograms()).to.be
                             .rejected
                         checkNotFoundErrors(res, [
@@ -2974,7 +3021,7 @@ describe('school', () => {
                         async () => await programs[1].inactivate(getManager())
                     )
 
-                    it('returns an nonexistent program error', async () => {
+                    it('returns a nonexistent program error', async () => {
                         const res = await expect(removePrograms()).to.be
                             .rejected
                         checkNotFoundErrors(res, [
@@ -3235,7 +3282,7 @@ describe('school', () => {
                         await schools[2].save()
                     })
 
-                    it('returns an nonexistent school error', async () => {
+                    it('returns a nonexistent school error', async () => {
                         const res = await expect(removeClasses(input)).to.be
                             .rejected
 
@@ -3256,7 +3303,7 @@ describe('school', () => {
                         await classes[1].inactivate(getManager())
                     })
 
-                    it('returns an nonexistent class error', async () => {
+                    it('returns a nonexistent class error', async () => {
                         const res = await expect(removeClasses(input)).to.be
                             .rejected
 
@@ -3408,6 +3455,7 @@ describe('school', () => {
         let users: User[]
         let schools: School[]
         let roles: Role[]
+        let orgMemberships: OrganizationMembership[]
 
         let input: AddUsersToSchoolInput[]
         let clock: SinonFakeTimers
@@ -3421,6 +3469,9 @@ describe('school', () => {
             users = createUsers(3)
             roles = createRoles(3)
             await connection.manager.save([...users, ...schools, ...roles])
+            orgMemberships = await OrganizationMembership.save([
+                ...createOrganizationMemberships(users, org),
+            ])
 
             input = [
                 {
@@ -3496,8 +3547,8 @@ describe('school', () => {
                     connection.logger.reset()
                     await getAddUsersToSchools().run()
                     expect(connection.logger.count).to.equal(
-                        8,
-                        'preload: 4, authorize: 1, save: 1 select for all memberships, 1 membership insert, 1 roles insert'
+                        9,
+                        'preload: 5, authorize: 1, save: 1 select for all memberships, 1 membership insert, 1 roles insert'
                     )
                 })
             })
@@ -3536,29 +3587,13 @@ describe('school', () => {
             })
         })
         context('.validationOverAllInputs', () => {
-            async function validateOverAllInputs() {
-                const mutation = getAddUsersToSchools()
-                const maps = await mutation.generateEntityMaps(input)
-                return mutation.validationOverAllInputs(input, maps)
+            function validateOverAllInputs() {
+                return getAddUsersToSchools().validationOverAllInputs(input)
             }
-            it('produces errors for nonexistent schools', async () => {
-                await schools[0].inactivate(getManager())
-                const result = await validateOverAllInputs()
-                const xErrors = [
-                    createEntityAPIError(
-                        'nonExistent',
-                        0,
-                        'School',
-                        schools[0].school_id
-                    ),
-                ]
-                compareMultipleErrors(result.apiErrors, xErrors)
-                expect(result.validInputs).to.have.length(1)
-            })
             it('produces errors for duplicate schools', async () => {
                 input.push(input[0])
 
-                const result = await validateOverAllInputs()
+                const result = validateOverAllInputs()
                 const xErrors = [
                     createDuplicateAttributeAPIError(
                         input.length - 1,
@@ -3573,7 +3608,7 @@ describe('school', () => {
                 context('userIds', () => {
                     it('checks for duplicates', async () => {
                         input[0].userIds.push(input[0].userIds[0])
-                        const result = await validateOverAllInputs()
+                        const result = validateOverAllInputs()
                         const xErrors = [
                             createDuplicateAttributeAPIError(
                                 0,
@@ -3588,7 +3623,7 @@ describe('school', () => {
                     })
                     it('checks for length', async () => {
                         input[0].userIds = []
-                        const result = await validateOverAllInputs()
+                        const result = validateOverAllInputs()
                         const xErrors = [
                             createInputLengthAPIError(
                                 'AddUsersToSchoolInput',
@@ -3608,7 +3643,7 @@ describe('school', () => {
                 context('schoolRoleIds', () => {
                     it('checks for duplicates', async () => {
                         input[0].schoolRoleIds!.push(input[0].schoolRoleIds![0])
-                        const result = await validateOverAllInputs()
+                        const result = validateOverAllInputs()
                         const xErrors = [
                             createDuplicateAttributeAPIError(
                                 0,
@@ -3623,7 +3658,7 @@ describe('school', () => {
                     })
                     it('checks for length', async () => {
                         input[0].schoolRoleIds = []
-                        const result = await validateOverAllInputs()
+                        const result = validateOverAllInputs()
                         const xErrors = [
                             createInputLengthAPIError(
                                 'AddUsersToSchoolInput',
@@ -3660,7 +3695,7 @@ describe('school', () => {
                         school: schools[0],
                     }).save()
                 })
-                it('returns a duplicate_child_entity error', async () => {
+                it('returns a existent_child_entity error', async () => {
                     const errors = await validate()
                     const xErrors = [
                         createEntityAPIError(
@@ -3676,9 +3711,28 @@ describe('school', () => {
                 })
             })
 
+            context('when one of the schools is inactive', async () => {
+                beforeEach(
+                    async () => await schools[1].inactivate(getManager())
+                )
+                it('returns a nonexistent_entity error', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            1,
+                            'School',
+                            schools[1].school_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade()
+                })
+            })
+
             context('when one of the users is inactive', async () => {
                 beforeEach(async () => await users[0].inactivate(getManager()))
-                it('returns an nonexistent_entity error', async () => {
+                it('returns a nonexistent_entity error', async () => {
                     const errors = await validate()
                     const xErrors = [
                         createEntityAPIError(
@@ -3695,7 +3749,7 @@ describe('school', () => {
 
             context('when one of the roles is inactive', async () => {
                 beforeEach(async () => await roles[0].inactivate(getManager()))
-                it('returns an nonexistent_entity error', async () => {
+                it('returns a nonexistent_entity error', async () => {
                     const errors = await validate()
                     const xErrors = [
                         createEntityAPIError(
@@ -3710,16 +3764,46 @@ describe('school', () => {
                 })
             })
 
+            context('when one of the org memberships is inactive', async () => {
+                beforeEach(
+                    async () => await orgMemberships[2].inactivate(getManager())
+                )
+                it('returns a nonexistent_child error', async () => {
+                    const errors = await validate()
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            1,
+                            'User',
+                            users[2].user_id,
+                            'Organization',
+                            org.organization_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                    await checkNoChangesMade()
+                })
+            })
+
             context('when one of each attribute is inactive', async () => {
                 beforeEach(async () => {
                     await Promise.all([
                         users[2].inactivate(getManager()),
                         roles[1].inactivate(getManager()),
+                        orgMemberships[0].inactivate(getManager()),
                     ])
                 })
                 it('returns several nonexistent_entity errors', async () => {
                     const errors = await validate()
                     const xErrors = [
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'User',
+                            users[0].user_id,
+                            'Organization',
+                            org.organization_id
+                        ),
                         createEntityAPIError(
                             'nonExistent',
                             1,

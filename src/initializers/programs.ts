@@ -241,7 +241,6 @@ export class ProgramsInitializer {
                 id: systemProgram.id,
                 name: systemProgram.name,
                 system: true,
-                organization_id: null,
                 status: Status.ACTIVE,
             }
 

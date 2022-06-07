@@ -5960,6 +5960,7 @@ describe('class', () => {
         let adminUser: User
         let nonAdminUser: User
         let organization: Organization
+        let otherOrganization: Organization
         let classes: Class[]
         let programs: Program[]
         let input: AddProgramsToClassInput[]
@@ -6004,8 +6005,16 @@ describe('class', () => {
             adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization = await createOrganization().save()
-            classes = createClassesFactory(3)
-            programs = createPrograms(3, organization)
+            otherOrganization = await createOrganization().save()
+            classes = [
+                createClassFactory(undefined, otherOrganization),
+                ...createClassesFactory(2, organization),
+            ]
+            programs = [
+                createProgram(otherOrganization),
+                createProgram(organization),
+                createProgram(undefined, undefined, undefined, undefined, true),
+            ]
             await connection.manager.save([...classes, ...programs])
             input = [
                 {
@@ -6018,169 +6027,211 @@ describe('class', () => {
                 },
                 {
                     classId: classes[2].class_id,
-                    programIds: [programs[0].id, programs[2].id],
+                    programIds: [programs[2].id],
                 },
             ]
         })
 
-        context(
-            'when caller has permissions to add programs to classes',
-            () => {
-                context('and all attributes are valid', () => {
-                    it('adds all the programs', async () => {
-                        await expect(addPrograms()).to.be.fulfilled
-                        await checkOutput()
-                    })
+        context('when caller is an admin', () => {
+            context('and all attributes are valid', () => {
+                it('adds all the programs', async () => {
+                    await expect(addPrograms()).to.be.fulfilled
+                    await checkOutput()
+                })
+            })
+
+            context('and one of the programs was already added', () => {
+                beforeEach(async () => {
+                    classes[0].programs = Promise.resolve([programs[0]])
+                    await classes[0].save()
                 })
 
-                context('and one of the programs was already added', () => {
-                    beforeEach(async () => {
-                        classes[0].programs = Promise.resolve([programs[0]])
-                        await classes[0].save()
-                    })
-
-                    it('returns a duplicate user error', async () => {
-                        const res = await expect(addPrograms()).to.be.rejected
-                        expectAPIError.existent_child_entity(
-                            res,
-                            {
-                                entity: 'Program',
-                                entityName: programs[0].id,
-                                parentEntity: 'Class',
-                                parentName: classes[0].class_id,
-                                index: 0,
-                            },
-                            [''],
-                            0,
-                            1
-                        )
-                    })
-                })
-
-                context('and one of the classes is inactive', async () => {
-                    beforeEach(
-                        async () => await classes[2].inactivate(getManager())
+                it('returns a duplicate user error', async () => {
+                    const res = await expect(addPrograms()).to.be.rejected
+                    expectAPIError.existent_child_entity(
+                        res,
+                        {
+                            entity: 'Program',
+                            entityName: programs[0].id,
+                            parentEntity: 'Class',
+                            parentName: classes[0].class_id,
+                            index: 0,
+                        },
+                        [''],
+                        0,
+                        1
                     )
+                })
+            })
 
-                    it('returns an nonexistent class error', async () => {
-                        const res = await expect(addPrograms()).to.be.rejected
-                        checkNotFoundErrors(res, [
-                            {
-                                entity: 'Class',
-                                id: classes[2].class_id,
-                                entryIndex: 2,
-                            },
-                        ])
-                    })
+            context('and one of the classes is inactive', async () => {
+                beforeEach(
+                    async () => await classes[2].inactivate(getManager())
+                )
 
-                    await checkNoChangesMade()
+                it('returns an nonexistent class error', async () => {
+                    const res = await expect(addPrograms()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Class',
+                            id: classes[2].class_id,
+                            entryIndex: 2,
+                        },
+                    ])
                 })
 
-                context('and one of the programs is inactive', async () => {
-                    beforeEach(
-                        async () => await programs[1].inactivate(getManager())
-                    )
+                await checkNoChangesMade()
+            })
+
+            context('and one of the programs is inactive', async () => {
+                beforeEach(
+                    async () => await programs[1].inactivate(getManager())
+                )
+
+                it('returns an nonexistent program error', async () => {
+                    const res = await expect(addPrograms()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Program',
+                            id: programs[1].id,
+                            entryIndex: 1,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        classes[2].inactivate(getManager()),
+                        programs[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent errors', async () => {
+                    const res = await expect(addPrograms()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Program',
+                            id: programs[1].id,
+                            entryIndex: 1,
+                        },
+                        {
+                            entity: 'Class',
+                            id: classes[2].class_id,
+                            entryIndex: 2,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context(
+                'and a non-system program belongs to a different organization',
+                async () => {
+                    beforeEach(() => input[2].programIds.push(programs[0].id))
 
                     it('returns an nonexistent program error', async () => {
+                        const xError = createEntityAPIError(
+                            'nonExistentChild',
+                            2,
+                            'Program',
+                            programs[0].id,
+                            'Organization',
+                            organization.organization_id
+                        )
                         const res = await expect(addPrograms()).to.be.rejected
-                        checkNotFoundErrors(res, [
-                            {
-                                entity: 'Program',
-                                id: programs[1].id,
-                                entryIndex: 1,
-                            },
-                        ])
+                        compareMultipleErrors(res.errors, [xError])
                     })
 
                     await checkNoChangesMade()
-                })
+                }
+            )
 
-                context('and one of each attribute is inactive', async () => {
-                    beforeEach(async () => {
-                        await Promise.all([
-                            classes[2].inactivate(getManager()),
-                            programs[1].inactivate(getManager()),
-                        ])
-                    })
-
-                    it('returns several nonexistent errors', async () => {
-                        const res = await expect(addPrograms()).to.be.rejected
-                        checkNotFoundErrors(res, [
-                            {
-                                entity: 'Class',
-                                id: classes[2].class_id,
-                                entryIndex: 2,
-                            },
-                            {
-                                entity: 'Program',
-                                id: programs[1].id,
-                                entryIndex: 1,
-                            },
-                        ])
-                    })
-
-                    await checkNoChangesMade()
-                })
-
-                context('when adding 1 program then 20 programs', () => {
-                    it('makes the same number of database calls', async () => {
-                        const twentyPrograms = createPrograms(20, organization)
-                        connection.logger.reset()
-                        input = [
-                            {
-                                classId: classes[0].class_id,
-                                programIds: [programs[0].id],
-                            },
-                        ]
-                        await expect(addPrograms()).to.be.fulfilled
-                        const baseCount = connection.logger.count
-                        await connection.manager.save([...twentyPrograms])
-                        input = [
-                            {
-                                classId: classes[0].class_id,
-                                programIds: twentyPrograms.map((p) => p.id),
-                            },
-                        ]
-                        connection.logger.reset()
-                        await expect(addPrograms()).to.be.fulfilled
-                        expect(connection.logger.count).to.equal(baseCount)
-                    })
-                })
-            }
-        )
-
-        context(
-            'when caller does not have permissions to add programs to all classes',
-            async () => {
-                beforeEach(async () => {
-                    const nonAdminRole = await createRoleFactory(
-                        'Non Admin Role',
-                        organization,
+            context('when adding 1 program then 5 programs', () => {
+                it('makes the same number of database calls', async () => {
+                    connection.logger.reset()
+                    input = [
                         {
-                            permissions: [PermissionName.edit_class_20334],
-                        }
-                    ).save()
-                    await createOrganizationMembership({
-                        user: nonAdminUser,
-                        organization: organization,
-                        roles: [nonAdminRole],
-                    }).save()
-                })
+                            classId: classes[1].class_id,
+                            programIds: [programs[1].id],
+                        },
+                    ]
+                    await expect(addPrograms()).to.be.fulfilled
+                    const baseCount = connection.logger.count
 
-                it('returns a permission error', async () => {
-                    const errorMessage = buildPermissionError(
-                        PermissionName.edit_class_20334,
-                        nonAdminUser,
-                        undefined
-                    )
-                    await expect(addPrograms(nonAdminUser)).to.be.rejectedWith(
-                        errorMessage
-                    )
+                    const fivePrograms = createPrograms(5, organization)
+                    await connection.manager.save([...fivePrograms])
+                    input = [
+                        {
+                            classId: classes[2].class_id,
+                            programIds: fivePrograms.map((p) => p.id),
+                        },
+                    ]
+                    connection.logger.reset()
+                    await expect(addPrograms()).to.be.fulfilled
+                    expect(connection.logger.count).to.equal(baseCount)
                 })
+            })
+        })
 
-                await checkNoChangesMade(false)
-            }
-        )
+        context('when caller is regular user', () => {
+            beforeEach(async () => {
+                const nonAdminRole = await createRoleFactory(
+                    'Non Admin Role',
+                    organization,
+                    { permissions: [PermissionName.edit_class_20334] }
+                ).save()
+                await createOrganizationMembership({
+                    user: nonAdminUser,
+                    organization: organization,
+                    roles: [nonAdminRole],
+                }).save()
+            })
+
+            context(
+                'when caller does have permissions to add programs to all classes',
+                async () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            otherOrganization,
+                            { permissions: [PermissionName.edit_class_20334] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: otherOrganization,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('does not return a permission error', async () => {
+                        await expect(addPrograms(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when caller does not have permissions to add programs to all classes',
+                async () => {
+                    it('returns a permission error', async () => {
+                        const errorMessage = buildPermissionError(
+                            PermissionName.edit_class_20334,
+                            nonAdminUser,
+                            [otherOrganization]
+                        )
+                        await expect(
+                            addPrograms(nonAdminUser)
+                        ).to.be.rejectedWith(errorMessage)
+                    })
+
+                    await checkNoChangesMade(false)
+                }
+            )
+        })
     })
 
     describe('RemoveProgramsFromClasses', () => {
