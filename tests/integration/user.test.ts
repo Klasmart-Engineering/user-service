@@ -1158,6 +1158,12 @@ describe('user', () => {
                                 'edit_class_20334',
                                 { authorization: getAdminAuthToken() }
                             ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'view_classes_20114',
+                                { authorization: getAdminAuthToken() }
+                            ),
                         ])
                         await addOrganizationToUserAndValidate(
                             testClient,
