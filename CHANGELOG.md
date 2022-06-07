@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.5.0](https://github.com/KL-Engineering/user-service/compare/v4.4.0...v4.5.0) (2022-06-07)
+
+
+### Features
+
+* **AD-1539:** add age ranges to classes mutation ([#157](https://github.com/KL-Engineering/user-service/issues/157)) ([d2fec46](https://github.com/KL-Engineering/user-service/commit/d2fec46e7cd7e9561f718333bd3f343e8291269d))
+* **AD-1540:** remove age ranges from classes mutation ([#164](https://github.com/KL-Engineering/user-service/issues/164)) ([1077fe8](https://github.com/KL-Engineering/user-service/commit/1077fe80b215bd0f7c4456abc033a90cbc926e65))
+* **AD-1541:** add grades to class, updates based on latest comments in PR ([366e6cf](https://github.com/KL-Engineering/user-service/commit/366e6cfed50a257ccebb765eb698700f0d89c9f2))
+* **AD-1541:** added mutation to add grades to classes ([2dd9bd7](https://github.com/KL-Engineering/user-service/commit/2dd9bd71d1d833ea4eb1ed828ca157acfafcc1dc))
+* **AD-1543:** adding subjects to classes mutation ([#147](https://github.com/KL-Engineering/user-service/issues/147)) ([7bf1ca1](https://github.com/KL-Engineering/user-service/commit/7bf1ca11e5f373521172705075a69225f69ff3cf))
+* **AD-1545:** removing subjects from classes mutation ([#152](https://github.com/KL-Engineering/user-service/issues/152)) ([2803949](https://github.com/KL-Engineering/user-service/commit/2803949944752753968c118b77233c7c110df9b7))
+* **AD-2481:** added Bada Steam 2 program and dependencies ([#162](https://github.com/KL-Engineering/user-service/issues/162)) ([ca9a0c0](https://github.com/KL-Engineering/user-service/commit/ca9a0c070daee2e4f0349dcc18585321dd8fb85e))
+* **AD-2551:** academic term renamed to period in class csv upload ([#179](https://github.com/KL-Engineering/user-service/issues/179)) ([28e959d](https://github.com/KL-Engineering/user-service/commit/28e959d39ee9e6d069ac0d255204986e0279609b))
+* deprecate school and school membership mutations ([#174](https://github.com/KL-Engineering/user-service/issues/174)) ([8e5bef8](https://github.com/KL-Engineering/user-service/commit/8e5bef886512fb3b6a532f0ed69d67f2651d1e99))
+* **UD-1480:** delete grades mutation ([#180](https://github.com/KL-Engineering/user-service/issues/180)) ([7956297](https://github.com/KL-Engineering/user-service/commit/795629770b2c88baf04e586be5364003e761301b))
+* **UD-2449:** deprecate age_range mutation ([#184](https://github.com/KL-Engineering/user-service/issues/184)) ([788e20c](https://github.com/KL-Engineering/user-service/commit/788e20ce4b67defaf3ff8ead3e14b543cd7e45f3))
+* **UD-2547:** added new permission view_my_school_class_users_20121 and did permission sync up ([#196](https://github.com/KL-Engineering/user-service/issues/196)) ([6f07810](https://github.com/KL-Engineering/user-service/commit/6f07810b1c21203bbd7ddd933638b5006470f9d4))
+* **UD-2560:** new 'Junior Reading Tutor' content ([#192](https://github.com/KL-Engineering/user-service/issues/192)) ([adfd952](https://github.com/KL-Engineering/user-service/commit/adfd95267d710acdf67a1b9d960d58db852c9161))
+
+
+### Bug Fixes
+
+* **AD-1541:**  moved gradeIds to top in class resolver entity map ([3a916f1](https://github.com/KL-Engineering/user-service/commit/3a916f1294e63d92cbc3c659b46606f0bbb3abd8))
+* **AD-1940:** fix acceptance test setup for admin users ([#176](https://github.com/KL-Engineering/user-service/issues/176)) ([8ce66e7](https://github.com/KL-Engineering/user-service/commit/8ce66e714f52d3f5808a2f0a09950b159424abb5))
+* **AD-2141:** system roles cannot be deleted by anyone ([#177](https://github.com/KL-Engineering/user-service/issues/177)) ([f413837](https://github.com/KL-Engineering/user-service/commit/f4138376c7440954c0a79d3c075daa777c3bb197))
+* **AD-2141:** system roles cannot be updated by anyone ([#171](https://github.com/KL-Engineering/user-service/issues/171)) ([c9b111d](https://github.com/KL-Engineering/user-service/commit/c9b111d2bd2a601e33464b49c9c865eabf304e24))
+* **AD-2376:** sync db schemas ([#79](https://github.com/KL-Engineering/user-service/issues/79)) ([9350038](https://github.com/KL-Engineering/user-service/commit/9350038d064bf29b709e65cd46b0e5286e394f3b))
+* **AD-2401:** isAdmin scope to organization queries and mutations ([#145](https://github.com/KL-Engineering/user-service/issues/145)) ([cfe29cd](https://github.com/KL-Engineering/user-service/commit/cfe29cdf2cac5ff339b1bc23fa618bd8d8002973))
+* **AD-2460:** reduce cost of non admin scope paginated user query ([#143](https://github.com/KL-Engineering/user-service/issues/143)) ([16622b5](https://github.com/KL-Engineering/user-service/commit/16622b54727d00b4d57751140ec90945fd4bd4dc))
+* **AD-2486:** stop eligibleteacher/students returning non active users or members ([#156](https://github.com/KL-Engineering/user-service/issues/156)) ([77ea0ee](https://github.com/KL-Engineering/user-service/commit/77ea0ee5e8a3e827580c8718e9268f32b2291208))
+* **AD-2504:** filter superadmin roles ([#159](https://github.com/KL-Engineering/user-service/issues/159)) ([a487f4b](https://github.com/KL-Engineering/user-service/commit/a487f4b55de0f9dce7f7ec8bb227cffacceed3fd))
+* **AD-2517:** adding missing organization validations in AddXToY mutations  ([#183](https://github.com/KL-Engineering/user-service/issues/183)) ([582e093](https://github.com/KL-Engineering/user-service/commit/582e093d18654594ef94250f73368712297bff02))
+* **AD-2518:** restrict user.createOrganization to super admins ([#163](https://github.com/KL-Engineering/user-service/issues/163)) ([c60c7e9](https://github.com/KL-Engineering/user-service/commit/c60c7e96395b2f69b2dea4e4065c0fb29cf94c6c))
+* check for repeated categories to check name not id ([#167](https://github.com/KL-Engineering/user-service/issues/167)) ([771285b](https://github.com/KL-Engineering/user-service/commit/771285b2987b53f0f1c13b5d03f1e35105b488da))
+* **UD-2554:** loosen CSP rules to fix the landing page & playground ([#178](https://github.com/KL-Engineering/user-service/issues/178)) ([44aadf4](https://github.com/KL-Engineering/user-service/commit/44aadf42524f4e002fe4733e621a57856abe70b5))
+
+
+### Reversions
+
+* **AD-2472:** reverting removal of unused permission ad-2144 ([0f32977](https://github.com/KL-Engineering/user-service/commit/0f329772cd45f3d5712feb3f8ccb57538e9daa1c))
+
 ## [4.4.0](https://github.com/KL-Engineering/user-service/compare/v4.3.0...v4.4.0) (2022-05-06)
 
 
