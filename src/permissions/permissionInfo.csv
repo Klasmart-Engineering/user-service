@@ -310,9 +310,8 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 10440,delete_organization_10440,Delete Organization,Accounts,Org Admin,Gives users access to delete an organization,Organizational Profile,"As a user with this permission and 10220, I will be able to delete the organization",,,10100 & 10220 & 10880 | 1,,,Y
 10880,change_owner_10880,Change Owner,Accounts,Org Admin,Gives users access to change owners,Organizational Profile,"As a user with this permission and 10220, I will be able to change the owner of the organization",,,10220,,,
 10881,join_organization_10881,Join Organization,Accounts,Student,Gives users access to join an organization,Organizational Profile,,,,,,,Y
-20100,academic_profile_20100,Academic Profile,Academic Profile,Teacher,Gives users access to School Resources (i.e. via icons/buttons),Schools --> Deprecate,,,,,,,
 10882,leave_organization_10882,Leave Organization,Accounts,Student,Gives users access to leave an organization,Organizational Profile,,,,,,,
-20100,academic_profile_20100,Academic Profile,Academic Profile,School Admin,Gives users access to School Resources (i.e. via icons/buttons),Schools --> Deprecate,,,,,,,
+20100,academic_profile_20100,Academic Profile,Academic Profile,Teacher,Gives users access to School Resources (i.e. via icons/buttons),Schools --> Deprecate,,,,,,,
 20101,define_school_program_page_20101,School Page,Academic Profile,School Admin,Gives users access to define school program pages,Schools,,,,,,,Y
 20102,define_age_ranges_page_20102,Age Range Page,Academic Profile,School Admin,Gives users access to define age ranges page,Age Range,,,,,,,Y
 20103,define_grade_page_20103,Grades Page,Academic Profile,School Admin,Gives users access to define grade page,Grades,,,,,,,Y
@@ -330,6 +329,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 20115,view_subjects_20115,View Subjects,Academic Profile,School Admin,Gives users access to view subjects,Subjects,,,,,,,Y
 20116,view_class_roster_20116,View Class Roster,Academic Profile,School Admin,Gives users access to view class roster,Classes,,,,,,,
 20120,view_academic_term_20120,View Academic Term,Academic Profile,School Admin,Gives users access to view the academic term,Academic Term,,,,,,,
+20121,view_my_school_class_users_20121,View My School Class Users,Academic Profile,School Admin,Gives users access to view all the users within his school class even if the students/teachers might be part of different school,Classes,As a School Admin I want to be abel to view all of the users within my class regardless if the users are part of the same school I am admin for or they are part of a different school,User Service,,,,,Y
 20220,create_school_20220,Create School,Academic Profile,Org Admin,Gives users access to create schools,Schools,,,,,,,Y
 20221,create_program_20221,Create Program,Academic Profile,School Admin,Gives users access to create programs,Programs,,,,,,,Y
 20222,create_age_range_20222,Create Age Range,Academic Profile,School Admin,Gives users access to create age ranges,Age Range,,,,,,,Y
