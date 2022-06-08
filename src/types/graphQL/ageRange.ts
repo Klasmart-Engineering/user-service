@@ -28,10 +28,10 @@ export interface DeleteAgeRangeInput {
 export interface UpdateAgeRangeInput {
     id: string
     name?: string
-    lowValue: number
-    highValue: number
-    lowValueUnit: AgeRangeUnit
-    highValueUnit: AgeRangeUnit
+    lowValue?: number
+    highValue?: number
+    lowValueUnit?: AgeRangeUnit
+    highValueUnit?: AgeRangeUnit
 }
 
 export interface AgeRangesMutationResult {

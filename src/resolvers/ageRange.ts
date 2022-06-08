@@ -399,38 +399,49 @@ export class UpdateAgeRanges extends UpdateMutation<
     async generateEntityMaps(
         input: UpdateAgeRangeInput[]
     ): Promise<UpdateAgeRangesEntityMap> {
-        const preloadedAgeRanges = await getMap.ageRange(this.mainEntityIds, [
-            'organization',
-        ])
-        const preloadedMatchingAgeRanges = AgeRange.find({
-            where: input.map((i) => ({
-                low_value: i.lowValue,
-                low_value_unit: i.lowValueUnit,
-                high_value: i.highValue,
-                high_value_unit: i.highValueUnit,
-                id: Not(i.id),
-            })),
-            relations: ['organization'],
-        })
+        const preloadedAgeRanges = await getMap.ageRange(this.mainEntityIds)
+
+        const preloadedOrgIds = uniqueAndTruthy(
+            Array.from(preloadedAgeRanges.values(), (a) => a.organization_id)
+        )
+
         const conflictingAgeRanges = new ObjMap<
             ConflictingAgeRangeKey,
             AgeRange
         >()
-        for (const ageRange of await preloadedMatchingAgeRanges) {
-            conflictingAgeRanges.set(
-                {
-                    organizationId: ageRange.organization_id,
-                    lowValue: `${ageRange.low_value}`,
-                    lowValueUnit: ageRange.low_value_unit,
-                    highValue: `${ageRange.high_value}`,
-                    highValueUnit: ageRange.high_value_unit,
-                },
-                ageRange
-            )
+        const where = input
+            .filter((i) => preloadedAgeRanges.get(i.id))
+            .map((i) => ({
+                low_value:
+                    i.lowValue || preloadedAgeRanges.get(i.id)!.low_value,
+                low_value_unit:
+                    i.lowValueUnit ||
+                    preloadedAgeRanges.get(i.id)!.low_value_unit,
+                high_value:
+                    i.highValue || preloadedAgeRanges.get(i.id)!.high_value,
+                high_value_unit:
+                    i.highValueUnit ||
+                    preloadedAgeRanges.get(i.id)!.high_value_unit,
+                id: Not(i.id),
+                system: false,
+            }))
+        if (where.length > 0) {
+            const preloadedMatchingAgeRanges = AgeRange.find({
+                where,
+            })
+            for (const ageRange of await preloadedMatchingAgeRanges) {
+                conflictingAgeRanges.set(
+                    {
+                        organizationId: ageRange.organization_id,
+                        lowValue: `${ageRange.low_value}`,
+                        lowValueUnit: ageRange.low_value_unit,
+                        highValue: `${ageRange.high_value}`,
+                        highValueUnit: ageRange.high_value_unit,
+                    },
+                    ageRange
+                )
+            }
         }
-        const preloadedOrgIds = uniqueAndTruthy(
-            Array.from(preloadedAgeRanges.values(), (a) => a.organization_id)
-        )
 
         return {
             mainEntity: preloadedAgeRanges,
@@ -443,6 +454,12 @@ export class UpdateAgeRanges extends UpdateMutation<
         _input: UpdateAgeRangeInput[],
         maps: UpdateAgeRangesEntityMap
     ): Promise<void> {
+        flagUnauthorized(
+            AgeRange,
+            this.mainEntityIds,
+            maps.mainEntity,
+            'system'
+        )
         return this.permissions.rejectIfNotAllowed(
             { organization_ids: maps.organizationIds },
             PermissionName.edit_age_range_20332
@@ -472,7 +489,7 @@ export class UpdateAgeRanges extends UpdateMutation<
         } of inputs) {
             const ageRange = maps.mainEntity.get(id)
             let organizationId = undefined
-            if (ageRange) organizationId = ageRange.organization_id || ''
+            if (ageRange) organizationId = ageRange.organization_id
 
             values.push({
                 entityId: organizationId,
@@ -528,9 +545,9 @@ export class UpdateAgeRanges extends UpdateMutation<
             const conflictingAgeRange = maps.conflictingAgeRanges.get({
                 organizationId: organizationId,
                 lowValue: `${lowValue}`,
-                lowValueUnit: lowValueUnit,
+                lowValueUnit: lowValueUnit!,
                 highValue: `${highValue}`,
-                highValueUnit: highValueUnit,
+                highValueUnit: highValueUnit!,
             })?.id
 
             if (conflictingAgeRange) {
@@ -562,12 +579,11 @@ export class UpdateAgeRanges extends UpdateMutation<
             highValueUnit,
         } = currentInput
         const ageRange = maps.mainEntity.get(id)!
-
         ageRange.name = name || ageRange.name
-        ageRange.low_value = lowValue
-        ageRange.low_value_unit = lowValueUnit
-        ageRange.high_value = highValue
-        ageRange.high_value_unit = highValueUnit
+        ageRange.low_value = lowValue || ageRange.low_value
+        ageRange.low_value_unit = lowValueUnit || ageRange.low_value_unit
+        ageRange.high_value = highValue || ageRange.high_value
+        ageRange.high_value_unit = highValueUnit || ageRange.high_value_unit
 
         return { outputEntity: ageRange }
     }

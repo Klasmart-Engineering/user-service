@@ -535,17 +535,15 @@ describe('acceptance.ageRange', () => {
             })
         })
 
-        context('when age range does not exist', () => {
-            it('should fail', async () => {
-                const input = buildUpdateAgeRangeInputArray([NIL_UUID])
-                const response = await makeUpdateAgeRangesMutation(input)
-                const ageRangesUpdated = response.body.data.updateAgeRanges
-                const errors = response.body.errors
-
-                expect(response.status).to.eq(200)
-                expect(ageRangesUpdated).to.be.null
-                expect(errors).to.exist
-            })
+        it('has mandatory id field', async () => {
+            const response = await makeUpdateAgeRangesMutation([])
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
+            )
         })
     })
 })

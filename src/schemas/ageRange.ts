@@ -131,11 +131,11 @@ const typeDefs = gql`
 
     input UpdateAgeRangeInput {
         id: ID!
-        name: String!
-        lowValue: Int!
-        highValue: Int!
-        lowValueUnit: AgeRangeUnit!
-        highValueUnit: AgeRangeUnit!
+        name: String
+        lowValue: Int
+        highValue: Int
+        lowValueUnit: AgeRangeUnit
+        highValueUnit: AgeRangeUnit
     }
 
     type AgeRangesMutationResult {
