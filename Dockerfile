@@ -1,4 +1,4 @@
-FROM node:lts-alpine AS base
+FROM node:16.15.1-alpine3.16 AS base
 WORKDIR /usr/src/app
 COPY ./package*.json ./
 COPY node_modules node_modules
