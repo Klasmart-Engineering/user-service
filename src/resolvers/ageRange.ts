@@ -39,7 +39,7 @@ import {
     validateNoDuplicateAttribute,
     validateNumberRange,
     validateNumbersComparison,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import { ConflictingAgeRangeKey, getMap } from '../utils/resolvers/entityMaps'
 import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
 import { flagNonExistent } from '../utils/resolvers/inputValidation'
