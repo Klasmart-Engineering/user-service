@@ -16,6 +16,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+
   build:
     runs-on: ubuntu-latest
     permissions: write-all
@@ -35,15 +36,6 @@ jobs:
           npm run prettier-check
           npm run lint
           npm run commitlint-check -- --from=HEAD
-      - name: "Check PR title format"
-        uses: aslafy-z/conventional-pr-title-action@master
-        with:
-          success-state: Title follows the specification.
-          failure-state: Title does not follow the specification.
-          context-name: conventional-pr-title
-          preset: conventional-changelog-angular@latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
