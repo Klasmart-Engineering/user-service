@@ -2,7 +2,7 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 import { DeleteAgeRanges } from '../resolvers/ageRange'
 
 const typeDefs = gql`

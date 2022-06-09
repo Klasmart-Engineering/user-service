@@ -9,7 +9,7 @@ import {
     RemoveSubcategoriesFromCategories,
 } from '../resolvers/category'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 import { CategoryConnectionNode } from '../types/graphQL/category'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { GraphQLResolveInfo } from 'graphql'

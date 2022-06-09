@@ -18,7 +18,7 @@ import {
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
     reportError,
-} from '../resolvers/errors'
+} from './errors'
 import { objectToKey, ObjMap } from '../stringUtils'
 
 export interface EntityMap<EntityType extends CustomBaseEntity> {
@@ -216,6 +216,11 @@ export function validateAtLeastOne<InputType>(
     return errors
 }
 
+/**
+ * @deprecated Checks against the database and input checks should be separate.
+ * Validating that there are no duplicates in the input should be done in `validateOverAllInputs()`
+ * Validating that all entities are active in the database should be done in `validate()`
+ */
 export function validateActiveAndNoDuplicates<A, B extends CustomBaseEntity>(
     inputs: A[],
     entityMaps: EntityMap<B>,

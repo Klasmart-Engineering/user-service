@@ -13,7 +13,7 @@ import { createGrade, createGrades } from '../factories/grade.factory'
 import { Grade } from '../../src/entities/grade'
 import { createInitialData } from '../utils/createTestData'
 import { buildPermissionError } from '../utils/errors'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import { Status } from '../../src/entities/status'
 
 use(deepEqualInAnyOrder)

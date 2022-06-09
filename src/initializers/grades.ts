@@ -160,7 +160,6 @@ export class GradesInitializer {
                 id: systemGrade.id,
                 name: systemGrade.name,
                 system: true,
-                organization_id: null,
                 status: Status.ACTIVE,
             }
 

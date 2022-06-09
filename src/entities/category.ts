@@ -36,7 +36,7 @@ export class Category extends CustomBaseEntity {
     public organization?: Promise<Organization>
 
     @RelationId((cat: Category) => cat.organization)
-    public readonly organizationId?: string
+    public readonly organization_id?: string
 
     @ManyToMany(() => Subcategory, (subcategory) => subcategory.categories)
     @JoinTable()

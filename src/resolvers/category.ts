@@ -30,7 +30,7 @@ import {
     validateNoDuplicate,
     validateNoDuplicateAttribute,
     validateSubItemsLengthAndNoDuplicates,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import { objectToKey, ObjMap } from '../utils/stringUtils'
 import { ConflictingNameKey, getMap } from '../utils/resolvers/entityMaps'
 import {
@@ -109,7 +109,7 @@ export class CreateCategories extends CreateMutation<
 
         const conflictingNames = new ObjMap<ConflictingNameKey, Category>()
         for (const c of await matchingPreloadedCategoryArray) {
-            const organizationId = c.organizationId
+            const organizationId = c.organization_id
             const name = c.name
             conflictingNames.set({ organizationId, name }, c)
         }
@@ -291,7 +291,7 @@ export class UpdateCategories extends UpdateMutation<
 
         const preloadedOrgIds = preloadedCategories
             .then((categoryMap) =>
-                Array.from(categoryMap.values(), (c) => c.organizationId)
+                Array.from(categoryMap.values(), (c) => c.organization_id)
             )
             .then(uniqueAndTruthy)
 
@@ -346,7 +346,7 @@ export class UpdateCategories extends UpdateMutation<
             let organizationId = undefined
             // when category has not organization, which is something common for system categories,
             // the organizationId is setted as '' to have a way to identify the system ones
-            if (category) organizationId = category.organizationId || ''
+            if (category) organizationId = category.organization_id || ''
 
             values.push({ entityId: organizationId, attributeValue: name })
         }
@@ -389,7 +389,7 @@ export class UpdateCategories extends UpdateMutation<
         errors.push(...categoryExists.errors)
 
         if (categoryExists.values.length !== 1) return errors
-        const organizationId = categoryExists.values[0].organizationId
+        const organizationId = categoryExists.values[0].organization_id
 
         if (name) {
             const conflictingNameCategoryId = maps.conflictingNames.get({
@@ -491,7 +491,9 @@ export class DeleteCategories extends DeleteMutation<
         entityMaps: DeleteEntityMap<Category>
     ) {
         const organizationIds: string[] = []
-        for (const { organizationId } of entityMaps.mainEntity.values()) {
+        for (const {
+            organization_id: organizationId,
+        } of entityMaps.mainEntity.values()) {
             if (organizationId) organizationIds.push(organizationId)
         }
         await this.permissions.rejectIfNotAllowed(
@@ -597,7 +599,7 @@ export class AddSubcategoriesToCategories extends AddMutation<
             subcategories.values.map((s) => s.id),
             index,
             maps.subcategories,
-            categories.values[0].organizationId
+            categories.values[0].organization_id
         )
 
         errors.push(...invalidSubcategoriesInOrg)
@@ -802,7 +804,7 @@ async function generateAddRemoveSubcategoriesMaps(
     ])
 
     const preloadedOrgIds = categoryMap
-        .then((map) => Array.from(map.values(), (c) => c.organizationId))
+        .then((map) => Array.from(map.values(), (c) => c.organization_id))
         .then(uniqueAndTruthy)
 
     const subcategoryIds = input.flatMap((i) => i.subcategoryIds)

@@ -46,7 +46,7 @@ import {
     DeleteEntityMap,
     DeleteMutation,
     SetMutation,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import { Organization } from '../entities/organization'
 import {
     generateShortCode,
@@ -1832,7 +1832,7 @@ export class SetAcademicTermsOfClasses extends SetMutation<
             return errors
         }
 
-        if (schools[0].organizationId !== cls.organization_id) {
+        if (schools[0].organization_id !== cls.organization_id) {
             errors.push(
                 createEntityAPIError(
                     'nonExistentChild',

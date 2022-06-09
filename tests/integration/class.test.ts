@@ -140,7 +140,7 @@ import {
     compareMultipleErrors,
 } from '../utils/apiError'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import { buildPermissionError, permErrorMeta } from '../utils/errors'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
@@ -6451,7 +6451,7 @@ describe('class', () => {
                     beforeEach(() => input[2].programIds.push(programs[0].id))
 
                     it('returns an nonexistent program error', async () => {
-                        const xError = createEntityAPIError(
+                        const expectedError = createEntityAPIError(
                             'nonExistentChild',
                             2,
                             'Program',
@@ -6460,7 +6460,7 @@ describe('class', () => {
                             organization.organization_id
                         )
                         const res = await expect(addPrograms()).to.be.rejected
-                        compareMultipleErrors(res.errors, [xError])
+                        compareMultipleErrors(res.errors, [expectedError])
                     })
 
                     await checkNoChangesMade()
@@ -7189,7 +7189,7 @@ describe('class', () => {
                     expect(val.validInputs).to.have.length(1)
                     expect(val.validInputs[0].index).to.equal(1)
                     expect(val.validInputs[0].input).to.deep.equal(input[1])
-                    const xErrors = [0, 2].map((i) =>
+                    const expectedErrors = [0, 2].map((i) =>
                         createInputLengthAPIError(
                             'AddStudentsToClassInput',
                             'max',
@@ -7197,7 +7197,7 @@ describe('class', () => {
                             i
                         )
                     )
-                    compareMultipleErrors(val.apiErrors, xErrors)
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
                 })
             })
 
@@ -7222,14 +7222,14 @@ describe('class', () => {
                         expect(val.validInputs).to.have.length(1)
                         expect(val.validInputs[0].index).to.equal(1)
                         expect(val.validInputs[0].input).to.deep.equal(input[1])
-                        const xErrors = [0, 2].map((i) =>
+                        const expectedErrors = [0, 2].map((i) =>
                             createDuplicateAttributeAPIError(
                                 i,
                                 ['studentIds'],
                                 'AddStudentsToClassInput'
                             )
                         )
-                        compareMultipleErrors(val.apiErrors, xErrors)
+                        compareMultipleErrors(val.apiErrors, expectedErrors)
                     })
                 }
             )
@@ -7280,7 +7280,7 @@ describe('class', () => {
 
                 it('returns nonexistent_entity and nonExistentChild errors', async () => {
                     const errors = await validate(input[0], 0)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -7296,7 +7296,7 @@ describe('class', () => {
                             org.organization_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -7310,7 +7310,7 @@ describe('class', () => {
 
                 it('returns several nonexistent_entity errors', async () => {
                     const errors = await validate(input[1], 1)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -7332,7 +7332,7 @@ describe('class', () => {
                             org.organization_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
         })
@@ -7628,7 +7628,7 @@ describe('class', () => {
                     expect(val.validInputs).to.have.length(1)
                     expect(val.validInputs[0].index).to.equal(1)
                     expect(val.validInputs[0].input).to.deep.equal(input[1])
-                    const xErrors = [0, 2].map((i) =>
+                    const expectedErrors = [0, 2].map((i) =>
                         createInputLengthAPIError(
                             'RemoveStudentsFromClassInput',
                             'max',
@@ -7636,7 +7636,7 @@ describe('class', () => {
                             i
                         )
                     )
-                    compareMultipleErrors(val.apiErrors, xErrors)
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
                 })
             })
 
@@ -7661,14 +7661,14 @@ describe('class', () => {
                         expect(val.validInputs).to.have.length(1)
                         expect(val.validInputs[0].index).to.equal(1)
                         expect(val.validInputs[0].input).to.deep.equal(input[1])
-                        const xErrors = [0, 2].map((i) =>
+                        const expectedErrors = [0, 2].map((i) =>
                             createDuplicateAttributeAPIError(
                                 i,
                                 ['studentIds'],
                                 'RemoveStudentsFromClassInput'
                             )
                         )
-                        compareMultipleErrors(val.apiErrors, xErrors)
+                        compareMultipleErrors(val.apiErrors, expectedErrors)
                     })
                 }
             )
@@ -7718,7 +7718,7 @@ describe('class', () => {
 
                 it('returns nonexistent_entity and nonExistentChild errors', async () => {
                     const errors = await validate(input[0], 0)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -7726,7 +7726,7 @@ describe('class', () => {
                             students[1].user_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -7740,7 +7740,7 @@ describe('class', () => {
 
                 it('returns several nonexistent_entity errors', async () => {
                     const errors = await validate(input[1], 1)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -7770,7 +7770,7 @@ describe('class', () => {
                             classes[1].class_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
         })
@@ -8053,7 +8053,7 @@ describe('class', () => {
                     expect(val.validInputs).to.have.length(1)
                     expect(val.validInputs[0].index).to.equal(1)
                     expect(val.validInputs[0].input).to.deep.equal(input[1])
-                    const xErrors = [0, 2].map((i) =>
+                    const expectedErrors = [0, 2].map((i) =>
                         createInputLengthAPIError(
                             'AddTeachersToClassInput',
                             'max',
@@ -8061,7 +8061,7 @@ describe('class', () => {
                             i
                         )
                     )
-                    compareMultipleErrors(val.apiErrors, xErrors)
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
                 })
             })
 
@@ -8086,14 +8086,14 @@ describe('class', () => {
                         expect(val.validInputs).to.have.length(1)
                         expect(val.validInputs[0].index).to.equal(1)
                         expect(val.validInputs[0].input).to.deep.equal(input[1])
-                        const xErrors = [0, 2].map((i) =>
+                        const expectedErrors = [0, 2].map((i) =>
                             createDuplicateAttributeAPIError(
                                 i,
                                 ['teacherIds'],
                                 'AddTeachersToClassInput'
                             )
                         )
-                        compareMultipleErrors(val.apiErrors, xErrors)
+                        compareMultipleErrors(val.apiErrors, expectedErrors)
                     })
                 }
             )
@@ -8144,7 +8144,7 @@ describe('class', () => {
 
                 it('returns nonexistent_entity and nonExistentChild errors', async () => {
                     const errors = await validate(input[0], 0)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -8160,7 +8160,7 @@ describe('class', () => {
                             org.organization_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -8174,7 +8174,7 @@ describe('class', () => {
 
                 it('returns several nonexistent_entity errors', async () => {
                     const errors = await validate(input[1], 1)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -8196,7 +8196,7 @@ describe('class', () => {
                             org.organization_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
         })
@@ -8490,7 +8490,7 @@ describe('class', () => {
                     expect(val.validInputs).to.have.length(1)
                     expect(val.validInputs[0].index).to.equal(1)
                     expect(val.validInputs[0].input).to.deep.equal(input[1])
-                    const xErrors = [0, 2].map((i) =>
+                    const expectedErrors = [0, 2].map((i) =>
                         createInputLengthAPIError(
                             'RemoveTeachersFromClassInput',
                             'max',
@@ -8498,7 +8498,7 @@ describe('class', () => {
                             i
                         )
                     )
-                    compareMultipleErrors(val.apiErrors, xErrors)
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
                 })
             })
 
@@ -8523,14 +8523,14 @@ describe('class', () => {
                         expect(val.validInputs).to.have.length(1)
                         expect(val.validInputs[0].index).to.equal(1)
                         expect(val.validInputs[0].input).to.deep.equal(input[1])
-                        const xErrors = [0, 2].map((i) =>
+                        const expectedErrors = [0, 2].map((i) =>
                             createDuplicateAttributeAPIError(
                                 i,
                                 ['teacherIds'],
                                 'RemoveTeachersFromClassInput'
                             )
                         )
-                        compareMultipleErrors(val.apiErrors, xErrors)
+                        compareMultipleErrors(val.apiErrors, expectedErrors)
                     })
                 }
             )
@@ -8580,7 +8580,7 @@ describe('class', () => {
 
                 it('returns nonexistent_entity and nonExistentChild errors', async () => {
                     const errors = await validate(input[0], 0)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -8588,7 +8588,7 @@ describe('class', () => {
                             teachers[1].user_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -8602,7 +8602,7 @@ describe('class', () => {
 
                 it('returns several nonexistent_entity errors', async () => {
                     const errors = await validate(input[1], 1)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -8624,7 +8624,7 @@ describe('class', () => {
                             classes[1].class_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
         })
@@ -8950,14 +8950,14 @@ describe('class', () => {
                     buildInput(classes[3], terms[2]),
                 ]
                 const result = setTerms().validationOverAllInputs(input)
-                const xErrors = [
+                const expectedErrors = [
                     createDuplicateAttributeAPIError(
                         input.length - 1,
                         ['classId'],
                         'SetAcademicTermOfClassInput'
                     ),
                 ]
-                compareMultipleErrors(result.apiErrors, xErrors)
+                compareMultipleErrors(result.apiErrors, expectedErrors)
                 expect(result.validInputs).to.have.length(5)
             })
         })
@@ -8991,7 +8991,7 @@ describe('class', () => {
 
                 it('returns a nonexistent_entity error', async () => {
                     const errors = await validate(input)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             1,
@@ -8999,7 +8999,7 @@ describe('class', () => {
                             classes[1].class_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -9011,7 +9011,7 @@ describe('class', () => {
 
                 it('return a must_have_exactly_n error', async () => {
                     const errors = await validate(input)
-                    const xErrors = [
+                    const expectedErrors = [
                         createMustHaveExactlyNAPIError(
                             'Class',
                             classes[1].class_id,
@@ -9020,7 +9020,7 @@ describe('class', () => {
                             1
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -9033,7 +9033,7 @@ describe('class', () => {
 
                 it('return a must_have_exactly_n error', async () => {
                     const errors = await validate(input)
-                    const xErrors = [
+                    const expectedErrors = [
                         createMustHaveExactlyNAPIError(
                             'Class',
                             classes[1].class_id,
@@ -9042,7 +9042,7 @@ describe('class', () => {
                             1
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -9053,7 +9053,7 @@ describe('class', () => {
 
                 it('returns a nonexistent_entity error', async () => {
                     const errors = await validate(input)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             1,
@@ -9061,7 +9061,7 @@ describe('class', () => {
                             terms[2].id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -9081,7 +9081,7 @@ describe('class', () => {
 
                     it('returns a nonexistent_child error', async () => {
                         const errors = await validate(input)
-                        const xErrors = [
+                        const expectedErrors = [
                             createEntityAPIError(
                                 'nonExistentChild',
                                 1,
@@ -9091,7 +9091,7 @@ describe('class', () => {
                                 otherSchoolId
                             ),
                         ]
-                        compareMultipleErrors(errors, xErrors)
+                        compareMultipleErrors(errors, expectedErrors)
                     })
                 }
             )
@@ -9104,7 +9104,7 @@ describe('class', () => {
 
                 it('returns a must_have_exactly_n error', async () => {
                     const errors = await validate(input)
-                    const xErrors = [
+                    const expectedErrors = [
                         createMustHaveExactlyNAPIError(
                             'Class',
                             classes[1].class_id,
@@ -9113,7 +9113,7 @@ describe('class', () => {
                             1
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -9133,7 +9133,7 @@ describe('class', () => {
 
                     it('returns a nonexistent_child error', async () => {
                         const errors = await validate(input)
-                        const xErrors = [
+                        const expectedErrors = [
                             createEntityAPIError(
                                 'nonExistentChild',
                                 1,
@@ -9143,7 +9143,7 @@ describe('class', () => {
                                 otherOrg.organization_id
                             ),
                         ]
-                        compareMultipleErrors(errors, xErrors)
+                        compareMultipleErrors(errors, expectedErrors)
                     })
                 }
             )
@@ -11140,7 +11140,7 @@ describe('class', () => {
                     expect(val.validInputs).to.have.length(1)
                     expect(val.validInputs[0].index).to.equal(1)
                     expect(val.validInputs[0].input).to.deep.equal(input[1])
-                    const xErrors = [0, 2].map((i) =>
+                    const expectedErrors = [0, 2].map((i) =>
                         createInputLengthAPIError(
                             'RemoveSubjectsFromClassInput',
                             'max',
@@ -11148,7 +11148,7 @@ describe('class', () => {
                             i
                         )
                     )
-                    compareMultipleErrors(val.apiErrors, xErrors)
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
                 })
             })
 
@@ -11173,14 +11173,14 @@ describe('class', () => {
                         expect(val.validInputs).to.have.length(1)
                         expect(val.validInputs[0].index).to.equal(1)
                         expect(val.validInputs[0].input).to.deep.equal(input[1])
-                        const xErrors = [0, 2].map((i) =>
+                        const expectedErrors = [0, 2].map((i) =>
                             createDuplicateAttributeAPIError(
                                 i,
                                 ['subjectIds'],
                                 'RemoveSubjectsFromClassInput'
                             )
                         )
-                        compareMultipleErrors(val.apiErrors, xErrors)
+                        compareMultipleErrors(val.apiErrors, expectedErrors)
                     })
                 }
             )
@@ -11230,7 +11230,7 @@ describe('class', () => {
 
                 it('returns nonexistent_entity and nonExistentChild errors', async () => {
                     const errors = await validate(input[0], 0)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -11238,7 +11238,7 @@ describe('class', () => {
                             subjects[1].id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -11252,7 +11252,7 @@ describe('class', () => {
 
                 it('returns several nonexistent_entity errors', async () => {
                     const errors = await validate(input[1], 1)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -11282,7 +11282,7 @@ describe('class', () => {
                             classes[1].class_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
         })
@@ -11590,14 +11590,14 @@ describe('class', () => {
                         expect(val.validInputs).to.have.length(1)
                         expect(val.validInputs[0].index).to.equal(1)
                         expect(val.validInputs[0].input).to.deep.equal(input[1])
-                        const xErrors = [0, 2].map((i) =>
+                        const expectedErrors = [0, 2].map((i) =>
                             createDuplicateAttributeAPIError(
                                 i,
                                 ['subjectIds'],
                                 'AddSubjectsToClassInput'
                             )
                         )
-                        compareMultipleErrors(val.apiErrors, xErrors)
+                        compareMultipleErrors(val.apiErrors, expectedErrors)
                     })
                 }
             )
@@ -11653,7 +11653,7 @@ describe('class', () => {
 
                 it('returns nonexistent_entity and nonExistentChild errors', async () => {
                     const errors = await validate(input[0], 0)
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -11661,7 +11661,7 @@ describe('class', () => {
                             subjects[1].id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
         })

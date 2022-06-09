@@ -69,7 +69,7 @@ export class School extends CustomBaseEntity {
     public classes?: Promise<Class[]>
 
     @RelationId((school: School) => school.organization)
-    public readonly organizationId!: string
+    public readonly organization_id?: string
 
     @ManyToMany(() => Program, (program) => program.schools)
     @JoinTable()

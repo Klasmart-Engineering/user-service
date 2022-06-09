@@ -8,7 +8,7 @@ import {
 } from '../resolvers/academicTerm'
 import { AcademicTermConnectionNode } from '../types/graphQL/academicTerm'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 
 const typeDefs = gql`
     extend type Mutation {

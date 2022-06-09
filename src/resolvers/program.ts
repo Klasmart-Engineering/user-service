@@ -26,7 +26,7 @@ import {
     validateNoDuplicate,
     validateNoDuplicateAttribute,
     validateSubItemsLengthAndNoDuplicates,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import { ConflictingNameKey, getMap } from '../utils/resolvers/entityMaps'
 import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
 import {

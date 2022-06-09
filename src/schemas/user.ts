@@ -33,7 +33,7 @@ import {
 } from '../types/graphQL/user'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
 

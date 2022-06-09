@@ -25,7 +25,7 @@ import {
     filterInvalidInputs,
     UpdateMutation,
     validateActiveAndNoDuplicates,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,

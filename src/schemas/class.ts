@@ -34,7 +34,7 @@ import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
 import { Program } from '../entities/program'
 import { AgeRange } from '../entities/ageRange'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 import { CoreClassConnectionNode } from '../pagination/classesConnection'
 import { Class } from '../entities/class'
 

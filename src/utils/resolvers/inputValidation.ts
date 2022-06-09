@@ -16,7 +16,7 @@ import { SchoolMembership } from '../../entities/schoolMembership'
 import { Grade } from '../../entities/grade'
 import { AcademicTerm } from '../../entities/academicTerm'
 
-export type Entities =
+type Entities =
     | User
     | School
     | Organization
@@ -30,7 +30,7 @@ export type Entities =
     | Grade
     | AcademicTerm
 
-export type SystemEntities =
+type SystemEntities =
     | AgeRange
     | Grade
     | Subject
@@ -38,14 +38,10 @@ export type SystemEntities =
     | Category
     | Subcategory
 
-export type SystemEntityAndOrg = SystemEntities & {
-    __organization__?: Organization
-}
-
 /**
  * Checks if a determined sub item exists for an organization or is system
  */
-export function validateSubItemsInOrg<T extends SystemEntityAndOrg>(
+export function validateSubItemsInOrg<T extends SystemEntities>(
     subItemClass: new () => T,
     subItemIds: string[],
     index: number,
@@ -61,9 +57,7 @@ export function validateSubItemsInOrg<T extends SystemEntityAndOrg>(
                 const isSystem = subItem.system
 
                 if (organizationId) {
-                    isInOrg =
-                        subItem.__organization__?.organization_id ===
-                        organizationId
+                    isInOrg = subItem.organization_id === organizationId
                 }
 
                 return !isSystem && !isInOrg

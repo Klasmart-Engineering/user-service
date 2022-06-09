@@ -853,7 +853,6 @@ export class CategoriesInitializer {
                 id: systemCategory.id,
                 name: systemCategory.name,
                 system: true,
-                organization_id: null,
                 status: Status.ACTIVE,
             }
 

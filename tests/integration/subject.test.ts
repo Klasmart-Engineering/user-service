@@ -26,7 +26,7 @@ import {
     SubjectConnectionNode,
     UpdateSubjectInput,
 } from '../../src/types/graphQL/subject'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import {
     createDuplicateAttributeAPIError,
     createDuplicateInputAttributeAPIError,

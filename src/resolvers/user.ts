@@ -42,7 +42,7 @@ import {
     validateNoDuplicate,
     validateNoDuplicateAttribute,
     validateSubItemsLengthAndNoDuplicates,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { objectToKey, ObjMap } from '../utils/stringUtils'

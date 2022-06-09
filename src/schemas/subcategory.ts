@@ -8,7 +8,7 @@ import {
     UpdateSubcategories,
     CreateSubcategories,
 } from '../resolvers/subcategory'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 
 const typeDefs = gql`
     extend type Query {

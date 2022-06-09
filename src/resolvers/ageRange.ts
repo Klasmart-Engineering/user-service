@@ -6,7 +6,7 @@ import {
     AgeRangesMutationResult,
     DeleteAgeRangeInput,
 } from '../types/graphQL/ageRange'
-import { DeleteMutation, EntityMap } from '../utils/mutations/commonStructure'
+import { DeleteMutation, EntityMap } from '../utils/resolvers/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
 import { flagUnauthorized } from '../utils/resolvers/inputValidation'
 

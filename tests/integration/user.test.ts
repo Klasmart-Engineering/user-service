@@ -117,7 +117,7 @@ import faker from 'faker'
 import { v4 as uuid_v4 } from 'uuid'
 import { config } from '../../src/config/config'
 import { buildPermissionError } from '../utils/errors'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import { getMap } from '../../src/utils/resolvers/entityMaps'
 import {
     createDuplicateAttributeAPIError,

@@ -8,7 +8,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Category } from '../entities/category'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 import {
     CreateSubjects,
     UpdateSubjects,

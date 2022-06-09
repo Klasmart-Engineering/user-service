@@ -11,12 +11,13 @@ import {
     CreateAcademicTermInput,
     DeleteAcademicTermInput,
 } from '../types/graphQL/academicTerm'
+import { uniqueAndTruthy } from '../utils/clean'
 import {
     CreateMutation,
     DeleteMutation,
     EntityMap,
     filterInvalidInputs,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import {
     DateRangeWithIndex,
     validateDateRanges,
@@ -82,11 +83,14 @@ export class CreateAcademicTerms extends CreateMutation<
         _inputs: CreateAcademicTermInput[],
         maps: CreateAcademicTermsEntityMap
     ): Promise<void> {
+        const orgIds = uniqueAndTruthy(
+            Array.from(maps.schools.values()).map(
+                (school) => school.organization_id
+            )
+        )
         return this.permissions.rejectIfNotAllowed(
             {
-                organization_ids: Array.from(maps.schools.values()).map(
-                    (school) => school.organizationId
-                ),
+                organization_ids: orgIds,
                 school_ids: Array.from(maps.schools.keys()),
             },
             PermissionName.create_academic_term_20229
@@ -279,8 +283,10 @@ export class DeleteAcademicTerms extends DeleteMutation<
         maps: DeleteAcademicTermsEntityMap
     ): Promise<void> {
         const terms = Array.from(maps.mainEntity.values())
-        const organization_ids = await Promise.all(
-            terms.map((t) => t.school.then((s) => s.organizationId))
+        const organization_ids = uniqueAndTruthy(
+            await Promise.all(
+                terms.map((t) => t.school.then((s) => s.organization_id))
+            )
         )
         const school_ids = terms.map((t) => t.school_id)
         return this.permissions.rejectIfNotAllowed(

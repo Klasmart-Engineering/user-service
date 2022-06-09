@@ -34,7 +34,7 @@ import {
     validateNoDuplicate,
     validateNoDuplicates,
     validateSubItemsLengthAndNoDuplicates,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
 import {
     flagExistentOrganizationMembership,

@@ -22,7 +22,7 @@ import {
     ProgramConnectionNode,
     UpdateProgramInput,
 } from '../../src/types/graphQL/program'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import { ObjMap } from '../../src/utils/stringUtils'
 import { createAgeRange, createAgeRanges } from '../factories/ageRange.factory'
 import { createGrade, createGrades } from '../factories/grade.factory'

@@ -3,7 +3,7 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { GradeConnectionNode } from '../types/graphQL/grade'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 import { DeleteGrades } from '../resolvers/grade'
 
 const typeDefs = gql`

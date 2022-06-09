@@ -190,7 +190,6 @@ export class SubjectsInitializer {
                 id: systemSubject.id,
                 name: systemSubject.name,
                 system: true,
-                organization_id: null,
                 status: Status.ACTIVE,
             }
 

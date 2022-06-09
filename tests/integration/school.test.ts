@@ -58,7 +58,7 @@ import {
     RemoveClassesFromSchoolInput,
 } from '../../src/types/graphQL/school'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import {
     RemoveUsersFromSchools,
     AddClassesToSchools,
@@ -2021,11 +2021,11 @@ describe('school', () => {
                     it('returns an academic term error', async () => {
                         const { errors } = await expect(addClasses()).to.be
                             .rejected
-                        const xError = createClassHasAcademicTermAPIError(
+                        const expectedError = createClassHasAcademicTermAPIError(
                             otherClass.class_id,
                             2
                         )
-                        compareMultipleErrors(errors, [xError])
+                        compareMultipleErrors(errors, [expectedError])
                     })
                 }
             )
@@ -2777,7 +2777,7 @@ describe('school', () => {
                     beforeEach(() => input[2].programIds.push(programs[0].id))
 
                     it('returns a nonexistent program error', async () => {
-                        const xError = createEntityAPIError(
+                        const expectedError = createEntityAPIError(
                             'nonExistentChild',
                             2,
                             'Program',
@@ -2786,7 +2786,7 @@ describe('school', () => {
                             organization.organization_id
                         )
                         const res = await expect(addPrograms()).to.be.rejected
-                        compareMultipleErrors(res.errors, [xError])
+                        compareMultipleErrors(res.errors, [expectedError])
                     })
 
                     await checkNoChangesMade()
@@ -3366,11 +3366,11 @@ describe('school', () => {
                             const { errors } = await expect(
                                 removeClasses(input)
                             ).to.be.rejected
-                            const xError = createClassHasAcademicTermAPIError(
+                            const expectedError = createClassHasAcademicTermAPIError(
                                 classes[1].class_id,
                                 1
                             )
-                            compareMultipleErrors(errors, [xError])
+                            compareMultipleErrors(errors, [expectedError])
                         })
                     }
                 )
@@ -3594,14 +3594,14 @@ describe('school', () => {
                 input.push(input[0])
 
                 const result = validateOverAllInputs()
-                const xErrors = [
+                const expectedErrors = [
                     createDuplicateAttributeAPIError(
                         input.length - 1,
                         ['schoolId'],
                         'AddUsersToSchoolInput'
                     ),
                 ]
-                compareMultipleErrors(result.apiErrors, xErrors)
+                compareMultipleErrors(result.apiErrors, expectedErrors)
                 expect(result.validInputs).to.have.length(2)
             })
             context('subarrays', () => {
@@ -3609,14 +3609,14 @@ describe('school', () => {
                     it('checks for duplicates', async () => {
                         input[0].userIds.push(input[0].userIds[0])
                         const result = validateOverAllInputs()
-                        const xErrors = [
+                        const expectedErrors = [
                             createDuplicateAttributeAPIError(
                                 0,
                                 ['userIds'],
                                 'AddUsersToSchoolInput'
                             ),
                         ]
-                        compareMultipleErrors(result.apiErrors, xErrors)
+                        compareMultipleErrors(result.apiErrors, expectedErrors)
                         expect(result.validInputs).to.have.length(
                             input.length - 1
                         )
@@ -3624,7 +3624,7 @@ describe('school', () => {
                     it('checks for length', async () => {
                         input[0].userIds = []
                         const result = validateOverAllInputs()
-                        const xErrors = [
+                        const expectedErrors = [
                             createInputLengthAPIError(
                                 'AddUsersToSchoolInput',
                                 'min',
@@ -3632,7 +3632,7 @@ describe('school', () => {
                                 0
                             ),
                         ]
-                        compareMultipleErrors(result.apiErrors, xErrors)
+                        compareMultipleErrors(result.apiErrors, expectedErrors)
                         expect(result.validInputs).to.have.length(
                             input.length - 1
                         )
@@ -3644,14 +3644,14 @@ describe('school', () => {
                     it('checks for duplicates', async () => {
                         input[0].schoolRoleIds!.push(input[0].schoolRoleIds![0])
                         const result = validateOverAllInputs()
-                        const xErrors = [
+                        const expectedErrors = [
                             createDuplicateAttributeAPIError(
                                 0,
                                 ['schoolRoleIds'],
                                 'AddUsersToSchoolInput'
                             ),
                         ]
-                        compareMultipleErrors(result.apiErrors, xErrors)
+                        compareMultipleErrors(result.apiErrors, expectedErrors)
                         expect(result.validInputs).to.have.length(
                             input.length - 1
                         )
@@ -3659,7 +3659,7 @@ describe('school', () => {
                     it('checks for length', async () => {
                         input[0].schoolRoleIds = []
                         const result = validateOverAllInputs()
-                        const xErrors = [
+                        const expectedErrors = [
                             createInputLengthAPIError(
                                 'AddUsersToSchoolInput',
                                 'min',
@@ -3667,7 +3667,7 @@ describe('school', () => {
                                 0
                             ),
                         ]
-                        compareMultipleErrors(result.apiErrors, xErrors)
+                        compareMultipleErrors(result.apiErrors, expectedErrors)
                         expect(result.validInputs).to.have.length(
                             input.length - 1
                         )
@@ -3697,7 +3697,7 @@ describe('school', () => {
                 })
                 it('returns a existent_child_entity error', async () => {
                     const errors = await validate()
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'existentChild',
                             0,
@@ -3707,7 +3707,7 @@ describe('school', () => {
                             schools[0].school_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                 })
             })
 
@@ -3717,7 +3717,7 @@ describe('school', () => {
                 )
                 it('returns a nonexistent_entity error', async () => {
                     const errors = await validate()
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             1,
@@ -3725,7 +3725,32 @@ describe('school', () => {
                             schools[1].school_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
+                    await checkNoChangesMade()
+                })
+            })
+
+            context('when one of the schools has no organization', async () => {
+                beforeEach(async () => {
+                    schools[2] = await createASchool().save()
+                    input.push({
+                        schoolId: schools[2].school_id,
+                        userIds: [users[0].user_id],
+                    })
+                })
+                it('returns a nonexistent_entity error', async () => {
+                    const errors = await validate()
+                    const expectedErrors = [
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            2,
+                            'User',
+                            users[0].user_id,
+                            'Organization',
+                            ''
+                        ),
+                    ]
+                    compareMultipleErrors(errors, expectedErrors)
                     await checkNoChangesMade()
                 })
             })
@@ -3734,7 +3759,7 @@ describe('school', () => {
                 beforeEach(async () => await users[0].inactivate(getManager()))
                 it('returns a nonexistent_entity error', async () => {
                     const errors = await validate()
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -3742,7 +3767,7 @@ describe('school', () => {
                             users[0].user_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                     await checkNoChangesMade()
                 })
             })
@@ -3751,7 +3776,7 @@ describe('school', () => {
                 beforeEach(async () => await roles[0].inactivate(getManager()))
                 it('returns a nonexistent_entity error', async () => {
                     const errors = await validate()
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistent',
                             0,
@@ -3759,7 +3784,7 @@ describe('school', () => {
                             roles[0].role_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                     await checkNoChangesMade()
                 })
             })
@@ -3770,7 +3795,7 @@ describe('school', () => {
                 )
                 it('returns a nonexistent_child error', async () => {
                     const errors = await validate()
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistentChild',
                             1,
@@ -3780,7 +3805,7 @@ describe('school', () => {
                             org.organization_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                     await checkNoChangesMade()
                 })
             })
@@ -3795,7 +3820,7 @@ describe('school', () => {
                 })
                 it('returns several nonexistent_entity errors', async () => {
                     const errors = await validate()
-                    const xErrors = [
+                    const expectedErrors = [
                         createEntityAPIError(
                             'nonExistentChild',
                             0,
@@ -3817,7 +3842,7 @@ describe('school', () => {
                             users[2].user_id
                         ),
                     ]
-                    compareMultipleErrors(errors, xErrors)
+                    compareMultipleErrors(errors, expectedErrors)
                     await checkNoChangesMade()
                 })
             })

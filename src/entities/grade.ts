@@ -42,7 +42,7 @@ export class Grade extends CustomBaseEntity {
     public organization?: Promise<Organization>
 
     @RelationId((grade: Grade) => grade.organization)
-    public readonly organizationId?: string
+    public readonly organization_id?: string
 
     @ManyToMany(() => Class, (class_) => class_.grades)
     public classes?: Promise<Class[]>

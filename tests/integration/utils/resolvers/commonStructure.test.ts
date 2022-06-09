@@ -16,7 +16,7 @@ import {
     DeleteEntityMap,
     DeleteMutation,
     mutate,
-} from '../../../../src/utils/mutations/commonStructure'
+} from '../../../../src/utils/resolvers/commonStructure'
 import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,

@@ -10,7 +10,7 @@ import { GraphQLSchemaModule } from '../types/schemaModule'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { Subject } from '../entities/subject'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 import {
     CreatePrograms,
     UpdatePrograms,

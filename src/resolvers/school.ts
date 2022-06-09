@@ -40,7 +40,7 @@ import {
     filterInvalidInputs,
     RemoveMutation,
     validateNoDuplicate,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import { Class } from '../entities/class'
 import {
     createClassHasAcademicTermAPIError,
@@ -506,7 +506,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
         )
         const orgIdsPromise = schoolsPromise
             .then((schoolMap) => Array.from(schoolMap.values()))
-            .then((schools) => schools.map((s) => s.organizationId))
+            .then((schools) => schools.map((s) => s.organization_id))
             .then(uniqueAndTruthy)
         const orgMembershipsPromise = orgIdsPromise.then((orgIds) =>
             getMap.membership.organization(orgIds, userIds)
@@ -566,14 +566,16 @@ export class AddUsersToSchools extends AddMembershipMutation<
             userIds,
             maps.schoolMemberships
         )
-        const { organizationId } = school.values[0]
+        errors.push(...schoolMemberships.errors)
+
+        const { organization_id } = school.values[0]
         const orgMemberships = flagNonExistentOrganizationMembership(
             index,
-            organizationId,
+            organization_id || '',
             userIds,
             maps.orgMemberships
         )
-        errors.push(...schoolMemberships.errors, ...orgMemberships.errors)
+        errors.push(...orgMemberships.errors)
 
         return errors
     }
@@ -918,7 +920,7 @@ export class AddClassesToSchools extends AddMutation<
             maps.schoolsClasses.get(schoolId)?.map((p) => p.class_id)
         )
         const schoolOrganizationId = maps.mainEntity.get(schoolId)
-            ?.organizationId
+            ?.organization_id
 
         for (const classId of classIds) {
             const cls = maps.classes.get(classId)
@@ -1075,7 +1077,7 @@ export class AddProgramsToSchools extends AddMutation<
             programIds,
             index,
             programMap,
-            school.values[0].organizationId
+            school.values[0].organization_id
         )
         errors.push(...programsNotInOrgError)
 
@@ -1252,7 +1254,7 @@ async function generateMapsForAddingRemovingPrograms(
     }
 
     const orgIds = uniqueAndTruthy(
-        Array.from(schools.values(), (s) => s.organizationId)
+        Array.from(schools.values(), (s) => s.organization_id)
     )
 
     return {

@@ -22,7 +22,7 @@ import {
     IPaginatedResponse,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 import { Category } from '../entities/category'
 import { Subcategory } from '../entities/subcategory'
 import { AgeRange } from '../entities/ageRange'

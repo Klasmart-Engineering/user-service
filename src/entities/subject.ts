@@ -7,6 +7,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    RelationId,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -34,6 +35,9 @@ export class Subject extends CustomBaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.subjects)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @RelationId((subject: Subject) => subject.organization)
+    public readonly organization_id?: string
 
     @ManyToMany(() => Category, (category) => category.subjects)
     @JoinTable()

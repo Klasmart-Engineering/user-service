@@ -49,7 +49,7 @@ import {
     DeleteRoleInput,
 } from '../../src/types/graphQL/role'
 import { UserPermissions } from '../../src/permissions/userPermissions'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import { CreateRoles, UpdateRoles, DeleteRoles } from '../../src/resolvers/role'
 import { permErrorMeta } from '../utils/errors'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'

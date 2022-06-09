@@ -27,7 +27,7 @@ import {
     UpdateSchools,
     RemoveUsersFromSchools,
 } from '../resolvers/school'
-import { mutate } from '../utils/mutations/commonStructure'
+import { mutate } from '../utils/resolvers/commonStructure'
 import { AcademicTerm } from '../entities/academicTerm'
 
 const typeDefs = gql`

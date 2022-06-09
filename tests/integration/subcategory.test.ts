@@ -46,7 +46,7 @@ import {
 import { NIL_UUID } from '../utils/database'
 import { config } from '../../src/config/config'
 import { permErrorMeta } from '../utils/errors'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import { compareErrors, compareMultipleErrors } from '../utils/apiError'
 import { buildSingleUpdateCategoryInput } from '../utils/operations/categoryOps'

@@ -133,7 +133,7 @@ import {
     DeleteUsersFromOrganizations,
     generateAddRemoveOrgUsersMap,
 } from '../../src/resolvers/organization'
-import { mutate } from '../../src/utils/mutations/commonStructure'
+import { mutate } from '../../src/utils/resolvers/commonStructure'
 import { buildPermissionError } from '../utils/errors'
 import {
     createApplyingChangeToSelfAPIError,

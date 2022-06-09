@@ -3,7 +3,7 @@ import { Context } from '../main'
 import { mapGradeToGradeConnectionNode } from '../pagination/gradesConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import { GradesMutationResult, DeleteGradeInput } from '../types/graphQL/grade'
-import { DeleteMutation, EntityMap } from '../utils/mutations/commonStructure'
+import { DeleteMutation, EntityMap } from '../utils/resolvers/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
 import { flagUnauthorized } from '../utils/resolvers/inputValidation'
 
@@ -44,7 +44,7 @@ export class DeleteGrades extends DeleteMutation<
 
         const organizationIds: string[] = []
         for (const grade of maps.mainEntity.values()) {
-            const organizationId = grade.organizationId
+            const organizationId = grade.organization_id
             if (organizationId) organizationIds.push(organizationId)
         }
 

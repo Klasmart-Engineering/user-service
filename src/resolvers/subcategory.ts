@@ -21,7 +21,7 @@ import {
     ProcessedResult,
     UpdateMutation,
     validateNoDuplicate,
-} from '../utils/mutations/commonStructure'
+} from '../utils/resolvers/commonStructure'
 import { ConflictingNameKey, getMap } from '../utils/resolvers/entityMaps'
 import { objectToKey, ObjMap } from '../utils/stringUtils'
 import { flagNonExistent } from '../utils/resolvers/inputValidation'
