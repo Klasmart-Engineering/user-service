@@ -84,7 +84,7 @@ describe('userPermissions', () => {
             expect(userPermissions.isAdmin).to.be.false
         })
 
-        context('when user is a super admin', () => {
+        context.only('when user is a super admin', () => {
             beforeEach(async () => {
                 const encodedToken = getAdminAuthToken()
                 req.headers = { authorization: encodedToken }
