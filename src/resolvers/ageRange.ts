@@ -37,11 +37,14 @@ import {
     UpdateMutation,
     validateNoDuplicate,
     validateNoDuplicateAttribute,
-} from '../utils/resolvers/commonStructure'
+    validateNumberRange,
+    validateNumbersComparison,
+} from '../utils/mutations/commonStructure'
 import { ConflictingAgeRangeKey, getMap } from '../utils/resolvers/entityMaps'
 import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
 import { flagNonExistent } from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
+import { config } from '../config/config'
 
 export interface UpdateAgeRangesEntityMap extends EntityMap<AgeRange> {
     mainEntity: Map<string, AgeRange>
@@ -508,9 +511,50 @@ export class UpdateAgeRanges extends UpdateMutation<
             'lowValue-lowValueUnit-highValue-highValueUnit'
         )
 
+        const failedLowValueLessThanHighValue = validateNumbersComparison(
+            inputs.map((i) => {
+                return {
+                    a:
+                        i.lowValue ||
+                        (maps.mainEntity.get(i.id)?.low_value ?? 0),
+                    b:
+                        i.highValue ||
+                        (maps.mainEntity.get(i.id)?.high_value ?? 99),
+                }
+            }),
+            'lt',
+            'ageRange',
+            'lowValue',
+            'highValue'
+        )
+
+        const failedLowValueInRange = validateNumberRange(
+            inputs.map(
+                (i) => i.lowValue || (maps.mainEntity.get(i.id)?.low_value ?? 0)
+            ),
+            'ageRange',
+            'lowValue',
+            config.limits.AGE_RANGE_LOW_VALUE_MIN,
+            config.limits.AGE_RANGE_LOW_VALUE_MAX
+        )
+
+        const failedHighValueInRange = validateNumberRange(
+            inputs.map(
+                (i) =>
+                    i.highValue || (maps.mainEntity.get(i.id)?.high_value ?? 99)
+            ),
+            'ageRange',
+            'highValue',
+            config.limits.AGE_RANGE_HIGH_VALUE_MIN,
+            config.limits.AGE_RANGE_HIGH_VALUE_MAX
+        )
+
         return filterInvalidInputs(inputs, [
             failedDuplicates,
             failedDuplicateInOrg,
+            failedLowValueLessThanHighValue,
+            failedLowValueInRange,
+            failedHighValueInRange,
         ])
     }
 
@@ -523,7 +567,6 @@ export class UpdateAgeRanges extends UpdateMutation<
         const errors: APIError[] = []
         const {
             id,
-            name,
             lowValue,
             lowValueUnit,
             highValue,
@@ -541,26 +584,24 @@ export class UpdateAgeRanges extends UpdateMutation<
         if (ageRangeExists.values.length !== 1) return errors
         const organizationId = ageRangeExists.values[0].organization_id
 
-        if (name) {
-            const conflictingAgeRange = maps.conflictingAgeRanges.get({
-                organizationId: organizationId,
-                lowValue: `${lowValue}`,
-                lowValueUnit: lowValueUnit!,
-                highValue: `${highValue}`,
-                highValueUnit: highValueUnit!,
-            })?.id
+        const conflictingAgeRange = maps.conflictingAgeRanges.get({
+            organizationId: organizationId,
+            lowValue: `${lowValue}`,
+            lowValueUnit: lowValueUnit!,
+            highValue: `${highValue}`,
+            highValueUnit: highValueUnit!,
+        })?.id
 
-            if (conflictingAgeRange) {
-                errors.push(
-                    createExistentEntityAttributeAPIError(
-                        'Age Range',
-                        conflictingAgeRange,
-                        'name',
-                        name,
-                        index
-                    )
+        if (conflictingAgeRange) {
+            errors.push(
+                createExistentEntityAttributeAPIError(
+                    'Age Range',
+                    conflictingAgeRange,
+                    'lowValue-lowValueUnit-highValue-highValueUnit combination',
+                    id,
+                    index
                 )
-            }
+            )
         }
 
         return errors

@@ -489,7 +489,6 @@ describe('acceptance.ageRange', () => {
     context('updateAgeRanges', () => {
         let ageRangesIds: string[]
         beforeEach(async () => {
-            await AgeRangesInitializer.run()
             const org = await createOrganization().save()
             const ageRanges = await AgeRange.save(
                 Array.from(new Array(ageRangesCount), (_, i) =>

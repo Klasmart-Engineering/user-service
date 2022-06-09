@@ -1,6 +1,7 @@
 import { gql } from 'apollo-server-core'
 import faker from 'faker'
 import { Headers } from 'node-mocks-http'
+import { config } from '../../../src/config/config'
 import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
 import { UpdateAgeRangeInput } from '../../../src/types/graphQL/ageRange'
 
@@ -83,9 +84,19 @@ export function buildSingleUpdateAgeRangeInput(
     return {
         id,
         name: name ?? faker.datatype.string(),
-        lowValue: lowValue ?? faker.datatype.number(99),
+        lowValue:
+            lowValue ??
+            faker.datatype.number({
+                max: Math.floor(config.limits.AGE_RANGE_LOW_VALUE_MAX / 2),
+                min: config.limits.AGE_RANGE_LOW_VALUE_MIN,
+            }),
         lowValueUnit: lowValueUnit ?? units[faker.datatype.number(1)],
-        highValue: highValue ?? faker.datatype.number(99),
+        highValue:
+            highValue ??
+            faker.datatype.number({
+                max: config.limits.AGE_RANGE_HIGH_VALUE_MAX,
+                min: Math.ceil(config.limits.AGE_RANGE_HIGH_VALUE_MAX / 2),
+            }),
         highValueUnit: highValueUnit ?? units[faker.datatype.number(1)],
     }
 }
