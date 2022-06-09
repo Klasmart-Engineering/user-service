@@ -10,8 +10,8 @@ import { sign } from 'jsonwebtoken'
 //   "iss": "calmid-debug"
 // }
 let AdminAuthToken =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImM2ZDRmZWVkLTkxMzMtNTUyOS04ZDcyLTEwMDM1MjZkMWIxMyIsImVtYWlsIjoic2FuZHlAa2lkc2xvb3AubGl2ZSIsImdpdmVuX25hbWUiOiJKb2UiLCJmYW1pbHlfbmFtZSI6IkJyb3duIiwibmFtZSI6IkpvZSBCcm93biIsImlzcyI6ImNhbG1pZC1kZWJ1ZyJ9.jwmaXSz73zEfsKH1aztAVfhFgh6iiie9vY7uJ-Ke940'
-
+    // 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImM2ZDRmZWVkLTkxMzMtNTUyOS04ZDcyLTEwMDM1MjZkMWIxMyIsImVtYWlsIjoic2FuZHlAa2lkc2xvb3AubGl2ZSIsImdpdmVuX25hbWUiOiJKb2UiLCJmYW1pbHlfbmFtZSI6IkJyb3duIiwibmFtZSI6IkpvZSBCcm93biIsImlzcyI6ImNhbG1pZC1kZWJ1ZyJ9.jwmaXSz73zEfsKH1aztAVfhFgh6iiie9vY7uJ-Ke940'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImM2ZDRmZWVkLTkxMzMtNTUyOS04ZDcyLTEwMDM1MjZkMWIxMyIsImVtYWlsIjoic2FuZHlAa2lkc2xvb3AubGl2ZSIsImdpdmVuX25hbWUiOiJKb2UiLCJmYW1pbHlfbmFtZSI6IkJyb3duIiwibmFtZSI6IkpvZSBCcm93biIsImlzcyI6ImNhbG1pZC1kZWJ1ZyIsImlhdCI6MTY1NDc2NTc1MX0.e9zJ2Ptq7RoEc7cBEpr8f221KtjinhTeWl634DU9Z60'
 // {
 //   "email": "sandy@kidsloop.live",
 //   "given_name": "Joe",
