@@ -69,7 +69,7 @@ export function isHexadecimalColor(hex: string): boolean {
 /**
  * A deterministic version of JSON.stringify() that ignores the order of properties.
  */
- export function objectToKey<T extends Record<string, unknown> | string>(
+export function objectToKey<T extends Record<string, unknown> | string>(
     obj: T
 ) {
     if (typeof obj === 'string') return obj

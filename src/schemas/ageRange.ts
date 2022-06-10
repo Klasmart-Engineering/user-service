@@ -3,7 +3,11 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { mutate } from '../utils/resolvers/commonStructure'
-import { CreateAgeRanges, UpdateAgeRanges, DeleteAgeRanges } from '../resolvers/ageRange'
+import {
+    CreateAgeRanges,
+    UpdateAgeRanges,
+    DeleteAgeRanges,
+} from '../resolvers/ageRange'
 
 const typeDefs = gql`
     extend type Query {
