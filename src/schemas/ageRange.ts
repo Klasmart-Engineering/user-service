@@ -3,7 +3,7 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { mutate } from '../utils/resolvers/commonStructure'
-import { DeleteAgeRanges } from '../resolvers/ageRange'
+import { CreateAgeRanges, DeleteAgeRanges } from '../resolvers/ageRange'
 
 const typeDefs = gql`
     extend type Query {
@@ -30,6 +30,7 @@ const typeDefs = gql`
             )
         uploadAgeRangesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        createAgeRanges(input: [CreateAgeRangeInput!]!): AgeRangesMutationResult
         deleteAgeRanges(input: [DeleteAgeRangeInput!]!): AgeRangesMutationResult
     }
 
@@ -114,6 +115,15 @@ const typeDefs = gql`
         system: Boolean
     }
 
+    input CreateAgeRangeInput {
+        name: String!
+        lowValue: Int!
+        highValue: Int!
+        lowValueUnit: AgeRangeUnit!
+        highValueUnit: AgeRangeUnit!
+        organizationId: ID!
+    }
+
     input DeleteAgeRangeInput {
         id: ID!
     }
@@ -137,6 +147,8 @@ export default function getDefault(
                     model.uploadAgeRangesFromCSV(args, ctx, info),
                 deleteAgeRanges: (_parent, args, ctx) =>
                     mutate(DeleteAgeRanges, args, ctx.permissions),
+                createAgeRanges: (_parent, args, ctx) =>
+                    mutate(CreateAgeRanges, args, ctx.permissions),
             },
             Query: {
                 age_range: (_parent, args, ctx, _info) =>

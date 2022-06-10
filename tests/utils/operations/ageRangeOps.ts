@@ -31,18 +31,38 @@ export async function deleteAgeRange(
     return gqlBool
 }
 
+const AGE_RANGE_FIELDS = gql`
+    fragment ageRangeFields on AgeRangeConnectionNode {
+        id
+        name
+        status
+        system
+        lowValue
+        lowValueUnit
+        highValue
+        highValueUnit
+    }
+`
+
+export const CREATE_AGE_RANGES = gql`
+    ${AGE_RANGE_FIELDS}
+
+    mutation CreateAgeRanges($input: [CreateAgeRangeInput!]!) {
+        createAgeRanges(input: $input) {
+            ageRanges {
+                ...ageRangeFields
+            }
+        }
+    }
+`
+
 export const DELETE_AGE_RANGES = gql`
+    ${AGE_RANGE_FIELDS}
+
     mutation DeleteAgeRanges($input: [DeleteAgeRangeInput!]!) {
         deleteAgeRanges(input: $input) {
             ageRanges {
-                id
-                name
-                status
-                system
-                lowValue
-                lowValueUnit
-                highValue
-                highValueUnit
+                ...ageRangeFields
             }
         }
     }

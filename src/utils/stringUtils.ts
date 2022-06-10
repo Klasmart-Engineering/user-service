@@ -79,7 +79,7 @@ export function objectToKey<T extends Record<string, unknown>>(obj: T) {
 // have weird edge cases like:
 // * could be expensive
 // * could be recursive
-export class ObjMap<Key extends { [key: string]: string }, Value> {
+export class ObjMap<Key extends { [key: string]: string | number }, Value> {
     map: Map<string, Value>
 
     constructor(entries?: { key: Key; value: Value }[]) {

@@ -76,3 +76,19 @@ export const makeUserWithPermission = async (permission: PermissionName) => {
 
     return { permittedOrg, userCtx: { permissions }, clientUser }
 }
+
+export const makeUserWithoutPermissions = async () => {
+    const user = await createUser().save()
+    const organization = await createOrganization().save()
+    const role = await createRole(undefined, organization).save()
+
+    await createOrganizationMembership({
+        user,
+        organization,
+        roles: [role],
+    }).save()
+
+    const permissions = new UserPermissions(userToPayload(user))
+
+    return { organization, userCtx: { permissions }, user }
+}

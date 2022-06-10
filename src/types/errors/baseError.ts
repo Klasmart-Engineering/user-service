@@ -36,4 +36,5 @@ export interface ErrorParams {
     inputEndDateString?: string
     overlappedStartDateString?: string
     overlappedEndDateString?: string
+    comparison?: string
 }

@@ -239,6 +239,15 @@ export const customErrors = {
         message:
             'Remove AcademicTerm before moving Class {entityName} to or from a School.',
     },
+    comparing_values: {
+        code: 'ERR_COMPARING_VALUES',
+        message: '{entity} {attribute} must be {comparison} {otherAttribute}.',
+    },
+    not_in_inclusive_range: {
+        code: 'ERR_NOT_IN_INCLUSIVE_RANGE',
+        message:
+            '{entity} {attribute} must be between {min} and {max} limits included.',
+    },
 
     // auth
     unauthorized: {

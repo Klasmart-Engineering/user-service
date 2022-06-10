@@ -284,6 +284,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 10/04/2022 https://calmisland.atlassian.net/l/c/GSPr3XYb"
             )
         createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
+            @deprecated(
+                reason: "Sunset Date: 30/08/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         createOrUpdateGrades(grades: [GradeDetail]!): [Grade]
         createOrUpdateCategories(categories: [CategoryDetail]!): [Category]
             @deprecated(

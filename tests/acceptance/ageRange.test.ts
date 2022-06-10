@@ -26,7 +26,10 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createProgram } from '../factories/program.factory'
 import { makeRequest } from './utils'
-import { DELETE_AGE_RANGES } from '../utils/operations/ageRangeOps'
+import {
+    CREATE_AGE_RANGES,
+    DELETE_AGE_RANGES,
+} from '../utils/operations/ageRangeOps'
 import { userToPayload } from '../utils/operations/userOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 
@@ -342,6 +345,88 @@ describe('acceptance.ageRange', () => {
                 response.body.data.organizationsConnection.edges[0].node
                     .ageRangesConnection.totalCount
             ).to.eq(1 + systemAgeRangesCount)
+        })
+    })
+
+    context('createAgeRanges', () => {
+        let adminUser: User
+        let organization: Organization
+
+        const makeCreateAgeRangesMutation = async (
+            input: any,
+            caller: User
+        ) => {
+            return makeRequest(
+                request,
+                print(CREATE_AGE_RANGES),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            organization = await createOrganization().save()
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [
+                    {
+                        organizationId: organization.organization_id,
+                        name: '11 - 12 year(s)',
+                        lowValue: 11,
+                        highValue: 12,
+                        lowValueUnit: AgeRangeUnit.YEAR,
+                        highValueUnit: AgeRangeUnit.YEAR,
+                    },
+                ]
+
+                const response = await makeCreateAgeRangesMutation(
+                    input,
+                    adminUser
+                )
+
+                const { ageRanges } = response.body.data.createAgeRanges
+                expect(response.status).to.eq(200)
+                expect(response.body.errors).to.be.undefined
+                expect(ageRanges).to.have.lengthOf(input.length)
+            })
+        })
+
+        it('all the fields are mandatory', async () => {
+            const response = await makeCreateAgeRangesMutation([{}], adminUser)
+            const { data } = response.body
+
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(6)
+
+            expect(response.body.errors[0].message).to.contain(
+                'Field "name" of required type "String!" was not provided.'
+            )
+
+            expect(response.body.errors[1].message).to.contain(
+                'Field "lowValue" of required type "Int!" was not provided.'
+            )
+
+            expect(response.body.errors[2].message).to.contain(
+                'Field "highValue" of required type "Int!" was not provided.'
+            )
+
+            expect(response.body.errors[3].message).to.contain(
+                'Field "lowValueUnit" of required type "AgeRangeUnit!" was not provided.'
+            )
+
+            expect(response.body.errors[4].message).to.contain(
+                'Field "highValueUnit" of required type "AgeRangeUnit!" was not provided.'
+            )
+
+            expect(response.body.errors[5].message).to.contain(
+                'Field "organizationId" of required type "ID!" was not provided.'
+            )
         })
     })
 

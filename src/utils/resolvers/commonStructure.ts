@@ -9,6 +9,7 @@ import {
     APIErrorCollection,
     validateAPICall,
 } from '../../types/errors/apiError'
+import { customErrors } from '../../types/errors/customError'
 import { sortObjectArray } from '../array'
 import {
     createDatabaseSaveAPIError,
@@ -25,7 +26,7 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
     mainEntity?: Map<string, EntityType>
     [key: string]:
         | Map<string, CustomBaseEntity | CustomBaseEntity[] | string | string[]>
-        | ObjMap<{ [key: string]: string }, unknown>
+        | ObjMap<{ [key: string]: string | number }, unknown>
         | CustomBaseEntity
         | CustomBaseEntity[]
         | string[]
@@ -33,6 +34,7 @@ export interface EntityMap<EntityType extends CustomBaseEntity> {
 }
 
 type MembershipIdPair = { entityId?: string; attributeValue?: string }
+export type ComparisonOperator = 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte'
 
 // this will not create an error for the first input
 // with a given attribute value, only subsequent duplicates
@@ -308,6 +310,96 @@ export function validateDataAgainstSchema<InputType>(
     })
 
     return inputErrors
+}
+
+export function validateNumbersComparison<InputType>(
+    values: { a: number; b: number }[],
+    operator: ComparisonOperator,
+    entity: string,
+    aName: Extract<keyof InputType, string>,
+    bName: Extract<keyof InputType, string>
+) {
+    const operatorComparison = {
+        eq: 'equal',
+        neq: 'not equal',
+        gt: 'greater than',
+        lt: 'less than',
+        gte: 'greater than or equal',
+        lte: 'less than or equal',
+    }
+
+    const inputErrors: Map<number, APIError> = new Map()
+    for (const [index, v] of values.entries()) {
+        if (!compareNumbers(v.a, v.b, operator)) {
+            const apiError = new APIError({
+                code: customErrors.comparing_values.code,
+                message: customErrors.comparing_values.message,
+                entity,
+                attribute: aName,
+                otherAttribute: bName,
+                comparison: operatorComparison[operator],
+                variables: [aName, bName],
+                index,
+            })
+
+            inputErrors.set(index, apiError)
+        }
+    }
+
+    return inputErrors
+}
+
+export function validateNumberRange<InputType>(
+    values: number[],
+    entity: string,
+    valueName: Extract<keyof InputType, string>,
+    min: number,
+    max: number
+) {
+    const inputErrors: Map<number, APIError> = new Map()
+    for (const [index, v] of values.entries()) {
+        if (!checkRange(v, min, max)) {
+            const apiError = new APIError({
+                code: customErrors.not_in_inclusive_range.code,
+                message: customErrors.not_in_inclusive_range.message,
+                entity,
+                attribute: valueName,
+                min,
+                max,
+                variables: [valueName],
+                index,
+            })
+
+            inputErrors.set(index, apiError)
+        }
+    }
+
+    return inputErrors
+}
+
+function compareNumbers(
+    a: number,
+    b: number,
+    operator: ComparisonOperator
+): boolean {
+    switch (operator) {
+        case 'eq':
+            return a === b
+        case 'neq':
+            return a !== b
+        case 'gt':
+            return a > b
+        case 'lt':
+            return a < b
+        case 'gte':
+            return a >= b
+        case 'lte':
+            return a <= b
+    }
+}
+
+function checkRange(value: number, min: number, max: number) {
+    return value >= min && value <= max
 }
 
 /**

@@ -12,6 +12,15 @@ export interface AgeRangeConnectionNode {
     highValueUnit: AgeRangeUnit
 }
 
+export interface CreateAgeRangeInput {
+    name: string
+    lowValue: number
+    highValue: number
+    lowValueUnit: AgeRangeUnit
+    highValueUnit: AgeRangeUnit
+    organizationId: string
+}
+
 export interface DeleteAgeRangeInput {
     id: string
 }
