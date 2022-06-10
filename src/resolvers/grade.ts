@@ -5,7 +5,7 @@ import { PermissionName } from '../permissions/permissionNames'
 import { GradesMutationResult, DeleteGradeInput } from '../types/graphQL/grade'
 import { DeleteMutation, EntityMap } from '../utils/resolvers/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
-import { flagUnauthorized } from '../utils/resolvers/inputValidation'
+import { flagUnauthorized } from '../utils/resolvers/authorization'
 
 export interface DeleteGradesEntityMap extends EntityMap<Grade> {
     mainEntity: Map<string, Grade>

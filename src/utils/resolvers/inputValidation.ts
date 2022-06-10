@@ -3,7 +3,7 @@ import { User } from '../../entities/user'
 import { School } from '../../entities/school'
 import { Organization } from '../../entities/organization'
 import { OrganizationMembership } from '../../entities/organizationMembership'
-import { createEntityAPIError, createUnauthorizedAPIError } from './errors'
+import { createEntityAPIError } from './errors'
 import { OrganizationMembershipMap, SchoolMembershipMap } from './entityMaps'
 import { Role } from '../../entities/role'
 import { Class } from '../../entities/class'
@@ -16,7 +16,7 @@ import { SchoolMembership } from '../../entities/schoolMembership'
 import { Grade } from '../../entities/grade'
 import { AcademicTerm } from '../../entities/academicTerm'
 
-type Entities =
+export type Entities =
     | User
     | School
     | Organization
@@ -203,24 +203,6 @@ function flagExistentOrNonExistentSchoolMembership(
             }
         }
         return { values, errors }
-    }
-}
-
-/**
- * Checks `ids` against an map and flags an unauthorized error.
- */
-export function flagUnauthorized<T extends Entities>(
-    entityClass: new () => T,
-    ids: string[],
-    map: Map<string, T>,
-    attribute: keyof T
-) {
-    for (let x = 0; x < ids.length; x++) {
-        const entity = map.get(ids[x])
-        if (!entity) continue
-        if (entity[attribute]) {
-            throw createUnauthorizedAPIError(entityClass.name, ids[x], x)
-        }
     }
 }
 
