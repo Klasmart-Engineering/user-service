@@ -533,15 +533,12 @@ describe('acceptance.ageRange', () => {
             })
         })
 
-        it('has mandatory id field', async () => {
+        it('has not mandatory id field', async () => {
             const response = await makeUpdateAgeRangesMutation([])
-            const { data } = response.body
-            expect(response.status).to.eq(400)
-            expect(data).to.be.undefined
-            expect(response.body.errors).to.be.length(1)
-            expect(response.body.errors[0].message).to.contain(
-                'Field "id" of required type "ID!" was not provided.'
-            )
+            const updateAgeRanges = response.body.data.updateAgeRanges
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.exist
+            expect(updateAgeRanges).to.be.null
         })
     })
 })
