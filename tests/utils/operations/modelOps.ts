@@ -1088,6 +1088,21 @@ export const UPDATE_SUBCATEGORIES = gql`
     }
 `
 
+export const UPDATE_AGE_RANGES = gql`
+    mutation UpdateAgeRanges($input: [UpdateAgeRangeInput!]!) {
+        updateAgeRanges(input: $input) {
+            ageRanges {
+                name
+                id
+                lowValue
+                lowValueUnit
+                highValue
+                highValueUnit
+            }
+        }
+    }
+`
+
 export const GRADE_NODE = gql`
     ${GRADE_FIELDS}
 

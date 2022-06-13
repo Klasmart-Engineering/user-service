@@ -4,7 +4,10 @@ import { getConnection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
-import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
+import {
+    AgeRangeConnectionNode,
+    UpdateAgeRangeInput,
+} from '../../src/types/graphQL/ageRange'
 import { loadFixtures } from '../utils/fixtures'
 import {
     createAgeRanges,
@@ -14,6 +17,7 @@ import {
 import {
     AGE_RANGES_CONNECTION,
     AGE_RANGE_NODE,
+    UPDATE_AGE_RANGES,
 } from '../utils/operations/modelOps'
 import { generateToken, getAPIKeyAuth } from '../utils/testConfig'
 import { TestConnection } from '../utils/testConnection'
@@ -28,6 +32,7 @@ import { createProgram } from '../factories/program.factory'
 import { makeRequest } from './utils'
 import {
     CREATE_AGE_RANGES,
+    buildUpdateAgeRangeInputArray,
     DELETE_AGE_RANGES,
 } from '../utils/operations/ageRangeOps'
 import { userToPayload } from '../utils/operations/userOps'
@@ -478,6 +483,62 @@ describe('acceptance.ageRange', () => {
             expect(response.body.errors[0].message).to.contain(
                 'Field "id" of required type "ID!" was not provided.'
             )
+        })
+    })
+
+    context('updateAgeRanges', () => {
+        let ageRangesIds: string[]
+        beforeEach(async () => {
+            const org = await createOrganization().save()
+            const ageRanges = await AgeRange.save(
+                Array.from(new Array(ageRangesCount), (_, i) =>
+                    createAgeRange(org)
+                )
+            )
+            ageRangesIds = ageRanges.map((c) => c.id)
+        })
+        const makeUpdateAgeRangesMutation = async (
+            input: UpdateAgeRangeInput[]
+        ) => {
+            return makeRequest(
+                request,
+                print(UPDATE_AGE_RANGES),
+                { input },
+                getAPIKeyAuth()
+            )
+        }
+
+        context('when age range exist', () => {
+            it('should update it', async () => {
+                const input = buildUpdateAgeRangeInputArray(
+                    ageRangesIds.slice(0, 2)
+                )
+                const response = await makeUpdateAgeRangesMutation(input)
+                const { ageRanges } = response.body.data.updateAgeRanges
+
+                expect(response.status).to.eq(200)
+                expect(response.body.errors).to.be.undefined
+                expect(ageRanges).to.exist
+                expect(ageRanges).to.be.an('array')
+                expect(ageRanges.length).to.eq(input.length)
+
+                ageRanges.forEach((c: AgeRangeConnectionNode, i: number) => {
+                    expect(c.id).to.eq(input[i].id)
+                    expect(c.name).to.eq(input[i].name)
+                    expect(c.lowValue).to.eq(input[i].lowValue)
+                    expect(c.lowValueUnit).to.eq(input[i].lowValueUnit)
+                    expect(c.highValue).to.eq(input[i].highValue)
+                    expect(c.highValueUnit).to.eq(input[i].highValueUnit)
+                })
+            })
+        })
+
+        it('has not mandatory id field', async () => {
+            const response = await makeUpdateAgeRangesMutation([])
+            const updateAgeRanges = response.body.data.updateAgeRanges
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.exist
+            expect(updateAgeRanges).to.be.null
         })
     })
 })

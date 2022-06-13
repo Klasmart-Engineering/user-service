@@ -3,7 +3,11 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { mutate } from '../utils/resolvers/commonStructure'
-import { CreateAgeRanges, DeleteAgeRanges } from '../resolvers/ageRange'
+import {
+    CreateAgeRanges,
+    UpdateAgeRanges,
+    DeleteAgeRanges,
+} from '../resolvers/ageRange'
 
 const typeDefs = gql`
     extend type Query {
@@ -32,6 +36,7 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         createAgeRanges(input: [CreateAgeRangeInput!]!): AgeRangesMutationResult
         deleteAgeRanges(input: [DeleteAgeRangeInput!]!): AgeRangesMutationResult
+        updateAgeRanges(input: [UpdateAgeRangeInput!]!): AgeRangesMutationResult
     }
 
     type AgeRangeConnectionNode {
@@ -128,6 +133,15 @@ const typeDefs = gql`
         id: ID!
     }
 
+    input UpdateAgeRangeInput {
+        id: ID!
+        name: String
+        lowValue: Int
+        highValue: Int
+        lowValueUnit: AgeRangeUnit
+        highValueUnit: AgeRangeUnit
+    }
+
     type AgeRangesMutationResult {
         ageRanges: [AgeRangeConnectionNode!]!
     }
@@ -149,6 +163,8 @@ export default function getDefault(
                     mutate(DeleteAgeRanges, args, ctx.permissions),
                 createAgeRanges: (_parent, args, ctx) =>
                     mutate(CreateAgeRanges, args, ctx.permissions),
+                updateAgeRanges: (_parent, args, ctx) =>
+                    mutate(UpdateAgeRanges, args, ctx.permissions),
             },
             Query: {
                 age_range: (_parent, args, ctx, _info) =>

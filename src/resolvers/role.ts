@@ -32,7 +32,7 @@ import {
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
 } from '../utils/resolvers/errors'
-import { flagUnauthorized } from '../utils/resolvers/inputValidation'
+import { flagUnauthorized } from '../utils/resolvers/authorization'
 
 type RoleAndOrg = Role & {
     __organization__: Organization
