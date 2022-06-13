@@ -4,7 +4,6 @@ import chaiAsPromised from 'chai-as-promised'
 import { getConnection } from 'typeorm'
 import { Role } from '../../../src/entities/role'
 import { Model } from '../../../src/model'
-import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { createServer } from '../../../src/utils/createServer'
 import { createClasses } from '../../factories/class.factory'
 import { createOrganizationPlus } from '../../factories/organization.factory'
@@ -52,9 +51,7 @@ describe('class loaders benchmark', () => {
             organization_name: 'org with many classes',
         }).save()
 
-        const clientUser = await createUser({
-            email: UserPermissions.ADMIN_EMAILS[0],
-        }).save()
+        const clientUser = await createUser({}).save()
         const teacherRole = await Role.findOneOrFail({
             where: { role_name: 'Teacher', system_role: true },
         })

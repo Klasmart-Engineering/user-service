@@ -13,6 +13,7 @@ import { createOrganizationPlus } from '../../factories/organization.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createSchools } from '../../factories/school.factory'
 import { createSchoolMemberships } from '../../factories/schoolMembership.factory'
+import { createUsers } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
