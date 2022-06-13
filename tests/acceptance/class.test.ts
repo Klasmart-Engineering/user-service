@@ -24,6 +24,7 @@ import {
     RemoveAgeRangesFromClassInput,
     AddSubjectsToClassInput,
     AddGradesToClassInput,
+    RemoveGradesFromClassInput,
 } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { SchoolSummaryNode } from '../../src/types/graphQL/school'
@@ -66,6 +67,7 @@ import {
     REMOVE_AGE_RANGES_FROM_CLASSES,
     ADD_SUBJECTS_TO_CLASSES,
     ADD_GRADES_TO_CLASSES,
+    REMOVE_GRADES_FROM_CLASSES,
 } from '../utils/operations/classOps'
 import {
     CLASS_NODE,
@@ -116,6 +118,7 @@ import { AgeRange } from '../../src/entities/ageRange'
 import { createAgeRange } from '../factories/ageRange.factory'
 import { createSubjects as createSubjectsFactory } from '../factories/subject.factory'
 import { createGrades as createGradesFactory } from '../factories/grade.factory'
+import { Grade } from '../../src/entities/grade'
 
 use(deepEqualInAnyOrder)
 
@@ -2309,6 +2312,65 @@ describe('acceptance.class', () => {
             const response = await makeRequest(
                 request,
                 print(ADD_GRADES_TO_CLASSES),
+                { input: [{}] },
+                generateToken(userToPayload(adminUser))
+            )
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).to.be.length(2)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "classId" of required type "ID!" was not provided.'
+            )
+            expect(response.body.errors[1].message).to.contain(
+                'Field "gradeIds" of required type "[ID!]!" was not provided.'
+            )
+        })
+    })
+
+    context('removeGradesFromClasses', () => {
+        let adminUser: User
+        let input: RemoveGradesFromClassInput[]
+        let classes: Class[]
+
+        beforeEach(async () => {
+            adminUser = await createUser({
+                email: UserPermissions.ADMIN_EMAILS[0],
+            }).save()
+            const org = await createOrganization().save()
+            const grades = await Grade.save(createGradesFactory(2, org))
+            await connection.manager.save(grades)
+            classes = createClasses(2, org)
+            classes[0].grades = Promise.resolve([grades[0], grades[1]])
+            classes[1].grades = Promise.resolve([grades[0], grades[1]])
+
+            await connection.manager.save(classes)
+            input = []
+            for (const class_ of classes) {
+                input.push({
+                    classId: class_.class_id,
+                    gradeIds: grades.map((g) => g.id),
+                })
+            }
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_GRADES_FROM_CLASSES),
+                { input },
+                generateToken(userToPayload(adminUser))
+            )
+
+            expect(response.status).to.eq(200)
+            const resClasses: ClassConnectionNode[] =
+                response.body.data.removeGradesFromClasses?.classes ?? []
+            expect(resClasses).to.have.length(classes.length)
+            expect(response.body.errors).to.be.undefined
+        })
+
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                print(REMOVE_GRADES_FROM_CLASSES),
                 { input: [{}] },
                 generateToken(userToPayload(adminUser))
             )

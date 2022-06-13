@@ -29,6 +29,7 @@ import {
     RemoveSubjectsFromClasses,
     AddSubjectsToClasses,
     AddGradesToClasses,
+    RemoveGradesFromClasses,
 } from '../resolvers/class'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { Subject } from '../entities/subject'
@@ -109,6 +110,9 @@ const typeDefs = gql`
         ): ClassesMutationResult
         addGradesToClasses(
             input: [AddGradesToClassInput!]!
+        ): ClassesMutationResult
+        removeGradesFromClasses(
+            input: [RemoveGradesFromClassInput!]!
         ): ClassesMutationResult
     }
 
@@ -404,6 +408,11 @@ const typeDefs = gql`
         classId: ID!
         gradeIds: [ID!]!
     }
+
+    input RemoveGradesFromClassInput {
+        classId: ID!
+        gradeIds: [ID!]!
+    }
 `
 
 export async function subjectsChildConnectionResolver(
@@ -690,6 +699,8 @@ export default function getDefault(
                     mutate(AddSubjectsToClasses, args, ctx.permissions),
                 addGradesToClasses: (_parent, args, ctx) =>
                     mutate(AddGradesToClasses, args, ctx.permissions),
+                removeGradesFromClasses: (_parent, args, ctx) =>
+                    mutate(RemoveGradesFromClasses, args, ctx.permissions),
             },
             Query: {
                 class: (_parent, args) => model.getClass(args),

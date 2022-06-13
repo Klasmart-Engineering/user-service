@@ -66,6 +66,9 @@ import {
     AddSubjectsToClasses,
     AddSubjectsClassesEntityMap,
     AddGradesToClasses,
+    RemoveGradesFromClasses,
+    generateMapsForAddingRemovingGrades,
+    EntityMapAddRemoveGrades,
 } from '../../src/resolvers/class'
 import {
     addUserToOrganizationAndValidate,
@@ -108,7 +111,7 @@ import {
 import { createSchool as createSchoolFactory } from '../factories/school.factory'
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createAgeRange } from '../factories/ageRange.factory'
-import { createGrade } from '../factories/grade.factory'
+import { createGrade, createGrades } from '../factories/grade.factory'
 import { createSubject, createSubjects } from '../factories/subject.factory'
 import { createProgram, createPrograms } from '../factories/program.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
@@ -131,6 +134,7 @@ import {
     RemoveAgeRangesFromClassInput,
     AddSubjectsToClassInput,
     AddGradesToClassInput,
+    RemoveGradesFromClassInput,
 } from '../../src/types/graphQL/class'
 import {
     compareErrors,
@@ -12129,6 +12133,449 @@ describe('class', () => {
                     inputs.slice(1)
                 )
                 expect(countForMultipleClasses).to.be.equal(countForOneClass)
+            })
+        })
+    })
+    describe('RemoveGradesFromClasses', () => {
+        let input: RemoveGradesFromClassInput[]
+        let org: Organization
+        let grades: Grade[]
+        let classes: Class[]
+        let adminUser: User
+        let nonAdminUser: User
+        let schools: School[]
+
+        function getRemoveGrades(
+            gradesFromClassinput: RemoveGradesFromClassInput[] = [],
+            authUser = adminUser
+        ) {
+            const permissions = new UserPermissions(userToPayload(authUser))
+            return new RemoveGradesFromClasses(
+                gradesFromClassinput,
+                permissions
+            )
+        }
+
+        beforeEach(async () => {
+            nonAdminUser = await createUser().save()
+            adminUser = await adminUserFactory().save()
+            org = await createOrganization().save()
+            grades = createGrades(3, org)
+            schools = createSchools(2, org)
+            classes = createClassesFactory(3, org)
+            await connection.manager.save([...schools, ...grades, ...classes])
+            classes[0].schools = Promise.resolve(schools)
+            classes[1].schools = Promise.resolve([schools[0]])
+            classes[0].grades = Promise.resolve([grades[0], grades[1]])
+            classes[1].grades = Promise.resolve([grades[1], grades[2]])
+            classes[2].grades = Promise.resolve([
+                grades[0],
+                grades[1],
+                grades[2],
+            ])
+            await connection.manager.save(classes)
+
+            input = []
+            const inputGradeIndices = [
+                [0, 1],
+                [1, 2],
+                [0, 1, 2],
+            ]
+            for (let i = 0; i < 3; i++) {
+                input.push({
+                    classId: classes[i].class_id,
+                    gradeIds: inputGradeIndices[i].map(
+                        (gradeIndex) => grades[gradeIndex].id
+                    ),
+                })
+            }
+        })
+
+        context('.run', () => {
+            it('makes constant number of queries regardless of input length', async () => {
+                const mutation = getRemoveGrades()
+                connection.logger.reset()
+                await mutation.generateEntityMaps([input[0]])
+                const countForOneInput = connection.logger.count
+                connection.logger.reset()
+                await mutation.generateEntityMaps(input.slice(0))
+                const countForThree = connection.logger.count
+                expect(countForThree).to.eq(countForOneInput)
+            })
+            it('returns the expected output', async () => {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutationResult = mutate(
+                    RemoveGradesFromClasses,
+                    { input },
+                    permissions
+                )
+                const {
+                    classes: classesNodes,
+                }: ClassesMutationResult = await expect(mutationResult).to.be
+                    .fulfilled
+                expect(classesNodes).to.have.length(3)
+                expect(classesNodes[0]).to.deep.eq(
+                    mapClassToClassConnectionNode(classes[0])
+                )
+            })
+        })
+
+        context('.authorize', () => {
+            async function authorize(authUser = adminUser) {
+                const mutation = getRemoveGrades(input, authUser)
+                const maps = await mutation.generateEntityMaps(input)
+                return mutation.authorize(input, maps)
+            }
+
+            const permission = PermissionName.edit_class_20334
+            context(
+                'when user has permissions to remove grades from all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: org,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('completes successfully', async () => {
+                        await expect(authorize(nonAdminUser)).to.be.fulfilled
+                    })
+                }
+            )
+
+            context(
+                'when user does not have permissions to remove grades from all classes',
+                () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await createRoleFactory(
+                            'Non Admin Role',
+                            org,
+                            { permissions: [permission] }
+                        ).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            authorize(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            buildPermissionError(permission, nonAdminUser, [
+                                org,
+                            ])
+                        )
+                    })
+                }
+            )
+        })
+
+        context('.validationOverAllInputs', () => {
+            context('when the same input is used three times', () => {
+                beforeEach(() => {
+                    input = [input[0], input[0], input[0]]
+                })
+
+                it('returns duplicate errors for the last two inputs', () => {
+                    const val = getRemoveGrades().validationOverAllInputs(input)
+
+                    const expectedErrors = [1, 2].map((inputIndex) =>
+                        createDuplicateAttributeAPIError(
+                            inputIndex,
+                            ['classId'],
+                            'RemoveGradesFromClassInput'
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, expectedErrors)
+                })
+
+                it('returns only the first input', () => {
+                    const val = getRemoveGrades().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(0)
+                    expect(val.validInputs[0].input).to.deep.equal(input[0])
+                })
+            })
+
+            context('when there are too many gradeIds', () => {
+                beforeEach(async () => {
+                    const tooManyGrades = createUsers(
+                        config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                    )
+                    await User.save(tooManyGrades)
+                    input[0].gradeIds = tooManyGrades.map(
+                        (grade) => grade.user_id
+                    )
+                    input[2].gradeIds = tooManyGrades.map(
+                        (grade) => grade.user_id
+                    )
+                })
+
+                it('returns an error', async () => {
+                    const val = getRemoveGrades().validationOverAllInputs(input)
+                    expect(val.validInputs).to.have.length(1)
+                    expect(val.validInputs[0].index).to.equal(1)
+                    expect(val.validInputs[0].input).to.deep.equal(input[1])
+                    const xErrors = [0, 2].map((i) =>
+                        createInputLengthAPIError(
+                            'RemoveGradesFromClassInput',
+                            'max',
+                            'gradeIds',
+                            i
+                        )
+                    )
+                    compareMultipleErrors(val.apiErrors, xErrors)
+                })
+            })
+
+            context(
+                'when there are duplicated gradeIds in a single input elemnet',
+                () => {
+                    beforeEach(async () => {
+                        input[0].gradeIds = [
+                            input[0].gradeIds[0],
+                            input[0].gradeIds[0],
+                        ]
+                        input[2].gradeIds = [
+                            input[2].gradeIds[0],
+                            input[2].gradeIds[0],
+                        ]
+                    })
+
+                    it('returns an error', async () => {
+                        const val = getRemoveGrades().validationOverAllInputs(
+                            input
+                        )
+                        expect(val.validInputs).to.have.length(1)
+                        expect(val.validInputs[0].index).to.equal(1)
+                        expect(val.validInputs[0].input).to.deep.equal(input[1])
+                        const xErrors = [0, 2].map((i) =>
+                            createDuplicateAttributeAPIError(
+                                i,
+                                ['gradeIds'],
+                                'RemoveGradesFromClassInput'
+                            )
+                        )
+                        compareMultipleErrors(val.apiErrors, xErrors)
+                    })
+                }
+            )
+        })
+
+        context('.validate', () => {
+            async function validate(
+                mutationInput: RemoveGradesFromClassInput,
+                index: number
+            ) {
+                const mutation = getRemoveGrades()
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return mutation.validate(0, classes[index], mutationInput, maps)
+            }
+
+            it('returns no errors when all inputs are valid', async () => {
+                const apiErrors = await validate(input[0], 0)
+                expect(apiErrors).to.be.length(0)
+            })
+
+            context(
+                'when one of the grades is not part of the class',
+                async () => {
+                    beforeEach(async () => {
+                        input[0].gradeIds.push(grades[2].id)
+                    })
+
+                    it('returns existent errors', async () => {
+                        const actualErrors = await validate(input[0], 0)
+                        const expectedError = createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'Grade',
+                            grades[2].id,
+                            'Class',
+                            classes[0].class_id
+                        )
+
+                        expect(actualErrors.length).to.eq(1)
+                        compareErrors(actualErrors[0], expectedError)
+                    })
+                }
+            )
+
+            context('when one of the grades is inactive', async () => {
+                beforeEach(() => grades[1].inactivate(getManager()))
+
+                it('returns nonexistent_entity and nonExistentChild errors', async () => {
+                    const errors = await validate(input[0], 0)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Grade',
+                            grades[1].id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+
+            context('when one of each attribute is inactive', async () => {
+                beforeEach(async () => {
+                    await Promise.all([
+                        classes[1].inactivate(getManager()),
+                        grades[1].inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several nonexistent_entity errors', async () => {
+                    const errors = await validate(input[1], 1)
+                    const xErrors = [
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistent',
+                            0,
+                            'Grade',
+                            grades[1].id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'Grade',
+                            grades[1].id,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                        createEntityAPIError(
+                            'nonExistentChild',
+                            0,
+                            'Grade',
+                            grades[2].id,
+                            'Class',
+                            classes[1].class_id
+                        ),
+                    ]
+                    compareMultipleErrors(errors, xErrors)
+                })
+            })
+        })
+
+        context('.process', () => {
+            async function process(mutationInput: RemoveGradesFromClassInput) {
+                const permissions = new UserPermissions(
+                    userToPayload(adminUser)
+                )
+                const mutation = new RemoveGradesFromClasses(
+                    [mutationInput],
+                    permissions
+                )
+                const maps = await mutation.generateEntityMaps([mutationInput])
+                return {
+                    mutationResult: mutation.process(mutationInput, maps, 0),
+                    originalClass: maps.mainEntity.get(mutationInput.classId)!,
+                    originalGrades: maps.classesGrades.get(
+                        mutationInput.classId
+                    ),
+                }
+            }
+
+            it('keeps the not removed grades', async () => {
+                classes[0].grades = Promise.resolve([grades[0]])
+                await classes[0].save()
+                input[0].gradeIds = []
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                    originalGrades,
+                } = await process(input[0])
+                expect(originalClass).to.deep.eq(outputEntity)
+                expect(originalGrades).to.deep.equalInAnyOrder(
+                    await originalClass.grades
+                )
+            })
+
+            it('removes the grades', async () => {
+                const gradesToRemove = [grades[1]]
+                input[0].gradeIds = gradesToRemove.map((s) => s.id)
+
+                const {
+                    mutationResult: { outputEntity },
+                    originalClass,
+                } = await process(input[0])
+                expect(await outputEntity.grades).to.deep.equalInAnyOrder(
+                    await originalClass.grades
+                )
+            })
+        })
+    })
+
+    describe('generateMapsForAddingRemovingGrades', () => {
+        let input: RemoveGradesFromClassInput[]
+        let org: Organization
+        let grades: Grade[]
+        let classes: Class[]
+        let maps: EntityMapAddRemoveGrades
+
+        beforeEach(async () => {
+            org = await createOrganization().save()
+            grades = createGrades(3, org)
+            classes = createClassesFactory(3, org)
+            await connection.manager.save([...grades, ...classes])
+            classes[0].grades = Promise.resolve([grades[0], grades[1]])
+            classes[1].grades = Promise.resolve([grades[1], grades[2]])
+            classes[2].grades = Promise.resolve([
+                grades[0],
+                grades[1],
+                grades[2],
+            ])
+            await connection.manager.save(classes)
+
+            input = []
+            const inputGradeIndices = [
+                [0, 1],
+                [1, 2],
+                [0, 1, 2],
+            ]
+            for (let i = 0; i < 3; i++) {
+                input.push({
+                    classId: classes[i].class_id,
+                    gradeIds: inputGradeIndices[i].map(
+                        (gradeIndex) => grades[gradeIndex].id
+                    ),
+                })
+            }
+
+            maps = await generateMapsForAddingRemovingGrades(input)
+        })
+        context('populates the maps correctly', async () => {
+            it('populates classesGrades correctly', () => {
+                for (const { classId, gradeIds } of input) {
+                    const mapGradeIds = maps.classesGrades
+                        .get(classId)!
+                        .map((s) => s.id)
+                    expect(mapGradeIds).to.deep.equalInAnyOrder(gradeIds)
+                }
+            })
+
+            it('sets correct grade amounts', () => {
+                expect(maps.grades.size).to.equal(3)
+            })
+
+            it('sets correct grade map', () => {
+                const gradeIds = grades.map((g) => g.id)
+                for (const gradeId of gradeIds) {
+                    expect(maps.grades.get(gradeId)).to.not.be.undefined
+                }
             })
         })
     })

@@ -491,6 +491,14 @@ export const ADD_GRADES_TO_CLASSES = gql`
     }
 `
 
+export const REMOVE_GRADES_FROM_CLASSES = gql`
+    mutation RemoveGradesFromClass($input: [RemoveGradesFromClassInput!]!) {
+        removeGradesFromClasses(input: $input) {
+            ${CLASSES_MUTATION_RESULT}
+        }
+    }
+`
+
 export async function updateClass(
     testClient: ApolloServerTestClient,
     classId: string,

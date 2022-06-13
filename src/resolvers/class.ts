@@ -19,6 +19,7 @@ import {
     RemoveAgeRangesFromClassInput,
     AddSubjectsToClassInput,
     AddGradesToClassInput,
+    RemoveGradesFromClassInput,
 } from '../types/graphQL/class'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { Class } from '../entities/class'
@@ -2877,18 +2878,39 @@ export class AddSubjectsToClasses extends AddMutation<
     }
 }
 
-export interface AddGradesClassesEntityMap extends EntityMap<Class> {
+export interface EntityMapAddRemoveGrades extends EntityMap<Class> {
     mainEntity: Map<string, Class>
     grades: Map<string, Grade>
     classesGrades: Map<string, Grade[]>
-    organizationIds: string[]
+}
+
+export const generateMapsForAddingRemovingGrades = async (
+    input: RemoveGradesFromClassInput[]
+): Promise<EntityMapAddRemoveGrades> => {
+    const gradeIds = input.flatMap((i) => i.gradeIds)
+    const gradesMap = getMap.grade(gradeIds, ['organization'])
+    const classIds = input.map((i) => i.classId)
+    const classMap = await getMap.class(classIds, ['organization', 'grades'])
+
+    const classesGrades = new Map<string, Grade[]>()
+    for (const class_ of classMap.values()) {
+        // eslint-disable-next-line no-await-in-loop
+        const grades = (await class_.grades) || []
+        classesGrades.set(class_.class_id, grades)
+    }
+
+    return {
+        mainEntity: classMap,
+        grades: await gradesMap,
+        classesGrades,
+    }
 }
 
 export class AddGradesToClasses extends AddMutation<
     Class,
     AddGradesToClassInput,
     ClassesMutationResult,
-    AddGradesClassesEntityMap
+    EntityMapAddRemoveGrades
 > {
     protected readonly EntityType = Class
     protected inputTypeName = 'AddGradesToClassInput'
@@ -2904,40 +2926,19 @@ export class AddGradesToClasses extends AddMutation<
     }
 
     generateEntityMaps = async (
-        input: AddGradesToClassInput[]
-    ): Promise<AddGradesClassesEntityMap> => {
-        const gradeIds = input.flatMap((i) => i.gradeIds)
-        const gradesMap = getMap.grade(gradeIds, ['organization'])
-        const classIds = input.map((i) => i.classId)
-        const classesGrades = new Map<string, Grade[]>()
-        const classMap = await getMap.class(classIds, [
-            'organization',
-            'grades',
-        ])
-        const organizationIds = uniqueAndTruthy(
-            Array.from(classMap.values(), (c) => c.organization_id)
-        )
-
-        for (const class_ of (await classMap).values()) {
-            // eslint-disable-next-line no-await-in-loop
-            const grades = (await class_.grades) || []
-            classesGrades.set(class_.class_id, grades)
-        }
-
-        return {
-            mainEntity: await classMap,
-            grades: await gradesMap,
-            classesGrades,
-            organizationIds,
-        }
-    }
+        input: RemoveGradesFromClassInput[]
+    ): Promise<EntityMapAddRemoveGrades> =>
+        generateMapsForAddingRemovingGrades(input)
 
     async authorize(
-        input: AddGradesToClassInput[],
-        maps: AddGradesClassesEntityMap
+        _input: AddGradesToClassInput[],
+        maps: EntityMapAddRemoveGrades
     ): Promise<void> {
+        const organization_ids = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values(), (c) => c.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: maps.organizationIds },
+            { organization_ids },
             PermissionName.edit_class_20334
         )
     }
@@ -2970,7 +2971,7 @@ export class AddGradesToClasses extends AddMutation<
         index: number,
         currentEntity: Class,
         currentInput: AddGradesToClassInput,
-        maps: AddGradesClassesEntityMap
+        maps: EntityMapAddRemoveGrades
     ): APIError[] {
         const errors: APIError[] = []
         const { classId, gradeIds } = currentInput
@@ -3017,7 +3018,7 @@ export class AddGradesToClasses extends AddMutation<
 
     process(
         currentInput: AddGradesToClassInput,
-        maps: AddGradesClassesEntityMap,
+        maps: EntityMapAddRemoveGrades,
         index: number
     ) {
         const { classId, gradeIds } = currentInput
@@ -3036,6 +3037,129 @@ export class AddGradesToClasses extends AddMutation<
     }
 
     protected buildOutput = async (currentEntity: Class): Promise<void> => {
+        this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
+    }
+}
+
+export class RemoveGradesFromClasses extends RemoveMutation<
+    Class,
+    RemoveGradesFromClassInput,
+    ClassesMutationResult,
+    EntityMapAddRemoveGrades
+> {
+    protected readonly EntityType = Class
+    protected inputTypeName = 'RemoveGradesFromClassInput'
+    protected mainEntityIds: string[]
+    protected output: ClassesMutationResult = { classes: [] }
+
+    constructor(
+        input: RemoveGradesFromClassInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.classId)
+    }
+
+    generateEntityMaps(
+        input: RemoveGradesFromClassInput[]
+    ): Promise<EntityMapAddRemoveGrades> {
+        return generateMapsForAddingRemovingGrades(input)
+    }
+
+    async authorize(
+        _input: RemoveGradesFromClassInput[],
+        maps: EntityMapAddRemoveGrades
+    ): Promise<void> {
+        const organization_ids = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values(), (c) => c.organization_id)
+        )
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids },
+            PermissionName.edit_class_20334
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: RemoveGradesFromClassInput[]
+    ): {
+        validInputs: { index: number; input: RemoveGradesFromClassInput }[]
+        apiErrors: APIError[]
+    } {
+        const classIdErrorMap = validateNoDuplicate(
+            inputs.map((cls) => cls.classId),
+            this.inputTypeName,
+            ['classId']
+        )
+
+        const gradeIdsErrorMap = validateSubItemsLengthAndNoDuplicates(
+            inputs,
+            this.inputTypeName,
+            'gradeIds'
+        )
+
+        return filterInvalidInputs(inputs, [
+            classIdErrorMap,
+            ...gradeIdsErrorMap,
+        ])
+    }
+
+    validate = (
+        index: number,
+        currentEntity: Class,
+        currentInput: RemoveGradesFromClassInput,
+        maps: EntityMapAddRemoveGrades
+    ): APIError[] => {
+        const errors: APIError[] = []
+        const { classId, gradeIds } = currentInput
+
+        const classes = flagNonExistent(
+            Class,
+            index,
+            [classId],
+            maps.mainEntity
+        )
+        errors.push(...classes.errors)
+
+        const currentClassGrades = new Set(
+            maps.classesGrades.get(classId)?.map((s) => s.id)
+        )
+
+        const grades = flagNonExistent(Grade, index, gradeIds, maps.grades)
+        errors.push(...grades.errors)
+
+        const gradeChildErrors = flagNonExistentChild(
+            Class,
+            Grade,
+            index,
+            classId,
+            gradeIds,
+            currentClassGrades
+        )
+
+        errors.push(...gradeChildErrors)
+
+        return errors
+    }
+
+    process(
+        currentInput: RemoveGradesFromClassInput,
+        maps: EntityMapAddRemoveGrades,
+        index: number
+    ) {
+        const { classId, gradeIds } = currentInput
+        const gradeIdsSet = new Set(gradeIds)
+        const currentEntity = maps.mainEntity.get(this.mainEntityIds[index])!
+        const preExistentGrades = maps.classesGrades.get(classId)!
+        const keptGrades = preExistentGrades.filter(
+            (grade) => !gradeIdsSet.has(grade.id)
+        )
+
+        currentEntity.grades = Promise.resolve(keptGrades)
+
+        return { outputEntity: currentEntity }
+    }
+
+    protected async buildOutput(currentEntity: Class): Promise<void> {
         this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
     }
 }

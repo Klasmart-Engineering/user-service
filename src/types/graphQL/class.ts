@@ -115,3 +115,8 @@ export interface AddGradesToClassInput {
     classId: string
     gradeIds: string[]
 }
+
+export interface RemoveGradesFromClassInput {
+    classId: string
+    gradeIds: string[]
+}
