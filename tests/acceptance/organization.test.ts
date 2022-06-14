@@ -33,6 +33,7 @@ import {
 import {
     ADD_USERS_TO_ORGANIZATIONS,
     CREATE_ORGANIZATIONS,
+    DELETE_ORGANIZATIONS,
     REMOVE_USERS_FROM_ORGANIZATIONS,
 } from '../utils/operations/organizationOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
@@ -52,6 +53,7 @@ import { Role } from '../../src/entities/role'
 import faker from 'faker'
 import { generateShortCode } from '../../src/utils/shortcode'
 import { Status } from '../../src/entities/status'
+import { createInitialData } from '../utils/createTestData'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -635,6 +637,51 @@ describe('acceptance.organization', () => {
                 response.body.data.organizationsConnection.edges[0].node
                     .classesConnection.edges[0].node.id
             ).to.eq(class_.class_id)
+        })
+    })
+
+    context('deleteOrganizations', () => {
+        let caller: User
+        let organizationToDelete: Organization
+
+        const makeDeleteOrganizationsMutation = async (input: any) => {
+            return await makeRequest(
+                request,
+                print(DELETE_ORGANIZATIONS),
+                { input },
+                generateToken(userToPayload(caller))
+            )
+        }
+
+        beforeEach(async () => {
+            const permissions = [PermissionName.delete_organization_10440]
+            const data = await createInitialData(permissions)
+            organizationToDelete = data.organization
+            caller = data.user
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should pass gql schema validation', async () => {
+                const input = [{ id: organizationToDelete.organization_id }]
+                const response = await makeDeleteOrganizationsMutation(input)
+                const {
+                    organizations: deletedOrganizations,
+                } = response.body.data.deleteOrganizations
+                expect(response.status).to.eq(200)
+                expect(deletedOrganizations).to.have.lengthOf(input.length)
+                expect(response.body.errors).to.be.undefined
+            })
+        })
+
+        it('has mandatory id field', async () => {
+            const response = await makeDeleteOrganizationsMutation([{}])
+            const { data } = response.body
+            expect(response.status).to.eq(400)
+            expect(data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
+            )
         })
     })
 })

@@ -589,9 +589,9 @@ abstract class Mutation<
     async run(): Promise<OutputType> {
         this.validateInputLength()
         const normalizedInput = this.normalize(this.input)
-        const entityMaps = await this.generateEntityMaps(normalizedInput)
-        await this.authorize(normalizedInput, entityMaps)
-        const loopResults = this.inputLoop(normalizedInput, entityMaps)
+        this.entityMaps = await this.generateEntityMaps(normalizedInput)
+        await this.authorize(normalizedInput, this.entityMaps)
+        const loopResults = this.inputLoop(normalizedInput, this.entityMaps)
         await this.saveWrapper(loopResults)
         // building output has to be done after saving to the DB
         // to allow DB generated default values to be returned
@@ -690,7 +690,7 @@ export abstract class DeleteMutation<
     OutputType,
     DeleteEntityMap<EntityType>
 > {
-    private readonly partialEntity = {
+    protected readonly partialEntity = {
         status: Status.INACTIVE,
         deleted_at: new Date(),
     }

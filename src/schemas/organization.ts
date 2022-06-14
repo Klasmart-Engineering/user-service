@@ -9,6 +9,7 @@ import { Model } from '../model'
 import {
     AddUsersToOrganizations,
     CreateOrganizations,
+    DeleteOrganizations,
     DeleteUsersFromOrganizations,
     ReactivateUsersFromOrganizations,
     RemoveUsersFromOrganizations,
@@ -104,6 +105,9 @@ const typeDefs = gql`
             type: BrandingImageTag!
         ): Boolean
         deleteBrandingColor(organizationId: ID!): Boolean
+        deleteOrganizations(
+            input: [DeleteOrganizationInput!]!
+        ): OrganizationsMutationResult
     }
 
     type OrganizationConnectionNode {
@@ -307,6 +311,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 24/04/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
             )
         delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 03/09/2022 Details: https://calmisland.atlassian.net/l/c/BXEZ1yBD"
+            )
     }
     type OrganizationMembership {
         #properties
@@ -460,6 +467,10 @@ const typeDefs = gql`
     type UserSummaryNode {
         id: String
         email: String
+    }
+
+    input DeleteOrganizationInput {
+        id: ID!
     }
 `
 
@@ -622,6 +633,8 @@ export default function getDefault(
                     model.deleteBrandingImage(args, ctx, info),
                 deleteBrandingColor: (_parent, args, ctx, info) =>
                     model.deleteBrandingColor(args, ctx, info),
+                deleteOrganizations: (_parent, args, ctx) =>
+                    mutate(DeleteOrganizations, args, ctx.permissions),
             },
             Query: {
                 organizations: (_parent, args, _context, _info) =>

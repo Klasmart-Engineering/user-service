@@ -1132,3 +1132,14 @@ export async function listOwnerAndPrimaryContact(
         }
     }
 }
+
+export const DELETE_ORGANIZATIONS = gql`
+    mutation DeleteOrganizations($input: [DeleteOrganizationInput!]!) {
+        deleteOrganizations(input: $input) {
+            organizations {
+                id
+                name
+            }
+        }
+    }
+`

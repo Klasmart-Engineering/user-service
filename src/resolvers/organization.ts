@@ -9,6 +9,7 @@ import { APIError } from '../types/errors/apiError'
 import {
     AddUsersToOrganizationInput,
     CreateOrganizationInput,
+    DeleteOrganizationInput,
     OrganizationsMutationResult,
 } from '../types/graphQL/organization'
 import {
@@ -34,6 +35,7 @@ import {
     validateNoDuplicate,
     validateNoDuplicates,
     validateSubItemsLengthAndNoDuplicates,
+    DeleteMutation,
 } from '../utils/resolvers/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
 import {
@@ -45,7 +47,7 @@ import clean from '../utils/clean'
 import { ObjMap } from '../utils/stringUtils'
 import { OrganizationOwnership } from '../entities/organizationOwnership'
 import { v4 as uuid_v4 } from 'uuid'
-import { In, IsNull } from 'typeorm'
+import { getManager, In, IsNull } from 'typeorm'
 import { Status } from '../entities/status'
 import logger from '../logging'
 
@@ -624,6 +626,90 @@ export class DeleteUsersFromOrganizations extends ChangeOrganizationMembershipSt
             Status.ACTIVE,
             Status.INACTIVE,
         ])
+    }
+}
+
+export interface DeleteOrganizationsEntityMap extends EntityMap<Organization> {
+    mainEntity: Map<string, Organization>
+    memberships: OrganizationMembership[]
+}
+
+export class DeleteOrganizations extends DeleteMutation<
+    Organization,
+    DeleteOrganizationInput,
+    OrganizationsMutationResult
+> {
+    protected readonly EntityType = Organization
+    protected readonly inputTypeName = 'DeleteOrganizationInput'
+    protected readonly output: OrganizationsMutationResult = {
+        organizations: [],
+    }
+    protected readonly mainEntityIds: string[]
+
+    constructor(
+        input: DeleteOrganizationInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.id)
+    }
+
+    async generateEntityMaps(): Promise<DeleteOrganizationsEntityMap> {
+        const organizations = await getMap.organization(this.mainEntityIds, [
+            'memberships',
+        ])
+        const memberships = new Set<OrganizationMembership>()
+        for (const organization of organizations.values()) {
+            if (organization.memberships) {
+                // eslint-disable-next-line no-await-in-loop
+                for (const membership of await organization.memberships) {
+                    memberships.add(membership)
+                }
+            }
+        }
+        return {
+            mainEntity: organizations,
+            memberships: Array.from(memberships),
+        }
+    }
+
+    async authorize(): Promise<void> {
+        return this.permissions.rejectIfNotAllowed(
+            { organization_ids: this.mainEntityIds },
+            PermissionName.delete_organization_10440
+        )
+    }
+
+    async buildOutput(organization: Organization): Promise<void> {
+        this.output.organizations.push(
+            mapOrganizationToOrganizationConnectionNode(organization)
+        )
+    }
+
+    async applyToDatabase(): Promise<void> {
+        await getManager().transaction(async (manager) => {
+            if (this.entityMaps) {
+                const membershipIds = (this.entityMaps
+                    .memberships as OrganizationMembership[]).map(
+                    ({ user_id, organization_id }) => ({
+                        user_id,
+                        organization_id,
+                    })
+                )
+                await manager
+                    .createQueryBuilder()
+                    .update(OrganizationMembership)
+                    .set(this.partialEntity)
+                    .whereInIds(membershipIds)
+                    .execute()
+            }
+            await manager
+                .createQueryBuilder()
+                .update(this.EntityType)
+                .set(this.partialEntity)
+                .whereInIds(this.mainEntityIds)
+                .execute()
+        })
     }
 }
 

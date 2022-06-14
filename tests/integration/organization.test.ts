@@ -93,6 +93,7 @@ import {
     createAdminUser as adminUserFactory,
     createUser,
     createUsers,
+    makeUserWithPermission,
 } from '../factories/user.factory'
 import chaiAsPromised from 'chai-as-promised'
 import { Program } from '../../src/entities/program'
@@ -120,6 +121,7 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import {
     AddUsersToOrganizationInput,
     CreateOrganizationInput,
+    DeleteOrganizationInput,
     OrganizationsMutationResult,
 } from '../../src/types/graphQL/organization'
 import { UserPermissions } from '../../src/permissions/userPermissions'
@@ -132,6 +134,7 @@ import {
     ChangeOrganizationMembershipStatusEntityMap,
     DeleteUsersFromOrganizations,
     generateAddRemoveOrgUsersMap,
+    DeleteOrganizations,
 } from '../../src/resolvers/organization'
 import { mutate } from '../../src/utils/resolvers/commonStructure'
 import { buildPermissionError } from '../utils/errors'
@@ -152,6 +155,7 @@ import {
 } from '../utils/database'
 import { SinonFakeTimers } from 'sinon'
 import sinon from 'sinon'
+import { createInitialData } from '../utils/createTestData'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -8546,6 +8550,197 @@ describe('organization', () => {
                 expect(
                     Array.from(entityMaps.memberships.values())[0].status
                 ).to.eq(Status.ACTIVE)
+            })
+        })
+    })
+
+    describe('DeleteOrganizations', () => {
+        let user: User
+        let ctx: { permissions: UserPermissions }
+        let org: Organization
+        let organizationsToDelete: Organization[]
+        let organizationMemberships: OrganizationMembership[]
+
+        beforeEach(async () => {
+            const permissions = [PermissionName.delete_organization_10440]
+            const data = await createInitialData(permissions)
+            org = data.organization
+            ctx = data.context
+            user = data.user
+            const otherOrgsCount = 5
+            const otherOrgs = await Organization.save(
+                createOrganizations(otherOrgsCount)
+            )
+            const otherOrgsRoles: Role[] = []
+            organizationMemberships = []
+            for (const someOrg of otherOrgs) {
+                otherOrgsRoles.push(
+                    roleFactory(undefined, someOrg, {
+                        permissions,
+                    })
+                )
+            }
+            await connection.manager.save(otherOrgsRoles)
+            for (let x = 0; x < otherOrgsCount; x++) {
+                organizationMemberships.push(
+                    createOrganizationMembership({
+                        user,
+                        organization: otherOrgs[x],
+                        roles: [otherOrgsRoles[x]],
+                    })
+                )
+            }
+            await connection.manager.save(organizationMemberships)
+            organizationsToDelete = [org, ...otherOrgs]
+        })
+
+        const buildDefaultInput = (
+            organizations: Organization[]
+        ): DeleteOrganizationInput[] =>
+            Array.from(organizations, ({ organization_id }) => {
+                return { id: organization_id }
+            })
+
+        context('complete mutation calls', () => {
+            const getDbCallCount = async (input: DeleteOrganizationInput[]) => {
+                const { userCtx } = await makeUserWithPermission(
+                    PermissionName.delete_organization_10440
+                )
+                connection.logger.reset()
+                const mutation = new DeleteOrganizations(
+                    input,
+                    userCtx.permissions
+                )
+                await mutation.generateEntityMaps()
+                return connection.logger.count
+            }
+
+            it('can delete a organization', async () => {
+                const input = buildDefaultInput([organizationsToDelete[0]])
+                const { organizations } = await mutate(
+                    DeleteOrganizations,
+                    { input },
+                    ctx.permissions
+                )
+
+                expect(organizations).to.have.lengthOf(1)
+                expect(organizations[0].id).to.eq(input[0].id)
+                expect(organizations[0].status).to.eq(Status.INACTIVE)
+
+                const dbOrganizations = await Organization.findBy({
+                    organization_id: In([input[0].id]),
+                })
+                expect(dbOrganizations).to.have.lengthOf(1)
+                expect(dbOrganizations[0].status).to.eq(Status.INACTIVE)
+            })
+
+            it('makes the same number of db connections regardless of input length', async () => {
+                await getDbCallCount(
+                    buildDefaultInput([organizationsToDelete[0]])
+                )
+                // warm up permissions cache)
+
+                const singleOrganizationCount = await getDbCallCount(
+                    buildDefaultInput([organizationsToDelete[1]])
+                )
+
+                const threeOrganizationCount = await getDbCallCount(
+                    buildDefaultInput(organizationsToDelete.slice(2))
+                )
+
+                expect(threeOrganizationCount).to.be.eq(singleOrganizationCount)
+            })
+        })
+
+        context('.generateEntityMaps', async () => {
+            it('creates maps of organization memberships', async () => {
+                const mutation = new DeleteOrganizations(
+                    buildDefaultInput(organizationsToDelete.slice(1)),
+                    ctx.permissions
+                )
+                const maps = await mutation.generateEntityMaps()
+                expect(maps.memberships.length).to.equal(
+                    organizationMemberships.length
+                )
+                for (const membership of maps.memberships) {
+                    const exist = organizationMemberships.find(
+                        (o) => o.organization_id === membership.organization_id
+                    )
+                    expect(exist).not.to.be.undefined
+                }
+            })
+        })
+
+        context('.authorize', () => {
+            const callAuthorize = async (
+                userCtx: { permissions: UserPermissions },
+                organizations: Organization[]
+            ) => {
+                const input = buildDefaultInput(organizations)
+                const mutation = new DeleteOrganizations(
+                    input,
+                    userCtx.permissions
+                )
+                return mutation.authorize()
+            }
+
+            it('checks the correct permission', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.delete_organization_10440
+                )
+
+                await expect(callAuthorize(userCtx, [permittedOrg])).to.be
+                    .fulfilled
+            })
+
+            it('rejects when user is not authorized', async () => {
+                const {
+                    permittedOrg,
+                    userCtx,
+                    clientUser,
+                } = await makeUserWithPermission(
+                    PermissionName.create_grade_20223
+                )
+
+                await expect(
+                    callAuthorize(userCtx, [permittedOrg])
+                ).to.be.rejectedWith(
+                    buildPermissionError(
+                        PermissionName.delete_organization_10440,
+                        clientUser,
+                        [permittedOrg]
+                    )
+                )
+            })
+        })
+
+        context('.applyToDatabase', () => {
+            context('effects on related entities', () => {
+                let testUser: User
+
+                beforeEach(async () => {
+                    testUser = await createUser().save()
+                    await createOrganizationMembership({
+                        user: testUser,
+                        organization: org,
+                    }).save()
+                    const input = buildDefaultInput([org])
+                    await mutate(
+                        DeleteOrganizations,
+                        { input },
+                        ctx.permissions
+                    )
+                })
+
+                it('related entities are inactivated', async () => {
+                    const dbOrganizationMembership = await OrganizationMembership.findOneBy(
+                        { user_id: testUser.user_id }
+                    )
+
+                    expect(dbOrganizationMembership?.status).to.equal(
+                        Status.INACTIVE
+                    )
+                })
             })
         })
     })

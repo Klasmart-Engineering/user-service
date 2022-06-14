@@ -78,3 +78,7 @@ export interface OrganizationSummaryNode {
 export interface OrganizationsMutationResult {
     organizations: CoreOrganizationConnectionNode[]
 }
+
+export interface DeleteOrganizationInput {
+    id: string
+}
