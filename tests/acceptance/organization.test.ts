@@ -21,6 +21,7 @@ import {
     OrganizationConnectionNode,
     ReactivateUsersFromOrganizationInput,
     RemoveUsersFromOrganizationInput,
+    UpdateOrganizationInput,
 } from '../../src/types/graphQL/organization'
 import {
     createOrganization,
@@ -35,6 +36,7 @@ import {
     CREATE_ORGANIZATIONS,
     DELETE_ORGANIZATIONS,
     REMOVE_USERS_FROM_ORGANIZATIONS,
+    UPDATE_ORGANIZATIONS,
 } from '../utils/operations/organizationOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
@@ -131,6 +133,78 @@ describe('acceptance.organization', () => {
             )
             expect(response.body.errors[1].message).to.contain(
                 'Field "organizationName" of required type "String!" was not provided.'
+            )
+        })
+    })
+
+    context('updateOrganizations', () => {
+        let caller: User
+        let input: UpdateOrganizationInput[]
+        let org: Organization
+
+        beforeEach(async () => {
+            const orgOwner = await createUser().save()
+            org = await createOrganization(orgOwner).save()
+            await createOrganizationMembership({
+                user: orgOwner,
+                organization: org,
+            }).save()
+            await createOrganizationOwnership({
+                user: orgOwner,
+                organization: org,
+            }).save()
+
+            caller = await createUser().save()
+            const callerRole = await createRole(undefined, org, {
+                permissions: [PermissionName.edit_my_organization_10331],
+            }).save()
+            await createOrganizationMembership({
+                user: caller,
+                organization: org,
+                roles: [callerRole],
+            }).save()
+
+            input = [
+                {
+                    id: org.organization_id,
+                    organizationName: 'New Name',
+                    address1: '2451 Buckhannan Avenue',
+                    address2: '3780 Pratt Avenue',
+                    phone: '+523781234567',
+                    shortcode: 'N3W5H0R7',
+                    primaryContactId: orgOwner.user_id,
+                },
+            ]
+        })
+
+        it('supports expected input fields', async () => {
+            const response = await makeRequest(
+                request,
+                UPDATE_ORGANIZATIONS,
+                { input },
+                generateToken(userToPayload(caller))
+            )
+
+            const resOrgs: OrganizationConnectionNode[] =
+                response.body.data.updateOrganizations.organizations
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.be.undefined
+            expect(resOrgs).to.have.length(1)
+        })
+
+        it('enforces mandatory input fields', async () => {
+            const response = await makeRequest(
+                request,
+                UPDATE_ORGANIZATIONS,
+                { input: [{}] },
+                generateToken(userToPayload(caller))
+            )
+
+            expect(response.status).to.eq(400)
+            expect(response.body.data).to.be.undefined
+            expect(response.body.errors).to.be.length(1)
+            expect(response.body.errors[0].message).to.contain(
+                'Field "id" of required type "ID!" was not provided.'
             )
         })
     })

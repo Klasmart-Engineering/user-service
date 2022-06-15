@@ -248,6 +248,16 @@ export const customErrors = {
         message:
             '{entity} {attribute} must be between {min} and {max} limits included.',
     },
+    invalid_hexadecimal_color: {
+        code: 'ERR_INVALID_HEXADECIMAL_COLOR',
+        message:
+            "{entity} {attribute} '{attributeValue}' is an invalid hexadecimal color, it should have the following format #HHHHHH",
+    },
+    unsupported_mimetype: {
+        code: 'ERR_UNSUPPORTED_MIMETYPE',
+        message:
+            "{entity} {attribute} has an unsupported mimetype '{attributeValue}'",
+    },
 
     // auth
     unauthorized: {

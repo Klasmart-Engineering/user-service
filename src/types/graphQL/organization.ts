@@ -3,6 +3,7 @@ import { Status } from '../../entities/status'
 import { CoreClassConnectionNode } from '../../pagination/classesConnection'
 import { CoreOrganizationConnectionNode } from '../../pagination/organizationsConnection'
 import { IPaginatedResponse } from '../../utils/pagination/paginate'
+import { BrandingInput } from './branding'
 import { OrganizationMembershipConnectionNode } from './organizationMemberships'
 import { RoleConnectionNode } from './role'
 import { ISchoolsConnectionNode } from './school'
@@ -15,6 +16,17 @@ export interface CreateOrganizationInput {
     address2?: string
     phone?: string
     shortcode?: string
+}
+
+export interface UpdateOrganizationInput {
+    id: string
+    organizationName?: string
+    address1?: string
+    address2?: string
+    phone?: string
+    shortcode?: string
+    primaryContactId?: string
+    branding?: BrandingInput
 }
 
 export interface AddUsersToOrganizationInput {

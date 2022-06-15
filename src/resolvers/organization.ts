@@ -11,6 +11,7 @@ import {
     CreateOrganizationInput,
     DeleteOrganizationInput,
     OrganizationsMutationResult,
+    UpdateOrganizationInput,
 } from '../types/graphQL/organization'
 import {
     createApplyingChangeToSelfAPIError,
@@ -36,27 +37,51 @@ import {
     validateNoDuplicates,
     validateSubItemsLengthAndNoDuplicates,
     DeleteMutation,
+    validateAtLeastOne,
+    validateHexadecimalColor,
+    validateImageUpload,
+    GenericMutation,
 } from '../utils/resolvers/commonStructure'
 import { getMap } from '../utils/resolvers/entityMaps'
 import {
     flagExistentOrganizationMembership,
     flagNonExistent,
+    flagNonExistentChild,
     flagNonExistentOrganizationMembership,
 } from '../utils/resolvers/inputValidation'
-import clean from '../utils/clean'
+import clean, { uniqueAndTruthy } from '../utils/clean'
 import { ObjMap } from '../utils/stringUtils'
 import { OrganizationOwnership } from '../entities/organizationOwnership'
 import { v4 as uuid_v4 } from 'uuid'
 import { getManager, In, IsNull } from 'typeorm'
 import { Status } from '../entities/status'
 import logger from '../logging'
+import { Branding } from '../entities/branding'
+import { FileUpload } from 'graphql-upload'
+import { BrandingImageTag } from '../types/graphQL/branding'
+import { BrandingImage } from '../entities/brandingImage'
+import { buildFilePath } from '../utils/storage'
+import { CloudStorageUploader } from '../services/cloudStorageUploader'
 
+interface UserAndMemberships extends User {
+    __memberships__: OrganizationMembership[]
+}
 export interface EntityMapCreateOrganization extends EntityMap<Organization> {
     users: Map<string, User>
     conflictingNameOrgIds: ObjMap<{ name: string }, string>
     conflictingShortcodeOrgIds: ObjMap<{ shortcode: string }, string>
     userOwnedOrg: ObjMap<{ userId: string }, string>
     adminRole: Role
+}
+
+export interface EntityMapUpdateOrganization extends EntityMap<Organization> {
+    mainEntity: Map<string, Organization>
+    primaryContacts: Map<string, User>
+    conflictingNameOrgIds: ObjMap<{ name: string }, string>
+    conflictingShortcodeOrgIds: ObjMap<{ shortcode: string }, string>
+    organizationBranding: Map<string, Branding>
+    iconImagesToUpload: Map<string, FileUpload>
+    iconImagesURLs: ObjMap<{ organizationId: string; tag: string }, string>
 }
 
 export class CreateOrganizations extends CreateMutation<
@@ -286,6 +311,399 @@ export class CreateOrganizations extends CreateMutation<
         this.output.organizations.push(
             mapOrganizationToOrganizationConnectionNode(outputEntity)
         )
+    }
+}
+
+export class UpdateOrganizations extends GenericMutation<
+    Organization,
+    UpdateOrganizationInput,
+    OrganizationsMutationResult,
+    EntityMapUpdateOrganization,
+    Branding
+> {
+    protected readonly EntityType = Organization
+    protected inputTypeName = 'UpdateOrganizationInput'
+    protected mainEntityIds: string[] = []
+    protected output: OrganizationsMutationResult = { organizations: [] }
+
+    constructor(
+        input: UpdateOrganizationInput[],
+        permissions: Context['permissions']
+    ) {
+        super(input, permissions)
+        this.mainEntityIds = input.map((val) => val.id)
+    }
+
+    normalize(input: UpdateOrganizationInput[]) {
+        for (const inputElement of input) {
+            if (inputElement.shortcode) {
+                inputElement.shortcode = clean.shortcode(inputElement.shortcode)
+            }
+        }
+        return input
+    }
+
+    async generateEntityMaps(
+        input: UpdateOrganizationInput[]
+    ): Promise<EntityMapUpdateOrganization> {
+        const ids: string[] = []
+        const names: string[] = []
+        const validShortcodes: string[] = []
+        const primaryContactIds: string[] = []
+        const orgIdsForBrandings: string[] = []
+        const iconImagesToUpload = new Map<string, FileUpload>()
+        const iconImagesURLs = new ObjMap<
+            { organizationId: string; tag: string },
+            string
+        >()
+
+        for await (const i of input) {
+            ids.push(i.id)
+            if (i.organizationName) names.push(i.organizationName)
+            if (i.shortcode && validateShortCode(i.shortcode))
+                validShortcodes.push(i.shortcode)
+            if (i.primaryContactId) primaryContactIds.push(i.primaryContactId)
+            if (i.branding) {
+                orgIdsForBrandings.push(i.id)
+                const image = await i.branding.iconImage
+                if (image) {
+                    iconImagesToUpload.set(i.id, image.file)
+                    const imageInfo = await uploadImagesAndGetURL(
+                        i.id,
+                        image.file
+                    )
+
+                    for (const [tag, url] of imageInfo.entries()) {
+                        iconImagesURLs.set({ organizationId: i.id, tag }, url)
+                    }
+                }
+            }
+        }
+
+        const organizations = getMap.organization(ids)
+        const primaryContacts = getMap.user(primaryContactIds, ['memberships'])
+
+        const conflictingNameOrgIdsMap = Organization.find({
+            select: ['organization_id', 'organization_name'],
+            where: { organization_name: In(names) },
+        }).then(
+            (res) =>
+                new ObjMap(
+                    res.map((r) => {
+                        return {
+                            key: { name: r.organization_name! },
+                            value: r.organization_id,
+                        }
+                    })
+                )
+        )
+
+        const conflictingShortcodeOrgIdsMap = Organization.find({
+            select: ['organization_id', 'shortCode'],
+            where: { shortCode: In(validShortcodes) },
+        }).then(
+            (res) =>
+                new ObjMap(
+                    res.map((r) => {
+                        return {
+                            key: { shortcode: r.shortCode! },
+                            value: r.organization_id,
+                        }
+                    })
+                )
+        )
+
+        const organizationBrandingMap = new Map<string, Branding>()
+        const organizationBranding = Branding.find({
+            where: {
+                organization: {
+                    organization_id: In(orgIdsForBrandings),
+                },
+                status: Status.ACTIVE,
+            },
+            relations: ['organization'],
+        })
+
+        for await (const branding of await organizationBranding) {
+            const orgId = (await branding.organization)!.organization_id
+            organizationBrandingMap.set(orgId, branding)
+        }
+
+        return {
+            mainEntity: await organizations,
+            conflictingNameOrgIds: await conflictingNameOrgIdsMap,
+            conflictingShortcodeOrgIds: await conflictingShortcodeOrgIdsMap,
+            primaryContacts: await primaryContacts,
+            organizationBranding: organizationBrandingMap,
+            iconImagesToUpload,
+            iconImagesURLs,
+        }
+    }
+
+    async authorize() {
+        await this.permissions.rejectIfNotAllowed(
+            { organization_ids: this.mainEntityIds },
+            PermissionName.edit_my_organization_10331
+        )
+    }
+
+    validationOverAllInputs(
+        inputs: UpdateOrganizationInput[],
+        maps: EntityMapUpdateOrganization
+    ): {
+        validInputs: { index: number; input: UpdateOrganizationInput }[]
+        apiErrors: APIError[]
+    } {
+        const failedAtLeastOne = validateAtLeastOne(inputs, 'Organization', [
+            'organizationName',
+            'address1',
+            'address2',
+            'phone',
+            'shortcode',
+            'primaryContactId',
+            'branding',
+        ])
+        const duplicateIdErrors = validateNoDuplicate(
+            inputs.map((i) => i.id),
+            'UpdateOrganizationInput',
+            ['id']
+        )
+        const duplicateNameErrors = validateNoDuplicate(
+            inputs
+                .filter((i) => i.organizationName)
+                .map((i) => i.organizationName!),
+            'UpdateOrganizationInput',
+            ['organizationName']
+        )
+        const duplicateShortcodeErrors = validateNoDuplicate(
+            inputs.filter((i) => i.shortcode).map((i) => i.shortcode!),
+            'UpdateOrganizationInput',
+            ['shortcode']
+        )
+        const hexadecimalColorErrors = validateHexadecimalColor(
+            inputs.map((i) => i.branding?.primaryColor),
+            'UpdateOrganizationInput',
+            'branding.primaryColor'
+        )
+        const imageMimetypeErrors = validateImageUpload(
+            inputs.map((i) => maps.iconImagesToUpload.get(i.id)),
+            'UpdateOrganizationInput',
+            'branding.iconImage'
+        )
+
+        return filterInvalidInputs(inputs, [
+            failedAtLeastOne,
+            duplicateIdErrors,
+            duplicateNameErrors,
+            duplicateShortcodeErrors,
+            hexadecimalColorErrors,
+            imageMimetypeErrors,
+        ])
+    }
+
+    validate(
+        index: number,
+        currentOrg: Organization,
+        currentInput: UpdateOrganizationInput,
+        maps: EntityMapUpdateOrganization
+    ): APIError[] {
+        const errors: APIError[] = []
+        const {
+            id,
+            organizationName,
+            shortcode,
+            primaryContactId,
+        } = currentInput
+
+        const organization = flagNonExistent(
+            Organization,
+            index,
+            [id],
+            maps.mainEntity!
+        )
+        errors.push(...organization.errors)
+
+        if (organizationName) {
+            const conflictingNameOrgId = maps.conflictingNameOrgIds?.get({
+                name: organizationName,
+            })
+
+            if (conflictingNameOrgId && conflictingNameOrgId !== id) {
+                errors.push(
+                    createExistentEntityAttributeAPIError(
+                        'Organization',
+                        conflictingNameOrgId,
+                        'name',
+                        organizationName,
+                        index
+                    )
+                )
+            }
+        }
+
+        if (shortcode) {
+            const conflictingShortcodeOrgId = maps.conflictingShortcodeOrgIds?.get(
+                { shortcode: shortcode }
+            )
+
+            if (conflictingShortcodeOrgId && conflictingShortcodeOrgId !== id) {
+                errors.push(
+                    createExistentEntityAttributeAPIError(
+                        'Organization',
+                        conflictingShortcodeOrgId,
+                        'shortcode',
+                        shortcode,
+                        index
+                    )
+                )
+            }
+
+            const shortCodeErrors = newValidateShortCode(
+                'Organization',
+                shortcode,
+                index
+            )
+
+            errors.push(...shortCodeErrors)
+        }
+
+        if (primaryContactId) {
+            const primaryContact = flagNonExistent(
+                User,
+                index,
+                [primaryContactId],
+                maps.primaryContacts
+            )
+
+            errors.push(...primaryContact.errors)
+
+            if (!primaryContact.values.length) return errors
+
+            const contactMemberships = (primaryContact
+                .values[0] as UserAndMemberships).__memberships__
+            const organizationIds = new Set(
+                contactMemberships.map((cm) => cm.organization_id)
+            )
+
+            const primaryContactInOrgErrors = flagNonExistentChild(
+                User,
+                Organization,
+                index,
+                primaryContactId,
+                [id],
+                organizationIds
+            )
+
+            errors.push(...primaryContactInOrgErrors)
+        }
+
+        return errors
+    }
+
+    protected process(
+        currentInput: UpdateOrganizationInput,
+        maps: EntityMapUpdateOrganization
+    ): ProcessedResult<Organization, Branding> {
+        const {
+            id,
+            organizationName,
+            address1,
+            address2,
+            phone,
+            shortcode,
+            primaryContactId,
+            branding,
+        } = currentInput
+
+        const organization = maps.mainEntity.get(id)!
+
+        organization.organization_name =
+            organizationName || organization.organization_name
+        organization.address1 = address1 || organization.address1
+        organization.address2 = address2 || organization.address2
+        organization.phone = phone || organization.phone
+        organization.shortCode = shortcode || organization.shortCode
+
+        if (primaryContactId) {
+            const primaryContactUser = maps.primaryContacts.get(
+                primaryContactId
+            )!
+
+            organization.primary_contact = Promise.resolve(primaryContactUser)
+        }
+
+        let orgBranding: Branding | undefined
+        if (branding) {
+            orgBranding = maps.organizationBranding.get(id)
+
+            if (!orgBranding) {
+                orgBranding = new Branding()
+                orgBranding.organization = Promise.resolve(organization)
+            }
+
+            orgBranding.primaryColor =
+                branding.primaryColor || orgBranding.primaryColor
+
+            const imageIcon = maps.iconImagesToUpload.get(id)
+            if (imageIcon) {
+                const existentImages = orgBranding.images
+
+                if (existentImages) {
+                    for (const existentImage of existentImages.values()) {
+                        existentImage.status = Status.INACTIVE
+                    }
+                }
+
+                const newImages = Object.values(BrandingImageTag).map((tag) => {
+                    const newImage = new BrandingImage()
+                    newImage.branding = orgBranding
+                    newImage.tag = tag
+                    newImage.url = maps.iconImagesURLs.get({
+                        organizationId: id,
+                        tag,
+                    })
+
+                    return newImage
+                })
+
+                orgBranding.images?.push(...newImages)
+            }
+        }
+
+        const result: ProcessedResult<Organization, Branding> = {
+            outputEntity: organization,
+        }
+
+        if (orgBranding) result.modifiedEntity = [orgBranding]
+
+        return result
+    }
+
+    protected async applyToDatabase(
+        results: ProcessedResult<Organization, Branding>[]
+    ): Promise<void> {
+        await Organization.save(results.map((r) => r.outputEntity))
+        const brandings = results
+            .map((r) => r.modifiedEntity)
+            .flat()
+            .filter((m) => m !== undefined) as Branding[]
+
+        const brandingImages = uniqueAndTruthy(
+            brandings.flatMap((b) => b.images)
+        )
+
+        await BrandingImage.save(brandingImages)
+        await Branding.save(brandings)
+    }
+
+    protected async buildOutput(
+        outputOrganization: Organization
+    ): Promise<void> {
+        const organizationConnectionNode = mapOrganizationToOrganizationConnectionNode(
+            outputOrganization
+        )
+
+        this.output.organizations.push(organizationConnectionNode)
     }
 }
 
@@ -751,4 +1169,30 @@ function addOrgToOutput(
     output.organizations.push(
         mapOrganizationToOrganizationConnectionNode(organization)
     )
+}
+
+async function uploadImagesAndGetURL(organizationId: string, file: FileUpload) {
+    const brandingImagesInfo = new Map<string, string>()
+    for await (const tag of Object.values(BrandingImageTag)) {
+        // Build path for image
+        const remoteFilePath = buildFilePath(
+            organizationId,
+            file.filename,
+            'organizations',
+            tag.toLowerCase()
+        )
+
+        // Upload image to cloud
+        const remoteUrl = await CloudStorageUploader.call(
+            file.createReadStream(),
+            remoteFilePath
+        )
+
+        //Safe info for saving later on DB
+        if (remoteUrl) {
+            brandingImagesInfo.set(tag, remoteUrl)
+        }
+    }
+
+    return brandingImagesInfo
 }

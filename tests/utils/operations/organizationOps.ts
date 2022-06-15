@@ -469,6 +469,14 @@ export const CREATE_ORGANIZATIONS = `
     }
 `
 
+export const UPDATE_ORGANIZATIONS = `
+    mutation myMutation($input: [UpdateOrganizationInput!]!) {
+        updateOrganizations(input: $input) {
+            ${ORGANIZATIONS_MUTATION_RESULT}
+        }
+    }
+`
+
 export const ADD_USERS_TO_ORGANIZATIONS = `
     mutation myMutation($input: [AddUsersToOrganizationInput!]!) {
         addUsersToOrganizations(input: $input) {

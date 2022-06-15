@@ -79,7 +79,9 @@ import { createSubcategory } from '../factories/subcategory.factory'
 import {
     createOrganization,
     createOrganizationPlus,
+    createOrganizationRandomData,
     createOrganizations,
+    createOrganizationsRandomData,
 } from '../factories/organization.factory'
 import {
     createRole as roleFactory,
@@ -122,7 +124,9 @@ import {
     AddUsersToOrganizationInput,
     CreateOrganizationInput,
     DeleteOrganizationInput,
+    OrganizationConnectionNode,
     OrganizationsMutationResult,
+    UpdateOrganizationInput,
 } from '../../src/types/graphQL/organization'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
@@ -135,6 +139,8 @@ import {
     DeleteUsersFromOrganizations,
     generateAddRemoveOrgUsersMap,
     DeleteOrganizations,
+    UpdateOrganizations,
+    EntityMapUpdateOrganization,
 } from '../../src/resolvers/organization'
 import { mutate } from '../../src/utils/resolvers/commonStructure'
 import { buildPermissionError } from '../utils/errors'
@@ -143,6 +149,7 @@ import {
     createDuplicateAttributeAPIError,
     createEntityAPIError,
     createExistentEntityAttributeAPIError,
+    createInputRequiresAtLeastOne,
     createUserAlreadyOwnsOrgAPIError,
 } from '../../src/utils/resolvers/errors'
 import { APIError } from '../../src/types/errors/apiError'
@@ -156,6 +163,8 @@ import {
 import { SinonFakeTimers } from 'sinon'
 import sinon from 'sinon'
 import { createInitialData } from '../utils/createTestData'
+import { Branding } from '../../src/entities/branding'
+import { FileUpload } from 'graphql-upload'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -7667,6 +7676,730 @@ describe('organization', () => {
                     ),
                     createEntityAPIError('nonExistent', 5, 'User', fakeId),
                 ]
+                compareMultipleErrors(errors, xErrors)
+            })
+        })
+    })
+
+    describe('UpdateOrganizations', () => {
+        let ctx: { permissions: UserPermissions }
+        let orgsToEdit: Organization[]
+        let usersToAssign: User[]
+        let updateOrganizations: UpdateOrganizations
+
+        beforeEach(async () => {
+            const user = await adminUserFactory().save()
+            const userRole = await roleFactory(undefined, undefined, {
+                permissions: [PermissionName.edit_my_organization_10331],
+            }).save()
+
+            orgsToEdit = await Organization.save(
+                createOrganizationsRandomData(5)
+            )
+            usersToAssign = await User.save(createUsers(5))
+            await OrganizationMembership.save(
+                orgsToEdit.flatMap((o, i) => [
+                    createOrganizationMembership({
+                        user: usersToAssign[i],
+                        organization: o,
+                    }),
+                    createOrganizationMembership({
+                        user: user,
+                        organization: o,
+                        roles: [userRole],
+                    }),
+                ])
+            )
+
+            const permissions = new UserPermissions(userToPayload(user))
+            ctx = { permissions }
+            updateOrganizations = new UpdateOrganizations([], permissions)
+        })
+
+        function generateInput(
+            id: string,
+            primaryContactId?: string,
+            organizationName?: string,
+            shortcode?: string
+        ): UpdateOrganizationInput {
+            return {
+                id,
+                primaryContactId,
+                organizationName: organizationName ?? uuid_v4(), // using uuid to avoid name clashes
+                address1: faker.address.streetAddress(),
+                address2: faker.address.zipCode(),
+                phone: faker.phone.phoneNumber(),
+                shortcode: shortcode ?? generateShortCode(),
+            }
+        }
+
+        function generateInputArray(
+            data: {
+                id: string
+                primaryContactId?: string
+                organizationName?: string
+                shortcode?: string
+            }[]
+        ) {
+            return data.map((d) =>
+                generateInput(
+                    d.id,
+                    d.primaryContactId,
+                    d.organizationName,
+                    d.shortcode
+                )
+            )
+        }
+
+        function getDefaultInputArray() {
+            return generateInputArray(
+                orgsToEdit.map((org, i) => {
+                    return {
+                        id: org.organization_id,
+                        primaryContactId: usersToAssign[i].user_id,
+                    }
+                })
+            )
+        }
+
+        function compareOrganizationConnectionNodeWithInput(
+            org: OrganizationConnectionNode,
+            input: UpdateOrganizationInput
+        ) {
+            expect(org.name).to.eq(input.organizationName)
+            expect(org.contactInfo.address1).to.eq(input.address1)
+            expect(org.contactInfo.address2).to.eq(input.address2)
+            expect(org.contactInfo.phone).to.eq(input.phone)
+            expect(org.shortCode).to.eq(input.shortcode)
+        }
+
+        async function compareDBOrganizationWithInput(
+            input: UpdateOrganizationInput,
+            dbOrganization: Organization
+        ) {
+            expect(dbOrganization.organization_name).to.eq(
+                input.organizationName
+            )
+            expect(dbOrganization.address1).to.eq(input.address1)
+            expect(dbOrganization.address2).to.eq(input.address2)
+            expect(dbOrganization.phone).to.eq(input.phone)
+            expect(dbOrganization.shortCode).to.eq(input.shortcode)
+
+            const primaryContact = await dbOrganization.primary_contact
+            expect(primaryContact?.user_id).to.eq(input.primaryContactId)
+        }
+
+        context('complete mutation calls', () => {
+            it('can update an organization', async () => {
+                const input: UpdateOrganizationInput[] = [
+                    generateInput(
+                        orgsToEdit[0].organization_id,
+                        usersToAssign[0].user_id
+                    ),
+                ]
+
+                const { organizations } = await mutate(
+                    UpdateOrganizations,
+                    { input },
+                    ctx.permissions
+                )
+
+                expect(organizations).to.have.lengthOf(1)
+                expect(organizations[0].id).to.eq(input[0].id)
+                compareOrganizationConnectionNodeWithInput(
+                    organizations[0],
+                    input[0]
+                )
+
+                const dbOrganizations = await Organization.findBy({
+                    organization_id: input[0].id,
+                })
+                expect(dbOrganizations).to.have.lengthOf(1)
+                await compareDBOrganizationWithInput(
+                    input[0],
+                    dbOrganizations[0]
+                )
+            })
+
+            const getDbCallCount = async (input: UpdateOrganizationInput[]) => {
+                connection.logger.reset()
+                await mutate(UpdateOrganizations, { input }, ctx.permissions)
+                return connection.logger.count
+            }
+
+            it('db connections increase in one with number of input elements', async () => {
+                const singleOrganizationExpectedCalls = 7
+                await getDbCallCount([
+                    generateInput(
+                        orgsToEdit[0].organization_id,
+                        usersToAssign[0].user_id
+                    ),
+                ]) // warm up permissions cache
+
+                const singleOrganizationCount = await getDbCallCount([
+                    generateInput(
+                        orgsToEdit[1].organization_id,
+                        usersToAssign[1].user_id
+                    ),
+                ])
+
+                const twoOrganizationsCount = await getDbCallCount([
+                    generateInput(
+                        orgsToEdit[2].organization_id,
+                        usersToAssign[2].user_id
+                    ),
+                    generateInput(
+                        orgsToEdit[3].organization_id,
+                        usersToAssign[3].user_id
+                    ),
+                ])
+
+                expect(singleOrganizationCount).to.be.eq(
+                    singleOrganizationExpectedCalls
+                )
+                expect(twoOrganizationsCount).to.be.eq(
+                    singleOrganizationExpectedCalls + 1
+                )
+            })
+        })
+
+        context('.normalize', () => {
+            let input: UpdateOrganizationInput[]
+
+            beforeEach(() => {
+                input = [
+                    generateInput(
+                        orgsToEdit[0].organization_id,
+                        usersToAssign[0].user_id
+                    ),
+                ]
+            })
+
+            it('preserves input element positions and length', () => {
+                const normalizedEmpty = updateOrganizations.normalize([])
+                expect(normalizedEmpty).to.be.empty
+                const normalized = updateOrganizations.normalize(input)
+                expect(normalized).to.deep.equalInAnyOrder(input)
+            })
+
+            context('shortcodes', () => {
+                it('not generates shortcodes when not supplied by the caller', () => {
+                    input.map((i) => (i.shortcode = undefined))
+                    const normalized = updateOrganizations.normalize(input)
+                    normalized.forEach(
+                        (n) => expect(n.shortcode).to.be.undefined
+                    )
+                })
+
+                it('normalizes shortcodes to uppercase', () => {
+                    input.map((i, idx) => (i.shortcode = 'BASKETball' + idx))
+                    const normalized = updateOrganizations.normalize(input)
+                    normalized.forEach((n, idx) =>
+                        expect(n.shortcode).to.equal('BASKETBALL' + idx)
+                    )
+                })
+
+                it('preserves invalid shortcodes', () => {
+                    input.map((i, idx) => (i.shortcode = '!!!!' + idx))
+                    const normalized = updateOrganizations.normalize(input)
+                    normalized.forEach((n, idx) =>
+                        expect(n.shortcode).to.equal('!!!!' + idx)
+                    )
+                })
+
+                it('preserves valid shortcodes', () => {
+                    const validShortcodes = input.map((_) =>
+                        generateShortCode()
+                    )
+                    input.map((i, idx) => (i.shortcode = validShortcodes[idx]))
+                    const normalized = updateOrganizations.normalize(input)
+                    normalized.forEach((n, idx) =>
+                        expect(n.shortcode).to.equal(validShortcodes[idx])
+                    )
+                })
+            })
+        })
+
+        context('.generateEntityMaps', () => {
+            it('returns organization IDs which have conflicting names', async () => {
+                const existentOrgs = await Organization.save(
+                    createOrganizationsRandomData(2)
+                )
+
+                const input = getDefaultInputArray()
+                input[0].organizationName = existentOrgs[0].organization_name
+                input[1].organizationName = existentOrgs[1].organization_name
+
+                const expectedKeys = []
+                const expectedValues = []
+                for (const org of existentOrgs) {
+                    expectedKeys.push({ name: org.organization_name })
+                    expectedValues.push(org.organization_id)
+                }
+
+                const entityMaps = await updateOrganizations.generateEntityMaps(
+                    input
+                )
+
+                expect([
+                    ...entityMaps.conflictingNameOrgIds.keys(),
+                ]).to.deep.equalInAnyOrder(expectedKeys)
+
+                expect([
+                    ...entityMaps.conflictingNameOrgIds.values(),
+                ]).to.deep.equalInAnyOrder(expectedValues)
+            })
+
+            it('returns organization IDs which have conflicting shortcodes', async () => {
+                const existentOrgs = await Organization.save(
+                    createOrganizationsRandomData(2)
+                )
+
+                const input = getDefaultInputArray()
+                input[0].shortcode = existentOrgs[0].shortCode
+                input[1].shortcode = existentOrgs[1].shortCode
+
+                const expectedKeys = []
+                const expectedValues = []
+                for (const org of existentOrgs) {
+                    expectedKeys.push({ shortcode: org.shortCode })
+                    expectedValues.push(org.organization_id)
+                }
+
+                const entityMaps = await updateOrganizations.generateEntityMaps(
+                    input
+                )
+
+                expect([
+                    ...entityMaps.conflictingShortcodeOrgIds.keys(),
+                ]).to.deep.equalInAnyOrder(expectedKeys)
+
+                expect([
+                    ...entityMaps.conflictingShortcodeOrgIds.values(),
+                ]).to.deep.equalInAnyOrder(expectedValues)
+            })
+
+            it('returns brandings from the organizations to set branding', async () => {
+                function getRandomInt(max: number) {
+                    return Math.floor(Math.random() * max)
+                }
+
+                function generateRandomColor() {
+                    const r = getRandomInt(256).toString(16).padStart(2, '0')
+                    const g = getRandomInt(256).toString(16).padStart(2, '0')
+                    const b = getRandomInt(256).toString(16).padStart(2, '0')
+
+                    return `#${r}${g}${b}`
+                }
+
+                const brandings: Branding[] = []
+                for (const org of orgsToEdit) {
+                    const branding = new Branding()
+                    branding.organization = Promise.resolve(org)
+                    brandings.push(branding)
+                }
+
+                await Branding.save(brandings)
+                const input = getDefaultInputArray()
+
+                for (const i of input) {
+                    i.branding = {
+                        primaryColor: generateRandomColor(),
+                    }
+                }
+
+                const expectedKeys = []
+                const expectedValues = []
+                for await (const b of brandings) {
+                    const org = await b.organization!
+                    expectedKeys.push(org.organization_id)
+                    expectedValues.push(b)
+                }
+
+                const entityMaps = await updateOrganizations.generateEntityMaps(
+                    input
+                )
+
+                expect([
+                    ...entityMaps.organizationBranding.keys(),
+                ]).to.deep.equalInAnyOrder(expectedKeys)
+
+                expect(
+                    [...entityMaps.organizationBranding.values()].map((b) => {
+                        return { id: b.id, primaryColor: b.primaryColor }
+                    })
+                ).to.deep.equalInAnyOrder(
+                    expectedValues.map((b) => {
+                        return { id: b.id, primaryColor: b.primaryColor }
+                    })
+                )
+            })
+        })
+
+        context('.authorize', () => {
+            const callAuthorize = async (
+                userCtx: { permissions: UserPermissions },
+                organizationIds: string[]
+            ) => {
+                const input = generateInputArray(
+                    organizationIds.map((orgId) => {
+                        return { id: orgId }
+                    })
+                )
+                const mutation = new UpdateOrganizations(
+                    input,
+                    userCtx.permissions
+                )
+                return mutation.authorize()
+            }
+
+            const expectPermissionError = async (
+                userCtx: { permissions: UserPermissions },
+                organizations: Organization[]
+            ) => {
+                await expect(
+                    callAuthorize(
+                        userCtx,
+                        organizations.map((o) => o.organization_id)
+                    )
+                ).to.be.eventually.rejectedWith(
+                    /User\(.*\) does not have Permission\(edit_my_organization_10331\) in Organizations\(.*\)/
+                )
+            }
+
+            it('checks the correct permission', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.edit_my_organization_10331
+                )
+
+                await expect(
+                    callAuthorize(userCtx, [permittedOrg.organization_id])
+                ).to.be.eventually.fulfilled
+            })
+
+            it('rejects when user is not authorized', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.create_program_20221
+                )
+
+                await expectPermissionError(userCtx, [permittedOrg])
+            })
+
+            it('checks all organizations', async () => {
+                const { permittedOrg, userCtx } = await makeUserWithPermission(
+                    PermissionName.edit_my_organization_10331
+                )
+
+                const {
+                    permittedOrg: notPermittedOrg,
+                } = await makeUserWithPermission(
+                    PermissionName.create_program_20221
+                )
+
+                await expectPermissionError(userCtx, [
+                    permittedOrg,
+                    notPermittedOrg,
+                ])
+            })
+        })
+
+        const buildEntityMap = async (
+            orgsToUse: Organization[] = [],
+            usersToUse: User[] = []
+        ) => {
+            const entityMap: EntityMapUpdateOrganization = {
+                mainEntity: new Map<string, Organization>(),
+                primaryContacts: new Map<string, User>(),
+                conflictingNameOrgIds: new ObjMap<{ name: string }, string>(),
+                conflictingShortcodeOrgIds: new ObjMap<
+                    { shortcode: string },
+                    string
+                >(),
+                organizationBranding: new Map<string, Branding>(),
+                iconImagesToUpload: new Map<string, FileUpload>(),
+                iconImagesURLs: new ObjMap<
+                    { organizationId: string; tag: string },
+                    string
+                >(),
+            }
+
+            for (const org of orgsToUse) {
+                if (org.organization_id === undefined) {
+                    org.organization_id = uuid_v4()
+                }
+
+                entityMap.mainEntity.set(org.organization_id, org)
+                entityMap.conflictingNameOrgIds.set(
+                    {
+                        name: org.organization_name!,
+                    },
+                    org.organization_id
+                )
+                entityMap.conflictingShortcodeOrgIds.set(
+                    {
+                        shortcode: org.shortCode!,
+                    },
+                    org.organization_id
+                )
+            }
+
+            for (const user of usersToUse) {
+                entityMap.primaryContacts.set(user.user_id, user)
+            }
+
+            return entityMap
+        }
+
+        context('.validationOverAllInputs', () => {
+            let inputs: UpdateOrganizationInput[]
+
+            const expectInputsValidation = async (
+                input: UpdateOrganizationInput[],
+                expectedErrors: APIError[]
+            ) => {
+                const maps = await buildEntityMap(orgsToEdit, usersToAssign)
+
+                const {
+                    validInputs,
+                    apiErrors,
+                } = updateOrganizations.validationOverAllInputs(input, maps)
+
+                const failedInputIndexes = new Set(
+                    apiErrors.map((err) => err.index)
+                )
+
+                const inputsWithoutErrors = input
+                    .map((i, index) => {
+                        return {
+                            ...i,
+                            index,
+                        }
+                    })
+                    .filter((i) => !failedInputIndexes.has(i.index))
+
+                expect(validInputs).to.have.lengthOf(inputsWithoutErrors.length)
+
+                validInputs.forEach((vi, i) => {
+                    const relatedInput = inputsWithoutErrors[i]
+                    expect(vi.input.id).to.eq(relatedInput.id)
+                    expect(vi.index).to.eq(relatedInput.index)
+                })
+
+                expect(apiErrors.length).to.eq(expectedErrors.length)
+                compareMultipleErrors(apiErrors, expectedErrors)
+            }
+
+            beforeEach(() => {
+                inputs = getDefaultInputArray()
+            })
+
+            it('checks that at least one of the optional fields is sent', async () => {
+                const incompleteInput = inputs[1]
+                incompleteInput.organizationName = undefined
+                incompleteInput.shortcode = undefined
+                incompleteInput.address1 = undefined
+                incompleteInput.address2 = undefined
+                incompleteInput.phone = undefined
+                incompleteInput.primaryContactId = undefined
+                incompleteInput.branding = undefined
+
+                const error = createInputRequiresAtLeastOne(1, 'Organization', [
+                    'organizationName',
+                    'address1',
+                    'address2',
+                    'phone',
+                    'shortcode',
+                    'primaryContactId',
+                    'branding',
+                ])
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it('checks id duplications in input', async () => {
+                const duplicateInput = inputs[1]
+                duplicateInput.id = inputs[0].id
+
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['id'],
+                    'UpdateOrganizationInput'
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it('checks organizationName duplications in input', async () => {
+                const duplicateInput = inputs[1]
+                duplicateInput.organizationName = inputs[0].organizationName
+
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['organizationName'],
+                    'UpdateOrganizationInput'
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it('checks shortcode duplications in input', async () => {
+                const duplicateInput = inputs[1]
+                duplicateInput.shortcode = inputs[0].shortcode
+
+                const error = createDuplicateAttributeAPIError(
+                    1,
+                    ['shortcode'],
+                    'UpdateOrganizationInput'
+                )
+
+                await expectInputsValidation(inputs, [error])
+            })
+
+            it('checks that branding primaryColor is a valid hexadecimal color', async () => {
+                const nonValidHexInput = inputs[1]
+                const nonValidColor = 'blue'
+                nonValidHexInput.branding = { primaryColor: nonValidColor }
+
+                const error = new APIError({
+                    code: customErrors.invalid_hexadecimal_color.code,
+                    message: customErrors.invalid_hexadecimal_color.message,
+                    entity: 'UpdateOrganizationInput',
+                    attribute: 'branding.primaryColor',
+                    attributeValue: nonValidColor,
+                    variables: ['branding.primaryColor'],
+                    index: 1,
+                })
+
+                await expectInputsValidation(inputs, [error])
+            })
+        })
+
+        context('.validate', () => {
+            let input: UpdateOrganizationInput[]
+            async function validate(mutationInput: UpdateOrganizationInput[]) {
+                const mutation = updateOrganizations
+                const maps = await mutation.generateEntityMaps(mutationInput)
+                return mutationInput.flatMap((i, index) =>
+                    mutation.validate(
+                        index,
+                        maps.mainEntity.get(i.id)!,
+                        i,
+                        maps
+                    )
+                )
+            }
+
+            beforeEach(() => {
+                input = getDefaultInputArray()
+            })
+
+            it('errors for inactive or non existent organization', async () => {
+                const inactiveOrg = orgsToEdit[1]
+                await inactiveOrg.inactivate(getManager())
+                const fakeId = uuid_v4()
+                input.push({ id: fakeId, organizationName: 'new name' })
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createEntityAPIError(
+                        'nonExistent',
+                        1,
+                        'Organization',
+                        inactiveOrg.organization_id
+                    ),
+                    createEntityAPIError(
+                        'nonExistent',
+                        5,
+                        'Organization',
+                        fakeId
+                    ),
+                ]
+
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors for existent name in already created organization', async () => {
+                const existentOrg = await createOrganizationRandomData().save()
+                const duplicateNameInput = input[1]
+                duplicateNameInput.organizationName =
+                    existentOrg.organization_name
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createExistentEntityAttributeAPIError(
+                        'Organization',
+                        existentOrg.organization_id,
+                        'name',
+                        existentOrg.organization_name!,
+                        1
+                    ),
+                ]
+
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors for existent shortcode in already created organization', async () => {
+                const existentOrg = await createOrganizationRandomData().save()
+                const duplicateShortcodeInput = input[1]
+                duplicateShortcodeInput.shortcode = existentOrg.shortCode
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createExistentEntityAttributeAPIError(
+                        'Organization',
+                        existentOrg.organization_id,
+                        'shortcode',
+                        existentOrg.shortCode!,
+                        1
+                    ),
+                ]
+
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors for inactive or non existent primaryContact', async () => {
+                const inactiveUser = usersToAssign[1]
+                await inactiveUser.inactivate(getManager())
+                const otherOrg = await createOrganizationRandomData().save()
+                const fakeId = uuid_v4()
+
+                input.push({
+                    id: otherOrg.organization_id,
+                    primaryContactId: fakeId,
+                })
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createEntityAPIError(
+                        'nonExistent',
+                        1,
+                        'User',
+                        inactiveUser.user_id
+                    ),
+                    createEntityAPIError('nonExistent', 5, 'User', fakeId),
+                ]
+
+                compareMultipleErrors(errors, xErrors)
+            })
+
+            it('errors for non belonging primaryContact for the given organization', async () => {
+                const nonBelongingUser = await createUser().save()
+                const nonBelongingUserInput = input[1]
+                nonBelongingUserInput.primaryContactId =
+                    nonBelongingUser.user_id
+
+                const errors = await validate(input)
+                const xErrors = [
+                    createEntityAPIError(
+                        'nonExistentChild',
+                        1,
+                        'Organization',
+                        nonBelongingUserInput.id,
+                        'User',
+                        nonBelongingUser.user_id
+                    ),
+                ]
+
                 compareMultipleErrors(errors, xErrors)
             })
         })

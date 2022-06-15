@@ -1,3 +1,4 @@
+import { FileUpload } from 'graphql-upload'
 import { BaseEntity, getManager } from 'typeorm'
 import { config } from '../../config/config'
 import { CustomBaseEntity } from '../../entities/customBaseEntity'
@@ -10,6 +11,7 @@ import {
     validateAPICall,
 } from '../../types/errors/apiError'
 import { customErrors } from '../../types/errors/customError'
+import { ImageMimeType, IMAGE_MIMETYPES } from '../../types/imageMimeTypes'
 import { sortObjectArray } from '../array'
 import {
     createDatabaseSaveAPIError,
@@ -20,12 +22,19 @@ import {
     createInputRequiresAtLeastOne,
     reportError,
 } from './errors'
-import { objectToKey, ObjMap } from '../stringUtils'
+import { isHexadecimalColor, objectToKey, ObjMap } from '../stringUtils'
 
 export interface EntityMap<EntityType extends CustomBaseEntity> {
     mainEntity?: Map<string, EntityType>
     [key: string]:
-        | Map<string, CustomBaseEntity | CustomBaseEntity[] | string | string[]>
+        | Map<
+              string,
+              | CustomBaseEntity
+              | CustomBaseEntity[]
+              | string
+              | string[]
+              | FileUpload
+          >
         | ObjMap<{ [key: string]: string | number }, unknown>
         | CustomBaseEntity
         | CustomBaseEntity[]
@@ -402,6 +411,59 @@ function checkRange(value: number, min: number, max: number) {
     return value >= min && value <= max
 }
 
+export function validateHexadecimalColor(
+    colors: (string | undefined)[],
+    inputTypeName: string,
+    attributeName: string
+) {
+    const errors = new Map<number, APIError>()
+    for (const [index, color] of colors.entries()) {
+        if (color !== undefined && !isHexadecimalColor(color)) {
+            const error = new APIError({
+                code: customErrors.invalid_hexadecimal_color.code,
+                message: customErrors.invalid_hexadecimal_color.message,
+                entity: inputTypeName,
+                attribute: attributeName,
+                attributeValue: color,
+                variables: [attributeName],
+                index,
+            })
+
+            errors.set(index, error)
+        }
+    }
+
+    return errors
+}
+
+export function validateImageUpload(
+    images: (FileUpload | undefined)[],
+    inputTypeName: string,
+    attributeName: string
+) {
+    const errors = new Map<number, APIError>()
+    for (const [index, image] of images.entries()) {
+        if (
+            image !== undefined &&
+            !IMAGE_MIMETYPES.includes(image.mimetype as ImageMimeType)
+        ) {
+            const error = new APIError({
+                code: customErrors.unsupported_mimetype.code,
+                message: customErrors.unsupported_mimetype.message,
+                entity: inputTypeName,
+                attribute: attributeName,
+                attributeValue: image.mimetype,
+                variables: [attributeName],
+                index,
+            })
+
+            errors.set(index, error)
+        }
+    }
+
+    return errors
+}
+
 /**
  * Filters out invalid inputs by removing those at the indices
  * where an error was detected.
@@ -673,6 +735,26 @@ export abstract class UpdateMutation<
     ): Promise<void> {
         await getManager().save(results.map((r) => r.outputEntity))
     }
+}
+
+export abstract class GenericMutation<
+    EntityType extends CustomBaseEntity,
+    InputType,
+    OutputType,
+    EntityMapType extends EntityMap<EntityType>,
+    ModifiedEntityType extends CustomBaseEntity
+> extends Mutation<
+    EntityType,
+    InputType,
+    OutputType,
+    EntityMapType,
+    ModifiedEntityType
+> {
+    constructor(input: InputType[], permissions: Context['permissions']) {
+        super(input, permissions)
+    }
+
+    protected abstract buildOutput(currentEntity: EntityType): Promise<void>
 }
 
 export interface DeleteEntityMap<EntityType extends CustomBaseEntity>

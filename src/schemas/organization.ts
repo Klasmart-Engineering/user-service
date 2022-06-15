@@ -13,6 +13,7 @@ import {
     DeleteUsersFromOrganizations,
     ReactivateUsersFromOrganizations,
     RemoveUsersFromOrganizations,
+    UpdateOrganizations,
 } from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { RoleConnectionNode } from '../types/graphQL/role'
@@ -59,6 +60,9 @@ const typeDefs = gql`
         createOrganizations(
             input: [CreateOrganizationInput!]!
         ): OrganizationsMutationResult
+        updateOrganizations(
+            input: [UpdateOrganizationInput!]!
+        ): OrganizationsMutationResult
         addUsersToOrganizations(
             input: [AddUsersToOrganizationInput!]!
         ): OrganizationsMutationResult
@@ -91,7 +95,11 @@ const typeDefs = gql`
             address2: String
             phone: String
             shortCode: String
-        ): Organization @isAdmin(entity: "organization")
+        ): Organization
+            @isAdmin(entity: "organization")
+            @deprecated(
+                reason: "Sunset Date: 02/09/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         uploadOrganizationsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateOrganizations: Boolean @isAdmin
@@ -100,6 +108,9 @@ const typeDefs = gql`
             iconImage: Upload
             primaryColor: HexColor
         ): Branding
+            @deprecated(
+                reason: "Sunset Date: 02/09/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         deleteBrandingImage(
             organizationId: ID!
             type: BrandingImageTag!
@@ -238,7 +249,13 @@ const typeDefs = gql`
             phone: String
             shortCode: String
         ): Organization
+            @deprecated(
+                reason: "Sunset Date: 02/09/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         setPrimaryContact(user_id: ID!): User
+            @deprecated(
+                reason: "Sunset Date: 02/09/2022 Details: https://calmisland.atlassian.net/l/c/8d8mpL0Q"
+            )
         addUser(user_id: ID!, shortcode: String): OrganizationMembership
             @deprecated(
                 reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2462417870/"
@@ -389,6 +406,22 @@ const typeDefs = gql`
         address2: String
         phone: String
         shortcode: String
+    }
+
+    input UpdateOrganizationInput {
+        id: ID!
+        organizationName: String
+        address1: String
+        address2: String
+        phone: String
+        shortcode: String
+        primaryContactId: ID
+        branding: BrandingInput
+    }
+
+    input BrandingInput {
+        iconImage: Upload
+        primaryColor: HexColor
     }
 
     input AddUsersToOrganizationInput {
@@ -609,6 +642,8 @@ export default function getDefault(
             Mutation: {
                 createOrganizations: (_parent, args, ctx, _info) =>
                     mutate(CreateOrganizations, args, ctx.permissions),
+                updateOrganizations: (_parent, args, ctx, _info) =>
+                    mutate(UpdateOrganizations, args, ctx.permissions),
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
                     mutate(AddUsersToOrganizations, args, ctx.permissions),
                 removeUsersFromOrganizations: (_parent, args, ctx) =>
