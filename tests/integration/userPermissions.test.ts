@@ -1159,9 +1159,7 @@ describe('userPermissions', () => {
         })
         it('returns classes the user is teaching', async () => {
             const result = await permissions.classesTeaching()
-            expect(result?.map((r) => r.class_id)).to.have.same.members(
-                classes.map((c) => c.class_id)
-            )
+            expect(result).to.have.same.members(classes.map((c) => c.class_id))
         })
         it('caches the result', async () => {
             await permissions.classesTeaching()

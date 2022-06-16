@@ -28,6 +28,9 @@ type PermissionCheckOutput = {
 interface RawUser {
     OrganizationMembership_user_id: string
 }
+interface RawClass {
+    class_id: string
+}
 
 export class UserPermissions {
     static ADMIN_EMAILS = [
@@ -54,6 +57,7 @@ export class UserPermissions {
     private _schoolsPerOrgResolver?: Promise<Record<string, string>[]>
     private _classesTeachingResolver?: Promise<Class[]>
     private _getUserSchoolAdminsResolver?: Promise<RawUser[]>
+    private _classInSchoolsResolver?: Promise<RawClass[]>
 
     // Used to mark that auth was done by API Key, but checks use isAdmin
     // for consistency
@@ -622,11 +626,58 @@ export class UserPermissions {
     public async classesTeaching() {
         const user = await this.getUser()
         if (!this._classesTeachingResolver) {
-            this._classesTeachingResolver = user.classesTeaching
+            this._classesTeachingResolver = Class.createQueryBuilder()
+                .select('Class.class_id', 'class_id')
+                .distinct()
+                .innerJoin(
+                    'Class.teachers',
+                    'User',
+                    'User.user_id = :user_id',
+                    { user_id: user.user_id }
+                )
+                .getRawMany()
         }
-        return this._classesTeachingResolver
+        const classes = (await this._classesTeachingResolver) || []
+        const classIds = classes.map(({ class_id }) => class_id)
+        return classIds
     }
 
+    /**
+     *  Fetches all the classes in the schools passed, this can only be called multiple times with the same parameters
+     */
+    private lastSchoolIds: string[] = []
+
+    public async classesInSchools(schoolIds: string[]): Promise<string[]> {
+        if (schoolIds.length === 0) {
+            return []
+        }
+        const sortedSchoolIds = schoolIds
+        sortedSchoolIds.sort()
+        if (
+            this.lastSchoolIds.length > 0 &&
+            sortedSchoolIds.toString() !== this.lastSchoolIds.toString()
+        ) {
+            throw Error(
+                'classesInSchools has been called twice with different schoolIds parameters, this is not an envisaged use case'
+            )
+        }
+        if (!this._classInSchoolsResolver) {
+            this.lastSchoolIds = sortedSchoolIds
+            this._classInSchoolsResolver = getRepository(Class)
+                .createQueryBuilder()
+                .select('Class.class_id', 'class_id')
+                .innerJoin(
+                    'Class.schools',
+                    'School',
+                    'School.school_id IN (:...schoolIds)',
+                    { schoolIds: sortedSchoolIds }
+                )
+                .getRawMany()
+        }
+        const result = await this._classInSchoolsResolver
+        const classIds = result.map(({ class_id }) => class_id)
+        return classIds
+    }
     /**
      * Fetches all the schools the user is a member of and caches results
      * Accepts a list of organization IDs to only return schools belonging to

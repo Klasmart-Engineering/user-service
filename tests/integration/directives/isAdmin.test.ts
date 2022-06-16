@@ -114,7 +114,7 @@ describe('isAdmin', () => {
         // this setup is design to trigger all possible queries in isAdmin directives
         const maxQueryCountPerEntity: Record<IEntityString, number> = {
             organization: 1,
-            user: 5,
+            user: 6,
             role: 1,
             class: 2,
             ageRange: 0,
@@ -125,8 +125,8 @@ describe('isAdmin', () => {
             program: 0,
             school: 2,
             permission: 1,
-            schoolMembership: 6,
-            organizationMembership: 5,
+            schoolMembership: 7,
+            organizationMembership: 6,
             academicTerm: 0,
         }
 
@@ -174,7 +174,6 @@ describe('isAdmin', () => {
                     entity: entity as IEntityString,
                 })
                 const count = connection.logger.count
-
                 expect(count).to.equal(maxQueryCount)
 
                 connection.logger.reset()
@@ -427,6 +426,12 @@ describe('isAdmin', () => {
             })
         })
         context('non admin', () => {
+            const makeClass = async (teachers: User[], students: User[]) =>
+                createClass([schools[0]], organizations[0], {
+                    teachers,
+                    students,
+                }).save()
+
             context('nonAdminUserScope', () => {
                 let scope: SelectQueryBuilder<User>
                 let token: TokenPayload
@@ -681,12 +686,6 @@ describe('isAdmin', () => {
             context('with view_my_class_users_40112', () => {
                 let token: string
                 let user: User
-
-                const makeClass = async (teachers: User[], students: User[]) =>
-                    createClass([schools[0]], organizations[0], {
-                        teachers,
-                        students,
-                    }).save()
 
                 beforeEach(async () => {
                     user = await createNonAdminUser(testClient)
@@ -981,8 +980,68 @@ describe('isAdmin', () => {
                     { count: 30 },
                     { authorization: token }
                 )
-
                 expect(usersConnection.totalCount).to.eq(11)
+            })
+            it('requires view_my_school_class_users_20121 to view school class users', async () => {
+                const user = await createUser().save()
+                const token = generateToken(userToPayload(user))
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    user.user_id,
+                    organizations[0].organization_id,
+                    getAdminAuthToken()
+                )
+                await addSchoolToUser(
+                    testClient,
+                    user.user_id,
+                    schools[0].school_id,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    user.user_id,
+                    organizations[0].organization_id,
+                    roleList[0].role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                const nonSchoolUser = await createUser().save()
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    nonSchoolUser.user_id,
+                    organizations[0].organization_id,
+                    getAdminAuthToken()
+                )
+
+                const classUsersList = usersList.concat([nonSchoolUser])
+                await makeClass([], classUsersList)
+
+                let usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    { count: 3 },
+                    { authorization: token }
+                )
+
+                // can view my user only
+                expect(usersConnection.totalCount).to.eq(1)
+                expect(usersConnection.edges.length).to.eq(1)
+
+                await grantPermission(
+                    testClient,
+                    roleList[0].role_id,
+                    PermissionName.view_my_school_class_users_20121,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    { count: 30 },
+                    { authorization: token }
+                )
+                expect(usersConnection.totalCount).to.eq(12)
             })
 
             it('returns empty if view_my_school_users_40111 permission given but no school memberships', async () => {
