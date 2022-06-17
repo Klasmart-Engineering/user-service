@@ -1506,4 +1506,14 @@ export class Model {
 
         return true
     }
+
+    public async accountDeletion(context: Context, info: GraphQLResolveInfo) {
+        if (info.operation.operation !== 'mutation') {
+            return false
+        }
+        
+        console.log(context.token)
+
+        return true
+    }
 }

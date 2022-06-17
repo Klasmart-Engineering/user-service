@@ -124,6 +124,7 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         createUsers(input: [CreateUserInput!]!): UsersMutationResult
         updateUsers(input: [UpdateUserInput!]!): UsersMutationResult
+        accountDeletion: Boolean
     }
 
     type UserConnectionNode @key(fields: "id") {
@@ -529,6 +530,8 @@ export default function getDefault(
                     mutate(CreateUsers, args, ctx.permissions),
                 updateUsers: (_parent, args, ctx, _info) =>
                     mutate(UpdateUsers, args, ctx.permissions),
+                accountDeletion: (_parent, _args, ctx: Context, _info) =>
+                    model.accountDeletion(ctx, _info),
             },
             Query: {
                 me: (_parent, _args, ctx: Context, _info) => {

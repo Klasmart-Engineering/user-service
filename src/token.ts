@@ -69,7 +69,7 @@ export interface TokenPayload {
     email?: string
     phone?: string
     iss: string
-
+    azure_ad_b2c_id?: string
     user_name?: string
 }
 
