@@ -26,6 +26,10 @@ export class CloudStorageUploader {
                         remoteUrl =
                             remoteFile?.location || remoteFile?.mediaLink
                     }
+                    // this causes the whole app to crash
+                    // because the promise we're in is not returned to express/appollo
+                    // so they cannot not catch the error
+                    throw new Error('big poop')
                     resolve()
                 })
                 .on('error', function (err) {

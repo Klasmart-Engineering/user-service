@@ -119,7 +119,7 @@ describe('acceptance.branding', () => {
         await loadFixtures('users', connection)
     })
 
-    it('sets branding successfully', async () => {
+    it.only('sets branding successfully', async () => {
         const organization_id = ''
 
         // create organization
