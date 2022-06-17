@@ -60,7 +60,11 @@ const typeDefs = gql`
 
     extend type Mutation {
         classes: [Class]
-        class(class_id: ID!): Class @isAdmin(entity: "class")
+        class(class_id: ID!): Class
+            @isAdmin(entity: "class")
+            @deprecated(
+                reason: "Sunset Date: 17/09/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         uploadClassesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         createClasses(input: [CreateClassInput!]!): ClassesMutationResult
@@ -231,16 +235,37 @@ const typeDefs = gql`
 
         #mutations
         set(class_name: String, shortcode: String): Class
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         addTeacher(user_id: ID!): User
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         editTeachers(teacher_ids: [ID!]): [User]
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         removeTeacher(user_id: ID!): Boolean
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         addStudent(user_id: ID!): User
             @deprecated(
                 reason: "Sunset Date: 24/04/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
             )
         editStudents(student_ids: [ID!]): [User]
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         removeStudent(user_id: ID!): Boolean
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         editSchools(school_ids: [ID!]): [School]
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         addSchool(school_id: ID!): School
             @deprecated(
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
@@ -250,9 +275,21 @@ const typeDefs = gql`
                 reason: "Sunset Date: 06/03/2022 Details: https://calmisland.atlassian.net/l/c/av1p2bKY"
             )
         editAgeRanges(age_range_ids: [ID!]): [AgeRange]
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         editGrades(grade_ids: [ID!]): [Grade]
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         editSubjects(subject_ids: [ID!]): [Subject]
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
         removeSchool(school_id: ID!): Boolean
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/l/c/a6isgxA3"
+            )
 
         delete(_: Int): Boolean
             @deprecated(reason: "Use deleteClasses() method")
