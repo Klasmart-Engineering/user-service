@@ -14,7 +14,10 @@ import {
 } from '../types/graphQL/ageRange'
 import { ConflictingNameKey, getMap } from '../utils/resolvers/entityMaps'
 import { createExistentEntityAttributeAPIError } from '../utils/resolvers/errors'
-import { flagNonExistent } from '../utils/resolvers/inputValidation'
+import {
+    flagExistent,
+    flagNonExistent,
+} from '../utils/resolvers/inputValidation'
 import { ObjMap } from '../utils/stringUtils'
 import { flagUnauthorized } from '../utils/resolvers/authorization'
 import { uniqueAndTruthy } from '../utils/clean'
@@ -230,45 +233,31 @@ export class CreateAgeRanges extends CreateMutation<
             [organizationId],
             maps.organizations
         )
-
         errors.push(...organization.errors)
 
-        const conflictingNameAgeRangeId = maps.conflictingNames.get({
-            organizationId,
-            name,
-        })?.id
+        const conflictingNameKey: ConflictingNameKey = { organizationId, name }
+        const { errors: nameConflictErrors } = flagExistent(
+            AgeRange,
+            index,
+            [conflictingNameKey],
+            maps.conflictingNames
+        )
 
-        if (conflictingNameAgeRangeId) {
-            errors.push(
-                createExistentEntityAttributeAPIError(
-                    'AgeRange',
-                    conflictingNameAgeRangeId,
-                    'name',
-                    name,
-                    index
-                )
-            )
-        }
-
-        const conflictingValuesAgeRangeId = maps.conflictingValues.get({
+        const conflictValueKey: ConflictingAgeRangeKey = {
             lowValue,
             highValue,
             lowValueUnit,
             highValueUnit,
             organizationId,
-        })?.id
-
-        if (conflictingValuesAgeRangeId) {
-            errors.push(
-                createExistentEntityAttributeAPIError(
-                    'AgeRange',
-                    conflictingValuesAgeRangeId,
-                    'lowValue, lowValueUnit, highValue, highValueUnit',
-                    `${lowValue} ${lowValueUnit}(s) - ${highValue} ${highValueUnit}(s)`,
-                    index
-                )
-            )
         }
+        const { errors: valueConflictErrors } = flagExistent(
+            AgeRange,
+            index,
+            [conflictValueKey],
+            maps.conflictingValues
+        )
+
+        errors.push(...nameConflictErrors, ...valueConflictErrors)
 
         return errors
     }

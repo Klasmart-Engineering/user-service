@@ -10,7 +10,7 @@ import {
     OrganizationMembershipMap,
     SchoolMembershipMap,
 } from '../../../../src/utils/resolvers/entityMaps'
-import { ObjMap } from '../../../../src/utils/stringUtils'
+import { objectToKey, ObjMap } from '../../../../src/utils/stringUtils'
 import { createOrganization } from '../../../factories/organization.factory'
 import { createOrganizationMemberships } from '../../../factories/organizationMembership.factory'
 import { createSchool } from '../../../factories/school.factory'
@@ -40,7 +40,7 @@ describe('inputValidation', () => {
             .fill(undefined)
             .map(() => uuid_v4())
 
-    describe('#checkForNonExistentOrDuplicate', () => {
+    describe('flagExistentOrNonExistent()', () => {
         let users: User[]
         let userMap: Map<string, User>
 
@@ -54,7 +54,7 @@ describe('inputValidation', () => {
             )
         })
 
-        context('when nonExistent', () => {
+        context('when non existent', () => {
             function createNonExistentUserErrors(idList: string[]) {
                 return idList.map((id) =>
                     createEntityAPIError('nonExistent', index, 'User', id)
@@ -122,7 +122,7 @@ describe('inputValidation', () => {
             })
         })
 
-        context('when duplicate', () => {
+        context('when existent', () => {
             context('when some of the requested entities exist', () => {
                 let existentUsers: User[]
                 let newUserIds: string[]
@@ -156,9 +156,69 @@ describe('inputValidation', () => {
                 })
             })
         })
+
+        context('when map uses composite keys', () => {
+            type Key = { user_id: string; organization_id: string }
+            let userInOrgMap: Map<Key, User>
+            let organization_id: string
+
+            beforeEach(async () => {
+                organization_id = uuid_v4()
+                users = createUsers(5)
+                userInOrgMap = new ObjMap(
+                    users.map((u) => {
+                        u.user_id = uuid_v4()
+                        return {
+                            key: { user_id: u.user_id, organization_id },
+                            value: u,
+                        }
+                    })
+                )
+            })
+
+            context('when existent', () => {
+                context('when some of the requested entities exist', () => {
+                    let existentKeys: Key[]
+                    let newKeys: Key[]
+
+                    beforeEach(() => {
+                        existentKeys = [
+                            { user_id: users[0].user_id, organization_id },
+                            { user_id: users[1].user_id, organization_id },
+                        ]
+                        newKeys = [
+                            {
+                                user_id: users[3].user_id,
+                                organization_id: uuid_v4(),
+                            },
+                            { user_id: uuid_v4(), organization_id },
+                        ]
+                    })
+
+                    it('returns the entities and errors when they exist', () => {
+                        const { values, errors } = flagExistent(
+                            User,
+                            index,
+                            [...existentKeys, ...newKeys],
+                            userInOrgMap
+                        )
+                        const xErrors = existentKeys.map((key) =>
+                            createEntityAPIError(
+                                'existent',
+                                index,
+                                'User',
+                                objectToKey(key)
+                            )
+                        )
+                        compareMultipleErrors(errors, xErrors)
+                        compareMultipleEntities(values, [])
+                    })
+                })
+            })
+        })
     })
 
-    describe('#checkForNonExistentOrDuplicateChild', () => {
+    describe('flagExistentOrNonExistentChild()', () => {
         let classId: string
         let programIds: string[]
         let programIdsInClassSet: Set<string>
@@ -169,7 +229,7 @@ describe('inputValidation', () => {
             programIdsInClassSet = new Set(programIds)
         })
 
-        context('when nonExistentChild', () => {
+        context('when non existent child', () => {
             function createNonExistentProgramInClassErrors(
                 clsId: string,
                 progIds: string[]
@@ -259,7 +319,7 @@ describe('inputValidation', () => {
             })
         })
 
-        context('when duplicate', () => {
+        context('when existent child', () => {
             context('when some of the requested entities exist', () => {
                 let existentProgramIds: string[]
                 let newProgramIds: string[]
@@ -297,7 +357,7 @@ describe('inputValidation', () => {
         })
     })
 
-    describe('#validate.nonExistentChild', () => {
+    describe('when non existent school or organization memberships', () => {
         let users: User[]
 
         beforeEach(() => {
@@ -319,7 +379,7 @@ describe('inputValidation', () => {
                 parentId
             )
 
-        context('.organization', () => {
+        context('flagExistentOrNonExistentOrganizationMembership()', () => {
             let organization: Organization
             let memberships: OrganizationMembership[]
             let membershipMap: OrganizationMembershipMap
@@ -419,7 +479,7 @@ describe('inputValidation', () => {
             })
         })
 
-        context('.school', () => {
+        context('flagExistentOrNonExistentSchoolMembership()', () => {
             let school: School
             let memberships: SchoolMembership[]
             let membershipMap: SchoolMembershipMap
@@ -514,7 +574,7 @@ describe('inputValidation', () => {
         })
     })
 
-    context('#validateSubItemsInOrg', () => {
+    context('validateSubItemsInOrg()', () => {
         let organization: Organization
         let subItemsMap: Map<string, AgeRange>
         const subItemsCount = 5

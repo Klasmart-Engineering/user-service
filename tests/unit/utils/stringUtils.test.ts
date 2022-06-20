@@ -189,6 +189,11 @@ describe('objectToKey', () => {
     it('ignores the order of properties', () => {
         expect(objectToKey({ a: 1, b: 2 })).eq(objectToKey({ b: 2, a: 1 }))
     })
+    it('if object is a string, returns it as is', () => {
+        const str = 'dumbledore'
+        const key = objectToKey(str)
+        expect(str).to.equal(key)
+    })
 })
 
 describe('objMap', () => {
@@ -213,13 +218,30 @@ describe('objMap', () => {
         it('has correct entries', () => {
             const keys = Array.from(objMap.entries()).map(([k, v]) => k)
             const values = Array.from(objMap.entries()).map(([k, v]) => v)
-            expect(keys).to.deep.eq(Array.from(objMap.keys()))
-            expect(values).to.deep.eq(Array.from(objMap.values()))
             expect(keys).to.deep.eq(expectedKeys)
             expect(values).to.deep.eq(expectedValues)
         })
+        it('has correct keys', () => {
+            expect(Array.from(objMap.keys())).to.deep.eq(expectedKeys)
+        })
+        it('has correct values', () => {
+            expect(Array.from(objMap.values())).to.deep.eq(expectedValues)
+        })
         it('has correct size', () => {
             expect(objMap.size).to.eq(expectedSize)
+        })
+        it('forEach() works as expected', () => {
+            const keys: { a: string; b: string }[] = []
+            const values: string[] = []
+            objMap.forEach(
+                (value: string, key: { a: string; b: string }, map) => {
+                    keys.push(key)
+                    values.push(value)
+                    expect(map.get(key)).to.equal(value)
+                }
+            )
+            expect(keys).to.deep.eq(expectedKeys)
+            expect(values).to.deep.eq(expectedValues)
         })
     }
 
@@ -231,7 +253,7 @@ describe('objMap', () => {
             },
             {
                 key: { a: '2', b: '2' },
-                value: 'myvalue',
+                value: 'othervalue',
             },
         ]
 
@@ -254,7 +276,7 @@ describe('objMap', () => {
             },
             {
                 key: { a: '2', b: '2' },
-                value: 'myvalue',
+                value: 'othervalue',
             },
         ]
 
@@ -299,7 +321,42 @@ describe('objMap', () => {
         ]
 
         objMap.set(entries[0].key, entries[0].value)
-        objMap.set(entries[1].key, entries[1].value)
+        const mapClone = objMap.set(entries[1].key, entries[1].value)
+        expect(mapClone === objMap).to.be.true
+        testObjMap(objMap, [entries[1].key], [entries[1].value], 1)
+    })
+
+    context('clearing entire map', () => {
+        const objMap: TestObjMap = new ObjMap([
+            {
+                key: { a: '1', b: '2' },
+                value: 'myvalue',
+            },
+            {
+                key: { a: '2', b: '2' },
+                value: 'othervalue',
+            },
+        ])
+
+        objMap.clear()
+        testObjMap(objMap, [], [], 0)
+    })
+
+    context('deleting an entry', () => {
+        const entries = [
+            {
+                key: { a: '1', b: '2' },
+                value: 'myvalue',
+            },
+            {
+                key: { a: '2', b: '2' },
+                value: 'othervalue',
+            },
+        ]
+        const objMap: TestObjMap = new ObjMap(entries)
+
+        expect(objMap.delete(entries[0].key)).to.be.true
+        expect(objMap.delete(entries[0].key)).to.be.false
         testObjMap(objMap, [entries[1].key], [entries[1].value], 1)
     })
 })

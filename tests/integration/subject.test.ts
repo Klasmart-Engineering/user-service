@@ -39,7 +39,10 @@ import { ObjMap } from '../../src/utils/stringUtils'
 import { createCategories, createCategory } from '../factories/category.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { createSubject, createSubjects } from '../factories/subject.factory'
+import {
+    createSubject,
+    createSubjects as createSubjectsFactory,
+} from '../factories/subject.factory'
 import { createUser, makeUserWithPermission } from '../factories/user.factory'
 import { compareErrors } from '../utils/apiError'
 import { createInitialData } from '../utils/createTestData'
@@ -58,9 +61,6 @@ describe('subject', () => {
 
     const createCats = async () =>
         await Category.save(createCategories(3, undefined, undefined, true))
-
-    const createSubjectsToUse = async (org: Organization) =>
-        await Subject.save(createSubjects(10, org))
 
     const compareSubjectConnectionNodeWithInput = (
         subject: SubjectConnectionNode,
@@ -499,52 +499,34 @@ describe('subject', () => {
             })
 
             it('duplicate name in org', async () => {
-                const subjectInSameOrg = createSubject(org)
-                subjectInSameOrg.id = uuid_v4()
-
-                const inactiveSubjectInSameOrg = createSubject(org)
-                inactiveSubjectInSameOrg.id = uuid_v4()
-                inactiveSubjectInSameOrg.status = Status.INACTIVE
-
-                const differentOrg = await createOrganization().save()
-                const subjectInDifferentOrg = createSubject(differentOrg)
+                const otherOrg = await createOrganization().save()
+                let subjects = [
+                    ...createSubjectsFactory(2, org),
+                    createSubject(otherOrg),
+                ]
+                subjects[1].status = Status.INACTIVE
+                subjects = await Subject.save(subjects)
 
                 const testCases: {
                     input: CreateSubjectInput
                     error?: APIError
                 }[] = await Promise.all(
-                    [subjectInSameOrg, inactiveSubjectInSameOrg].map(
-                        async (s) => {
-                            const organization = (await s.organization)!
-                            return {
-                                input: createSingleInput(organization, s.name!),
-                                error: createExistentEntityAttributeAPIError(
-                                    'Subject',
-                                    s.id,
-                                    'name',
-                                    s.name!,
-                                    0
-                                ),
-                            }
+                    subjects.map(async (s) => {
+                        const organization = (await s.organization)!
+                        return {
+                            input: createSingleInput(organization, s.name!),
+                            error: createExistentEntityAttributeAPIError(
+                                'Subject',
+                                s.id,
+                                'name',
+                                s.name!,
+                                0
+                            ),
                         }
-                    )
+                    })
                 )
 
-                testCases.push({
-                    input: createSingleInput(
-                        await subjectInDifferentOrg.organization!,
-                        subjectInDifferentOrg.name!
-                    ),
-                })
-
-                const entityMap = await buildEntityMap(
-                    [
-                        subjectInSameOrg,
-                        inactiveSubjectInSameOrg,
-                        subjectInDifferentOrg,
-                    ],
-                    categories
-                )
+                const entityMap = await buildEntityMap(subjects, categories)
 
                 runTestCases(testCases, entityMap)
             })
@@ -566,7 +548,7 @@ describe('subject', () => {
             org = data.organization
             ctx = data.context
             categories = await createCats()
-            subjectsToEdit = await createSubjectsToUse(org)
+            subjectsToEdit = await Subject.save(createSubjectsFactory(10, org))
             updateSubjects = new UpdateSubjects([], ctx.permissions)
         })
 
@@ -1010,54 +992,36 @@ describe('subject', () => {
             })
 
             it('duplicate name in org', async () => {
-                const subjectInSameOrg = createSubject(org)
-                subjectInSameOrg.id = uuid_v4()
+                const otherOrg = await createOrganization().save()
+                let subjects = [
+                    ...createSubjectsFactory(2, org),
+                    createSubject(otherOrg),
+                ]
+                subjects[1].status = Status.INACTIVE
+                subjects = await Subject.save(subjects)
 
-                const inactiveSubjectInSameOrg = createSubject(org)
-                inactiveSubjectInSameOrg.id = uuid_v4()
-                inactiveSubjectInSameOrg.status = Status.INACTIVE
-
-                const differentOrg = await createOrganization().save()
-                const subjectInDifferentOrg = createSubject(differentOrg)
                 const testCases: {
                     input: UpdateSubjectInput
                     error?: APIError
                 }[] = await Promise.all(
-                    [subjectInSameOrg, inactiveSubjectInSameOrg].map(
-                        async (s) => {
-                            return {
-                                input: {
-                                    id: s.id,
-                                    name: s.name!,
-                                },
-                                error: createExistentEntityAttributeAPIError(
-                                    'Subject',
-                                    s.id,
-                                    'name',
-                                    s.name!,
-                                    0
-                                ),
-                            }
+                    subjects.map(async (s) => {
+                        return {
+                            input: {
+                                id: s.id,
+                                name: s.name!,
+                            },
+                            error: createExistentEntityAttributeAPIError(
+                                'Subject',
+                                s.id,
+                                'name',
+                                s.name!,
+                                0
+                            ),
                         }
-                    )
+                    })
                 )
 
-                testCases.push({
-                    input: createSingleInput(
-                        subjectInDifferentOrg,
-                        subjectInDifferentOrg.name!
-                    ),
-                })
-
-                const entityMap = await buildEntityMap(
-                    [
-                        subjectInSameOrg,
-                        inactiveSubjectInSameOrg,
-                        subjectInDifferentOrg,
-                    ],
-                    categories
-                )
-
+                const entityMap = await buildEntityMap(subjects, categories)
                 runTestCases(testCases, entityMap)
             })
         })
@@ -1076,7 +1040,9 @@ describe('subject', () => {
 
             org = data.organization
             ctx = data.context
-            subjectsToDelete = await createSubjectsToUse(org)
+            subjectsToDelete = await Subject.save(
+                createSubjectsFactory(10, org)
+            )
             deleteSubjects = new DeleteSubjects([], ctx.permissions)
         })
 

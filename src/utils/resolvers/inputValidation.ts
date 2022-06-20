@@ -15,6 +15,7 @@ import { Subject } from '../../entities/subject'
 import { SchoolMembership } from '../../entities/schoolMembership'
 import { Grade } from '../../entities/grade'
 import { AcademicTerm } from '../../entities/academicTerm'
+import { objectToKey } from '../stringUtils'
 
 export type Entities =
     | User
@@ -79,11 +80,14 @@ export function validateSubItemsInOrg<T extends SystemEntities>(
  * Checks `ids` against an map and flags an existent/non_existent error.
  */
 function flagExistentOrNonExistent(checkType: 'nonExistent' | 'existent') {
-    return <T extends Entities>(
+    return <
+        T extends Entities,
+        U extends { [key: string]: string | number } | string
+    >(
         entityClass: new () => T,
         index: number,
-        ids: string[],
-        map: Map<string, T>
+        ids: U[],
+        map: Map<U, T>
     ) => {
         const values: T[] = []
         const errors: APIError[] = []
@@ -92,7 +96,12 @@ function flagExistentOrNonExistent(checkType: 'nonExistent' | 'existent') {
             if (checkType === 'nonExistent' && entity) values.push(entity)
             if (checkType === 'existent' ? entity : !entity) {
                 errors.push(
-                    createEntityAPIError(checkType, index, entityClass.name, id)
+                    createEntityAPIError(
+                        checkType,
+                        index,
+                        entityClass.name,
+                        objectToKey(id)
+                    )
                 )
             }
         }

@@ -67,9 +67,6 @@ describe('program', () => {
     const getSubjects = async () =>
         await Subject.save(createSubjects(3, undefined, undefined, true))
 
-    const createProgramsToUse = async (org: Organization) =>
-        await Program.save(createPrograms(10, org))
-
     const compareProgramConnectionNodeWithInput = (
         subject: ProgramConnectionNode,
         input: CreateProgramInput | UpdateProgramInput
@@ -801,7 +798,7 @@ describe('program', () => {
             ageRanges = await getAgeRanges()
             grades = await getGrades()
             subjects = await getSubjects()
-            programsToEdit = await createProgramsToUse(org)
+            programsToEdit = await Program.save(createPrograms(10, org))
             updatePrograms = new UpdatePrograms([], ctx.permissions)
         })
 
@@ -1303,51 +1300,36 @@ describe('program', () => {
             })
 
             it("checks if a program with the given 'name' already exist in the same organization as the given program", async () => {
-                const programInSameOrg = createProgram(org)
-                programInSameOrg.id = uuid_v4()
+                const otherOrg = await createOrganization().save()
+                let programs = [
+                    ...createPrograms(2, org),
+                    createProgram(otherOrg),
+                ]
+                programs[1].status = Status.INACTIVE
+                programs = await Program.save(programs)
 
-                const inactiveProgramInSameOrg = createProgram(org)
-                inactiveProgramInSameOrg.id = uuid_v4()
-                inactiveProgramInSameOrg.status = Status.INACTIVE
-
-                const differentOrg = await createOrganization().save()
-                const programInDifferentOrg = createProgram(differentOrg)
                 const testCases: {
                     input: UpdateProgramInput
                     error?: APIError
                 }[] = await Promise.all(
-                    [programInSameOrg, inactiveProgramInSameOrg].map(
-                        async (s) => {
-                            return {
-                                input: {
-                                    id: s.id,
-                                    name: s.name!,
-                                },
-                                error: createExistentEntityAttributeAPIError(
-                                    'Program',
-                                    s.id,
-                                    'name',
-                                    s.name!,
-                                    0
-                                ),
-                            }
+                    programs.map(async (s) => {
+                        return {
+                            input: {
+                                id: s.id,
+                                name: s.name!,
+                            },
+                            error: createExistentEntityAttributeAPIError(
+                                'Program',
+                                s.id,
+                                'name',
+                                s.name!,
+                                0
+                            ),
                         }
-                    )
+                    })
                 )
 
-                testCases.push({
-                    input: createSingleInput(
-                        programInDifferentOrg,
-                        programInDifferentOrg.name!
-                    ),
-                })
-
-                const entityMap = await buildEntityMap([
-                    programInSameOrg,
-                    inactiveProgramInSameOrg,
-                    programInDifferentOrg,
-                ])
-
+                const entityMap = await buildEntityMap(programs)
                 runTestCases(testCases, entityMap)
             })
 
@@ -1525,7 +1507,7 @@ describe('program', () => {
 
             org = data.organization
             ctx = data.context
-            programsToDelete = await createProgramsToUse(org)
+            programsToDelete = await Program.save(createPrograms(10, org))
             deletePrograms = new DeletePrograms([], ctx.permissions)
         })
 

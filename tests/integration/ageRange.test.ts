@@ -17,7 +17,10 @@ import {
     DeleteAgeRanges,
     UpdateAgeRanges,
 } from '../../src/resolvers/ageRange'
-import { createAgeRange, createAgeRanges } from '../factories/ageRange.factory'
+import {
+    createAgeRange,
+    createAgeRanges as createAgeRangesFactory,
+} from '../factories/ageRange.factory'
 import {
     AgeRangeConnectionNode,
     AgeRangesMutationResult,
@@ -34,7 +37,7 @@ import faker from 'faker'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { APIError } from '../../src/types/errors/apiError'
 import { customErrors } from '../../src/types/errors/customError'
-import { ObjMap } from '../../src/utils/stringUtils'
+import { objectToKey, ObjMap } from '../../src/utils/stringUtils'
 import { v4 as uuid_v4 } from 'uuid'
 import { config } from '../../src/config/config'
 import { createInitialData } from '../utils/createTestData'
@@ -125,9 +128,6 @@ describe('ageRange', () => {
         ageRangesTotalCount = await AgeRange.count()
     }
 
-    const createAgeRangesToUse = async (org: Organization) =>
-        await AgeRange.save(createAgeRanges(10, org))
-
     const compareAgeRangeConnectionNodeWithInput = (
         ageRange: AgeRangeConnectionNode,
         input: CreateAgeRangeInput
@@ -143,8 +143,7 @@ describe('ageRange', () => {
 
     const compareDBAgeRangeWithInput = async (
         input: CreateAgeRangeInput,
-        dbAgeRange: AgeRange,
-        org: Organization
+        dbAgeRange: AgeRange
     ) => {
         expect(dbAgeRange.name).to.eq(input.name)
         expect(dbAgeRange.low_value).to.eq(input.lowValue)
@@ -153,9 +152,7 @@ describe('ageRange', () => {
         expect(dbAgeRange.high_value_unit).to.eq(input.highValueUnit)
         expect(dbAgeRange.status).to.eq(Status.ACTIVE)
         expect(dbAgeRange.system).to.eq(false)
-        expect((await dbAgeRange.organization)?.organization_id).to.eq(
-            input.organizationId
-        )
+        expect(dbAgeRange.organization_id).to.eq(input.organizationId)
     }
 
     describe('DeleteAgeRanges', () => {
@@ -170,7 +167,9 @@ describe('ageRange', () => {
             ])
             org = data.organization
             ctx = data.context
-            ageRangesToDelete = await createAgeRangesToUse(org)
+            ageRangesToDelete = await AgeRange.save(
+                createAgeRangesFactory(10, org)
+            )
             deleteAgeRanges = new DeleteAgeRanges([], ctx.permissions)
         })
 
@@ -344,7 +343,7 @@ describe('ageRange', () => {
                 })
 
                 expect(dbAgeRanges).to.have.lengthOf(1)
-                await compareDBAgeRangeWithInput(input[0], dbAgeRanges[0], org)
+                await compareDBAgeRangeWithInput(input[0], dbAgeRanges[0])
             })
 
             const getDbCallCount = async (input: CreateAgeRangeInput[]) => {
@@ -369,13 +368,17 @@ describe('ageRange', () => {
         })
 
         context('generateEntityMaps', () => {
-            const generateExistingAgeRanges = async (org: Organization) => {
-                const existingAgeRange = await createAgeRange(org).save()
+            const generateExistingAgeRanges = async (
+                organization: Organization
+            ) => {
+                const existingAgeRange = await createAgeRange(
+                    organization
+                ).save()
                 const nonPermittedOrgAgeRange = await createAgeRange(
                     await createOrganization().save()
                 ).save()
 
-                const inactiveAgeRange = createAgeRange(org)
+                const inactiveAgeRange = createAgeRange(organization)
                 inactiveAgeRange.status = Status.INACTIVE
                 await inactiveAgeRange.save()
 
@@ -437,8 +440,7 @@ describe('ageRange', () => {
                 const expectedPairs = await Promise.all(
                     existingAgeRanges.map(async (ar) => {
                         return {
-                            organizationId: (await ar.organization)!
-                                .organization_id,
+                            organizationId: ar.organization_id!,
                             lowValue: ar.low_value,
                             highValue: ar.high_value,
                             lowValueUnit: ar.low_value_unit,
@@ -451,8 +453,7 @@ describe('ageRange', () => {
                     ...(await Promise.all(
                         existingAgeRanges.map(async (ar) => {
                             return {
-                                organizationId: (await ar.organization)!
-                                    .organization_id,
+                                organizationId: ar.organization_id!,
                                 name: ar.name!,
                                 lowValue: ar.low_value,
                                 highValue: ar.high_value,
@@ -726,7 +727,7 @@ describe('ageRange', () => {
             }
 
             const createSingleInput = (
-                organization: Organization,
+                organizationId: string,
                 name = faker.random.word(),
                 lowValue = faker.datatype.number({ min: 0, max: 5 }),
                 highValue = faker.datatype.number({ min: 5, max: 10 }),
@@ -738,7 +739,7 @@ describe('ageRange', () => {
                 )
             ) => {
                 return {
-                    organizationId: organization.organization_id,
+                    organizationId,
                     name,
                     lowValue,
                     highValue,
@@ -752,7 +753,7 @@ describe('ageRange', () => {
                 inactiveOrg.status = Status.INACTIVE
                 await inactiveOrg.save()
 
-                const input = createSingleInput(inactiveOrg)
+                const input = createSingleInput(inactiveOrg.organization_id)
                 const error = createEntityAPIError(
                     'nonExistent',
                     0,
@@ -764,106 +765,83 @@ describe('ageRange', () => {
                 runTestCases([{ input, error }], entityManager)
             })
 
-            it("checks if an age range already exists in the DB with the given 'name' in the organization given in 'organizationId", async () => {
-                const ageRangeInSameOrg = createAgeRange(org)
-                ageRangeInSameOrg.id = uuid_v4()
-
-                const inactiveAgeRangeInSameOrg = createAgeRange(org)
-                inactiveAgeRangeInSameOrg.id = uuid_v4()
-                inactiveAgeRangeInSameOrg.status = Status.INACTIVE
-
-                const differentOrg = await createOrganization().save()
-                const ageRangeInDifferentOrg = createAgeRange(differentOrg)
+            it("checks if an age range already exists in the DB with the given 'name' in the organization given in 'organizationId'", async () => {
+                const otherOrg = await createOrganization().save()
+                let ageRanges = [
+                    ...createAgeRangesFactory(2, org),
+                    createAgeRange(otherOrg),
+                ]
+                ageRanges[1].status = Status.INACTIVE
+                ageRanges = await AgeRange.save(ageRanges)
 
                 const testCases: {
                     input: CreateAgeRangeInput
                     error?: APIError
                 }[] = await Promise.all(
-                    [ageRangeInSameOrg, inactiveAgeRangeInSameOrg].map(
-                        async (s) => {
-                            const organization = (await s.organization)!
-                            return {
-                                input: createSingleInput(organization, s.name!),
-                                error: createExistentEntityAttributeAPIError(
-                                    'AgeRange',
-                                    s.id,
-                                    'name',
-                                    s.name!,
-                                    0
-                                ),
-                            }
+                    ageRanges.map(async (ar) => {
+                        const organizationId = ar.organization_id!
+                        const key = objectToKey({
+                            name: ar.name,
+                            organizationId,
+                        })
+                        return {
+                            input: createSingleInput(organizationId, ar.name!),
+                            error: createEntityAPIError(
+                                'existent',
+                                0,
+                                'AgeRange',
+                                key
+                            ),
                         }
-                    )
+                    })
                 )
 
-                testCases.push({
-                    input: createSingleInput(
-                        await ageRangeInDifferentOrg.organization!,
-                        ageRangeInDifferentOrg.name!
-                    ),
-                })
-
-                const entityMap = await buildEntityMap([
-                    ageRangeInSameOrg,
-                    inactiveAgeRangeInSameOrg,
-                    ageRangeInDifferentOrg,
-                ])
-
+                const entityMap = await buildEntityMap(ageRanges)
                 runTestCases(testCases, entityMap)
             })
 
             it("checks if an age range already exists in the DB with the given ('lowValue', 'highValue', 'lowValueUnit', 'highValueUnit') in the organization given in 'organizationId'", async () => {
-                const ageRangeInSameOrg = createAgeRange(org)
-                ageRangeInSameOrg.id = uuid_v4()
-
-                const inactiveAgeRangeInSameOrg = createAgeRange(org)
-                inactiveAgeRangeInSameOrg.id = uuid_v4()
-                inactiveAgeRangeInSameOrg.status = Status.INACTIVE
-
-                const differentOrg = await createOrganization().save()
-                const ageRangeInDifferentOrg = createAgeRange(differentOrg)
+                const otherOrg = await createOrganization().save()
+                let ageRanges = [
+                    ...createAgeRangesFactory(2, org),
+                    createAgeRange(otherOrg),
+                ]
+                ageRanges[1].status = Status.INACTIVE
+                ageRanges = await AgeRange.save(ageRanges)
 
                 const testCases: {
                     input: CreateAgeRangeInput
                     error?: APIError
                 }[] = await Promise.all(
-                    [ageRangeInSameOrg, inactiveAgeRangeInSameOrg].map(
-                        async (s) => {
-                            const organization = (await s.organization)!
-                            return {
-                                input: createSingleInput(
-                                    organization,
-                                    undefined,
-                                    s.low_value,
-                                    s.high_value,
-                                    s.low_value_unit,
-                                    s.high_value_unit
-                                ),
-                                error: createExistentEntityAttributeAPIError(
-                                    'AgeRange',
-                                    s.id,
-                                    'lowValue, lowValueUnit, highValue, highValueUnit',
-                                    `${s.low_value} ${s.low_value_unit}(s) - ${s.high_value} ${s.high_value_unit}(s)`,
-                                    0
-                                ),
-                            }
+                    ageRanges.map(async (ar) => {
+                        const organizationId = ar.organization_id!
+                        const key = objectToKey({
+                            lowValue: ar.low_value,
+                            highValue: ar.high_value,
+                            lowValueUnit: ar.low_value_unit,
+                            highValueUnit: ar.high_value_unit,
+                            organizationId,
+                        })
+                        return {
+                            input: createSingleInput(
+                                organizationId,
+                                undefined,
+                                ar.low_value,
+                                ar.high_value,
+                                ar.low_value_unit,
+                                ar.high_value_unit
+                            ),
+                            error: createEntityAPIError(
+                                'existent',
+                                0,
+                                'AgeRange',
+                                key
+                            ),
                         }
-                    )
+                    })
                 )
 
-                testCases.push({
-                    input: createSingleInput(
-                        await ageRangeInDifferentOrg.organization!,
-                        ageRangeInDifferentOrg.name!
-                    ),
-                })
-
-                const entityMap = await buildEntityMap([
-                    ageRangeInSameOrg,
-                    inactiveAgeRangeInSameOrg,
-                    ageRangeInDifferentOrg,
-                ])
-
+                const entityMap = await buildEntityMap(ageRanges)
                 runTestCases(testCases, entityMap)
             })
         })
@@ -966,11 +944,13 @@ describe('ageRange', () => {
 
         context('generateEntityMaps', () => {
             it('returns organization ids', async () => {
-                const sysAgeRanges = await AgeRange.save(createAgeRanges(5))
+                const sysAgeRanges = await AgeRange.save(
+                    createAgeRangesFactory(5)
+                )
 
                 const otherOrg = await createOrganization().save()
                 const otherAgeRanges = await AgeRange.save(
-                    createAgeRanges(5, otherOrg)
+                    createAgeRangesFactory(5, otherOrg)
                 )
 
                 const expectedIds = [
@@ -997,7 +977,7 @@ describe('ageRange', () => {
 
             it('returns existing age ranges with equal unique fields combinations', async () => {
                 const existingAgeRanges = await AgeRange.save(
-                    createAgeRanges(ageRangesCount, org1)
+                    createAgeRangesFactory(ageRangesCount, org1)
                 )
                 const expectedPairs: UpdateAgeRangeInput[] = []
                 for (let x = 0; x < ageRangesCount; x++) {

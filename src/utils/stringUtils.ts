@@ -82,8 +82,9 @@ export function objectToKey<T extends Record<string, unknown> | string>(
 // have weird edge cases like:
 // * could be expensive
 // * could be recursive
-export class ObjMap<Key extends { [key: string]: string | number }, Value> {
-    map: Map<string, Value>
+export class ObjMap<Key extends { [key: string]: string | number }, Value>
+    implements Map<Key, Value> {
+    private map: Map<string, Value>
 
     constructor(entries?: { key: Key; value: Value }[]) {
         if (entries !== undefined) {
@@ -97,6 +98,7 @@ export class ObjMap<Key extends { [key: string]: string | number }, Value> {
 
     set(key: Key, value: Value) {
         this.map.set(objectToKey(key), value)
+        return this
     }
 
     get(key: Key) {
@@ -119,13 +121,47 @@ export class ObjMap<Key extends { [key: string]: string | number }, Value> {
         }
     }
 
-    *entries(): IterableIterator<[Key, Value]> {
+    *[Symbol.iterator](): IterableIterator<[Key, Value]> {
         for (const [key, value] of this.map.entries()) {
             yield [JSON.parse(key) as Key, value]
         }
     }
 
+    *entries(): IterableIterator<[Key, Value]> {
+        for (const entry of this) {
+            yield entry
+        }
+    }
+
+    clear() {
+        return this.map.clear()
+    }
+
+    delete(key: Key): boolean {
+        return this.map.delete(objectToKey(key))
+    }
+
+    forEach(
+        callbackfn: (value: Value, key: Key, map: Map<Key, Value>) => void
+    ) {
+        this.map.forEach(
+            (value: Value, key: string, map: Map<string, Value>) => {
+                const objMap = new ObjMap<Key, Value>(
+                    Array.from(map.entries()).map(([k, v]) => ({
+                        key: JSON.parse(k) as Key,
+                        value: v,
+                    }))
+                )
+                callbackfn(value, JSON.parse(key) as Key, objMap)
+            }
+        )
+    }
+
     get size() {
         return this.map.size
+    }
+
+    get [Symbol.toStringTag]() {
+        return 'ObjMap'
     }
 }
