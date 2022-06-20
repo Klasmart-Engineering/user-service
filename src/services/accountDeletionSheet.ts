@@ -21,8 +21,8 @@ const accountDeletionRequestColumns = {
 }
 
 const sheetNumber = '1'
-const firstRow = Object.values(accountDeletionRequestColumns)[0]
-const lastRow = Object.values(accountDeletionRequestColumns).slice(-1)[0]
+const firstColumn = Object.values(accountDeletionRequestColumns)[0]
+const lastColumn = Object.values(accountDeletionRequestColumns).slice(-1)[0]
 
 type NewAccountDeletionRequestRow = {
     [T in keyof typeof accountDeletionRequestColumns]: string
@@ -45,7 +45,7 @@ async function getRowCount() {
     // appending empty row as this will find the last row for us
     // using '.get' instead would mean returning an entire row
     const response = await sheets.spreadsheets.values.append({
-        range: `Sheet${sheetNumber}!${firstRow}:${lastRow}`,
+        range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [] },
@@ -93,7 +93,7 @@ async function push(...rows: NewAccountDeletionRequestRow[]) {
         row.yService,
     ])
     const result = await sheets.spreadsheets.values.append({
-        range: `Sheet${sheetNumber}!${firstRow}:${lastRow}`,
+        range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values },
@@ -119,7 +119,7 @@ async function readRows(
     // retrieve a row for each row number entered
     const ranges = rowNumbers.map(
         (rowNumber: number) =>
-            `Sheet${sheetNumber}!${firstRow}${rowNumber}:${lastRow}${rowNumber}`
+            `Sheet${sheetNumber}!${firstColumn}${rowNumber}:${lastColumn}${rowNumber}`
     )
     const response = await sheets.spreadsheets.values.batchGet({
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
