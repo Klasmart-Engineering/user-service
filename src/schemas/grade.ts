@@ -23,7 +23,11 @@ const typeDefs = gql`
     }
 
     extend type Mutation {
-        grade(id: ID!): Grade @isAdmin(entity: "grade")
+        grade(id: ID!): Grade
+            @isAdmin(entity: "grade")
+            @deprecated(
+                reason: "Sunset Date: 13/09/2022 Details: https://calmisland.atlassian.net/wiki/spaces/UserService/pages/2720890881/"
+            )
         uploadGradesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateGrades: Boolean @isAdmin
