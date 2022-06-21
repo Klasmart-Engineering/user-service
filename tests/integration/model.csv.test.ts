@@ -104,6 +104,7 @@ import { userToPayload } from '../utils/operations/userOps'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { createAcademicTerm } from '../factories/academicTerm.factory'
 import { AcademicTerm } from '../../src/entities/academicTerm'
+import { TextEncoder } from 'node:util'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)

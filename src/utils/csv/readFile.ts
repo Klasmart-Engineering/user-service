@@ -16,6 +16,7 @@ import logger from '../../logging'
 import { config } from '../../config/config'
 import stream = require('stream')
 import { QueryResultCache } from './csvUtils'
+import { TextDecoder } from 'node:util'
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
