@@ -24,6 +24,8 @@ export function isDeprecatedLoggerTransformer(schema: GraphQLSchema) {
                         operationName: info.operation.name?.value ?? '',
                         deprecatedField: info.fieldName,
                         originURL: context.req.headers.origin ?? '',
+                        kidsloopClientName:
+                            context.req.headers['x-kidsloop-client-name'] ?? '',
                     })
                 )
                 return resolve(source, args, context, info)
