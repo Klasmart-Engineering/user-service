@@ -18,6 +18,7 @@ import { permissionInfo } from '../../../src/permissions/permissionInfo'
 import { createRole } from '../../factories/role.factory'
 import { createPermission } from '../../factories/permission.factory'
 import { PermissionName } from '../../../src/permissions/permissionNames'
+import { latestPermissions } from '../../utils/latestPermissions'
 
 describe('RolesInitializer', () => {
     let connection: TestConnection
@@ -49,6 +50,27 @@ describe('RolesInitializer', () => {
             return { permission_name: permission.permission_name }
         }
 
+        it('checks for not-in-sync permissions', async () => {
+            await RoleInitializer.run()
+
+            const filePermissions = await permissionInfo()
+            const uniqueFilePermissions: Set<String> = new Set(
+                filePermissions.keys()
+            )
+            expect(uniqueFilePermissions.size).to.be.equal(filePermissions.size)
+
+            const latestPermissionMap = await latestPermissions()
+            const uniqueLatestPermissions: Set<String> = new Set(
+                latestPermissionMap.keys()
+            )
+            expect(uniqueLatestPermissions.size).to.be.equal(
+                latestPermissionMap.size
+            )
+
+            expect(latestPermissionMap.size).to.be.equal(filePermissions.size)
+            expect(uniqueFilePermissions).to.be.eql(uniqueLatestPermissions)
+        })
+
         context('when updated default permissions exists', () => {
             let organization: Organization
 
@@ -61,7 +83,6 @@ describe('RolesInitializer', () => {
             })
 
             it('does not modify the default roles permissions', async () => {
-                const { mutate } = testClient
                 const dbRoles = await organization.roles()
                 const dbPermissions = []
                 expect(dbRoles).not.to.be.empty
