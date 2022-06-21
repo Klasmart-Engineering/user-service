@@ -80,9 +80,18 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
 
     app.use((req, res, next) => {
         res.setTimeout(REQUEST_TIMEOUT_MS, function () {
-            reportError(new Error('Request timed out'), {
-                query: req.body.query,
-            })
+            // this does not kill the connection
+            // if we wanted to do that, socket.end() or
+            // socket.destroy must be called
+            // https://nodejs.org/api/net.html#socketsettimeouttimeout-callback
+            reportError(
+                new Error(
+                    `Request connection was idle for longer then ${REQUEST_TIMEOUT_MS}ms`
+                ),
+                {
+                    query: req.body.query,
+                }
+            )
         })
         next()
     })
