@@ -154,7 +154,16 @@ async function push(
 // UTILS
 const authenticate = new Lazy(async () => {
     const scopes = ['https://www.googleapis.com/auth/spreadsheets']
-    const auth = await google.auth.getClient({ scopes })
+    const credentialsJson =
+        process.env.USER_SERVICE_GOOGLE_SHEETS_API_CREDENTIALS
+    if (!credentialsJson) {
+        throw new Error(
+            'Environment variable USER_SERVICE_GOOGLE_SHEETS_API_CREDENTIALS has no value'
+        )
+    }
+    const credentials = JSON.parse(credentialsJson)
+
+    const auth = await google.auth.getClient({ scopes, credentials })
     return google.sheets({ version: 'v4', auth })
 })
 

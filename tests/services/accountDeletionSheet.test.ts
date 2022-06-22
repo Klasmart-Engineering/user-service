@@ -7,10 +7,6 @@ import accountDeletionSheet, {
 } from '../../src/services/accountDeletionSheet'
 import _ from 'lodash'
 
-process.env.GOOGLE_APPLICATION_CREDENTIALS = './google-api-secrets.json'
-process.env.ACCOUNT_DELETION_SHEET_ID =
-    '1OKuKxgnfikeu1BY4B2l5Zy-PaSiPPrwWNwcTY7GUBSY'
-
 describe('accountDeletionSheet', () => {
     context('.getHeaders()', () => {
         it('retrieves headers which match what is expected', async () => {

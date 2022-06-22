@@ -13,4 +13,3 @@ debug_user_service_secret
 .mocharc.js
 coverage_*
 slow_query_stats.json
-google-api-secrets.json
