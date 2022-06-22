@@ -30,7 +30,7 @@ describe('accountDeletionSheet', () => {
                 hashedUserInfo: uuid_v4(),
                 deletionRequestDate: faker.date
                     .past(1)
-                    .toLocaleDateString('en', { dateStyle: 'short' }),
+                    .toLocaleDateString('en-GB', { dateStyle: 'short' }),
                 overallStatus: faker.random.word(),
                 userService: faker.random.word(),
                 yService: faker.random.word(),
@@ -40,6 +40,8 @@ describe('accountDeletionSheet', () => {
         it('adds new rows', async () => {
             const newRows = [generateRow(), generateRow()]
             const updateRange = await accountDeletionSheet.push(...newRows)
+            expect(!!updateRange).to.be.true
+            if (!updateRange) return
 
             const foundRows = await accountDeletionSheet.getAll(updateRange)
             expect(foundRows).to.deep.equal(newRows)

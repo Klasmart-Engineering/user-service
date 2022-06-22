@@ -1,6 +1,7 @@
 import { google } from 'googleapis'
 import { Lazy } from '../utils/lazyLoading'
-import { alphaToNum } from '../utils/stringUtils'
+import { reportError } from '../utils/resolvers/errors'
+import { alphaToNum, objectToKey } from '../utils/stringUtils'
 
 export default {
     deleteRows,
@@ -120,18 +121,33 @@ async function getRange(): Promise<Range> {
     return parseRange(tableRange)
 }
 
-async function push(...rows: AccountDeletionRequestRow[]): Promise<Range> {
+async function push(
+    ...rows: AccountDeletionRequestRow[]
+): Promise<Range | undefined> {
     const sheets = await authenticate.instance
     const values = rows.map((row) => Object.values(row))
-    const result = await sheets.spreadsheets.values.append({
-        range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
-        spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values },
-    })
-    if (!result.data.updates?.updatedRange) {
-        throw new Error('Failed to append row to table')
+    let result = undefined
+    try {
+        result = await sheets.spreadsheets.values.append({
+            range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
+            spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values },
+        })
+    } catch {
+        result = undefined
     }
+    if (!result?.data.updates?.updatedRange) {
+        for (const row of rows) {
+            reportError(
+                new Error(
+                    `Failed to append row to spreadsheet: ${objectToKey(row)}`
+                )
+            )
+        }
+        return undefined
+    }
+
     return parseRange(result.data.updates.updatedRange)
 }
 
