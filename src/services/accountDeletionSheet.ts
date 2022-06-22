@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
 import { Lazy } from '../utils/lazyLoading'
+import { alphaToNum } from '../utils/stringUtils'
 
 export default {
     deleteRows,
@@ -59,31 +60,29 @@ async function deleteRows(deleteRange: Pick<Range, 'startRow' | 'endRow'>) {
 }
 
 async function getAll(fetchRange: Range): Promise<AccountDeletionRequestRow[]> {
+    // Fetch all values in the range
     const { startRow, endRow, startColumn, endColumn } = fetchRange
-
-    // Fetch all values in the table, excluding header row
     const sheets = await authenticate.instance
     const range = `Sheet${sheetNumber}!${startColumn}${startRow}:${endColumn}${endRow}`
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
         range,
     })
-
-    // Parse values into objects
-    const rows: AccountDeletionRequestRow[] = []
     if (!response.data.values) {
         throw new Error('Failed to retrieve data in that range')
     }
+
+    // Parse values into objects
+    const rows: AccountDeletionRequestRow[] = []
     for (const values of response.data.values) {
-        rows.push({
-            guidAzureB2C: values[0],
-            guidUserService: values[1],
-            hashedUserInfo: values[2],
-            deletionRequestDate: values[3],
-            overallStatus: values[4],
-            userService: values[5],
-            yService: values[6],
-        })
+        const row = {} as AccountDeletionRequestRow
+        Object.entries(accountDeletionRequestColumns).forEach(
+            ([key, columnName]) => {
+                row[key as keyof typeof accountDeletionRequestColumns] =
+                    values[alphaToNum(columnName) - 1]
+            }
+        )
+        rows.push(row)
     }
     return rows
 }
@@ -92,14 +91,12 @@ async function getHeaders(
     tableRange: Pick<Range, 'startRow' | 'startColumn' | 'endColumn'>
 ): Promise<string[]> {
     const { startRow, startColumn, endColumn } = tableRange
-
     const sheets = await authenticate.instance
     const range = `Sheet${sheetNumber}!${startColumn}${startRow}:${endColumn}${startRow}`
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
         range,
     })
-
     if (!response.data.values) {
         throw new Error('Failed to retrieve table headers')
     }
@@ -125,15 +122,7 @@ async function getRange(): Promise<Range> {
 
 async function push(...rows: AccountDeletionRequestRow[]): Promise<Range> {
     const sheets = await authenticate.instance
-    const values = rows.map((row) => [
-        row.guidAzureB2C,
-        row.guidUserService,
-        row.hashedUserInfo,
-        row.deletionRequestDate,
-        row.overallStatus,
-        row.userService,
-        row.yService,
-    ])
+    const values = rows.map((row) => Object.values(row))
     const result = await sheets.spreadsheets.values.append({
         range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,

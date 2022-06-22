@@ -129,3 +129,17 @@ export class ObjMap<Key extends { [key: string]: string | number }, Value> {
         return this.map.size
     }
 }
+
+export function alphaToNum(value: string) {
+    let acc = 0
+    let power = value.length - 1
+    for (let i = 0; i < value.length; i++) {
+        // javascript interprets base 36 as 0-9a-z (case insensitive)
+        // we need to subtract 9 to convert it to a numerical value between 1 & 26
+        const numericalValue = parseInt(value[i], 36) - 9
+        if (numericalValue > 0) acc += numericalValue * 26 ** power
+        else acc += NaN
+        power--
+    }
+    return acc ? acc : NaN
+}
