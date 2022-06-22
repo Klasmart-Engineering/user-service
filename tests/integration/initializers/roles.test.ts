@@ -54,13 +54,13 @@ describe('RolesInitializer', () => {
             await RoleInitializer.run()
 
             const filePermissions = await permissionInfo()
-            const uniqueFilePermissions: Set<String> = new Set(
+            const uniqueFilePermissions: Set<string> = new Set(
                 filePermissions.keys()
             )
             expect(uniqueFilePermissions.size).to.be.equal(filePermissions.size)
 
             const latestPermissionMap = await latestPermissions()
-            const uniqueLatestPermissions: Set<String> = new Set(
+            const uniqueLatestPermissions: Set<string> = new Set(
                 latestPermissionMap.keys()
             )
             expect(uniqueLatestPermissions.size).to.be.equal(
