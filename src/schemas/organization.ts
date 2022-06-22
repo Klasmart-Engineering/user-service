@@ -535,7 +535,7 @@ export async function schoolsChildConnection(
         parent: {
             id: organization.id,
             filterKey: 'organizationId',
-            pivot: '"Organization"."organization_id"',
+            pivot: '"School"."organizationOrganizationId"',
         },
         primaryColumn: 'school_id',
     })

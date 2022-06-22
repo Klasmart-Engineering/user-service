@@ -96,20 +96,17 @@ export class DeleteClasses extends DeleteMutation<
     }
 
     protected async generateEntityMaps(): Promise<DeleteEntityMap<Class>> {
-        const mainEntity = await getMap.class(this.mainEntityIds, [
-            'organization',
-        ])
-        return { mainEntity }
+        return { mainEntity: await getMap.class(this.mainEntityIds) }
     }
 
     protected async authorize(
         _input: DeleteClassInput[],
         entityMaps: DeleteEntityMap<Class>
     ) {
-        const organizationIds = await Promise.all(
-            Array.from(entityMaps.mainEntity.values())
-                .map((c) => c.organization?.then((org) => org.organization_id))
-                .filter((o): o is Promise<string> => o !== undefined)
+        const organizationIds = uniqueAndTruthy(
+            Array.from(entityMaps.mainEntity.values()).map(
+                (c) => c.organization_id
+            )
         )
         await this.permissions.rejectIfNotAllowed(
             { organization_ids: organizationIds },
@@ -380,9 +377,9 @@ async function generateMapsForAddingRemovingPrograms(
     input: AddProgramsToClassInput[]
 ): Promise<EntityMapAddRemovePrograms> {
     const programIds = input.flatMap((i) => i.programIds)
-    const programs = getMap.program(programIds, ['organization'])
+    const programs = getMap.program(programIds)
 
-    const classes = await getMap.class(classIds, ['programs', 'organization'])
+    const classes = await getMap.class(classIds, ['programs'])
     const classPrograms = new Map<string, Program[]>()
     for (const class_ of classes.values()) {
         // eslint-disable-next-line no-await-in-loop
@@ -657,7 +654,6 @@ export class CreateClasses extends CreateMutation<
 
 export interface UpdateClassEntityMap extends EntityMap<Class> {
     mainEntity: Map<string, Class>
-    classOrgs: Map<string, Organization>
     existingOrgClassesWithMatchingNames: ObjMap<
         { className: string; orgId: string },
         Class
@@ -699,17 +695,7 @@ export class UpdateClasses extends UpdateMutation<
     async generateEntityMaps(
         inputs: UpdateClassInput[]
     ): Promise<UpdateClassEntityMap> {
-        const classMap = await getMap.class(
-            inputs.map((i) => i.classId),
-            ['organization']
-        )
-
-        const classOrgsMap = new Map<string, Organization>()
-        for (const cls of classMap.values()) {
-            // eslint-disable-next-line no-await-in-loop
-            const classOrg = await cls.organization
-            if (classOrg) classOrgsMap.set(cls.class_id, classOrg)
-        }
+        const classMap = await getMap.class(inputs.map((i) => i.classId))
 
         const inputClassNames = inputs
             .map((cls) => cls.className)
@@ -720,11 +706,9 @@ export class UpdateClasses extends UpdateMutation<
 
         const existingClassesWithMatchingNames = await Class.find({
             where: [{ class_name: In(inputClassNames) }],
-            relations: ['organization'],
         })
         const existingClassesWithMatchingShortcodes = await Class.find({
             where: [{ shortcode: In(inputClassShortcodes) }],
-            relations: ['organization'],
         })
 
         const matchingNamesMap = new ObjMap<
@@ -732,8 +716,7 @@ export class UpdateClasses extends UpdateMutation<
             Class
         >()
         for (const cls of existingClassesWithMatchingNames) {
-            // eslint-disable-next-line no-await-in-loop
-            const orgId = (await cls.organization)?.organization_id
+            const orgId = cls.organization_id
             const key = {
                 // Guaranteed to be populated given previous Class.find for classes with shortcodes
                 className: cls.class_name!,
@@ -747,8 +730,7 @@ export class UpdateClasses extends UpdateMutation<
             Class
         >()
         for (const cls of existingClassesWithMatchingShortcodes) {
-            // eslint-disable-next-line no-await-in-loop
-            const orgId = (await cls.organization)?.organization_id
+            const orgId = cls.organization_id
             const key = {
                 // Guaranteed to be populated given previous Class.find for classes with shortcodes
                 classShortcode: cls.shortcode!,
@@ -759,22 +741,20 @@ export class UpdateClasses extends UpdateMutation<
 
         return {
             mainEntity: classMap,
-            classOrgs: classOrgsMap,
             existingOrgClassesWithMatchingNames: matchingNamesMap,
             existingOrgClassesWithMatchingShortcodes: matchingShortcodesMap,
         }
     }
 
     async authorize(
-        inputs: UpdateClassInput[],
+        _inputs: UpdateClassInput[],
         entityMaps: UpdateClassEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(entityMaps.mainEntity.values(), (c) => c.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            {
-                organization_ids: Array.from(entityMaps.classOrgs.values()).map(
-                    (org) => org.organization_id
-                ),
-            },
+            { organization_ids: organizationIds },
             PermissionName.edit_class_20334
         )
     }
@@ -799,7 +779,7 @@ export class UpdateClasses extends UpdateMutation<
             validateNoDuplicateAttribute(
                 inputs.map((cls) => {
                     return {
-                        entityId: entityMaps.classOrgs.get(cls.classId)
+                        entityId: entityMaps.mainEntity.get(cls.classId)
                             ?.organization_id,
                         attributeValue: cls.className,
                     }
@@ -814,7 +794,7 @@ export class UpdateClasses extends UpdateMutation<
             validateNoDuplicateAttribute(
                 inputs.map((cls) => {
                     return {
-                        entityId: entityMaps.classOrgs.get(cls.classId)
+                        entityId: entityMaps.mainEntity.get(cls.classId)
                             ?.organization_id,
                         attributeValue: cls.shortcode,
                     }
@@ -836,7 +816,10 @@ export class UpdateClasses extends UpdateMutation<
         const errors: APIError[] = []
 
         // Check for non-existent class ID in input
-        const { errors: classErrors } = flagNonExistent(
+        const {
+            errors: classErrors,
+            values: [cls],
+        } = flagNonExistent(
             Class,
             index,
             [currentInput.classId],
@@ -848,16 +831,12 @@ export class UpdateClasses extends UpdateMutation<
             return errors
         }
 
-        // Determine org of class to prepare for name/shortcode validation
-        const currentClassOrgId = maps.classOrgs.get(currentInput.classId)
-            ?.organization_id
-
         // Check for classes with matching names, either in the same org, or among classes with no orgs
         if (currentInput.className) {
             const matchingOrgAndName = maps.existingOrgClassesWithMatchingNames.get(
                 {
                     className: currentInput.className,
-                    orgId: currentClassOrgId ? currentClassOrgId : '',
+                    orgId: cls.organization_id ?? '',
                 }
             )
 
@@ -865,7 +844,7 @@ export class UpdateClasses extends UpdateMutation<
                 matchingOrgAndName &&
                 matchingOrgAndName.class_id !== currentInput.classId
             ) {
-                if (currentClassOrgId) {
+                if (cls.organization_id) {
                     // For duplicate names of classes with the same org
                     errors.push(
                         createEntityAPIError(
@@ -874,7 +853,7 @@ export class UpdateClasses extends UpdateMutation<
                             'Class',
                             currentInput.className,
                             'Organization',
-                            currentClassOrgId,
+                            cls.organization_id,
                             ['organizationId', 'className']
                         )
                     )
@@ -905,7 +884,7 @@ export class UpdateClasses extends UpdateMutation<
             const matchingOrgAndShortcode = maps.existingOrgClassesWithMatchingShortcodes.get(
                 {
                     classShortcode: currentInput.shortcode,
-                    orgId: currentClassOrgId ? currentClassOrgId : '',
+                    orgId: cls.organization_id ?? '',
                 }
             )
 
@@ -913,7 +892,7 @@ export class UpdateClasses extends UpdateMutation<
                 matchingOrgAndShortcode &&
                 matchingOrgAndShortcode.class_id !== currentInput.classId
             ) {
-                if (currentClassOrgId) {
+                if (cls.organization_id) {
                     // For duplicate shortcodes of classes with the same org
                     errors.push(
                         createEntityAPIError(
@@ -922,7 +901,7 @@ export class UpdateClasses extends UpdateMutation<
                             'Class',
                             currentInput.shortcode,
                             'Organization',
-                            currentClassOrgId,
+                            cls.organization_id,
                             ['organizationId', 'shortcode']
                         )
                     )
@@ -972,7 +951,6 @@ export interface AddStudentsClassesEntityMap extends EntityMap<Class> {
     mainEntity: Map<string, Class>
     students: Map<string, User>
     classesStudents: Map<string, User[]>
-    organizationIds: string[]
     studentsMemberships: OrganizationMembershipMap
 }
 
@@ -999,14 +977,11 @@ export class AddStudentsToClasses extends AddMutation<
         input: AddStudentsToClassInput[]
     ): Promise<AddStudentsClassesEntityMap> => {
         const classIds = input.map((i) => i.classId)
-        const classMap = getMap.class(classIds, ['organization', 'students'])
-        const organizationIds = await Promise.all(
-            Array.from((await classMap).values()).map(
-                async (c) => (await c.organization!).organization_id
-            )
-        )
+        const classMap = getMap.class(classIds, ['students'])
+
         const studentIds = input.flatMap((i) => i.studentIds)
         const studentMap = getMap.user(studentIds, ['memberships'])
+
         const studentsMemberships: OrganizationMembershipMap = new ObjMap<
             { organizationId: string; userId: string },
             OrganizationMembership
@@ -1023,6 +998,7 @@ export class AddStudentsToClasses extends AddMutation<
                 )
             }
         }
+
         const classesStudents = new Map<string, User[]>()
         for (const class_ of (await classMap).values()) {
             // eslint-disable-next-line no-await-in-loop
@@ -1035,16 +1011,18 @@ export class AddStudentsToClasses extends AddMutation<
             students: await studentMap,
             classesStudents,
             studentsMemberships,
-            organizationIds,
         }
     }
 
     async authorize(
-        input: AddStudentsToClassInput[],
+        _input: AddStudentsToClassInput[],
         maps: AddStudentsClassesEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((c) => c.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: maps.organizationIds },
+            { organization_ids: organizationIds },
             PermissionName.add_students_to_class_20225
         )
     }
@@ -1109,8 +1087,7 @@ export class AddStudentsToClasses extends AddMutation<
         errors.push(...alreadyAddedErrors)
 
         if (currentEntity) {
-            const classOrgId = (currentEntity as ClassAndOrg).__organization__
-                ?.organization_id as string
+            const classOrgId = currentEntity.organization_id!
 
             const dbMemberships = flagNonExistentOrganizationMembership(
                 index,
@@ -1155,7 +1132,6 @@ export interface RemoveStudentsClassesEntityMap extends EntityMap<Class> {
     mainEntity: Map<string, Class>
     students: Map<string, User>
     classesStudents: Map<string, User[]>
-    organizationIds: string[]
     schoolIds: string[]
 }
 
@@ -1182,24 +1158,17 @@ export class RemoveStudentsFromClasses extends RemoveMutation<
         input: RemoveStudentsFromClassInput[]
     ): Promise<RemoveStudentsClassesEntityMap> => {
         const classIds = input.map((i) => i.classId)
-        const classMap = getMap.class(classIds, [
-            'organization',
-            'students',
-            'schools',
-        ])
-        const organizationIds = await Promise.all(
-            Array.from((await classMap).values()).map(
-                async (c) => (await c.organization!).organization_id
-            )
-        )
+        const classMap = getMap.class(classIds, ['students', 'schools'])
         const studentIds = input.flatMap((i) => i.studentIds)
         const studentMap = getMap.user(studentIds, ['memberships'])
+
         const classesStudents = new Map<string, User[]>()
         const schoolIds: Set<string> = new Set()
         for (const class_ of (await classMap).values()) {
             // eslint-disable-next-line no-await-in-loop
             const students = (await class_.students) || []
             classesStudents.set(class_.class_id, students)
+            // eslint-disable-next-line no-await-in-loop
             const schools = await class_.schools
             if (schools) {
                 for (const school of schools) {
@@ -1212,17 +1181,19 @@ export class RemoveStudentsFromClasses extends RemoveMutation<
             mainEntity: await classMap,
             students: await studentMap,
             classesStudents,
-            organizationIds,
             schoolIds: Array.from(schoolIds),
         }
     }
 
     async authorize(
-        input: RemoveStudentsFromClassInput[],
+        _input: RemoveStudentsFromClassInput[],
         maps: RemoveStudentsClassesEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((c) => c.organization_id)
+        )
         const permissionContext = {
-            organization_ids: maps.organizationIds,
+            organization_ids: organizationIds,
             school_ids: maps.schoolIds,
         }
         return this.permissions.rejectIfNotAllowed(
@@ -1326,7 +1297,6 @@ export interface AddTeachersClassesEntityMap extends EntityMap<Class> {
     teachers: Map<string, User>
     teachersMemberships: OrganizationMembershipMap
     classesTeachers: Map<string, User[]>
-    organizationIds: string[]
 }
 
 export class AddTeachersToClasses extends AddMutation<
@@ -1352,14 +1322,10 @@ export class AddTeachersToClasses extends AddMutation<
         input: AddTeachersToClassInput[]
     ): Promise<AddTeachersClassesEntityMap> => {
         const classIds = input.map((i) => i.classId)
-        const classMap = getMap.class(classIds, ['organization', 'teachers'])
-        const organizationIds = await Promise.all(
-            Array.from((await classMap).values()).map(
-                async (c) => (await c.organization!).organization_id
-            )
-        )
+        const classMap = getMap.class(classIds, ['teachers'])
         const teacherIds = input.flatMap((i) => i.teacherIds)
         const teacherMap = getMap.user(teacherIds, ['memberships'])
+
         const teachersMemberships: OrganizationMembershipMap = new ObjMap<
             { organizationId: string; userId: string },
             OrganizationMembership
@@ -1376,6 +1342,7 @@ export class AddTeachersToClasses extends AddMutation<
                 )
             }
         }
+
         const classesTeachers = new Map<string, User[]>()
         for (const class_ of (await classMap).values()) {
             // eslint-disable-next-line no-await-in-loop
@@ -1388,16 +1355,18 @@ export class AddTeachersToClasses extends AddMutation<
             teachers: await teacherMap,
             classesTeachers,
             teachersMemberships,
-            organizationIds,
         }
     }
 
     async authorize(
-        input: AddTeachersToClassInput[],
+        _input: AddTeachersToClassInput[],
         maps: AddTeachersClassesEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((c) => c.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: maps.organizationIds },
+            { organization_ids: organizationIds },
             PermissionName.add_teachers_to_class_20226
         )
     }
@@ -1461,8 +1430,7 @@ export class AddTeachersToClasses extends AddMutation<
         errors.push(...alreadyAddedErrors)
 
         if (currentEntity) {
-            const classOrgId = (currentEntity as ClassAndOrg).__organization__
-                ?.organization_id as string
+            const classOrgId = currentEntity.organization_id!
 
             const dbMemberships = flagNonExistentOrganizationMembership(
                 index,
@@ -1507,7 +1475,6 @@ export interface RemoveTeachersClassesEntityMap extends EntityMap<Class> {
     mainEntity: Map<string, Class>
     teachers: Map<string, User>
     classesTeachers: Map<string, User[]>
-    organizationIds: string[]
     schoolIds: string[]
 }
 
@@ -1534,24 +1501,17 @@ export class RemoveTeachersFromClasses extends RemoveMutation<
         input: RemoveTeachersFromClassInput[]
     ): Promise<RemoveTeachersClassesEntityMap> => {
         const classIds = input.map((i) => i.classId)
-        const classMap = getMap.class(classIds, [
-            'organization',
-            'teachers',
-            'schools',
-        ])
-        const organizationIds = await Promise.all(
-            Array.from((await classMap).values()).map(
-                async (c) => (await c.organization!).organization_id
-            )
-        )
+        const classMap = getMap.class(classIds, ['teachers', 'schools'])
         const teacherIds = input.flatMap((i) => i.teacherIds)
         const teacherMap = getMap.user(teacherIds, ['memberships'])
+
         const classesTeachers = new Map<string, User[]>()
         const schoolIds: Set<string> = new Set()
         for (const class_ of (await classMap).values()) {
             // eslint-disable-next-line no-await-in-loop
             const teachers = (await class_.teachers) || []
             classesTeachers.set(class_.class_id, teachers)
+            // eslint-disable-next-line no-await-in-loop
             const schools = await class_.schools
             if (schools) {
                 for (const school of schools) {
@@ -1564,17 +1524,19 @@ export class RemoveTeachersFromClasses extends RemoveMutation<
             mainEntity: await classMap,
             teachers: await teacherMap,
             classesTeachers,
-            organizationIds,
             schoolIds: Array.from(schoolIds),
         }
     }
 
     async authorize(
-        input: RemoveTeachersFromClassInput[],
+        _input: RemoveTeachersFromClassInput[],
         maps: RemoveTeachersClassesEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((c) => c.organization_id)
+        )
         const permissionContext = {
-            organization_ids: maps.organizationIds,
+            organization_ids: organizationIds,
             school_ids: maps.schoolIds,
         }
         return this.permissions.rejectIfNotAllowed(
@@ -1671,10 +1633,6 @@ export class RemoveTeachersFromClasses extends RemoveMutation<
     protected buildOutput = async (currentEntity: Class): Promise<void> => {
         this.output.classes.push(mapClassToClassConnectionNode(currentEntity))
     }
-}
-
-type ClassAndOrg = Class & {
-    __organization__?: Organization
 }
 
 export interface SetAcademicTermEntityMap extends EntityMap<Class> {
@@ -2518,7 +2476,6 @@ export interface RemoveSubjectsClassesEntityMap extends EntityMap<Class> {
     mainEntity: Map<string, Class>
     subjects: Map<string, Subject>
     classesSubjects: Map<string, Subject[]>
-    organizationIds: string[]
     schoolIds: string[]
 }
 
@@ -2545,18 +2502,10 @@ export class RemoveSubjectsFromClasses extends RemoveMutation<
         input: RemoveSubjectsFromClassInput[]
     ): Promise<RemoveSubjectsClassesEntityMap> => {
         const classIds = input.map((i) => i.classId)
-        const classMap = await getMap.class(classIds, [
-            'organization',
-            'subjects',
-            'schools',
-        ])
-        const organizationIds = await Promise.all(
-            Array.from(classMap.values()).map(
-                async (c) => (await c.organization!).organization_id
-            )
-        )
+        const classMap = await getMap.class(classIds, ['subjects', 'schools'])
         const subjectIds = input.flatMap((i) => i.subjectIds)
         const subjectMap = getMap.subject(subjectIds)
+
         const classesSubjects = new Map<string, Subject[]>()
         const schoolIds: Set<string> = new Set()
         for (const class_ of classMap.values()) {
@@ -2574,17 +2523,19 @@ export class RemoveSubjectsFromClasses extends RemoveMutation<
             mainEntity: classMap,
             subjects: await subjectMap,
             classesSubjects,
-            organizationIds,
             schoolIds: Array.from(schoolIds),
         }
     }
 
     async authorize(
-        input: RemoveSubjectsFromClassInput[],
+        _input: RemoveSubjectsFromClassInput[],
         maps: RemoveSubjectsClassesEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((c) => c.organization_id)
+        )
         const permissionContext = {
-            organization_ids: maps.organizationIds,
+            organization_ids: organizationIds,
             school_ids: maps.schoolIds,
         }
         return this.permissions.rejectIfNotAllowed(
@@ -2690,7 +2641,6 @@ export interface AddSubjectsClassesEntityMap extends EntityMap<Class> {
     mainEntity: Map<string, Class>
     subjects: Map<string, Subject>
     classesSubjects: Map<string, Subject[]>
-    organizationIds: string[]
     subjectsOrgs: Map<string, string>
 }
 
@@ -2716,47 +2666,41 @@ export class AddSubjectsToClasses extends AddMutation<
     generateEntityMaps = async (
         input: AddSubjectsToClassInput[]
     ): Promise<AddSubjectsClassesEntityMap> => {
-        const classMap = await getMap.class(this.mainEntityIds, [
-            'organization',
-            'subjects',
-        ])
+        const classMap = await getMap.class(this.mainEntityIds, ['subjects'])
         const subjectIds = input.flatMap((i) => i.subjectIds)
-        const subjectsMap = await getMap.subject(subjectIds, ['organization'])
+        const subjectsMap = await getMap.subject(subjectIds)
         const subjectsOrgs = new Map<string, string>()
         for (const subject of subjectsMap.values()) {
-            // eslint-disable-next-line no-await-in-loop
-            const subjectOrgId = (await subject.organization)?.organization_id
+            const subjectOrgId = subject.organization_id
             if (subjectOrgId) {
                 subjectsOrgs.set(subject.id, subjectOrgId)
             }
         }
 
-        const organizationIds: string[] = []
         const classesSubjects = new Map<string, Subject[]>()
         for (const class_ of classMap.values()) {
             // eslint-disable-next-line no-await-in-loop
             const subjects = (await class_.subjects) || []
             classesSubjects.set(class_.class_id, subjects)
-            if (class_.organization_id) {
-                organizationIds.push(class_.organization_id)
-            }
         }
 
         return {
             mainEntity: classMap,
             subjects: subjectsMap,
             classesSubjects,
-            organizationIds,
             subjectsOrgs,
         }
     }
 
     async authorize(
-        input: AddSubjectsToClassInput[],
+        _input: AddSubjectsToClassInput[],
         maps: AddSubjectsClassesEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((c) => c.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: maps.organizationIds },
+            { organization_ids: organizationIds },
             PermissionName.edit_class_20334
         )
     }

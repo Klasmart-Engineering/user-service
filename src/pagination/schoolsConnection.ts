@@ -1,6 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { SelectQueryBuilder } from 'typeorm'
-import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
@@ -60,10 +59,6 @@ export async function schoolConnectionQuery(
     scope: SelectQueryBuilder<School>,
     filter?: IEntityFilter
 ) {
-    // Required for building SchoolConnectionNode
-    // TODO remove once School.organization_id FK is exposed on the Entity
-    scope.innerJoin('School.organization', 'Organization')
-
     if (filter) {
         if (
             filterHasProperty('userId', filter) &&
@@ -112,20 +107,20 @@ async function mapSchoolEdgeToSchoolConnectionEdge(
     edge: IEdge<School>
 ): Promise<IEdge<ISchoolsConnectionNode>> {
     return {
-        node: await mapSchoolToSchoolConnectionNode(edge.node),
+        node: mapSchoolToSchoolConnectionNode(edge.node),
         cursor: edge.cursor,
     }
 }
 
-export async function mapSchoolToSchoolConnectionNode(
+export function mapSchoolToSchoolConnectionNode(
     school: School
-): Promise<ISchoolsConnectionNode> {
+): ISchoolsConnectionNode {
     return {
         id: school.school_id,
         name: school.school_name,
         status: school.status,
         shortCode: school.shortcode,
-        organizationId: (await school.organization)?.organization_id || '',
+        organizationId: school.organization_id || '',
     }
 }
 
@@ -136,7 +131,5 @@ export const schoolConnectionNodeFields = [
         'shortcode',
         'status',
     ] as (keyof School)[]).map((field) => `School.${field}`),
-    ...(['organization_id'] as (keyof Organization)[]).map(
-        (field) => `Organization.${field}`
-    ),
+    'School.organizationOrganizationId AS "School_organizationOrganizationId"', // will appear as 'organization_id' in object
 ]

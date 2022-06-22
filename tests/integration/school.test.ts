@@ -56,6 +56,7 @@ import {
     RemoveProgramsFromSchoolInput,
     AddUsersToSchoolInput,
     RemoveClassesFromSchoolInput,
+    ReactivateUsersFromSchoolInput,
 } from '../../src/types/graphQL/school'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { mutate } from '../../src/utils/resolvers/commonStructure'
@@ -2432,17 +2433,14 @@ describe('school', () => {
         return { user, organization, membership }
     }
 
-    describe('ReactivateUsersFromOrganizations', () => {
+    describe('ReactivateUsersFromSchools', () => {
         const makeMutation = (
-            input: {
-                schoolId: string
-                userIds: string[]
-            }[],
-            user: User
+            input: ReactivateUsersFromSchoolInput[],
+            authUser: User
         ) => {
             return new ReactivateUsersFromSchools(
                 input,
-                new UserPermissions(userToPayload(user))
+                new UserPermissions(userToPayload(authUser))
             )
         }
 
@@ -2451,8 +2449,10 @@ describe('school', () => {
                 const { user } = await makeMembership()
                 const mutation = makeMutation([], user)
                 const entityMap = {
-                    orgIds: [uuid_v4()],
-                }
+                    mainEntity: new Map([
+                        [uuid_v4(), { organization_id: uuid_v4() }],
+                    ]),
+                } as ChangeSchoolMembershipStatusEntityMap
                 await expect(
                     mutation.authorize([], entityMap)
                 ).to.eventually.rejectedWith(/reactivate_my_school_user_40886/)
@@ -2463,8 +2463,13 @@ describe('school', () => {
                     PermissionName.reactivate_my_school_user_40886,
                 ])
                 const entityMap = {
-                    orgIds: [organization.organization_id],
-                }
+                    mainEntity: new Map([
+                        [
+                            uuid_v4(),
+                            { organization_id: organization.organization_id },
+                        ],
+                    ]),
+                } as ChangeSchoolMembershipStatusEntityMap
                 const mutation = makeMutation([], user)
                 await expect(mutation.authorize([], entityMap)).to.eventually
                     .fulfilled
@@ -2504,8 +2509,10 @@ describe('school', () => {
             it('rejects when user does not have delete_my_school_users_40441', async () => {
                 const { user } = await makeMembership()
                 const entityMap = {
-                    orgIds: [uuid_v4()],
-                }
+                    mainEntity: new Map([
+                        [uuid_v4(), { organization_id: uuid_v4() }],
+                    ]),
+                } as ChangeSchoolMembershipStatusEntityMap
                 const mutation = makeMutation([], user)
                 await expect(
                     mutation.authorize([], entityMap)
@@ -2518,8 +2525,13 @@ describe('school', () => {
                 ])
                 const mutation = makeMutation([], user)
                 const entityMap = {
-                    orgIds: [organization.organization_id],
-                }
+                    mainEntity: new Map([
+                        [
+                            uuid_v4(),
+                            { organization_id: organization.organization_id },
+                        ],
+                    ]),
+                } as ChangeSchoolMembershipStatusEntityMap
                 await expect(mutation.authorize([], entityMap)).to.eventually
                     .fulfilled
             })
@@ -2564,8 +2576,10 @@ describe('school', () => {
             it('rejects when user does not have deactivate_my_school_user_40885', async () => {
                 const { user } = await makeMembership()
                 const entityMap = {
-                    orgIds: [uuid_v4()],
-                }
+                    mainEntity: new Map([
+                        [uuid_v4(), { organization_id: uuid_v4() }],
+                    ]),
+                } as ChangeSchoolMembershipStatusEntityMap
                 const mutation = makeMutation([], user)
                 await expect(
                     mutation.authorize([], entityMap)
@@ -2577,8 +2591,13 @@ describe('school', () => {
                     PermissionName.deactivate_my_school_user_40885,
                 ])
                 const entityMap = {
-                    orgIds: [organization.organization_id],
-                }
+                    mainEntity: new Map([
+                        [
+                            uuid_v4(),
+                            { organization_id: organization.organization_id },
+                        ],
+                    ]),
+                } as ChangeSchoolMembershipStatusEntityMap
                 const mutation = makeMutation([], user)
                 await expect(mutation.authorize([], entityMap)).to.eventually
                     .fulfilled
