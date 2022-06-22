@@ -2,16 +2,16 @@ import { google } from 'googleapis'
 import { Lazy } from '../utils/lazyLoading'
 
 export default {
-    getRowCount,
-    findRowByColumn,
+    deleteRows,
+    getAll,
+    getHeaders,
+    getRange,
     push,
-    readLastRow,
-    readRow,
-    readRows,
 }
 
-const accountDeletionRequestColumns = {
-    guidAzureB2c: 'A',
+// TABLE-SPECIFIC CONSTANTS
+export const accountDeletionRequestColumns = {
+    guidAzureB2C: 'A',
     guidUserService: 'B',
     hashedUserInfo: 'C',
     deletionRequestDate: 'D',
@@ -19,72 +19,114 @@ const accountDeletionRequestColumns = {
     userService: 'F',
     yService: 'G',
 }
-
 const sheetNumber = '1'
 const firstColumn = Object.values(accountDeletionRequestColumns)[0]
 const lastColumn = Object.values(accountDeletionRequestColumns).slice(-1)[0]
 
-type NewAccountDeletionRequestRow = {
+// TYPE DEFINITIONS
+export type AccountDeletionRequestRow = {
     [T in keyof typeof accountDeletionRequestColumns]: string
 }
 
-type AccountDeletionRequestRow = {
-    rowNumber: number
-} & NewAccountDeletionRequestRow
-
-const authenticate = new Lazy(async () => {
-    const scopes = ['https://www.googleapis.com/auth/spreadsheets']
-    const auth = await google.auth.getClient({ scopes })
-    return google.sheets({ version: 'v4', auth })
-})
+type Range = {
+    startRow: number
+    endRow: number
+    startColumn: string
+    endColumn: string
+}
 
 // METHODS
-async function getRowCount() {
+async function deleteRows(deleteRange: Pick<Range, 'startRow' | 'endRow'>) {
+    const sheets = await authenticate.instance
+    await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
+        requestBody: {
+            includeSpreadsheetInResponse: true,
+            requests: [
+                {
+                    deleteRange: {
+                        range: {
+                            sheetId: 0, // gid for default Sheet1
+                            startRowIndex: deleteRange.startRow - 1, // index is 0-based but row number is 1-based
+                            endRowIndex: deleteRange.endRow, // exclusive, so -1 not needed
+                        },
+                        shiftDimension: 'ROWS',
+                    },
+                },
+            ],
+        },
+    })
+}
+
+async function getAll(fetchRange: Range): Promise<AccountDeletionRequestRow[]> {
+    const { startRow, endRow, startColumn, endColumn } = fetchRange
+
+    // Fetch all values in the table, excluding header row
+    const sheets = await authenticate.instance
+    const range = `Sheet${sheetNumber}!${startColumn}${startRow}:${endColumn}${endRow}`
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
+        range,
+    })
+
+    // Parse values into objects
+    const rows: AccountDeletionRequestRow[] = []
+    if (!response.data.values) {
+        throw new Error('Failed to retrieve data in that range')
+    }
+    for (const values of response.data.values) {
+        rows.push({
+            guidAzureB2C: values[0],
+            guidUserService: values[1],
+            hashedUserInfo: values[2],
+            deletionRequestDate: values[3],
+            overallStatus: values[4],
+            userService: values[5],
+            yService: values[6],
+        })
+    }
+    return rows
+}
+
+async function getHeaders(
+    tableRange: Pick<Range, 'startRow' | 'startColumn' | 'endColumn'>
+): Promise<string[]> {
+    const { startRow, startColumn, endColumn } = tableRange
+
+    const sheets = await authenticate.instance
+    const range = `Sheet${sheetNumber}!${startColumn}${startRow}:${endColumn}${startRow}`
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
+        range,
+    })
+
+    if (!response.data.values) {
+        throw new Error('Failed to retrieve table headers')
+    }
+    return response.data.values[0]
+}
+
+async function getRange(): Promise<Range> {
     const sheets = await authenticate.instance
 
     // appending empty row as this will find the last row for us
     // using '.get' instead would mean returning an entire row
     const response = await sheets.spreadsheets.values.append({
-        range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
+        range: `Sheet${sheetNumber}`,
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [] },
     })
 
-    // pattern matching the returned table range to find the last row in the table (includes header row)
-    const pattern = /^.*![A-Z]+\d+:[A-Z]+(\d+)$/
-    const numString = response.data.tableRange?.match(pattern)?.[1]
-    return numString ? parseInt(numString) : undefined
+    const tableRange = response.data.tableRange
+    if (!tableRange) throw new Error('Failed to retrieve table range')
+    return parseRange(tableRange)
 }
 
-async function findRowByColumn<
-    Column extends keyof NewAccountDeletionRequestRow
->(searchValue: AccountDeletionRequestRow[Column], columnName: Column) {
-    const sheets = await authenticate.instance
-    const rowCount = await getRowCount()
-    if (!rowCount) return undefined
-
-    // retrieve all values in the column
-    const searchColumn = accountDeletionRequestColumns[columnName]
-    const response = await sheets.spreadsheets.values.get({
-        range: `Sheet${sheetNumber}!${searchColumn}2:${searchColumn}${rowCount}`,
-        spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
-    })
-
-    // get list of row numbers which match the search value
-    const rowMatches: number[] = []
-    response.data.values?.reduce((acc, val, idx) => {
-        if (val[0] === searchValue) acc.push(idx + 1)
-        return acc
-    }, rowMatches)
-
-    return readRows(...rowMatches)
-}
-
-async function push(...rows: NewAccountDeletionRequestRow[]) {
+async function push(...rows: AccountDeletionRequestRow[]): Promise<Range> {
     const sheets = await authenticate.instance
     const values = rows.map((row) => [
-        row.guidAzureB2c,
+        row.guidAzureB2C,
         row.guidUserService,
         row.hashedUserInfo,
         row.deletionRequestDate,
@@ -98,49 +140,28 @@ async function push(...rows: NewAccountDeletionRequestRow[]) {
         valueInputOption: 'USER_ENTERED',
         requestBody: { values },
     })
-    return result.data.updates
-}
-
-async function readLastRow(): Promise<AccountDeletionRequestRow | undefined> {
-    const rowNumber = await getRowCount()
-    if (!rowNumber) return undefined
-    return readRow(rowNumber)
-}
-
-async function readRow(rowNumber: number) {
-    return (await readRows(rowNumber))?.[0]
-}
-
-async function readRows(
-    ...rowNumbers: number[]
-): Promise<AccountDeletionRequestRow[] | undefined> {
-    const sheets = await authenticate.instance
-
-    // retrieve a row for each row number entered
-    const ranges = rowNumbers.map(
-        (rowNumber: number) =>
-            `Sheet${sheetNumber}!${firstColumn}${rowNumber}:${lastColumn}${rowNumber}`
-    )
-    const response = await sheets.spreadsheets.values.batchGet({
-        spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
-        ranges,
-    })
-
-    const rows: AccountDeletionRequestRow[] = []
-    if (!response.data.valueRanges) return undefined
-    for (const [idx, valueRange] of response.data.valueRanges.entries()) {
-        const values = valueRange.values?.[0]
-        if (!values) continue
-        rows.push({
-            rowNumber: rowNumbers[idx],
-            guidAzureB2c: values[0],
-            guidUserService: values[1],
-            hashedUserInfo: values[2],
-            deletionRequestDate: values[3],
-            overallStatus: values[4],
-            userService: values[5],
-            yService: values[6],
-        })
+    if (!result.data.updates?.updatedRange) {
+        throw new Error('Failed to append row to table')
     }
-    return rows
+    return parseRange(result.data.updates.updatedRange)
+}
+
+// UTILS
+const authenticate = new Lazy(async () => {
+    const scopes = ['https://www.googleapis.com/auth/spreadsheets']
+    const auth = await google.auth.getClient({ scopes })
+    return google.sheets({ version: 'v4', auth })
+})
+
+export function parseRange(tableRange: string): Range {
+    const pattern = /^.*!([A-Z]+)(\d+):([A-Z]+)(\d+)$/
+    const matchArray = tableRange.match(pattern)
+    if (!matchArray || matchArray.length < 5) {
+        throw new Error('Failed to parse table range')
+    }
+    const startRow = parseInt(matchArray[2])
+    const endRow = parseInt(matchArray[4])
+    const startColumn = matchArray[1]
+    const endColumn = matchArray[3]
+    return { startColumn, endColumn, startRow, endRow }
 }
