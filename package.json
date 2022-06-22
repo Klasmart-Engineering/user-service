@@ -138,7 +138,7 @@
     "jstransformer-highlight": "^2.0.0",
     "jstransformer-markdown-it": "^2.1.0",
     "lodash": "4.17.21",
-    "newrelic": "8.4.0",
+    "newrelic": "8.14.1",
     "passport": "0.5.0",
     "passport-azure-ad": "4.3.1",
     "pg": "8.7.1",
