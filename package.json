@@ -27,7 +27,7 @@
     "test:acceptance": "DATABASE_URL=postgres://postgres:kidsloop@localhost/postgres1 LOG_LEVEL=info mocha --require ts-node/register --file tests/acceptance/hooks.ts \"tests/acceptance/**/*.test.ts\" --timeout 8000",
     "test:migrations": "NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register \"tests/migrations/**/*.test.ts\" --timeout 8000",
     "test:benchmarks": "docker restart postgres && NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register --file tests/integration/hooks.ts \"tests/benchmarks/**/*.test.ts\" --timeout 60000",
-    "test:services": "NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register \"tests/services/**/*.test.ts\" --timeout 8000",
+    "test:upstreamServices": "NODE_ENV=development LOG_LEVEL=info mocha --require ts-node/register \"tests/upstreamServices/**/*.test.ts\" --timeout 8000",
     "test": "npm run test:unit && npm run test:integration && npm run test:migrations",
     "coverage:unit": "nyc --all --require ts-node/register -n src --reporter=lcov --reporter=json-summary --reporter=text-summary --report-dir ./coverage_unit npm run test:unit",
     "coverage:migrations": "nyc --all --require ts-node/register -n migrations --reporter=lcov --reporter=json-summary --reporter=text-summary --report-dir ./coverage_migrations npm run test:migrations",
