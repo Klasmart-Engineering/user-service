@@ -1,12 +1,13 @@
 # User Service
 
-Welcome to the user service API documentation. 
+Welcome to the user service API documentation.
 
 [Source code](https://github.com/KL-Engineering/user-service)
 |
 [Slack Channel](https://app.slack.com/client/T02SSP0AM/C02LP6QAQGZ)
 
 ## Table of Contents
+
 1. [Getting Started](#getting_started)
 2. [Best Practices](#best_practices)
 3. [Usage Guide](#usage_guide)
@@ -15,4 +16,4 @@ Welcome to the user service API documentation.
 6. [Permissions](#permissions)
 7. [API deprecation](#deprecation)
 8. [Architecture](#architecture)
-
+9. [Well Known Clients](#well_known_clients)
