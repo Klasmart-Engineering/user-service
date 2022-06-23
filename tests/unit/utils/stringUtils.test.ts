@@ -4,7 +4,6 @@ import {
     isHexadecimalColor,
     objectToKey,
     ObjMap,
-    alphaToNum,
 } from '../../../src/utils/stringUtils'
 
 describe('stringInject', () => {
@@ -302,21 +301,5 @@ describe('objMap', () => {
         objMap.set(entries[0].key, entries[0].value)
         objMap.set(entries[1].key, entries[1].value)
         testObjMap(objMap, [entries[1].key], [entries[1].value], 1)
-    })
-})
-
-describe('alphaToNum', () => {
-    it('ignores letter casing', () => {
-        expect(alphaToNum('LMAO')).to.equal(alphaToNum('lmao'))
-    })
-    it('converts a character to the correct numerical value', () => {
-        expect(alphaToNum('Z')).to.equal(26)
-    })
-    it('converts a multi-letter string to the correct numerical value', () => {
-        expect(alphaToNum('EAJ')).to.equal(3416)
-    })
-    it('returns NaN for non-letters', () => {
-        expect(isNaN(alphaToNum('58'))).to.be.true
-        expect(isNaN(alphaToNum('AA%'))).to.be.true
     })
 })

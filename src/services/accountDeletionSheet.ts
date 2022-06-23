@@ -1,7 +1,7 @@
 import { google } from 'googleapis'
 import { Lazy } from '../utils/lazyLoading'
 import { reportError } from '../utils/resolvers/errors'
-import { alphaToNum, objectToKey } from '../utils/stringUtils'
+import { objectToKey } from '../utils/stringUtils'
 
 export default {
     deleteRows,
@@ -11,24 +11,24 @@ export default {
     push,
 }
 
-// TABLE-SPECIFIC CONSTANTS
-export const accountDeletionRequestColumns = {
-    guidAzureB2C: 'A',
-    guidUserService: 'B',
-    hashedUserInfo: 'C',
-    deletionRequestDate: 'D',
-    overallStatus: 'E',
-    userService: 'F',
-    yService: 'G',
-}
+// TABLE FORMATTING
+export const tableHeaders = <const>[
+    'guidAzureB2C',
+    'guidUserService',
+    'hashedUserInfo',
+    'deletionRequestDate',
+    'overallStatus',
+    'userService',
+    'yService',
+]
 const sheetNumber = '1'
-const firstColumn = Object.values(accountDeletionRequestColumns)[0]
-const lastColumn = Object.values(accountDeletionRequestColumns).slice(-1)[0]
+const firstColumn = 'A'
+const lastColumn = 'G'
 
 // TYPE DEFINITIONS
-export type AccountDeletionRequestRow = {
-    [T in keyof typeof accountDeletionRequestColumns]: string
-}
+type TableHeader = typeof tableHeaders[number]
+
+export type Row = { [T in TableHeader]: string }
 
 type Range = {
     startRow: number
@@ -60,11 +60,13 @@ async function deleteRows(deleteRange: Pick<Range, 'startRow' | 'endRow'>) {
     })
 }
 
-async function getAll(fetchRange: Range): Promise<AccountDeletionRequestRow[]> {
+async function getAll(
+    fetchRange: Pick<Range, 'startRow' | 'endRow'>
+): Promise<Row[]> {
     // Fetch all values in the range
-    const { startRow, endRow, startColumn, endColumn } = fetchRange
+    const { startRow, endRow } = fetchRange
     const sheets = await authenticate.instance
-    const range = `Sheet${sheetNumber}!${startColumn}${startRow}:${endColumn}${endRow}`
+    const range = `Sheet${sheetNumber}!${firstColumn}${startRow}:${lastColumn}${endRow}`
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
         range,
@@ -74,26 +76,22 @@ async function getAll(fetchRange: Range): Promise<AccountDeletionRequestRow[]> {
     }
 
     // Parse values into objects
-    const rows: AccountDeletionRequestRow[] = []
+    const rows: Row[] = []
     for (const values of response.data.values) {
-        const row = {} as AccountDeletionRequestRow
-        Object.entries(accountDeletionRequestColumns).forEach(
-            ([key, columnName]) => {
-                row[key as keyof typeof accountDeletionRequestColumns] =
-                    values[alphaToNum(columnName) - 1]
-            }
-        )
+        const row = {} as Row
+        for (const [i, v] of values.entries()) {
+            row[tableHeaders[i]] = v
+        }
         rows.push(row)
     }
     return rows
 }
 
-async function getHeaders(
-    tableRange: Pick<Range, 'startRow' | 'startColumn' | 'endColumn'>
-): Promise<string[]> {
-    const { startRow, startColumn, endColumn } = tableRange
+async function getHeaders({
+    startRow: headerRow,
+}: Pick<Range, 'startRow'>): Promise<string[]> {
     const sheets = await authenticate.instance
-    const range = `Sheet${sheetNumber}!${startColumn}${startRow}:${endColumn}${startRow}`
+    const range = `Sheet${sheetNumber}!${firstColumn}${headerRow}:${lastColumn}${headerRow}`
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
         range,
@@ -121,9 +119,7 @@ async function getRange(): Promise<Range> {
     return parseRange(tableRange)
 }
 
-async function push(
-    ...rows: AccountDeletionRequestRow[]
-): Promise<Range | undefined> {
+async function push(...rows: Row[]): Promise<Range | undefined> {
     const sheets = await authenticate.instance
     const values = rows.map((row) => Object.values(row))
     let result = undefined
