@@ -98,6 +98,7 @@ import { reportError } from './utils/resolvers/errors'
 import { CSVError } from './types/csv/csvError'
 import { UserPermissions } from './permissions/userPermissions'
 import { QueryResultCache } from './utils/csv/csvUtils'
+import { deleteMe } from './utils/ms-graph-api/graph-sdk-client'
 
 // this is a wrapper around legacy functions for
 // processing a CSV row
@@ -1511,9 +1512,28 @@ export class Model {
         if (info.operation.operation !== 'mutation') {
             return false
         }
-        
-        console.log(context.token)
+        if (!context.token) {
+            return false
+        }
 
-        return true
+        const token = context.token
+        // This is just temporary until I get the real B2C oid value
+        const email = token!.email
+        const phone = token!.phone
+        const username = token!.user_name
+
+        console.log(token)
+
+        const primary = username ? username : email ? email : phone
+        // end of temporary block
+        if (primary) {
+            try {
+                await deleteMe(primary)
+                return true
+            } catch (e) {
+                return false
+            }
+        }
+        return false
     }
 }
