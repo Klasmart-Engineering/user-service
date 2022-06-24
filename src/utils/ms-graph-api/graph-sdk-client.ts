@@ -20,13 +20,11 @@ function createAuthenticatedClient(): Client {
 export async function deleteMe(id: string): Promise<any> {
     const client = createAuthenticatedClient()
     id = encodeURI(id)
-    const request = await client
+    await client
         .api('/users/' + id)
         .delete()
         .catch((error: Error) => {
             //console.log(error)
             throw error
         })
-
-    //console.log(request)
 }
