@@ -32,7 +32,7 @@ export class ClientCredentialAuthenticationProvider
         const response = await axios.post(url, qs.stringify(body))
 
         if (response.status == 200) {
-            console.log(response.data.access_token)
+    //        console.log(response.data.access_token)
             return response.data.access_token
         } else {
             throw new Error(

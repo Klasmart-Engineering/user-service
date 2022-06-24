@@ -1513,7 +1513,7 @@ export class Model {
             return false
         }
         if (!context.token) {
-            return false
+            throw new Error('No authorization token provided')
         }
 
         const token = context.token
@@ -1522,17 +1522,13 @@ export class Model {
         const phone = token!.phone
         const username = token!.user_name
 
-        console.log(token)
+        //console.log(token)
 
         const primary = username ? username : email ? email : phone
         // end of temporary block
         if (primary) {
-            try {
-                await deleteMe(primary)
-                return true
-            } catch (e) {
-                return false
-            }
+            await deleteMe(primary)
+            return true
         }
         return false
     }

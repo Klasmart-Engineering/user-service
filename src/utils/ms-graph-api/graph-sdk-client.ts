@@ -24,9 +24,9 @@ export async function deleteMe(id: string): Promise<any> {
         .api('/users/' + id)
         .delete()
         .catch((error: Error) => {
-            console.log(error)
+            //console.log(error)
             throw error
         })
 
-    console.log(request)
+    //console.log(request)
 }
