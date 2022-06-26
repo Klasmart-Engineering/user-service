@@ -94,6 +94,7 @@ describe('model', () => {
                 id: user.user_id,
                 email: user.email,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: 'abc_123',
             }
             const result = await model.getMyUser(token)
             expect(result?.user_id).to.deep.eq(user.user_id)
@@ -104,6 +105,7 @@ describe('model', () => {
                 id: user.user_id,
                 phone: user.phone,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: 'abc_123',
             }
             const result = await model.getMyUser(token)
             expect(result?.user_id).to.deep.eq(user.user_id)
@@ -142,6 +144,7 @@ describe('model', () => {
             const users = await model.myUsers({
                 email: clientUser.email,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: 'abc_123',
             })
             expect(users).to.have.length(numEmailProfiles)
         })
@@ -149,6 +152,7 @@ describe('model', () => {
             const users = await model.myUsers({
                 phone: clientUser.phone,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: 'abc_123',
             })
             expect(users).to.have.length(numPhoneProfiles)
         })
@@ -156,6 +160,7 @@ describe('model', () => {
             const users = await model.myUsers({
                 user_name: clientUser.username,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: 'abc_123',
             })
             expect(users).to.have.length(numUsernameProfiles)
         })
@@ -166,6 +171,7 @@ describe('model', () => {
                 email: clientUser.email,
                 phone: clientUser.phone,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: 'abc_123',
             })
             expect(users).to.have.length(numUsernameProfiles)
 
@@ -173,6 +179,7 @@ describe('model', () => {
                 email: clientUser.email,
                 phone: clientUser.phone,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: 'abc_123',
             })
             expect(users).to.have.length(numEmailProfiles)
         })
@@ -190,6 +197,7 @@ describe('model', () => {
                 model.myUsers({
                     user_name: clientUser.username,
                     iss: 'calmid-debug',
+                    azure_ad_b2c_id: 'abc_123',
                 })
             ).to.be.rejectedWith(Error, 'Username is not unique')
         })
@@ -197,6 +205,7 @@ describe('model', () => {
             const users = await model.myUsers({
                 id: clientUser.user_id,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: 'abc_123',
             })
             expect(users).to.have.length(0)
         })
@@ -219,6 +228,7 @@ describe('model', () => {
                 const users = await model.myUsers({
                     email: clientUser.email,
                     iss: 'calmid-debug',
+                    azure_ad_b2c_id: 'abc_123',
                 })
                 expect(users.length).to.equal(numEmailProfiles - 1)
             })
@@ -233,6 +243,7 @@ describe('model', () => {
                 const users = await model.myUsers({
                     email: clientUser.email,
                     iss: 'calmid-debug',
+                    azure_ad_b2c_id: 'abc_123',
                 })
                 expect(users.length).to.equal(numEmailProfiles - 1)
             })

@@ -69,7 +69,7 @@ export interface TokenPayload {
     email?: string
     phone?: string
     iss: string
-
+    azure_ad_b2c_id: string
     user_name?: string
 }
 
@@ -89,6 +89,12 @@ async function checkTokenAMS(req: Request): Promise<TokenPayload> {
     const issuerOptions = issuers.get(issuer)
     if (!issuerOptions) {
         throw new AuthenticationError('Unknown authentication token issuer')
+    }
+    const azureB2cUid = payload['azure_ad_b2c_id']
+    if (!azureB2cUid || typeof azureB2cUid !== 'string') {
+        throw new AuthenticationError(
+            'Malformed or missing Azure AD B2C ID in authentication token'
+        )
     }
     const { options, secretOrPublicKey } = issuerOptions
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,7 +120,6 @@ export async function checkToken(req: Request): Promise<TokenPayload> {
         tokenPayload = {
             ...rest,
             id: azureTokenPayload.sub,
-            iss: azureTokenPayload.iss,
             email: emails && emails?.length > 0 ? emails[0] : '',
         }
     } else {

@@ -768,6 +768,7 @@ export function userToPayload(user: User, username = false): any {
         given_name: user.given_name,
         family_name: user.family_name,
         iss: 'calmid-debug',
+        azure_ad_b2c_id: '123_abc',
     } as any
     if (username) {
         payload.user_name = user.username

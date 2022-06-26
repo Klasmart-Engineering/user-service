@@ -23,6 +23,7 @@ describe('Check Token', () => {
             family_name: 'Bob',
             name: 'Billy Bob',
             iss: 'calmid-debug',
+            azure_ad_b2c_id: 'i7JB-WOt9yywSIf0DB8AbzjHjPegrMYFrDA50_w4iyc',
         }
     })
 
@@ -54,6 +55,23 @@ describe('Check Token', () => {
             req.headers = { authorization: token }
             await expect(checkToken(req)).to.be.rejectedWith(
                 'Malformed authentication token issuer'
+            )
+        })
+        it('Azure AD B2C ID has wrong type in token', async () => {
+            payload['azure_ad_b2c_id'] = 1
+
+            const token = generateToken(payload)
+            req.headers = { authorization: token }
+            await expect(checkToken(req)).to.be.rejectedWith(
+                'Malformed or missing Azure AD B2C ID in authentication token'
+            )
+        })
+        it('missing Azure AD B2C ID in token', async () => {
+            delete payload['azure_ad_b2c_id']
+            const token = generateToken(payload)
+            req.headers = { authorization: token }
+            await expect(checkToken(req)).to.be.rejectedWith(
+                'Malformed or missing Azure AD B2C ID in authentication token'
             )
         })
         it('unknown token issuer', async () => {

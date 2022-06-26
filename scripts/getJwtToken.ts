@@ -19,6 +19,7 @@ async function getAdminUserToken() {
         id: user.user_id,
         email: user.email,
         iss: 'calmid-debug',
+        azure_ad_b2c_id: '123_abc',
     }
 
     const token = generateToken(tokenInfo, undefined)

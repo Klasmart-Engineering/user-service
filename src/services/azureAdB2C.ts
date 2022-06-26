@@ -11,6 +11,7 @@ interface AzureB2CTokenPayload extends ITokenPayload {
     emails?: string[]
     sub: string
     iss: string
+    azure_ad_b2c_id: string
 }
 
 const credentials = {
