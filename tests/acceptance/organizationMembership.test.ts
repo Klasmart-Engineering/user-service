@@ -167,11 +167,7 @@ describe('acceptance.OrganizationMembership', () => {
                 roles: [role],
             }).save()
 
-            const token = generateToken({
-                id: organizationMember.user_id,
-                email: organizationMember.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(organizationMember))
 
             const response = await makeRequest(
                 request,

@@ -266,11 +266,7 @@ describe('acceptance.ageRange', () => {
             const ageRange = await createAgeRange(organization).save()
             await createProgram(organization, [ageRange]).save()
 
-            token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(user))
         })
         it('returns age ranges per program', async () => {
             const query = `

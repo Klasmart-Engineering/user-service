@@ -10,6 +10,7 @@ import { makeRequest } from './utils'
 import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
+import { userToPayload } from '../utils/operations/userOps'
 
 const request = supertest('http://localhost:8080/user')
 
@@ -59,11 +60,7 @@ describe('acceptance.SchoolMembership', () => {
                 roles: [role],
             }).save()
 
-            const token = generateToken({
-                id: member.user_id,
-                email: member.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(member))
 
             const response = await makeRequest(
                 request,

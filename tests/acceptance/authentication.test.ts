@@ -55,6 +55,7 @@ describe('acceptance.authentication', () => {
                 id: user.user_id,
                 email: user.email,
                 iss: 'calmid-debug',
+                azure_ad_b2c_id: '123_abc',
             })
 
             const response = await makeRequest(
@@ -76,6 +77,7 @@ describe('acceptance.authentication', () => {
                 id: user.user_id,
                 email: user.email,
                 iss: 'not-a-real-iss',
+                azure_ad_b2c_id: '123_abc',
             })
 
             const response = await makeRequest(

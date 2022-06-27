@@ -466,11 +466,7 @@ describe('acceptance.subject', () => {
             }).save()
 
             subject = await createSubject(organization).save()
-            token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(user))
         })
 
         context('of categories', () => {

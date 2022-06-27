@@ -638,11 +638,7 @@ describe('acceptance.organization', () => {
                 where: { system_role: true },
             })
 
-            const token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(user))
 
             const response = await makeRequest(
                 request,
@@ -691,11 +687,7 @@ describe('acceptance.organization', () => {
                 roles: [role],
             }).save()
 
-            const token = generateToken({
-                id: nonAdminUser.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(nonAdminUser))
 
             const response = await makeRequest(
                 request,

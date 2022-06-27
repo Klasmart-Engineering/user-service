@@ -1,6 +1,5 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
-import { v4 as uuid_v4 } from 'uuid'
 import { Organization } from '../../src/entities/organization'
 import { Role } from '../../src/entities/role'
 import { School } from '../../src/entities/school'
@@ -17,6 +16,7 @@ import { createRole } from '../factories/role.factory'
 import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createUser } from '../factories/user.factory'
+import { userToPayload } from '../utils/operations/userOps'
 import { generateToken } from '../utils/testConfig'
 import { makeRequest } from './utils'
 
@@ -37,21 +37,13 @@ describe('acceptance.myUser', () => {
 
         it('returns the user connection node for the active user', async () => {
             const user = await createUser().save()
-            const token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(user))
             const response = await makeRequest(request, query, {}, token)
             expect(response.status).to.eq(200)
             expect(response.body.data.myUser.node.id).to.eq(user.user_id)
         })
         it('errors if the user is not found', async () => {
-            const token = generateToken({
-                id: uuid_v4(),
-                email: 'a@b.com',
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(createUser()))
             const response = await makeRequest(request, query, {}, token)
             expect(response.status).to.eq(200)
             expect(response.body.errors).exist
@@ -86,11 +78,7 @@ describe('acceptance.myUser', () => {
         })
 
         it('returns all active profiles for the active user', async () => {
-            const token = generateToken({
-                id: clientUser.user_id,
-                email: clientUser.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(clientUser))
             const response = await makeRequest(request, query, {}, token)
             expect(response.body.data.myUser.profiles).to.have.length(2)
         })
@@ -146,11 +134,7 @@ describe('acceptance.myUser', () => {
             `
 
             it('returns an array showing statuses of queried permissions in organization', async () => {
-                const token = generateToken({
-                    id: clientUser.user_id,
-                    email: clientUser.email,
-                    iss: 'calmid-debug',
-                })
+                const token = generateToken(userToPayload(clientUser))
                 const response = await makeRequest(
                     request,
                     query,
@@ -186,11 +170,7 @@ describe('acceptance.myUser', () => {
             })
 
             it('returns false statuses when an organization the user is not in has been queried for', async () => {
-                const token = generateToken({
-                    id: clientUser.user_id,
-                    email: clientUser.email,
-                    iss: 'calmid-debug',
-                })
+                const token = generateToken(userToPayload(clientUser))
                 const response = await makeRequest(
                     request,
                     query,
@@ -233,11 +213,7 @@ describe('acceptance.myUser', () => {
             `
 
             it('returns an array showing statuses of queried permissions in school', async () => {
-                const token = generateToken({
-                    id: clientUser.user_id,
-                    email: clientUser.email,
-                    iss: 'calmid-debug',
-                })
+                const token = generateToken(userToPayload(clientUser))
                 const response = await makeRequest(
                     request,
                     query,
@@ -268,11 +244,7 @@ describe('acceptance.myUser', () => {
             })
 
             it('returns false statuses when a school the user is not in has been queried for', async () => {
-                const token = generateToken({
-                    id: clientUser.user_id,
-                    email: clientUser.email,
-                    iss: 'calmid-debug',
-                })
+                const token = generateToken(userToPayload(clientUser))
                 const response = await makeRequest(
                     request,
                     query,
@@ -363,11 +335,7 @@ describe('acceptance.myUser', () => {
                 roles: [],
             }).save()
 
-            token = generateToken({
-                id: clientUser.user_id,
-                email: clientUser.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(clientUser))
         })
 
         context('Organizations', () => {
@@ -545,11 +513,7 @@ describe('acceptance.myUser', () => {
                 roles: [role],
             }).save()
 
-            token = generateToken({
-                id: clientUser.user_id,
-                email: clientUser.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(clientUser))
         })
         it('returns a paginated response of a users permissions in organizations', async () => {
             const data = await getResult({
@@ -607,11 +571,7 @@ describe('acceptance.myUser', () => {
                 roles: [role],
             }).save()
 
-            token = generateToken({
-                id: clientUser.user_id,
-                email: clientUser.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(clientUser))
         })
         it('returns a paginated response of a users permissions in schools', async () => {
             const data = await getResult({

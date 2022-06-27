@@ -217,11 +217,7 @@ describe('acceptance.permission', () => {
             const role = await createRole('role1', organization).save()
             const permission = await createPermission(role).save()
 
-            const token = generateToken({
-                id: organizationMember.user_id,
-                email: organizationMember.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(organizationMember))
 
             const response = await makeRequest(
                 request,

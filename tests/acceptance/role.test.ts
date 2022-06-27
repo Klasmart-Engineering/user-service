@@ -203,11 +203,7 @@ describe('acceptance.role', () => {
         ;(await role.permissions)?.push(permission)
         await role.save()
 
-        const token = generateToken({
-            id: user.user_id,
-            email: user.email,
-            iss: 'calmid-debug',
-        })
+        const token = generateToken(userToPayload(user))
 
         const query = `
         query {

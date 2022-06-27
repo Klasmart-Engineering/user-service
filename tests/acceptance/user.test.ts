@@ -367,11 +367,7 @@ describe('acceptance.user', () => {
                 roles: [role],
             }).save()
 
-            const token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(user))
             const response = await request
                 .post('/user')
                 .set({
@@ -418,11 +414,7 @@ describe('acceptance.user', () => {
                 roles: [role],
             }).save()
 
-            const token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(user))
 
             const response = await makeRequest(
                 request,
@@ -476,11 +468,7 @@ describe('acceptance.user', () => {
                 school: school,
             }).save()
 
-            const token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(user))
 
             const response = await makeRequest(
                 request,
@@ -528,11 +516,7 @@ describe('acceptance.user', () => {
                     teachers: [user],
                 }).save()
 
-                userToken = generateToken({
-                    id: user.user_id,
-                    email: user.email,
-                    iss: 'calmid-debug',
-                })
+                userToken = generateToken(userToPayload(user))
             })
 
             it('has classesStudyingConnection as a child', async () => {
@@ -601,11 +585,8 @@ describe('acceptance.user', () => {
 
     context('my_users', async () => {
         it('Finds one user with active membership ', async () => {
-            const token = generateToken({
-                id: userIds[0],
-                email: userEmails[0],
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(users[0]))
+
             const response = await request
                 .post('/user')
                 .set({
@@ -621,11 +602,7 @@ describe('acceptance.user', () => {
         })
         it('Finds no users if my membership is inactive', async () => {
             await leaveTheOrganization(userIds[0], orgId, getAPIKeyAuth())
-            const token = generateToken({
-                id: userIds[0],
-                email: userEmails[0],
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(users[0]))
             const response = await request
                 .post('/user')
                 .set({
@@ -699,11 +676,7 @@ describe('acceptance.user', () => {
                 organization: myOrg,
                 roles: [role],
             }).save()
-            token = generateToken({
-                id: myUser.user_id,
-                email: myUser.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(myUser))
             createUserInputs = [
                 ...Array(config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE),
             ].map((_) => userToCreateUserInput(createUser()))
@@ -744,11 +717,7 @@ describe('acceptance.user', () => {
                 organization: myOrg,
                 roles: [role],
             }).save()
-            token = generateToken({
-                id: myUser.user_id,
-                email: myUser.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(myUser))
             updateUserInputs = []
             for (
                 let i = 0;
@@ -1043,11 +1012,7 @@ describe('acceptance.user', () => {
             beforeEach(async () => {
                 testUser = await createUser().save()
 
-                token = generateToken({
-                    id: testUser.user_id,
-                    email: testUser.email,
-                    iss: 'calmid-debug',
-                })
+                token = generateToken(userToPayload(testUser))
             })
             it('should find no users', async () => {
                 const response = await makeRequest(
@@ -1077,11 +1042,7 @@ describe('acceptance.user', () => {
                     user: testUser,
                     organization,
                 }).save()
-                token = generateToken({
-                    id: testUser.user_id,
-                    email: testUser.email,
-                    iss: 'calmid-debug',
-                })
+                token = generateToken(userToPayload(testUser))
             })
             it('should find no users', async () => {
                 const response = await makeRequest(
@@ -1114,11 +1075,7 @@ describe('acceptance.user', () => {
                         organization,
                         roles: [simpleStudentRole],
                     }).save()
-                    token = generateToken({
-                        id: testUser.user_id,
-                        email: testUser.email,
-                        iss: 'calmid-debug',
-                    })
+                    token = generateToken(userToPayload(testUser))
                 })
                 it('should find only that one same user', async () => {
                     const response = await makeRequest(
@@ -1163,11 +1120,7 @@ describe('acceptance.user', () => {
                             roles: [orgViewerRole],
                         }).save()
                     }
-                    token = generateToken({
-                        id: testUser.user_id,
-                        email: testUser.email,
-                        iss: 'calmid-debug',
-                    })
+                    token = generateToken(userToPayload(testUser))
                 })
                 it('should return a full page of users as the calling user has permission', async () => {
                     const response = await makeRequest(
@@ -1236,11 +1189,7 @@ describe('acceptance.user', () => {
                     }
                     await Promise.all(promiseSchoolMemberships)
 
-                    token = generateToken({
-                        id: testUser.user_id,
-                        email: testUser.email,
-                        iss: 'calmid-debug',
-                    })
+                    token = generateToken(userToPayload(testUser))
                 })
 
                 it('should find only the users enrolled in their school', async () => {

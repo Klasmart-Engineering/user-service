@@ -29,6 +29,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
 import { IEntityFilter } from '../../src/utils/pagination/filtering'
 import { getConnection } from 'typeorm'
+import { userToPayload } from '../utils/operations/userOps'
 
 use(chaiAsPromised)
 
@@ -94,11 +95,7 @@ describe('myUser', () => {
                 }).save()
             }
 
-            authToken = generateToken({
-                id: clientUser.user_id,
-                email: clientUser.email,
-                iss: 'calmid-debug',
-            })
+            authToken = generateToken(userToPayload(clientUser))
         })
 
         context('Organizations', () => {

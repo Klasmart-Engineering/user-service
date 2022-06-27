@@ -402,11 +402,7 @@ describe('acceptance.subcategory', () => {
                 organization,
             }).save()
             subcategory = await createSubcategory(organization).save()
-            token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(user))
         })
         it('returns subcategories per category', async () => {
             const query = `

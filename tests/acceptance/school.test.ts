@@ -256,11 +256,7 @@ describe('acceptance.school', () => {
                 school: wizardingSchool,
             }).save()
 
-            const token = generateToken({
-                id: wizardUser.user_id,
-                email: wizardUser.email,
-                iss: 'calmid-debug',
-            })
+            const token = generateToken(userToPayload(wizardUser))
 
             const response = await makeRequest(
                 request,
@@ -294,11 +290,7 @@ describe('acceptance.school', () => {
                 request,
                 print(SCHOOLS_CONNECTION_WITH_CHILDREN),
                 { direction: 'FORWARD' },
-                generateToken({
-                    id: clientUser.user_id,
-                    email: clientUser.email,
-                    iss: 'calmid-debug',
-                })
+                generateToken(userToPayload(clientUser))
             )
 
             expect(response.status).to.eq(200)
@@ -334,11 +326,7 @@ describe('acceptance.school', () => {
                 request,
                 print(SCHOOLS_CONNECTION_WITH_CHILDREN),
                 { direction: 'FORWARD' },
-                generateToken({
-                    id: clientUser.user_id,
-                    email: clientUser.email,
-                    iss: 'calmid-debug',
-                })
+                generateToken(userToPayload(clientUser))
             )
 
             expect(response.status).to.eq(200)

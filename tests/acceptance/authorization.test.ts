@@ -32,6 +32,7 @@ describe('acceptance.authorization', () => {
                     id: user.user_id,
                     phone: user.phone,
                     iss: 'calmid-debug',
+                    azure_ad_b2c_id: '123_abc',
                 })
             })
 

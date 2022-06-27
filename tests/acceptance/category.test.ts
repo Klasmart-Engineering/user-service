@@ -542,11 +542,7 @@ describe('acceptance.category', () => {
             }).save()
             const category = await createCategory(organization).save()
             await createSubject(organization, [category]).save()
-            token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            token = generateToken(userToPayload(user))
         })
         it('returns categories per subject', async () => {
             const query = `
