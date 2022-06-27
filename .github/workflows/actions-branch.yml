@@ -128,6 +128,9 @@ jobs:
       - name: "Upstream services tests"
         if: github.ref == 'refs/heads/main'
         run: npm run test:upstreamServices
+        env:
+          ACCOUNT_DELETION_SHEET_ID: ${{ secrets.ACCOUNT_DELETION_SHEET_ID }}
+          USER_SERVICE_GOOGLE_SHEETS_API_CREDENTIALS: ${{ secrets.USER_SERVICE_GOOGLE_SHEETS_API_CREDENTIALS }}
 
   build:
     runs-on: ubuntu-latest
