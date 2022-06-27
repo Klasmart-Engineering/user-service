@@ -1510,8 +1510,9 @@ export class Model {
 
     public async accountDeletion(context: Context, info: GraphQLResolveInfo) {
         if (info.operation.operation !== 'mutation') {
-            return false
+            throw new Error('Not a mutation operation, this must be a mutation')
         }
+
         if (!context.token) {
             throw new Error('No authorization token provided')
         }
@@ -1524,6 +1525,6 @@ export class Model {
             await deleteMe(azure_ad_b2c_id)
             return true
         }
-        return false
+        throw new Error('No Azure B2C Id in token')
     }
 }
