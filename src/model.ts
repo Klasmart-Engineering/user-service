@@ -1517,17 +1517,11 @@ export class Model {
         }
 
         const token = context.token
-        // This is just temporary until I get the real B2C oid value
-        const email = token!.email
-        const phone = token!.phone
-        const username = token!.user_name
 
-        //console.log(token)
+        const azure_ad_b2c_id = token.azure_ad_b2c_id
 
-        const primary = username ? username : email ? email : phone
-        // end of temporary block
-        if (primary) {
-            await deleteMe(primary)
+        if (azure_ad_b2c_id) {
+            await deleteMe(azure_ad_b2c_id)
             return true
         }
         return false
