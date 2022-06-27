@@ -15,9 +15,8 @@ function createAuthenticatedClient(): Client {
     return client
 }
 
-// Delete Me from Graph
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function deleteMe(id: string): Promise<any> {
+// Delete Me from MS Graph API
+export async function deleteMe(id: string): Promise<void> {
     const client = createAuthenticatedClient()
     id = encodeURI(id)
     await client
