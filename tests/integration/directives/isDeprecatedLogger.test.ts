@@ -15,9 +15,14 @@ describe('isDeprecatedLogger', () => {
         testServer = new ApolloServer({
             schema: createTestSchema(),
             context: () =>
-                ({
-                    req: { headers: { origin: originURL } },
-                } as Context),
+                (({
+                    req: {
+                        headers: {
+                            origin: originURL,
+                            'x-kidsloop-client-name': 'myclient',
+                        },
+                    },
+                } as unknown) as Context),
         })
     })
 
@@ -36,7 +41,7 @@ describe('isDeprecatedLogger', () => {
 
     context('when request includes a deprecated field', () => {
         it('should log a warning', async () => {
-            await testServer.executeOperation({
+            const headers = await testServer.executeOperation({
                 query: `query MyRequest {
                     getUser {
                         first_name
@@ -53,6 +58,7 @@ describe('isDeprecatedLogger', () => {
                         operationName: 'MyRequest',
                         deprecatedField: 'username',
                         originURL,
+                        kidsloopClientName: 'myclient',
                     })
                 )
             )
@@ -77,6 +83,7 @@ describe('isDeprecatedLogger', () => {
                         operationName: 'MyRequest',
                         deprecatedField: 'getUserById',
                         originURL,
+                        kidsloopClientName: 'myclient',
                     })
                 )
             )
@@ -102,6 +109,7 @@ describe('isDeprecatedLogger', () => {
                         operationName: 'MyRequest',
                         deprecatedField: 'setUsername',
                         originURL,
+                        kidsloopClientName: 'myclient',
                     })
                 )
             )
@@ -129,6 +137,7 @@ describe('isDeprecatedLogger', () => {
                         operationName: 'MyRequest',
                         deprecatedField: 'myOrganization',
                         originURL,
+                        kidsloopClientName: 'myclient',
                     })
                 )
             )
@@ -140,6 +149,7 @@ describe('isDeprecatedLogger', () => {
                         operationName: 'MyRequest',
                         deprecatedField: 'orgId',
                         originURL,
+                        kidsloopClientName: 'myclient',
                     })
                 )
             )

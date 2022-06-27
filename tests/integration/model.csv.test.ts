@@ -62,10 +62,6 @@ import {
     uploadCategories,
 } from '../utils/operations/csv/uploadCategories'
 import {
-    queryUploadSubjects,
-    uploadSubjects,
-} from '../utils/operations/csv/uploadSubjects'
-import {
     queryUploadPrograms,
     uploadPrograms,
 } from '../utils/operations/csv/uploadPrograms'
@@ -104,6 +100,7 @@ import { userToPayload } from '../utils/operations/userOps'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { createAcademicTerm } from '../factories/academicTerm.factory'
 import { AcademicTerm } from '../../src/entities/academicTerm'
+import { TextEncoder } from 'node:util'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -579,173 +576,6 @@ describe('model.csv', () => {
                     where: { system_role: false },
                 })
                 expect(rolesCreated).gt(0)
-            })
-        })
-    })
-
-    describe('uploadSubjectsFromCSV', () => {
-        let file: ReadStream
-        const mimetype = 'text/csv'
-        const encoding = '7bit'
-        const filename = 'subjectsExample.csv'
-        let nonAdminUser: User
-        let orgs: Organization[]
-        let orgMemberships: OrganizationMembership[]
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            nonAdminUser = await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-            await SubcategoriesInitializer.run()
-            await CategoriesInitializer.run()
-
-            orgs = []
-            orgMemberships = []
-
-            for (let i = 1; i <= 4; i += 1) {
-                const org = createOrganization()
-                org.organization_name = `Company ${i}`
-                // eslint-disable-next-line no-await-in-loop
-                await org.save()
-                orgs.push(org)
-
-                // eslint-disable-next-line no-await-in-loop
-                const createSubjectsRole = await createRole(
-                    'create roles',
-                    org,
-                    {
-                        permissions: [PermissionName.create_subjects_20227],
-                    }
-                ).save()
-
-                const orgMemb = createOrganizationMembership({
-                    user: nonAdminUser,
-                    organization: org,
-                    roles: [createSubjectsRole],
-                })
-                // eslint-disable-next-line no-await-in-loop
-                await orgMemb.save()
-                orgMemberships.push(orgMemb)
-            }
-        })
-
-        context(
-            'when uploader is not authorised to upload subjects in the organization',
-            () => {
-                beforeEach(async () => {
-                    for await (const orgMemb of orgMemberships) {
-                        orgMemb.roles = Promise.resolve([])
-                        await orgMemb.save()
-                    }
-                })
-
-                it('it throws an authorized code error', async () => {
-                    file = fs.createReadStream(
-                        resolve(`tests/fixtures/${filename}`)
-                    )
-
-                    const actualErrors = await expect(
-                        uploadSubjects(
-                            testClient,
-                            file,
-                            filename,
-                            mimetype,
-                            encoding,
-                            arbitraryUserToken
-                        )
-                    ).to.be.rejected
-
-                    actualErrors.errors.map((error: CSVError) => {
-                        expect(error.code).to.eq(
-                            customErrors.unauthorized_org_upload.code
-                        )
-                        expect(error.column).to.eq('organization_name')
-                        expect(error.entity).to.eq('subject')
-                        expect(
-                            orgs.map((org) => org.organization_name)
-                        ).to.include(error.organizationName)
-                    })
-                })
-            }
-        )
-
-        context('when operation is not a mutation', () => {
-            it('should throw an error', async () => {
-                file = fs.createReadStream(
-                    resolve(`tests/fixtures/${filename}`)
-                )
-
-                await expect(
-                    queryUploadSubjects(
-                        testClient,
-                        file,
-                        filename,
-                        mimetype,
-                        encoding,
-                        arbitraryUserToken
-                    )
-                ).to.be.rejected
-
-                const subjectsCreated = await Subject.count({
-                    where: { system: false },
-                })
-                expect(subjectsCreated).eq(0)
-            })
-        })
-
-        context('when file data is not correct', () => {
-            beforeEach(() => {
-                orgs.map(async (org, idx) => {
-                    org.organization_name = `Not Company ${idx + 1}`
-                    await org.save()
-                })
-            })
-
-            it('should throw an error', async () => {
-                file = fs.createReadStream(
-                    resolve(`tests/fixtures/${filename}`)
-                )
-
-                await expect(
-                    uploadSubjects(
-                        testClient,
-                        file,
-                        filename,
-                        mimetype,
-                        encoding,
-                        arbitraryUserToken
-                    )
-                ).to.be.rejected
-
-                const subjectsCreated = await Subject.count({
-                    where: { system: false },
-                })
-                expect(subjectsCreated).eq(0)
-            })
-        })
-
-        context('when file data is correct', () => {
-            it('should create subjects', async () => {
-                file = fs.createReadStream(
-                    resolve(`tests/fixtures/${filename}`)
-                )
-
-                const result = await uploadSubjects(
-                    testClient,
-                    file,
-                    filename,
-                    mimetype,
-                    encoding,
-                    arbitraryUserToken
-                )
-                expect(result.filename).eq(filename)
-                expect(result.mimetype).eq(mimetype)
-                expect(result.encoding).eq(encoding)
-
-                const subjectsCreated = await Subject.count({
-                    where: { system: false },
-                })
-                expect(subjectsCreated).gt(0)
             })
         })
     })

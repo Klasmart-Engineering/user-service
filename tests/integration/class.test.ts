@@ -7081,15 +7081,6 @@ describe('class', () => {
                         }
                     })
                 })
-
-                it('populates organizations correctly', async () => {
-                    const maps = await generateMaps(input)
-                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
-                        org.organization_id,
-                        org.organization_id,
-                        org.organization_id,
-                    ])
-                })
             })
         })
 
@@ -7512,15 +7503,6 @@ describe('class', () => {
                             studentIds
                         )
                     }
-                })
-
-                it('populates organizations correctly', async () => {
-                    const maps = await generateMaps(input)
-                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
-                        org.organization_id,
-                        org.organization_id,
-                        org.organization_id,
-                    ])
                 })
             })
         })
@@ -7953,15 +7935,6 @@ describe('class', () => {
                         }
                     })
                 })
-
-                it('populates organizations correctly', async () => {
-                    const maps = await generateMaps(input)
-                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
-                        org.organization_id,
-                        org.organization_id,
-                        org.organization_id,
-                    ])
-                })
             })
         })
 
@@ -8375,15 +8348,6 @@ describe('class', () => {
                             teacherIds
                         )
                     }
-                })
-
-                it('populates organizations correctly', async () => {
-                    const maps = await generateMaps(input)
-                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
-                        org.organization_id,
-                        org.organization_id,
-                        org.organization_id,
-                    ])
                 })
             })
         })
@@ -11021,14 +10985,6 @@ describe('class', () => {
                     }
                 })
 
-                it('populates organizations correctly', () => {
-                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
-                        org.organization_id,
-                        org.organization_id,
-                        org.organization_id,
-                    ])
-                })
-
                 it('populates schoolIds correctly', () => {
                     expect(maps.schoolIds).to.deep.equalInAnyOrder([
                         schools[0].school_id,
@@ -11464,15 +11420,6 @@ describe('class', () => {
                             }
                         }
                     })
-                })
-
-                it('populates organizations correctly', async () => {
-                    const maps = await generateMaps(input)
-                    expect(maps.organizationIds).to.deep.equalInAnyOrder([
-                        orgs[0].organization_id,
-                        orgs[1].organization_id,
-                        orgs[0].organization_id,
-                    ])
                 })
             })
         })

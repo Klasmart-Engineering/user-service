@@ -5,10 +5,7 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { Status } from '../entities/status'
 import { User } from '../entities/user'
 import { Context } from '../main'
-import {
-    mapSchoolToSchoolConnectionNode,
-    schoolConnectionNodeFields,
-} from '../pagination/schoolsConnection'
+import { mapSchoolToSchoolConnectionNode } from '../pagination/schoolsConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import { APIError } from '../types/errors/apiError'
 import {
@@ -70,7 +67,7 @@ import { ObjMap } from '../utils/stringUtils'
 import { uniqueAndTruthy } from '../utils/clean'
 
 export interface CreateSchoolEntityMap extends EntityMap<School> {
-    mainEntity: Map<string, School>
+    matchingOrgsAndNames: Map<string, School>
     matchingOrgsAndShortcodes: Map<string, School>
     organizations: Map<string, Organization>
 }
@@ -95,10 +92,14 @@ export class CreateSchools extends CreateMutation<
         )
     }
 
-    generateEntityMaps = (
+    async generateEntityMaps(
         input: CreateSchoolInput[]
-    ): Promise<CreateSchoolEntityMap> =>
-        generateMapsForCreate(input, this.orgIds)
+    ): Promise<CreateSchoolEntityMap> {
+        return {
+            ...(await getMatchingEntities(this.orgIds, input)),
+            organizations: await getMap.organization(this.orgIds),
+        }
+    }
 
     protected authorize(): Promise<void> {
         return this.permissions.rejectIfNotAllowed(
@@ -139,7 +140,7 @@ export class CreateSchools extends CreateMutation<
             )
         }
 
-        const schoolExist = maps.mainEntity.get(
+        const schoolExist = maps.matchingOrgsAndNames.get(
             [organizationId, name].toString()
         )
 
@@ -194,7 +195,7 @@ export class CreateSchools extends CreateMutation<
     }
 
     protected async buildOutput(outputEntity: School): Promise<void> {
-        const schoolConnectionNode = await mapSchoolToSchoolConnectionNode(
+        const schoolConnectionNode = mapSchoolToSchoolConnectionNode(
             outputEntity
         )
         this.output.schools.push(schoolConnectionNode)
@@ -234,29 +235,17 @@ export class UpdateSchools extends UpdateMutation<
         const shortCodes = input.map((val) => val.shortCode)
 
         const preloadedSchoolArray = School.find({
-            where: {
-                school_id: In(this.mainEntityIds),
-            },
-            relations: ['organization'],
+            where: { school_id: In(this.mainEntityIds) },
         })
 
         const matchingPreloadedSchoolArray = School.find({
-            where: [
-                {
-                    school_name: In(names),
-                },
-                {
-                    shortcode: In(shortCodes),
-                },
-            ],
-            relations: ['organization'],
+            where: [{ school_name: In(names) }, { shortcode: In(shortCodes) }],
         })
 
         const matchingOrgsAndNames = new Map<string, School>()
         const matchingOrgsAndShortcodes = new Map<string, School>()
         for (const s of await matchingPreloadedSchoolArray) {
-            // eslint-disable-next-line no-await-in-loop
-            const orgId = (await s.organization)?.organization_id || ''
+            const orgId = s.organization_id || ''
             matchingOrgsAndNames.set([orgId, s.school_name].toString(), s)
             matchingOrgsAndShortcodes.set([orgId, s.shortcode].toString(), s)
         }
@@ -270,18 +259,16 @@ export class UpdateSchools extends UpdateMutation<
         }
     }
 
-    protected async authorize(
+    protected authorize(
         _input: UpdateSchoolInput[],
         entityMaps: UpdateSchoolEntityMap
     ) {
-        const organizationIds: string[] = []
-        for (const c of entityMaps.mainEntity.values()) {
-            // eslint-disable-next-line no-await-in-loop
-            const organizationId = (await c.organization)?.organization_id
-            if (organizationId) organizationIds.push(organizationId)
-        }
-        // eslint-disable-next-line no-await-in-loop
-        await this.permissions.rejectIfNotAllowed(
+        const organizationIds = uniqueAndTruthy(
+            Array.from(entityMaps.mainEntity.values()).map(
+                (s) => s.organization_id
+            )
+        )
+        return this.permissions.rejectIfNotAllowed(
             { organization_ids: organizationIds },
             PermissionName.edit_school_20330
         )
@@ -377,9 +364,7 @@ export class UpdateSchools extends UpdateMutation<
     }
 
     protected async buildOutput(outputEntity: School): Promise<void> {
-        this.output.schools.push(
-            await mapSchoolToSchoolConnectionNode(outputEntity)
-        )
+        this.output.schools.push(mapSchoolToSchoolConnectionNode(outputEntity))
     }
 }
 
@@ -403,37 +388,26 @@ export class DeleteSchools extends DeleteMutation<
     }
 
     protected async generateEntityMaps(): Promise<DeleteEntityMap<School>> {
-        const categories = await School.createQueryBuilder()
-            .select([
-                ...schoolConnectionNodeFields,
-                'Organization.organization_id',
-            ])
-            .leftJoin('School.organization', 'Organization')
-            .where('School.school_id IN (:...ids)', { ids: this.mainEntityIds })
-            .getMany()
-        return { mainEntity: new Map(categories.map((c) => [c.school_id, c])) }
+        return { mainEntity: await getMap.school(this.mainEntityIds) }
     }
 
-    protected async authorize(
+    protected authorize(
         _input: DeleteSchoolInput[],
         entityMaps: DeleteEntityMap<School>
     ) {
-        const organizationIds: string[] = []
-        for (const c of entityMaps.mainEntity.values()) {
-            // eslint-disable-next-line no-await-in-loop
-            const organizationId = (await c.organization)?.organization_id
-            if (organizationId) organizationIds.push(organizationId)
-        }
-        await this.permissions.rejectIfNotAllowed(
+        const organizationIds = uniqueAndTruthy(
+            Array.from(entityMaps.mainEntity.values()).map(
+                (s) => s.organization_id
+            )
+        )
+        return this.permissions.rejectIfNotAllowed(
             { organization_ids: organizationIds },
             PermissionName.delete_school_20440
         )
     }
 
     protected async buildOutput(currentEntity: School): Promise<void> {
-        this.output.schools.push(
-            await mapSchoolToSchoolConnectionNode(currentEntity)
-        )
+        this.output.schools.push(mapSchoolToSchoolConnectionNode(currentEntity))
     }
 }
 
@@ -442,7 +416,6 @@ export interface AddUsersToSchoolsEntityMap extends EntityMap<School> {
     users: Map<string, User>
     schoolMemberships: SchoolMembershipMap
     roles: Map<string, Role>
-    organizationIds: string[]
     orgMemberships: OrganizationMembershipMap
 }
 
@@ -493,9 +466,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
         input: AddUsersToSchoolInput[]
     ): Promise<AddUsersToSchoolsEntityMap> {
         const userIds = input.map((val) => val.userIds).flat()
-        const schoolsPromise = getMap.school(this.mainEntityIds, [
-            'organization',
-        ])
+        const schoolsPromise = getMap.school(this.mainEntityIds)
         const usersPromise = getMap.user(userIds)
         const rolesPromise = getMap.role(
             input.flatMap((val) => val.schoolRoleIds ?? [])
@@ -504,31 +475,31 @@ export class AddUsersToSchools extends AddMembershipMutation<
             this.mainEntityIds,
             userIds
         )
-        const orgIdsPromise = schoolsPromise
+        const orgMembershipsPromise = schoolsPromise
             .then((schoolMap) => Array.from(schoolMap.values()))
             .then((schools) => schools.map((s) => s.organization_id))
             .then(uniqueAndTruthy)
-        const orgMembershipsPromise = orgIdsPromise.then((orgIds) =>
-            getMap.membership.organization(orgIds, userIds)
-        )
+            .then((orgIds) => getMap.membership.organization(orgIds, userIds))
 
         return {
             mainEntity: await schoolsPromise,
             users: await usersPromise,
             schoolMemberships: await schoolMembershipsPromise,
             roles: await rolesPromise,
-            organizationIds: await orgIdsPromise,
             orgMemberships: await orgMembershipsPromise,
         }
     }
 
-    async authorize(
+    authorize(
         _input: AddUsersToSchoolInput[],
         maps: AddUsersToSchoolsEntityMap
     ) {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((s) => s.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
             {
-                organization_ids: maps.organizationIds,
+                organization_ids: organizationIds,
                 school_ids: this.mainEntityIds,
             },
             PermissionName.edit_school_20330
@@ -608,9 +579,7 @@ export class AddUsersToSchools extends AddMembershipMutation<
     }
 
     async buildOutput(currentEntity: School): Promise<void> {
-        this.output.schools.push(
-            await mapSchoolToSchoolConnectionNode(currentEntity)
-        )
+        this.output.schools.push(mapSchoolToSchoolConnectionNode(currentEntity))
     }
 }
 
@@ -619,7 +588,6 @@ export interface ChangeSchoolMembershipStatusEntityMap
     mainEntity: Map<string, School>
     users: Map<string, User>
     memberships: ObjMap<{ schoolId: string; userId: string }, SchoolMembership>
-    orgIds: string[]
 }
 
 type ChangeSchoolMembershipStatusInput = { schoolId: string; userIds: string[] }
@@ -750,9 +718,7 @@ export abstract class ChangeSchoolMembershipStatus extends RemoveMembershipMutat
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
-        this.output.schools.push(
-            await mapSchoolToSchoolConnectionNode(currentEntity)
-        )
+        this.output.schools.push(mapSchoolToSchoolConnectionNode(currentEntity))
     }
 }
 
@@ -765,10 +731,13 @@ export class ReactivateUsersFromSchools extends ChangeSchoolMembershipStatus {
 
     authorize(
         _input: ReactivateUsersFromSchoolInput[],
-        maps: Pick<ChangeSchoolMembershipStatusEntityMap, 'orgIds'>
+        maps: ChangeSchoolMembershipStatusEntityMap
     ): Promise<void> {
+        const orgIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((s) => s.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: maps.orgIds, school_ids: this.mainEntityIds },
+            { organization_ids: orgIds, school_ids: this.mainEntityIds },
             PermissionName.reactivate_my_school_user_40886
         )
     }
@@ -791,10 +760,13 @@ export class RemoveUsersFromSchools extends ChangeSchoolMembershipStatus {
 
     authorize(
         _input: RemoveUsersFromSchoolInput[],
-        maps: Pick<ChangeSchoolMembershipStatusEntityMap, 'orgIds'>
+        maps: ChangeSchoolMembershipStatusEntityMap
     ): Promise<void> {
+        const orgIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((s) => s.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: maps.orgIds, school_ids: this.mainEntityIds },
+            { organization_ids: orgIds, school_ids: this.mainEntityIds },
             PermissionName.deactivate_my_school_user_40885
         )
     }
@@ -817,10 +789,13 @@ export class DeleteUsersFromSchools extends ChangeSchoolMembershipStatus {
 
     authorize(
         _input: DeleteUsersFromSchoolInput[],
-        maps: Pick<ChangeSchoolMembershipStatusEntityMap, 'orgIds'>
+        maps: ChangeSchoolMembershipStatusEntityMap
     ): Promise<void> {
+        const orgIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((s) => s.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            { organization_ids: maps.orgIds, school_ids: this.mainEntityIds },
+            { organization_ids: orgIds, school_ids: this.mainEntityIds },
             PermissionName.delete_my_school_users_40441
         )
     }
@@ -866,23 +841,15 @@ export class AddClassesToSchools extends AddMutation<
     ): Promise<AddRemoveClassesToFromSchoolsEntityMap> =>
         generateMapsForAddingOrRemovingClasses(this.mainEntityIds, input)
 
-    protected async authorize(
-        input: AddClassesToSchoolInput[],
+    protected authorize(
+        _input: AddClassesToSchoolInput[],
         maps: AddRemoveClassesToFromSchoolsEntityMap
     ): Promise<void> {
-        const orgIdPromises = input
-            .map((i) =>
-                maps.mainEntity
-                    .get(i.schoolId)
-                    ?.organization?.then((o) => o?.organization_id)
-            )
-            .filter((op): op is Promise<string> => op !== undefined)
-
+        const orgIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((s) => s.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            {
-                organization_ids: await Promise.all(orgIdPromises),
-                school_ids: this.mainEntityIds,
-            },
+            { organization_ids: orgIds, school_ids: this.mainEntityIds },
             PermissionName.edit_school_20330
         )
     }
@@ -983,9 +950,7 @@ export class AddClassesToSchools extends AddMutation<
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
-        this.output.schools.push(
-            await mapSchoolToSchoolConnectionNode(currentEntity)
-        )
+        this.output.schools.push(mapSchoolToSchoolConnectionNode(currentEntity))
     }
 }
 
@@ -993,7 +958,6 @@ interface AddRemoveSchoolProgramsEntityMap extends EntityMap<School> {
     mainEntity: Map<string, School>
     programs: Map<string, Program>
     schoolPrograms: Map<string, Program[]>
-    organizationIds: string[]
 }
 type AddProgramsToSchoolsEntityMap = AddRemoveSchoolProgramsEntityMap
 type RemoveProgramsFromSchoolsEntityMap = AddRemoveSchoolProgramsEntityMap
@@ -1022,13 +986,16 @@ export class AddProgramsToSchools extends AddMutation<
     ): Promise<AddProgramsToSchoolsEntityMap> =>
         generateMapsForAddingRemovingPrograms(this.mainEntityIds, input)
 
-    protected async authorize(
+    protected authorize(
         _input: AddProgramsToSchoolInput[],
         maps: AddProgramsToSchoolsEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((s) => s.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
             {
-                organization_ids: maps.organizationIds,
+                organization_ids: organizationIds,
                 school_ids: this.mainEntityIds,
             },
             PermissionName.edit_school_20330
@@ -1121,9 +1088,7 @@ export class AddProgramsToSchools extends AddMutation<
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
-        this.output.schools.push(
-            await mapSchoolToSchoolConnectionNode(currentEntity)
-        )
+        this.output.schools.push(mapSchoolToSchoolConnectionNode(currentEntity))
     }
 }
 
@@ -1151,13 +1116,16 @@ export class RemoveProgramsFromSchools extends AddMutation<
     ): Promise<RemoveProgramsFromSchoolsEntityMap> =>
         generateMapsForAddingRemovingPrograms(this.mainEntityIds, input)
 
-    protected async authorize(
+    protected authorize(
         _input: RemoveProgramsFromSchoolInput[],
         maps: RemoveProgramsFromSchoolsEntityMap
     ): Promise<void> {
+        const organizationIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((s) => s.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
             {
-                organization_ids: maps.organizationIds,
+                organization_ids: organizationIds,
                 school_ids: this.mainEntityIds,
             },
             PermissionName.edit_school_20330
@@ -1233,9 +1201,7 @@ export class RemoveProgramsFromSchools extends AddMutation<
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
-        this.output.schools.push(
-            await mapSchoolToSchoolConnectionNode(currentEntity)
-        )
+        this.output.schools.push(mapSchoolToSchoolConnectionNode(currentEntity))
     }
 }
 
@@ -1244,8 +1210,8 @@ async function generateMapsForAddingRemovingPrograms(
     input: RemoveProgramsFromSchoolInput[]
 ): Promise<AddRemoveSchoolProgramsEntityMap> {
     const programIds = input.flatMap((i) => i.programIds)
-    const programs = getMap.program(programIds, ['organization'])
-    const schools = await getMap.school(schoolIds, ['programs', 'organization'])
+    const programs = getMap.program(programIds)
+    const schools = await getMap.school(schoolIds, ['programs'])
 
     const schoolPrograms = new Map<string, Program[]>()
     for (const school of schools.values()) {
@@ -1253,40 +1219,10 @@ async function generateMapsForAddingRemovingPrograms(
         schoolPrograms.set(school.school_id, (await school.programs) || [])
     }
 
-    const orgIds = uniqueAndTruthy(
-        Array.from(schools.values(), (s) => s.organization_id)
-    )
-
     return {
         mainEntity: schools,
         programs: await programs,
         schoolPrograms,
-        organizationIds: orgIds,
-    }
-}
-
-async function generateMapsForCreate(
-    input: CreateSchoolInput[],
-    organizationIds: string[]
-): Promise<CreateSchoolEntityMap> {
-    const {
-        matchingOrgsAndNames,
-        matchingOrgsAndShortcodes,
-    } = await getMatchingEntities(organizationIds, input)
-
-    const preloadedOrgArray = Organization.find({
-        where: {
-            status: Status.ACTIVE,
-            organization_id: In(organizationIds),
-        },
-    })
-
-    return {
-        mainEntity: matchingOrgsAndNames,
-        matchingOrgsAndShortcodes,
-        organizations: new Map(
-            (await preloadedOrgArray).map((i) => [i.organization_id, i])
-        ),
     }
 }
 
@@ -1308,14 +1244,13 @@ const getMatchingEntities = async (
                 ...statusAndOrgs,
             },
         ],
-        relations: ['organization'],
     })
 
     const matchingOrgsAndNames = new Map<string, School>()
     const matchingOrgsAndShortcodes = new Map<string, School>()
     for (const s of await matchingPreloadedSchoolArray) {
         // eslint-disable-next-line no-await-in-loop
-        const orgId = (await s.organization)?.organization_id || ''
+        const orgId = s.organization_id || ''
         matchingOrgsAndNames.set([orgId, s.school_name].toString(), s)
         matchingOrgsAndShortcodes.set([orgId, s.shortcode].toString(), s)
     }
@@ -1337,9 +1272,7 @@ async function generateMapsForRemoveUsers(
         },
     })
 
-    const preloadedSchoolArray = await getMap.school(schoolIds, [
-        'organization',
-    ])
+    const preloadedSchoolArray = await getMap.school(schoolIds)
 
     const orgIds = await Promise.all(
         Array.from(preloadedSchoolArray.values(), (school) =>
@@ -1365,7 +1298,7 @@ async function generateMapsForAddingOrRemovingClasses(
     input: AddClassesToSchoolInput[] | RemoveClassesFromSchoolInput[]
 ): Promise<AddRemoveClassesToFromSchoolsEntityMap> {
     const schoolIds = itemIds
-    const schoolMap = getMap.school(schoolIds, ['organization'])
+    const schoolMap = getMap.school(schoolIds)
     const classMap = getMap.class(input.flatMap((i) => i.classIds))
     const schoolsClasses = new Map<string, Class[]>()
     for (const [, school] of await schoolMap) {
@@ -1405,23 +1338,15 @@ export class RemoveClassesFromSchools extends RemoveMutation<
     ): Promise<EntityMap<School>> =>
         generateMapsForAddingOrRemovingClasses(this.mainEntityIds, input)
 
-    protected async authorize(
-        input: RemoveClassesFromSchoolInput[],
+    protected authorize(
+        _input: RemoveClassesFromSchoolInput[],
         maps: AddRemoveClassesToFromSchoolsEntityMap
     ): Promise<void> {
-        const orgIdPromises = input
-            .map((i) =>
-                maps.mainEntity
-                    .get(i.schoolId)
-                    ?.organization?.then((o) => o?.organization_id)
-            )
-            .filter((op): op is Promise<string> => op !== undefined)
-
+        const orgIds = uniqueAndTruthy(
+            Array.from(maps.mainEntity.values()).map((s) => s.organization_id)
+        )
         return this.permissions.rejectIfNotAllowed(
-            {
-                organization_ids: await Promise.all(orgIdPromises),
-                school_ids: this.mainEntityIds,
-            },
+            { organization_ids: orgIds, school_ids: this.mainEntityIds },
             PermissionName.edit_school_20330
         )
     }
@@ -1513,8 +1438,6 @@ export class RemoveClassesFromSchools extends RemoveMutation<
     }
 
     protected buildOutput = async (currentEntity: School): Promise<void> => {
-        this.output.schools.push(
-            await mapSchoolToSchoolConnectionNode(currentEntity)
-        )
+        this.output.schools.push(mapSchoolToSchoolConnectionNode(currentEntity))
     }
 }

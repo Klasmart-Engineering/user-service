@@ -35,7 +35,7 @@ import { createOrganizationOwnership } from '../../factories/organizationOwnersh
 import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
-import { ADMIN_EMAIL, createUser } from '../../factories/user.factory'
+import { createAdminUser, createUser } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -47,11 +47,7 @@ import {
     runQuery,
 } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
-import {
-    generateToken,
-    getAdminAuthToken,
-    getNonAdminAuthToken,
-} from '../../utils/testConfig'
+import { generateToken, getNonAdminAuthToken } from '../../utils/testConfig'
 import { TestConnection } from '../../utils/testConnection'
 import { createNonAdminUser } from '../../utils/testEntities'
 
@@ -62,12 +58,19 @@ describe('organizationsConnection', () => {
     let organizationsList: Organization[] = []
     const direction = 'FORWARD'
     let connection: TestConnection
+    let adminUser: User
+    let adminToken: string
     let testClient: ApolloServerTestClient
 
     before(async () => {
         connection = getConnection() as TestConnection
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
+    })
+
+    beforeEach(async () => {
+        adminUser = await createAdminUser().save()
+        adminToken = generateToken(userToPayload(adminUser))
     })
 
     const expectOrganizationConnectionEdge = (
@@ -107,7 +110,7 @@ describe('organizationsConnection', () => {
         it('populates a OrganizationConnectionNode at each edge.node based on the Organization entity', async () => {
             const organizationConnectionResponse = await organizationsConnectionNodes(
                 testClient,
-                { authorization: getAdminAuthToken() }
+                { authorization: adminToken }
             )
 
             expect(organizationConnectionResponse.edges).to.have.length(2)
@@ -193,17 +196,10 @@ describe('organizationsConnection', () => {
             )
 
         context('admin', () => {
-            beforeEach(async () => {
-                // create an admin
-                user = createUser()
-                user.email = ADMIN_EMAIL
-                await user.save()
-            })
-
             it('returns all organizations when user does not belong to any organizations', async () => {
                 const organizationsConnectionResponse = await organizationsConnectionNodes(
                     testClient,
-                    { authorization: generateToken(userToPayload(user)) }
+                    { authorization: adminToken }
                 )
 
                 expect(organizationsConnectionResponse.edges).to.have.length(
@@ -215,14 +211,14 @@ describe('organizationsConnection', () => {
                 // add user into an organization
                 await OrganizationMembership.save(
                     createOrganizationMembership({
-                        user,
+                        user: adminUser,
                         organization: organizationsList[0],
                     })
                 )
 
                 const organizationsConnectionResponse = await organizationsConnectionNodes(
                     testClient,
-                    { authorization: generateToken(userToPayload(user)) }
+                    { authorization: adminToken }
                 )
 
                 expect(organizationsConnectionResponse.edges).to.have.length(
@@ -307,7 +303,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 directionArgs,
-                { authorization: getAdminAuthToken() }
+                { authorization: adminToken }
             )
 
             expect(organizationsConnectionResponse?.totalCount).to.eql(10)
@@ -369,7 +365,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 { count: 3 },
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 undefined,
                 {
                     field: 'name',
@@ -401,7 +397,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 { count: 3 },
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 undefined,
                 {
                     field: 'ownerEmail',
@@ -436,7 +432,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 { count: 3 },
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 filter,
                 {
                     field: 'name',
@@ -464,7 +460,7 @@ describe('organizationsConnection', () => {
         it('supports `eq` operator', async () => {
             const organizationsConnectionResponse = await organizationsConnectionNodes(
                 testClient,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 {
                     id: {
                         operator: 'eq',
@@ -485,7 +481,7 @@ describe('organizationsConnection', () => {
         it('supports `neq` operator', async () => {
             const organizationsConnectionResponse = await organizationsConnectionNodes(
                 testClient,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 {
                     id: {
                         operator: 'neq',
@@ -533,7 +529,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 directionArgs,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 filter
             )
 
@@ -560,7 +556,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 directionArgs,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 filter
             )
 
@@ -587,7 +583,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 directionArgs,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 filter
             )
 
@@ -614,7 +610,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 directionArgs,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 filter
             )
 
@@ -648,7 +644,7 @@ describe('organizationsConnection', () => {
         it('filters on status', async () => {
             const organizationsConnectionResponse = await organizationsConnectionNodes(
                 testClient,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 {
                     status: {
                         operator: 'eq',
@@ -706,7 +702,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 directionArgs,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 filter
             )
             expect(organizationsConnectionResponse?.totalCount).to.eql(2)
@@ -771,7 +767,7 @@ describe('organizationsConnection', () => {
         it('returns only organizations that has owner user ID same with filter value', async () => {
             const organizationsConnectionResponse = await organizationsConnectionNodes(
                 testClient,
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 {
                     ownerUserId: {
                         operator: 'eq',
@@ -821,7 +817,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 {},
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 {
                     ownerUserEmail: {
                         operator: 'eq',
@@ -843,7 +839,7 @@ describe('organizationsConnection', () => {
                 testClient,
                 direction,
                 {},
-                { authorization: getAdminAuthToken() },
+                { authorization: adminToken },
                 {
                     ownerUserEmail: {
                         operator: 'contains',
@@ -882,7 +878,7 @@ describe('organizationsConnection', () => {
                 directionArgs,
                 false,
                 {
-                    authorization: getAdminAuthToken(),
+                    authorization: adminToken,
                 }
             )
 
@@ -928,7 +924,7 @@ describe('organizationsConnection', () => {
                     testClient,
                     direction,
                     { count: 5 },
-                    { authorization: getAdminAuthToken() }
+                    { authorization: adminToken }
                 )
                 expect(usersPerOrg.edges.length).to.eq(2)
                 for (const orgUsers of usersPerOrg.edges) {
@@ -953,7 +949,7 @@ describe('organizationsConnection', () => {
                     testClient,
                     direction,
                     { count: 5 },
-                    { authorization: getAdminAuthToken() }
+                    { authorization: adminToken }
                 )
                 expect(schoolsPerOrg.edges.length).to.eq(2)
                 for (const orgUsers of schoolsPerOrg.edges) {
@@ -1011,7 +1007,7 @@ describe('organizationsConnection', () => {
                     testClient,
                     direction,
                     { count: 5 },
-                    { authorization: getAdminAuthToken() }
+                    { authorization: adminToken }
                 )
                 expect(classesPerOrg.edges.length).to.eq(2)
                 for (const orgUsers of classesPerOrg.edges) {
@@ -1108,7 +1104,7 @@ describe('organizationsConnection', () => {
 
             connection.logger.reset()
             await runQuery(query, testClient, {
-                authorization: getAdminAuthToken(),
+                authorization: adminToken,
             })
             expect(connection.logger.count).to.be.eq(expectedCount)
 

@@ -40,7 +40,6 @@ import { processSchoolFromCSVRow } from './utils/csv/school'
 import { processSubCategoriesFromCSVRow } from './utils/csv/subCategories'
 import { processRoleFromCSVRow } from './utils/csv/role'
 import { processCategoryFromCSVRow } from './utils/csv/category'
-import { processSubjectFromCSVRow } from './utils/csv/subject'
 import { IPaginationArgs } from './utils/pagination/paginate'
 import { processProgramFromCSVRow } from './utils/csv/program'
 import { processAgeRangeFromCSVRow } from './utils/csv/ageRange'
@@ -1146,44 +1145,6 @@ export class Model {
                         userPermissions,
                         queryResultCache,
                         processCategoryFromCSVRow
-                    ),
-            ],
-            context.permissions
-        )
-
-        return file
-    }
-
-    public async uploadSubjectsFromCSV(
-        args: Record<string, unknown>,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        if (info.operation.operation !== 'mutation') {
-            return null
-        }
-
-        const { file } = (await args.file) as { file: Upload }
-        await createEntityFromCsvWithRollBack(
-            this.connection,
-            file,
-            [
-                (
-                    manager,
-                    rows,
-                    rowNumber,
-                    fileErrors,
-                    userPermissions,
-                    queryResultCache
-                ) =>
-                    legacyCsvRowFunctionWrapper(
-                        manager,
-                        rows,
-                        rowNumber,
-                        fileErrors,
-                        userPermissions,
-                        queryResultCache,
-                        processSubjectFromCSVRow
                     ),
             ],
             context.permissions

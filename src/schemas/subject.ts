@@ -37,8 +37,6 @@ const typeDefs = gql`
             @deprecated(
                 reason: "Sunset Date: 25/08/2022 Details: https://calmisland.atlassian.net/l/c/85BxNDPR"
             )
-        uploadSubjectsFromCSV(file: Upload!): File
-            @isMIMEType(mimetype: "text/csv")
         renameDuplicateSubjects: Boolean @isAdmin
         createSubjects(input: [CreateSubjectInput!]!): SubjectsMutationResult
         updateSubjects(input: [UpdateSubjectInput!]!): SubjectsMutationResult
@@ -177,8 +175,6 @@ export default function getDefault(
             Mutation: {
                 subject: (_parent, args, ctx, _info) =>
                     model.getSubject(args, ctx),
-                uploadSubjectsFromCSV: (_parent, args, ctx, info) =>
-                    model.uploadSubjectsFromCSV(args, ctx, info),
                 renameDuplicateSubjects: (_parent, args, ctx, info) =>
                     model.renameDuplicateSubjects(args, ctx, info),
                 createSubjects: (_parent, args, ctx) =>

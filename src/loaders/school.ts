@@ -49,7 +49,6 @@ export const schoolsByIds = async (
 }
 
 /**
- * The schoolConnectionNode requires a join between School and Organization.
  * The mapSchoolToSchoolConnectionNode returns a Promise. These two changes
  * required too much changes and use of Unions in the generic NodeDataLoader
  * to be able to use it only for this case. All the rest of the single node
@@ -74,11 +73,10 @@ export class SchoolNodeDataLoader extends DataLoader<
                 .andWhere(`"School"."school_id" IN (:...ids)`, {
                     ids,
                 })
-                .innerJoin('School.organization', 'Organization')
             const entities = await scope.getMany()
             const nodes: ISchoolsConnectionNode[] = []
             for (const entity of entities) {
-                nodes.push(await mapSchoolToSchoolConnectionNode(entity))
+                nodes.push(mapSchoolToSchoolConnectionNode(entity))
             }
 
             const nodesMap = new Map<string, ISchoolsConnectionNode>(

@@ -1,5 +1,9 @@
 ## Best Practices
 
+### Supply a `x-kidsloop-client-name` header when calling us
+
+See the [well known clients](#well_known_clients) section
+
 ### Request only what you need, once
 - Avoid overfetching data - only query what you need
 - Avoid reusing expensive queries to refresh only a subset of data
