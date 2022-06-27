@@ -15,7 +15,7 @@ function createAuthenticatedClient(): Client {
     return client
 }
 
-// Delete Me from MS Graph API
+// Delete Me from Azure B2C using MS Graph API
 export async function deleteMe(id: string): Promise<void> {
     const client = createAuthenticatedClient()
     id = encodeURI(id)
