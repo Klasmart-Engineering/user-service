@@ -531,7 +531,7 @@ export default function getDefault(
                 updateUsers: (_parent, args, ctx, _info) =>
                     mutate(UpdateUsers, args, ctx.permissions),
                 accountDeletion: (_parent, _args, ctx: Context, _info) =>
-                    model.accountDeletion(ctx, _info),
+                    model.accountDeletion(ctx),
             },
             Query: {
                 me: (_parent, _args, ctx: Context, _info) => {

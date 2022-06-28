@@ -1,5 +1,5 @@
 import 'isomorphic-fetch'
-// The following is needed due issues with this microsoft library
+// The following is needed due to issues with this microsoft library
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { Client } = require('@microsoft/microsoft-graph-client')
 
