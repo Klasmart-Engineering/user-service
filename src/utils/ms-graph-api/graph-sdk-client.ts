@@ -1,12 +1,7 @@
 import 'isomorphic-fetch'
-//import { Client, ClientOptions } from '@microsoft/microsoft-graph-client'
+// The following is needed due issues with this microsoft library
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { Client } = require('@microsoft/microsoft-graph-client')
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-//const Client = require("@microsoft/microsoft-graph-client")
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-//interface ClientOptions = require("@microsoft/microsoft-graph-client")
 
 import { ClientCredentialAuthenticationProvider } from './authenticationProvider'
 
@@ -25,14 +20,8 @@ function createAuthenticatedClient(): any {
 }
 
 // Delete Me from Azure B2C using MS Graph API
-export async function deleteMe(id: string): Promise<void> {
+export async function deleteUserInAzureB2C(id: string): Promise<void> {
     const client = createAuthenticatedClient()
     id = encodeURI(id)
-    await client
-        .api('/users/' + id)
-        .delete()
-        .catch((error: Error) => {
-            //console.log(error)
-            throw error
-        })
+    await client.api('/users/' + id).delete()
 }

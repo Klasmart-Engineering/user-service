@@ -98,7 +98,7 @@ import { reportError } from './utils/resolvers/errors'
 import { CSVError } from './types/csv/csvError'
 import { UserPermissions } from './permissions/userPermissions'
 import { QueryResultCache } from './utils/csv/csvUtils'
-import { deleteMe } from './utils/ms-graph-api/graph-sdk-client'
+import { deleteUserInAzureB2C } from './utils/ms-graph-api/graph-sdk-client'
 
 // this is a wrapper around legacy functions for
 // processing a CSV row
@@ -1521,7 +1521,7 @@ export class Model {
 
         const azure_ad_b2c_id = token.azure_ad_b2c_id
         if (azure_ad_b2c_id) {
-            await deleteMe(azure_ad_b2c_id)
+            await deleteUserInAzureB2C(azure_ad_b2c_id)
             return true
         }
         throw new Error('No Azure B2C Id in token')

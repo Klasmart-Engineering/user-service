@@ -1,9 +1,7 @@
-//import { AuthenticationProvider } from '@microsoft/microsoft-graph-client'
 import * as qs from 'qs'
 import axios from 'axios'
 
 export class ClientCredentialAuthenticationProvider {
-    //implements AuthenticationProvider
     public async getAccessToken(): Promise<string> {
         const microsoftAppTenantId = process.env.MicrosoftAppTenantId
         if (!microsoftAppTenantId) {
@@ -32,11 +30,10 @@ export class ClientCredentialAuthenticationProvider {
         const response = await axios.post(url, qs.stringify(body))
 
         if (response.status == 200) {
-            //        console.log(response.data.access_token)
             return response.data.access_token
         } else {
             throw new Error(
-                'Non 200OK response on obtaining Azure B2C token...'
+                response.status + ' response on trying to obtain Azure B2C token.'
             )
         }
     }
