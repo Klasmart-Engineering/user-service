@@ -1,9 +1,9 @@
-import { AuthenticationProvider } from '@microsoft/microsoft-graph-client'
+//import { AuthenticationProvider } from '@microsoft/microsoft-graph-client'
 import * as qs from 'qs'
 import axios from 'axios'
 
-export class ClientCredentialAuthenticationProvider
-    implements AuthenticationProvider {
+export class ClientCredentialAuthenticationProvider {
+    //implements AuthenticationProvider
     public async getAccessToken(): Promise<string> {
         const microsoftAppTenantId = process.env.MicrosoftAppTenantId
         if (!microsoftAppTenantId) {
