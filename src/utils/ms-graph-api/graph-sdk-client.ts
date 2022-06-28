@@ -1,10 +1,19 @@
 import 'isomorphic-fetch'
-import { Client, ClientOptions } from '@microsoft/microsoft-graph-client'
+//import { Client, ClientOptions } from '@microsoft/microsoft-graph-client'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { Client } = require('@microsoft/microsoft-graph-client')
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+//const Client = require("@microsoft/microsoft-graph-client")
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+//interface ClientOptions = require("@microsoft/microsoft-graph-client")
+
 import { ClientCredentialAuthenticationProvider } from './authenticationProvider'
 
 // Create Graph SDK Client
-function createAuthenticatedClient(): Client {
-    const clientOptions: ClientOptions = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createAuthenticatedClient(): any {
+    const clientOptions: unknown = {
         defaultVersion: 'v1.0',
         debugLogging: false,
         authProvider: new ClientCredentialAuthenticationProvider(),
