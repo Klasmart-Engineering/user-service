@@ -33,7 +33,8 @@ export class ClientCredentialAuthenticationProvider {
             return response.data.access_token
         } else {
             throw new Error(
-                response.status + ' response on trying to obtain Azure B2C token.'
+                response.status +
+                    ' response on trying to obtain Azure B2C token.'
             )
         }
     }
