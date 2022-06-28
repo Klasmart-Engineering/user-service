@@ -1520,7 +1520,6 @@ export class Model {
         const token = context.token
 
         const azure_ad_b2c_id = token.azure_ad_b2c_id
-
         if (azure_ad_b2c_id) {
             await deleteMe(azure_ad_b2c_id)
             return true
