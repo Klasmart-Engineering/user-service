@@ -7,10 +7,7 @@ export class ClientCredentialAuthenticationProvider {
         if (!microsoftAppTenantId) {
             throw new Error('Missing Azure B2C Tenant Id')
         }
-        const url: string =
-            'https://login.microsoftonline.com/' +
-            microsoftAppTenantId +
-            '/oauth2/v2.0/token'
+        const url = `https://login.microsoftonline.com/${microsoftAppTenantId}/oauth2/v2.0/token`
 
         const authString =
             process.env['USER_SERVICE_AZURE_B2C_CLIENT_KEY_AND_SECRET']
