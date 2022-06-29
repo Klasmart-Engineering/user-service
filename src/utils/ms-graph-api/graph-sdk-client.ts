@@ -2,8 +2,9 @@ import 'isomorphic-fetch'
 // The following is needed due to issues with this microsoft library
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { Client } = require('@microsoft/microsoft-graph-client')
-
 import { ClientCredentialAuthenticationProvider } from './authenticationProvider'
+
+// This is shamelessly based on an example: https://www.lee-ford.co.uk/connect-graph-api-sdk-app-permissions/
 
 // Create Graph SDK Client
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

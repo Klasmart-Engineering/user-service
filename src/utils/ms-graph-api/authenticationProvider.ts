@@ -1,6 +1,8 @@
 import * as qs from 'qs'
 import axios from 'axios'
 
+// Note: this is shamelessly based of an example on https://www.lee-ford.co.uk/connect-graph-api-sdk-app-permissions/
+
 export class ClientCredentialAuthenticationProvider {
     public async getAccessToken(): Promise<string> {
         const microsoftAppTenantId = process.env.MicrosoftAppTenantId
