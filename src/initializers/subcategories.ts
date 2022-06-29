@@ -430,27 +430,27 @@ export class SubcategoriesInitializer {
         },
         {
             id: '6fe09eef-c1d0-4495-99e4-d7265cf2c93e',
-            name: 'Syntax & Grammar'
+            name: 'Syntax & Grammar',
         },
         {
             id: '8421afeb-4c24-452b-a9f4-9fe52371d3c4',
-            name: 'Vocabulary'
+            name: 'Vocabulary',
         },
         {
             id: 'f637fb19-bba4-49cc-aa01-c6f769b37da0',
-            name: 'Bilingual Translation'
+            name: 'Bilingual Translation',
         },
         {
             id: 'af4f04f0-0e16-456b-b001-700330ff56ca',
-            name: 'Self-Evaluation'
+            name: 'Self-Evaluation',
         },
         {
             id: '32c9e08e-7339-497c-9fba-fa1434af614b',
-            name: 'Decoding & Word Recognition'
+            name: 'Decoding & Word Recognition',
         },
         {
             id: '4f5fc3c7-929b-4981-bdc2-82705f99e214',
-            name: 'Oral Presentation'
+            name: 'Oral Presentation',
         },
         {
             id: '306ae087-fa11-4f8f-a5cb-a21d2a704b7d',
@@ -458,15 +458,15 @@ export class SubcategoriesInitializer {
         },
         {
             id: '718f92b8-e300-4604-b008-93e0fbe84898',
-            name: 'Reading Comprehension'
+            name: 'Reading Comprehension',
         },
         {
             id: '96829a63-9869-4075-ab62-5ffd40d4e95a',
-            name: 'Vocabulary'
+            name: 'Vocabulary',
         },
         {
             id: 'ce8ad5df-acbc-4dfa-9911-8af2c19d8735',
-            name: 'Self-Evaluation'
+            name: 'Self-Evaluation',
         },
         {
             id: 'e6497a91-827c-4906-be5b-cf0ec7e1b3de',
@@ -474,20 +474,20 @@ export class SubcategoriesInitializer {
         },
         {
             id: '847f7303-fac9-4b5e-ac97-a583c58a36ba',
-            name: 'Reading Comprehension'
+            name: 'Reading Comprehension',
         },
         {
             id: '08b0b0e9-6af7-42ee-b23c-6b9b7aa22cc1',
-            name: 'Listening Comprehension'
+            name: 'Listening Comprehension',
         },
         {
             id: 'e87c478b-6bff-4148-b9cf-bafcb3b4f777',
-            name: 'Dictation'
+            name: 'Dictation',
         },
         {
             id: '97ff6d25-51e9-4eb3-afec-0b2c53c7dabd',
-            name: 'Pronunciation'
-        }
+            name: 'Pronunciation',
+        },
     ]
 
     public async run() {

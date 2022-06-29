@@ -202,7 +202,7 @@ export class SubjectsInitializer {
             categories: [
                 'ae40a7c5-60bc-4e28-aeac-5251c3ada03d', // English Language Learning
             ],
-        }
+        },
     ]
 
     public async run() {

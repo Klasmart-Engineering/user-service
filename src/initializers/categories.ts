@@ -852,7 +852,6 @@ export class CategoriesInitializer {
                 '6fe09eef-c1d0-4495-99e4-d7265cf2c93e', // Syntax & Grammar
                 '8421afeb-4c24-452b-a9f4-9fe52371d3c4', // Vocabulary
                 'f637fb19-bba4-49cc-aa01-c6f769b37da0', // Bilingual Translation
-
             ],
         },
         {
@@ -878,7 +877,7 @@ export class CategoriesInitializer {
                 'e87c478b-6bff-4148-b9cf-bafcb3b4f777', // Dictation
                 '97ff6d25-51e9-4eb3-afec-0b2c53c7dabd', // Pronunciation
             ],
-        }
+        },
     ]
 
     public async run() {
