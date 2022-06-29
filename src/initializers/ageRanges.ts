@@ -53,6 +53,14 @@ export class AgeRangesInitializer {
             high_value_unit: AgeRangeUnit.YEAR,
         },
         {
+            id: '04e5b813-7eaf-44f9-8c37-171315e8b296',
+            name: '10 - 11 year(s)',
+            low_value: 10,
+            low_value_unit: AgeRangeUnit.YEAR,
+            high_value: 11,
+            high_value_unit: AgeRangeUnit.YEAR,
+        },
+        {
             id: '4cdccdc2-a928-44d4-8298-d63196c86dd1',
             name: '11 - 12 year(s)',
             low_value: 11,
@@ -90,6 +98,14 @@ export class AgeRangesInitializer {
             low_value: 15,
             low_value_unit: AgeRangeUnit.YEAR,
             high_value: 16,
+            high_value_unit: AgeRangeUnit.YEAR,
+        },
+        {
+            id: '175353f5-773a-48bc-9319-c1aa439ad02b',
+            name: '16 - 17 year(s)',
+            low_value: 16,
+            low_value_unit: AgeRangeUnit.YEAR,
+            high_value: 17,
             high_value_unit: AgeRangeUnit.YEAR,
         },
     ]

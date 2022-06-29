@@ -233,6 +233,66 @@ export class ProgramsInitializer {
                 '16fba7b3-eba8-489b-af3f-a8ae5a9c5ff8', // Grade 11
             ],
         },
+        {
+            id: '5e366ee1-9b56-41d4-8783-3eefaa4d77b7',
+            name: 'Grammar Inside',
+            subjects: [
+                'aa533437-d846-48a8-a1d7-f0bbf22398f2', // English Language Learning
+            ],
+            age_ranges: [
+                'd493188f-5503-4820-beef-6c6583657ab3', // 13 - 14 year(s)
+                'e07cacc3-718d-4c19-948e-57bba80906ee', // 14 - 15 year(s)
+                'f58759cd-f65e-4deb-87f1-d972baf38106', // 15 - 16 year(s)
+                '175353f5-773a-48bc-9319-c1aa439ad02b', // 16 - 17 year(s)
+            ],
+            grades: [
+                '7bb0efd2-25eb-4c8c-9bae-bd4f379d2635', // Grade 7
+                '491e3d8c-a781-48ee-83fb-3d6dc9c98e34', // Grade 8
+                '4ac72cb2-b3c4-488d-bf2f-83bf3a0e116d', // Grade 9
+                '5437a66d-2625-4ca4-96a0-1f0b39f3731f', // Grade 10
+                '16fba7b3-eba8-489b-af3f-a8ae5a9c5ff8', // Grade 11
+            ],
+        },
+        {
+            id: '2dc4136b-2872-46d8-af18-49b9fcdb4ed2',
+            name: 'Voca',
+            subjects: [
+                '3f8e1fea-30f4-4b07-8beb-cf8f0404348d', // English Language Learning
+            ],
+            age_ranges: [
+                '04e5b813-7eaf-44f9-8c37-171315e8b296', // 10 - 11 year(s)
+                '4cdccdc2-a928-44d4-8298-d63196c86dd1', // 11 - 12 year(s)
+                '7cf0d4b8-e26e-4580-93fb-a1fdad39b4df', // 12 - 13 year(s)
+                'd493188f-5503-4820-beef-6c6583657ab3', // 13 - 14 year(s)
+                'e07cacc3-718d-4c19-948e-57bba80906ee', // 14 - 15 year(s)
+                'f58759cd-f65e-4deb-87f1-d972baf38106', // 15 - 16 year(s)
+            ],
+            grades: [
+                '3d4fe0f7-2b4c-4925-8d06-e22b71ee63e0', // Grade 4
+                '2e590398-267e-4186-857a-412c09d31377', // Grade 5
+                'fcdf94da-0cd5-4a8f-a2dd-c7ca5d902745', // Grade 6
+                '7bb0efd2-25eb-4c8c-9bae-bd4f379d2635', // Grade 7
+                '491e3d8c-a781-48ee-83fb-3d6dc9c98e34', // Grade 8
+            ],
+        },
+        {
+            id: 'c303be8a-8bdc-4dff-aa8b-26dd4229e38b',
+            name: 'Junior Listening Tours',
+            subjects: [
+                '2a89d896-019e-4159-a38c-86824b59f6cc', // English Language Learning
+            ],
+            age_ranges: [
+                'e07cacc3-718d-4c19-948e-57bba80906ee', // 14 - 15 year(s)
+                'f58759cd-f65e-4deb-87f1-d972baf38106', // 15 - 16 year(s)
+                '175353f5-773a-48bc-9319-c1aa439ad02b', // 16 - 17 year(s)
+            ],
+            grades: [
+                '491e3d8c-a781-48ee-83fb-3d6dc9c98e34', // Grade 8
+                '4ac72cb2-b3c4-488d-bf2f-83bf3a0e116d', // Grade 9
+                '5437a66d-2625-4ca4-96a0-1f0b39f3731f', // Grade 10
+                '16fba7b3-eba8-489b-af3f-a8ae5a9c5ff8', // Grade 11
+            ],
+        },
     ]
 
     public async run() {

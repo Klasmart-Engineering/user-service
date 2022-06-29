@@ -845,6 +845,40 @@ export class CategoriesInitializer {
                 '11351e3f-afc3-476e-b3af-a0c7718269ac', // Coloring
             ],
         },
+        {
+            id: 'aa533437-d846-48a8-a1d7-f0bbf22398f2',
+            name: 'English Language Learning',
+            subcategories: [
+                '6fe09eef-c1d0-4495-99e4-d7265cf2c93e', // Syntax & Grammar
+                '8421afeb-4c24-452b-a9f4-9fe52371d3c4', // Vocabulary
+                'f637fb19-bba4-49cc-aa01-c6f769b37da0', // Bilingual Translation
+
+            ],
+        },
+        {
+            id: '577e7e82-80b7-43c1-b802-0b69ad363756',
+            name: 'English Language Learning',
+            subcategories: [
+                'af4f04f0-0e16-456b-b001-700330ff56ca', // Self-Evaluation
+                '32c9e08e-7339-497c-9fba-fa1434af614b', // Decoding & Word Recognition
+                '4f5fc3c7-929b-4981-bdc2-82705f99e214', // Oral Presentation
+                '306ae087-fa11-4f8f-a5cb-a21d2a704b7d', // Visual Processing
+                '718f92b8-e300-4604-b008-93e0fbe84898', // Reading Comprehension
+                '96829a63-9869-4075-ab62-5ffd40d4e95a', // Vocabulary
+            ],
+        },
+        {
+            id: 'ae40a7c5-60bc-4e28-aeac-5251c3ada03d',
+            name: 'English Language Learning',
+            subcategories: [
+                'ce8ad5df-acbc-4dfa-9911-8af2c19d8735', // Self-Evaluation
+                'e6497a91-827c-4906-be5b-cf0ec7e1b3de', // Vocabulary
+                '847f7303-fac9-4b5e-ac97-a583c58a36ba', // Reading Comprehension
+                '08b0b0e9-6af7-42ee-b23c-6b9b7aa22cc1', // Listening Comprehension
+                'e87c478b-6bff-4148-b9cf-bafcb3b4f777', // Dictation
+                '97ff6d25-51e9-4eb3-afec-0b2c53c7dabd', // Pronunciation
+            ],
+        }
     ]
 
     public async run() {

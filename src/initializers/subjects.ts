@@ -182,6 +182,27 @@ export class SubjectsInitializer {
                 '1b77de04-6ac0-4b05-8dfb-39e5db84dd9a', // English Language Learning
             ],
         },
+        {
+            id: '3e3f3521-71c6-4945-ad21-d7efac423324',
+            name: 'English Language Learning',
+            categories: [
+                'aa533437-d846-48a8-a1d7-f0bbf22398f2', // English Language Learning
+            ],
+        },
+        {
+            id: '3f8e1fea-30f4-4b07-8beb-cf8f0404348d',
+            name: 'English Language Learning',
+            categories: [
+                '577e7e82-80b7-43c1-b802-0b69ad363756', // English Language Learning
+            ],
+        },
+        {
+            id: '2a89d896-019e-4159-a38c-86824b59f6cc',
+            name: 'English Language Learning',
+            categories: [
+                'ae40a7c5-60bc-4e28-aeac-5251c3ada03d', // English Language Learning
+            ],
+        }
     ]
 
     public async run() {
