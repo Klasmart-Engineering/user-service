@@ -1508,7 +1508,7 @@ export class Model {
         return true
     }
 
-    public async accountDeletion(context: Context) {
+    public async deleteAccount(context: Context) {
         const token = context.token!
         const azure_ad_b2c_id = token.azure_ad_b2c_id
         if (azure_ad_b2c_id) {
