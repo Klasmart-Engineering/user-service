@@ -122,17 +122,14 @@ async function getRange(): Promise<Range> {
 async function push(...rows: Row[]): Promise<Range | undefined> {
     const sheets = await authenticate.instance
     const values = rows.map((row) => Object.values(row))
-    let result = undefined
-    try {
-        result = await sheets.spreadsheets.values.append({
+    const result = await sheets.spreadsheets.values
+        .append({
             range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
             spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
             valueInputOption: 'USER_ENTERED',
             requestBody: { values },
         })
-    } catch {
-        result = undefined
-    }
+        .catch(() => undefined)
     if (!result?.data.updates?.updatedRange) {
         for (const row of rows) {
             reportError(
