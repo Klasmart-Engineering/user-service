@@ -1,15 +1,10 @@
+import { expect } from 'chai'
 import { google } from 'googleapis'
+import _ from 'lodash'
 import { Lazy } from '../utils/lazyLoading'
 import { reportError } from '../utils/resolvers/errors'
-import { objectToKey } from '../utils/stringUtils'
 
-export default {
-    deleteRows,
-    getAll,
-    getHeaders,
-    getRange,
-    push,
-}
+export default { push }
 
 // TABLE FORMATTING
 export const tableHeaders = <const>[
@@ -21,16 +16,16 @@ export const tableHeaders = <const>[
     'userService',
     'yService',
 ]
-const sheetNumber = '1'
-const firstColumn = 'A'
-const lastColumn = 'G'
+export const sheetNumber = '1'
+export const firstColumn = 'A'
+export const lastColumn = 'G'
 
 // TYPE DEFINITIONS
 type TableHeader = typeof tableHeaders[number]
 
 export type Row = { [T in TableHeader]: string }
 
-type Range = {
+export type Range = {
     startRow: number
     endRow: number
     startColumn: string
@@ -38,53 +33,54 @@ type Range = {
 }
 
 // METHODS
-async function deleteRows(deleteRange: Pick<Range, 'startRow' | 'endRow'>) {
+async function push(...rows: Row[]): Promise<Range | undefined> {
     const sheets = await authenticate.instance
-    await sheets.spreadsheets.batchUpdate({
-        spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
-        requestBody: {
-            includeSpreadsheetInResponse: true,
-            requests: [
-                {
-                    deleteRange: {
-                        range: {
-                            sheetId: 0, // gid for default Sheet1
-                            startRowIndex: deleteRange.startRow - 1, // index is 0-based but row number is 1-based
-                            endRowIndex: deleteRange.endRow, // exclusive, so -1 not needed
-                        },
-                        shiftDimension: 'ROWS',
-                    },
-                },
-            ],
-        },
-    })
+    const values = rows.map((row) => Object.values(row))
+
+    const result = await validateHeaders(Array.from(tableHeaders))
+        .then(() =>
+            sheets.spreadsheets.values.append({
+                range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
+                spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
+                valueInputOption: 'USER_ENTERED',
+                requestBody: { values },
+            })
+        )
+        .catch((error) => {
+            reportError(error)
+            return undefined
+        })
+
+    if (!result?.data.updates?.updatedRange) {
+        for (const row of rows) {
+            reportError(new Error(`Failed to append row to spreadsheet`), row)
+        }
+        return undefined
+    }
+
+    return parseRange(result.data.updates.updatedRange)
 }
 
-async function getAll(
-    fetchRange: Pick<Range, 'startRow' | 'endRow'>
-): Promise<Row[]> {
-    // Fetch all values in the range
-    const { startRow, endRow } = fetchRange
-    const sheets = await authenticate.instance
-    const range = `Sheet${sheetNumber}!${firstColumn}${startRow}:${lastColumn}${endRow}`
-    const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
-        range,
-    })
-    if (!response.data.values) {
-        throw new Error('Failed to retrieve data in that range')
+// UTILS
+export const authenticate = new Lazy(async () => {
+    const scopes = ['https://www.googleapis.com/auth/spreadsheets']
+    const credentialsJson =
+        process.env.USER_SERVICE_GOOGLE_SHEETS_API_CREDENTIALS
+    if (!credentialsJson) {
+        throw new Error(
+            'Environment variable USER_SERVICE_GOOGLE_SHEETS_API_CREDENTIALS has no value'
+        )
     }
+    const credentials = JSON.parse(credentialsJson)
 
-    // Parse values into objects
-    const rows: Row[] = []
-    for (const values of response.data.values) {
-        const row = {} as Row
-        for (const [i, v] of values.entries()) {
-            row[tableHeaders[i]] = v
-        }
-        rows.push(row)
-    }
-    return rows
+    const auth = await google.auth.getClient({ scopes, credentials })
+    return google.sheets({ version: 'v4', auth })
+})
+
+async function validateHeaders(expectedHeaders: string[]) {
+    const tableRange = await getRange()
+    const headers = (await getHeaders(tableRange)).map(_.camelCase)
+    expect(headers).to.deep.equal(expectedHeaders)
 }
 
 async function getHeaders({
@@ -118,47 +114,6 @@ async function getRange(): Promise<Range> {
     if (!tableRange) throw new Error('Failed to retrieve table range')
     return parseRange(tableRange)
 }
-
-async function push(...rows: Row[]): Promise<Range | undefined> {
-    const sheets = await authenticate.instance
-    const values = rows.map((row) => Object.values(row))
-    const result = await sheets.spreadsheets.values
-        .append({
-            range: `Sheet${sheetNumber}!${firstColumn}:${lastColumn}`,
-            spreadsheetId: process.env.ACCOUNT_DELETION_SHEET_ID,
-            valueInputOption: 'USER_ENTERED',
-            requestBody: { values },
-        })
-        .catch(() => undefined)
-    if (!result?.data.updates?.updatedRange) {
-        for (const row of rows) {
-            reportError(
-                new Error(
-                    `Failed to append row to spreadsheet: ${objectToKey(row)}`
-                )
-            )
-        }
-        return undefined
-    }
-
-    return parseRange(result.data.updates.updatedRange)
-}
-
-// UTILS
-const authenticate = new Lazy(async () => {
-    const scopes = ['https://www.googleapis.com/auth/spreadsheets']
-    const credentialsJson =
-        process.env.USER_SERVICE_GOOGLE_SHEETS_API_CREDENTIALS
-    if (!credentialsJson) {
-        throw new Error(
-            'Environment variable USER_SERVICE_GOOGLE_SHEETS_API_CREDENTIALS has no value'
-        )
-    }
-    const credentials = JSON.parse(credentialsJson)
-
-    const auth = await google.auth.getClient({ scopes, credentials })
-    return google.sheets({ version: 'v4', auth })
-})
 
 export function parseRange(tableRange: string): Range {
     const pattern = /^.*!([A-Z]+)(\d+):([A-Z]+)(\d+)$/
