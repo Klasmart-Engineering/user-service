@@ -5,7 +5,7 @@ import axios from 'axios'
 
 export class ClientCredentialAuthenticationProvider {
     public async getAccessToken(): Promise<string> {
-        const microsoftAppTenantId = process.env.MicrosoftAppTenantId
+        const microsoftAppTenantId = process.env.MS_APP_TENANT_ID
         if (!microsoftAppTenantId) {
             throw new Error('Missing Azure B2C Tenant Id')
         }
