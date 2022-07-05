@@ -1347,37 +1347,39 @@ export class Model {
         if (iconImage) {
             const file = iconImage.file
 
-            for (const tag of Object.values(BrandingImageTag)) {
-                // Build path for image
-                const remoteFilePath = buildFilePath(
-                    organizationId,
-                    file.filename,
-                    'organizations',
-                    tag.toLowerCase()
-                )
+            await Promise.all(
+                Object.values(BrandingImageTag).map(async (tag) => {
+                    // Build path for image
+                    const remoteFilePath = buildFilePath(
+                        organizationId,
+                        file.filename,
+                        'organizations',
+                        tag.toLowerCase()
+                    )
 
-                // Upload image to cloud
-                // The warning here is validand the code could be refactored
-                const remoteUrl = await CloudStorageUploader.call(
-                    file.createReadStream(),
-                    remoteFilePath
-                )
+                    // Upload image to cloud
+                    // The warning here is valid and the code could be refactored
+                    const remoteUrl = await CloudStorageUploader.call(
+                        file.createReadStream(),
+                        remoteFilePath
+                    )
 
-                //Safe info for saving later on DB
-                if (remoteUrl) {
-                    brandingImagesInfo.push({
-                        imageUrl: remoteUrl,
-                        tag: tag,
-                    })
-                }
+                    //Safe info for saving later on DB
+                    if (remoteUrl) {
+                        brandingImagesInfo.push({
+                            imageUrl: remoteUrl,
+                            tag: tag,
+                        })
+                    }
 
-                // Build the resolver output
-                const brandingKey = tag.toLowerCase() + 'ImageURL'
+                    // Build the resolver output
+                    const brandingKey = tag.toLowerCase() + 'ImageURL'
 
-                if (Object.keys(result).includes(brandingKey)) {
-                    result[brandingKey as keyof BrandingResult] = remoteUrl
-                }
-            }
+                    if (Object.keys(result).includes(brandingKey)) {
+                        result[brandingKey as keyof BrandingResult] = remoteUrl
+                    }
+                })
+            )
         } else {
             const images = orgBranding?.images?.filter((b) => b.tag) || []
             const imagesMap = new Map<string, BrandingImage>(

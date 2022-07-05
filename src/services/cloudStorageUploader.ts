@@ -8,31 +8,33 @@ export class CloudStorageUploader {
     ): Promise<string | undefined> {
         const provider = STORAGE.PROVIDER || 'amazon'
         const client = createCloudClient(provider)
-        let remoteUrl = undefined
-
-        const writeStream = await client.upload({
+        const writeStream = client.upload({
             container: STORAGE.BUCKET || 'kidsloop-alpha-account-asset-objects',
             remote: filePath,
         })
-
-        await new Promise<void>((resolve) =>
+        let remoteUrl = undefined
+        await new Promise<void>((resolve, reject) =>
             imageStream
                 .pipe(writeStream)
                 .on('success', function (remoteFile) {
                     // AWS || GCP || VNGClound needs to be verified
-                    if (provider == 'vngcloud') {
-                        remoteUrl = buildVNGCloudUrl(filePath)
-                    } else {
-                        remoteUrl =
-                            remoteFile?.location || remoteFile?.mediaLink
-                    }
-                    resolve()
+                    resolve(
+                        provider == 'vngcloud'
+                            ? buildVNGCloudUrl(filePath)
+                            : remoteFile?.location || remoteFile?.mediaLink
+                    )
                 })
                 .on('error', function (err) {
-                    throw new Error(`failed to upload file with error ${err}`)
+                    reject(err)
                 })
+        ).then(
+            (value) => {
+                remoteUrl = value
+            },
+            (err) => {
+                throw new Error(`failed to upload file: ${err}`)
+            }
         )
-
         return Promise.resolve(remoteUrl)
     }
 }

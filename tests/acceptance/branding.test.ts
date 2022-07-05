@@ -120,8 +120,6 @@ describe('acceptance.branding', () => {
     })
 
     it('sets branding successfully', async () => {
-        const organization_id = ''
-
         // create organization
         const createOrgResponse = await createOrg(user_id, org_name)
 
@@ -149,7 +147,8 @@ describe('acceptance.branding', () => {
 
         expect(setBrandingResponse.status).to.eq(200)
 
-        const setBrandingData = await setBrandingResponse.body.data.setBranding
+        const setBrandingData = setBrandingResponse.body.data.setBranding
+        expect(setBrandingData).to.not.be.null
         expect(setBrandingData.primaryColor).to.eq(primaryColor)
         expect(setBrandingData.iconImageURL).to.exist
 
